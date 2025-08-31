@@ -142,7 +142,7 @@ NumberOfIslands.prototype.setup = function() {
 
   // Title
   this.titleID = this.nextIndex++;
-  const title = "Animated solution for leetcode 200";
+  const title = "Animated solution for Number of Islands";
   const TITLE_Y = 50;
   this.cmd("CreateLabel", this.titleID, title, Math.floor(CANVAS_W/2), TITLE_Y, 1);
   this.cmd("SetForegroundColor", this.titleID, "#000");
