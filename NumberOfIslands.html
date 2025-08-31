@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Number of Islands</title>
+        <!-- Main CSS for page layout -->
+        <link rel="stylesheet" href="visualizationPageStyle.css">
+        <!-- jQuery UI for animation speed slider -->
+        <link rel="stylesheet" href="ThirdParty/jquery-ui-1.8.11.custom.css">
+        <script src="ThirdParty/jquery-1.5.2.min.js"></script>
+        <script src="ThirdParty/jquery-ui-1.8.11.custom.min.js"></script>
+        <!-- Core animation libraries -->
+        <script type="text/javascript" src="AnimationLibrary/CustomEvents.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/UndoFunctions.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/AnimatedObject.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/AnimatedLabel.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/AnimatedCircle.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/AnimatedRectangle.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/AnimatedLinkedList.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/HighlightCircle.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/Line.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/ObjectManager.js"></script>
+        <script type="text/javascript" src="AnimationLibrary/AnimationMain.js"></script>
+        <!-- Base algorithm class -->
+        <script type="text/javascript" src="AlgorithmLibrary/Algorithm.js"></script>
+        <!-- Our custom algorithm -->
+        <script type="text/javascript" src="AlgorithmLibrary/NumberOfIslands.js"></script>
+    </head>
+    <body onload="init();" class="VisualizationMainPage">
+        <div id="container">
+            <div id="header">
+                <!-- Page header for clarity -->
+                <h1 id="title" style="font-size: 24px;font-weight:bold;">Animated Solution For Leetcode 200</h1>
+            </div>
+            <div id="mainContent">
+                <div id="algoControlSection">
+                    <!-- Algorithm‑specific controls (grid input, build grid, start, pause, step, video mode) -->
+                    <table id="AlgorithmSpecificControls"></table>
+                </div>
+                <!-- Canvas where all animation is drawn -->
+                <canvas id="canvas" width="1000" height="600"></canvas>
+                <div id="generalAnimationControlSection">
+                    <!-- General animation controls (play/pause, undo, etc.) filled by framework -->
+                    <table id="GeneralAnimationControls"></table>
+                </div>
+            </div>
+            <div id="footer">
+                <p><a href="Algorithms.html">Algorithm Visualizations</a></p>
+            </div>
+        </div>
+    </body>
+</html>
