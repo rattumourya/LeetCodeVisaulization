@@ -1,0 +1,6 @@
+# Ignore backup files
+*~
+# Ignore macOS resource fork files
+._*
+# Ignore macOS Finder metadata
+.DS_Store
