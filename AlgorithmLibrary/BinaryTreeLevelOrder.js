@@ -119,20 +119,36 @@ BinaryTreeLevelOrder.prototype.setup = function () {
   this.layoutTree();
 
   this.commands = [];
-  const build = (node) => {
-    if (!node) return;
-    node.id = this.nextIndex++;
-    this.cmd("CreateCircle", node.id, node.val, node.x, node.y);
+  const queue = [];
+  if (this.root) {
+    this.root.id = this.nextIndex++;
+    this.cmd("CreateCircle", this.root.id, this.root.val, this.root.x, this.root.y);
+    this.cmd("SetHighlight", this.root.id, 1);
+    this.cmd("Step");
+    this.cmd("SetHighlight", this.root.id, 0);
+    queue.push(this.root);
+  }
+  while (queue.length > 0) {
+    const node = queue.shift();
     if (node.left) {
-      build(node.left);
+      node.left.id = this.nextIndex++;
+      this.cmd("CreateCircle", node.left.id, node.left.val, node.left.x, node.left.y);
       this.cmd("Connect", node.id, node.left.id);
+      this.cmd("SetHighlight", node.left.id, 1);
+      this.cmd("Step");
+      this.cmd("SetHighlight", node.left.id, 0);
+      queue.push(node.left);
     }
     if (node.right) {
-      build(node.right);
+      node.right.id = this.nextIndex++;
+      this.cmd("CreateCircle", node.right.id, node.right.val, node.right.x, node.right.y);
       this.cmd("Connect", node.id, node.right.id);
+      this.cmd("SetHighlight", node.right.id, 1);
+      this.cmd("Step");
+      this.cmd("SetHighlight", node.right.id, 0);
+      queue.push(node.right);
     }
-  };
-  build(this.root);
+  }
 
   const canvasElem = document.getElementById("canvas");
   const canvasH = canvasElem ? canvasElem.height : 600;
@@ -141,7 +157,6 @@ BinaryTreeLevelOrder.prototype.setup = function () {
   this.cmd("SetForegroundColor", this.resultLabelID, "#000000");
 
   this.animationManager.StartNewAnimation(this.commands);
-  this.animationManager.skipForward();
   this.animationManager.clearHistory();
 };
 
@@ -179,12 +194,13 @@ BinaryTreeLevelOrder.prototype.traverseTree = function () {
       if (node.right) queue.push(node.right);
     }
     result.push("[" + levelVals.join(", ") + "]");
+    this.cmd(
+      "SetText",
+      this.resultLabelID,
+      "Result: [" + result.join(", ") + "]"
+    );
+    this.cmd("Step");
   }
-  this.cmd(
-    "SetText",
-    this.resultLabelID,
-    "Result: [" + result.join(", ") + "]"
-  );
   return this.commands;
 };
 
