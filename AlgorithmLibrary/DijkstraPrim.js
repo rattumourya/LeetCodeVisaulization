@@ -393,15 +393,15 @@ DijkstraPrim.prototype.reset = function()
 
 DijkstraPrim.prototype.startCallback = function(event)
 {
-	var startValue;
-	
-	if (this.startField.value != "")
-	{
-		startvalue = this.startField.value;
-		this.startField.value = "";
-		if (parseInt(startvalue) < this.size)
-			this.implementAction(this.doDijkstraPrim.bind(this),startvalue);
-	}
+        var startValue;
+
+        if (this.startField.value != "")
+        {
+                startValue = this.startField.value;
+                this.startField.value = "";
+                if (parseInt(startValue) < this.size)
+                        this.implementAction(this.doDijkstraPrim.bind(this), startValue);
+        }
 }
 
 

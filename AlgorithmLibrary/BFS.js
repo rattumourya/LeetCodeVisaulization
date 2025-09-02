@@ -109,20 +109,20 @@ BFS.prototype.setup = function()
 
 BFS.prototype.startCallback = function(event)
 {
-	var startValue;
-	
-	if (this.startField.value != "")
-	{
-		startvalue = this.startField.value;
-		this.startField.value = "";
-		if (parseInt(startvalue) < this.size)
-			this.implementAction(this.doBFS.bind(this),startvalue);
-	}
+        var startValue;
+
+        if (this.startField.value != "")
+        {
+                startValue = this.startField.value;
+                this.startField.value = "";
+                if (parseInt(startValue) < this.size)
+                        this.implementAction(this.doBFS.bind(this), startValue);
+        }
 }
 
 
 
-BFS.prototype.doBFS = function(startVetex)
+BFS.prototype.doBFS = function(startVertex)
 {
 	this.visited = new Array(this.size);
 	this.commands = new Array();
@@ -150,7 +150,7 @@ BFS.prototype.doBFS = function(startVetex)
 		queueID[i] = this.nextIndex++;
 		
 	}
-	var vertex = parseInt(startVetex);
+        var vertex = parseInt(startVertex);
 	this.visited[vertex] = true;
 	this.queue[tail] = vertex;			
 	this.cmd("CreateLabel", queueID[tail],  vertex, QUEUE_START_X + queueSize * QUEUE_SPACING, QUEUE_START_Y);

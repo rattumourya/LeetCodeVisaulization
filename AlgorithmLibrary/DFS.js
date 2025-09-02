@@ -107,20 +107,20 @@ DFS.prototype.setup = function()
 
 DFS.prototype.startCallback = function(event)
 {
-	var startValue;
-	
-	if (this.startField.value != "")
-	{
-		startvalue = this.startField.value;
-		this.startField.value = "";
-		if (parseInt(startvalue) < this.size)
-			this.implementAction(this.doDFS.bind(this),startvalue);
-	}
+        var startValue;
+
+        if (this.startField.value != "")
+        {
+                startValue = this.startField.value;
+                this.startField.value = "";
+                if (parseInt(startValue) < this.size)
+                        this.implementAction(this.doDFS.bind(this), startValue);
+        }
 }
 
 
 
-DFS.prototype.doDFS = function(startVetex)
+DFS.prototype.doDFS = function(startVertex)
 {
 	this.visited = new Array(this.size);
 	this.commands = new Array();
@@ -139,7 +139,7 @@ DFS.prototype.doDFS = function(startVetex)
 		this.cmd("SetText", this.parentID[i], "");
 		this.visited[i] = false;
 	}
-	var vertex = parseInt(startVetex);
+        var vertex = parseInt(startVertex);
 	this.cmd("CreateHighlightCircle", this.highlightCircleL, HIGHLIGHT_CIRCLE_COLOR, this.x_pos_logical[vertex], this.y_pos_logical[vertex]);
 	this.cmd("SetLayer", this.highlightCircleL, 1);
 	this.cmd("CreateHighlightCircle", this.highlightCircleAL, HIGHLIGHT_CIRCLE_COLOR,this.adj_list_x_start - this.adj_list_width, this.adj_list_y_start + vertex*this.adj_list_height);
