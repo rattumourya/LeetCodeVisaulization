@@ -153,12 +153,14 @@ BinaryTreePreorder.prototype.buildTree = function () {
 
   // Structured pseudocode displayed at the top of the bottom section
   this.codeLines = [
-    "preorder(node):",
-    "  if node is null:",
-    "    return",
-    "  visit(node)",
-    "  preorder(node.left)",
-    "  preorder(node.right)",
+    "void preorder(TreeNode node) {",
+    "  if (node == null) {",
+    "    return;",
+    "  }",
+    "  visit(node);",
+    "  preorder(node.left);",
+    "  preorder(node.right);",
+    "}",
   ];
   this.codeLineID = new Array(this.codeLines.length);
   const CODE_LINE_H = 24;
@@ -228,9 +230,10 @@ BinaryTreePreorder.prototype.traverseTree = function () {
     this.showCode(1);
     if (!node) {
       this.showCode(2);
+      this.showCode(3);
       return;
     }
-    this.showCode(3);
+    this.showCode(4);
     this.cmd("SetHighlight", node.id, 1);
     this.cmd("Step");
     const labelID = this.nextIndex++;
@@ -240,10 +243,11 @@ BinaryTreePreorder.prototype.traverseTree = function () {
     this.cmd("SetHighlight", node.id, 0);
     this.outputIDs.push(labelID);
     this.outputNextX += 40;
-    this.showCode(4);
-    traverse(node.left);
     this.showCode(5);
+    traverse(node.left);
+    this.showCode(6);
     traverse(node.right);
+    this.showCode(7);
   };
   traverse(this.root);
   return this.commands;
