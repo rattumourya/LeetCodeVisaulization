@@ -171,6 +171,7 @@ BinaryTreePreorder.prototype.buildTree = function () {
     }
   }
 
+
   const canvasH = canvasElem ? canvasElem.height : 960;
   this.outputLabelID = this.nextIndex++;
   this.cmd("CreateLabel", this.outputLabelID, "Output:", 20, Math.floor(canvasH / 2), 0);
