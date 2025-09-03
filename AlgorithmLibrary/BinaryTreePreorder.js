@@ -100,7 +100,7 @@ BinaryTreePreorder.prototype.buildTreeFromArray = function (arr) {
 BinaryTreePreorder.prototype.layoutTree = function () {
   const canvasElem = document.getElementById("canvas");
   const w = canvasElem ? canvasElem.width : 540;
-  const startY = 80;
+  const startY = 110; // leave room for the canvas title
   const levelHeight = 90;
   const recurse = (node, x, y, offset) => {
     if (!node) return;
@@ -125,6 +125,21 @@ BinaryTreePreorder.prototype.buildTree = function () {
   this.layoutTree();
 
   this.commands = [];
+  const canvasElem = document.getElementById("canvas");
+  const canvasW = canvasElem ? canvasElem.width : 540;
+  // Title at the top of the canvas
+  this.titleID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.titleID,
+    "Binary Tree Preorder Traversal (LeetCode 144)",
+    canvasW / 2,
+    30,
+    0
+  );
+  this.cmd("SetForegroundColor", this.titleID, "#000");
+  this.cmd("SetTextSize", this.titleID, 20);
+  this.cmd("Step");
   const queue = [];
   if (this.root) {
     this.root.id = this.nextIndex++;
@@ -156,7 +171,7 @@ BinaryTreePreorder.prototype.buildTree = function () {
     }
   }
 
-  const canvasElem = document.getElementById("canvas");
+
   const canvasH = canvasElem ? canvasElem.height : 960;
   this.outputLabelID = this.nextIndex++;
   this.cmd("CreateLabel", this.outputLabelID, "Output:", 20, Math.floor(canvasH / 2), 0);
