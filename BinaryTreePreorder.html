@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Binary Tree Preorder Traversal</title>
+
+    <link rel="stylesheet" href="visualizationPageStyle.css" />
+
+    <link rel="stylesheet" href="ThirdParty/jquery-ui-1.8.11.custom.css" />
+    <script src="ThirdParty/jquery-1.5.2.min.js"></script>
+    <script src="ThirdParty/jquery-ui-1.8.11.custom.min.js"></script>
+
+    <script src="AnimationLibrary/CustomEvents.js"></script>
+    <script src="AnimationLibrary/UndoFunctions.js"></script>
+    <script src="AnimationLibrary/AnimatedObject.js"></script>
+    <script src="AnimationLibrary/AnimatedLabel.js"></script>
+    <script src="AnimationLibrary/AnimatedCircle.js"></script>
+    <script src="AnimationLibrary/AnimatedRectangle.js"></script>
+    <script src="AnimationLibrary/AnimatedLinkedList.js"></script>
+    <script src="AnimationLibrary/HighlightCircle.js"></script>
+    <script src="AnimationLibrary/Line.js"></script>
+    <script src="AnimationLibrary/ObjectManager.js"></script>
+    <script src="AnimationLibrary/AnimationMain.js"></script>
+
+    <script src="AlgorithmLibrary/Algorithm.js"></script>
+    <script src="AlgorithmLibrary/BinaryTreePreorder.js"></script>
+  </head>
+  <body onload="init();" class="VisualizationMainPage">
+    <div id="container">
+      <div id="header">
+        <h1 style="font-weight: bold;">Binary Tree Preorder Traversal (LeetCode 144)</h1>
+      </div>
+
+      <div id="mainContent">
+        <div id="algoControlSection">
+          <table id="AlgorithmSpecificControls"></table>
+        </div>
+
+        <!-- 540x960 canvas maintains a 9:16 aspect ratio -->
+        <canvas id="canvas" width="540" height="960"></canvas>
+
+        <div id="generalAnimationControlSection">
+          <table id="GeneralAnimationControls"></table>
+        </div>
+      </div>
+
+      <div id="footer">
+        <p><a href="Algorithms.html">Algorithm Visualizations</a></p>
+      </div>
+    </div>
+  </body>
+</html>
