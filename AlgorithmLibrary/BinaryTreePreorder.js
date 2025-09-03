@@ -127,6 +127,8 @@ BinaryTreePreorder.prototype.buildTree = function () {
   this.commands = [];
   const canvasElem = document.getElementById("canvas");
   const canvasW = canvasElem ? canvasElem.width : 540;
+  const canvasH = canvasElem ? canvasElem.height : 960;
+
   // Title at the top of the canvas
   this.titleID = this.nextIndex++;
   this.cmd(
@@ -135,10 +137,40 @@ BinaryTreePreorder.prototype.buildTree = function () {
     "Binary Tree Preorder Traversal (LeetCode 144)",
     canvasW / 2,
     30,
-    0
+    1
   );
   this.cmd("SetForegroundColor", this.titleID, "#000");
-  this.cmd("SetTextSize", this.titleID, 20);
+  this.cmd("SetTextStyle", this.titleID, "bold 20");
+
+  // Output label centered vertically in middle section
+  this.outputLabelID = this.nextIndex++;
+  this.cmd("CreateLabel", this.outputLabelID, "Output:", 20, Math.floor(canvasH / 2), 0);
+  this.cmd("SetForegroundColor", this.outputLabelID, "#000000");
+  this.cmd("SetTextStyle", this.outputLabelID, "bold 16");
+  this.outputNextX = 120;
+  this.outputY = Math.floor(canvasH / 2);
+  this.outputIDs = [];
+
+  // Structured pseudocode displayed at the top of the bottom section
+  this.codeLines = [
+    "preorder(node):",
+    "  if node is null:",
+    "    return",
+    "  visit(node)",
+    "  preorder(node.left)",
+    "  preorder(node.right)",
+  ];
+  this.codeLineID = new Array(this.codeLines.length);
+  const CODE_LINE_H = 24;
+  const codeY = this.outputY + 80; // Margin below the middle output row
+  const codeX = (canvasElem ? canvasElem.width : 540) / 2;
+  for (let i = 0; i < this.codeLines.length; i++) {
+    const id = this.nextIndex++;
+    this.codeLineID[i] = id;
+    this.cmd("CreateLabel", id, this.codeLines[i], codeX, codeY + i * CODE_LINE_H, 1);
+    this.cmd("SetForegroundColor", id, "#000");
+    this.cmd("SetTextStyle", id, 20);
+  }
   this.cmd("Step");
   const queue = [];
   if (this.root) {
@@ -169,36 +201,6 @@ BinaryTreePreorder.prototype.buildTree = function () {
       this.cmd("SetHighlight", node.right.id, 0);
       queue.push(node.right);
     }
-  }
-
-
-  const canvasH = canvasElem ? canvasElem.height : 960;
-  this.outputLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.outputLabelID, "Output:", 20, Math.floor(canvasH / 2), 0);
-  this.cmd("SetForegroundColor", this.outputLabelID, "#000000");
-  this.outputNextX = 120;
-  this.outputY = Math.floor(canvasH / 2);
-  this.outputIDs = [];
-
-  // Structured pseudocode displayed at the top of the bottom section
-  this.codeLines = [
-    "preorder(node):",
-    "  if node is null:",
-    "    return",
-    "  visit(node)",
-    "  preorder(node.left)",
-    "  preorder(node.right)",
-  ];
-  this.codeLineID = new Array(this.codeLines.length);
-  const CODE_LINE_H = 24;
-  const codeY = this.outputY + 80; // Margin below the middle output row
-  const codeX = (canvasElem ? canvasElem.width : 540) / 2;
-  for (let i = 0; i < this.codeLines.length; i++) {
-    const id = this.nextIndex++;
-    this.codeLineID[i] = id;
-    this.cmd("CreateLabel", id, this.codeLines[i], codeX, codeY + i * CODE_LINE_H, 1);
-    this.cmd("SetForegroundColor", id, "#000");
-    this.cmd("SetTextSize", id, 20);
   }
 
   return this.commands;
