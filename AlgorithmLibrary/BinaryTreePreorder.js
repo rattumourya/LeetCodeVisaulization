@@ -174,7 +174,6 @@ BinaryTreePreorder.prototype.buildTree = function () {
     this.cmd("SetTextStyle", id, 20);
   }
   this.cmd("Step");
-
   const queue = [];
   if (this.root) {
     this.root.id = this.nextIndex++;
@@ -205,6 +204,7 @@ BinaryTreePreorder.prototype.buildTree = function () {
       queue.push(node.right);
     }
   }
+
   return this.commands;
 };
 
