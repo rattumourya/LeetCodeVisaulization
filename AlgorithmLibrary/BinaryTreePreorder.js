@@ -164,16 +164,19 @@ BinaryTreePreorder.prototype.buildTree = function () {
   ];
   this.codeLineID = new Array(this.codeLines.length);
   const CODE_LINE_H = 24;
-  const codeY = this.outputY + 80; // Margin below the middle output row
-  const codeX = (canvasElem ? canvasElem.width : 540) / 2;
+  const codeY = this.outputY + 80; // Margin below the middle output 
+  const longest = this.codeLines.reduce((m, s) => Math.max(m, s.length), 0);
+  const approxWidth = longest * 10; // rough width per char at 20px font
+  const codeX = ((canvasElem ? canvasElem.width : 540) - approxWidth) / 2;
   for (let i = 0; i < this.codeLines.length; i++) {
     const id = this.nextIndex++;
     this.codeLineID[i] = id;
-    this.cmd("CreateLabel", id, this.codeLines[i], codeX, codeY + i * CODE_LINE_H, 1);
+    this.cmd("CreateLabel", id, this.codeLines[i], codeX, codeY + i * CODE_LINE_H, 0);
     this.cmd("SetForegroundColor", id, "#000");
-    this.cmd("SetTextStyle", id, 20);
+    this.cmd("SetTextSize", id, 20);
   }
   this.cmd("Step");
+
   const queue = [];
   if (this.root) {
     this.root.id = this.nextIndex++;
@@ -204,7 +207,6 @@ BinaryTreePreorder.prototype.buildTree = function () {
       queue.push(node.right);
     }
   }
-
   return this.commands;
 };
 
