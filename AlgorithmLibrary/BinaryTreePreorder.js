@@ -164,7 +164,7 @@ BinaryTreePreorder.prototype.buildTree = function () {
   ];
   this.codeLineID = new Array(this.codeLines.length);
   const CODE_LINE_H = 24;
-  const codeY = this.outputY + 80; // Margin below the middle output row
+  const codeY = this.outputY + 80; // Margin below the middle output 
   const longest = this.codeLines.reduce((m, s) => Math.max(m, s.length), 0);
   const approxWidth = longest * 10; // rough width per char at 20px font
   const codeX = ((canvasElem ? canvasElem.width : 540) - approxWidth) / 2;
