@@ -27,6 +27,11 @@ BinaryTreePreorder.prototype.init = function (am, w, h) {
   this.outputNextX = 0;
   this.outputY = 0;
   this.codeLineID = [];
+  this.callStackIDs = [];
+  this.stackX = 0;
+  this.stackStartY = 0;
+  this.frameHeight = 30;
+  this.frameWidth = 140;
 };
 
 BinaryTreePreorder.prototype.addControls = function () {
@@ -151,10 +156,11 @@ BinaryTreePreorder.prototype.buildTree = function () {
   this.outputY = Math.floor(canvasH / 2);
   this.outputIDs = [];
 
-  // Structured pseudocode displayed at the top of the bottom section
+  // Structured pseudocode and call stack in bottom section
+  const bottomY = this.outputY + 80; // start of bottom section
   this.codeLines = [
-    "void preorder(TreeNode node) {",
-    "  if (node == null) {",
+    "function preorder(node) {",
+    "  if (node === null) {",
     "    return;",
     "  }",
     "  visit(node);",
@@ -164,17 +170,23 @@ BinaryTreePreorder.prototype.buildTree = function () {
   ];
   this.codeLineID = new Array(this.codeLines.length);
   const CODE_LINE_H = 24;
-  const codeY = this.outputY + 80; // Margin below the middle output 
-  const longest = this.codeLines.reduce((m, s) => Math.max(m, s.length), 0);
-  const approxWidth = longest * 10; // rough width per char at 20px font
-  const codeX = ((canvasElem ? canvasElem.width : 540) - approxWidth) / 2;
+  const codeX = canvasW / 4; // center of left half
   for (let i = 0; i < this.codeLines.length; i++) {
     const id = this.nextIndex++;
     this.codeLineID[i] = id;
-    this.cmd("CreateLabel", id, this.codeLines[i], codeX, codeY + i * CODE_LINE_H, 0);
+    this.cmd("CreateLabel", id, this.codeLines[i], codeX, bottomY + i * CODE_LINE_H, 0);
     this.cmd("SetForegroundColor", id, "#000");
     this.cmd("SetTextSize", id, 20);
   }
+
+  // Call stack area on right half
+  this.callStackLabelID = this.nextIndex++;
+  this.cmd("CreateLabel", this.callStackLabelID, "Call Stack", canvasW * 0.75, bottomY, 1);
+  this.cmd("SetForegroundColor", this.callStackLabelID, "#000");
+  this.cmd("SetTextSize", this.callStackLabelID, 20);
+  this.stackX = canvasW * 0.75;
+  this.stackStartY = bottomY + 30;
+  this.callStackIDs = [];
   this.cmd("Step");
 
   const queue = [];
@@ -225,24 +237,45 @@ BinaryTreePreorder.prototype.showCode = function (lineIndex) {
   this.cmd("Step");
 };
 
+BinaryTreePreorder.prototype.pushStack = function (node) {
+  const label = node ? `preorder(${node.val})` : "preorder(null)";
+  const id = this.nextIndex++;
+  const y = this.stackStartY + this.callStackIDs.length * this.frameHeight;
+  this.cmd("CreateRectangle", id, label, this.frameWidth, this.frameHeight, this.stackX, y);
+  this.callStackIDs.push(id);
+  this.cmd("Step");
+  return id;
+};
+
+BinaryTreePreorder.prototype.popStack = function () {
+  if (this.callStackIDs.length === 0) return;
+  const id = this.callStackIDs.pop();
+  this.cmd("Delete", id);
+  this.cmd("Step");
+};
+
 BinaryTreePreorder.prototype.traverseTree = function () {
   this.commands = [];
   this.showCode(0);
   const traverse = (node) => {
+    const frameID = this.pushStack(node);
     this.showCode(1);
     if (!node) {
       this.showCode(2);
       this.showCode(3);
+      this.popStack();
       return;
     }
     this.showCode(4);
     this.cmd("SetHighlight", node.id, 1);
+    this.cmd("SetHighlight", frameID, 1);
     this.cmd("Step");
     const labelID = this.nextIndex++;
     this.cmd("CreateLabel", labelID, node.val, node.x, node.y);
     this.cmd("Move", labelID, this.outputNextX, this.outputY);
     this.cmd("Step");
     this.cmd("SetHighlight", node.id, 0);
+    this.cmd("SetHighlight", frameID, 0);
     this.outputIDs.push(labelID);
     this.outputNextX += 40;
     this.showCode(5);
@@ -250,6 +283,7 @@ BinaryTreePreorder.prototype.traverseTree = function () {
     this.showCode(6);
     traverse(node.right);
     this.showCode(7);
+    this.popStack();
   };
   traverse(this.root);
   return this.commands;
