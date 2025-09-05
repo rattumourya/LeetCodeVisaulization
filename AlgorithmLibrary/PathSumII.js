@@ -36,16 +36,16 @@ PathSumII.prototype.init = function (am, w, h) {
   this.codeIDs = [];
 
   // layout constants for 9:16 canvas (540x960)
-  this.sectionDivY1 = 360; // tree / path divider
-  this.sectionDivY2 = 660; // path / code divider
-  this.sectionDivX = 270; // splits middle section into path / result columns
+  this.sectionDivY1 = 360; // tree / code divider
+  this.sectionDivY2 = 660; // code / path divider
+  this.sectionDivX = 270; // splits bottom section into current/result columns
   this.rectW = 40;
   this.rectH = 40;
   this.rectSP = 10;
   this.pathStartX = 60;
-  this.pathStartY = this.sectionDivY1 + 80;
+  this.pathStartY = this.sectionDivY2 + 80;
   this.resultStartX = this.sectionDivX + 60;
-  this.resultStartY = this.sectionDivY1 + 80;
+  this.resultStartY = this.sectionDivY2 + 80;
 };
 
 PathSumII.prototype.addControls = function () {
@@ -184,7 +184,7 @@ PathSumII.prototype.setup = function () {
   const hLine2 = this.nextIndex++;
   this.cmd("CreateLine", hLine2, 0, this.sectionDivY2, 540, this.sectionDivY2);
   const vLine = this.nextIndex++;
-  this.cmd("CreateLine", vLine, this.sectionDivX, this.sectionDivY1, this.sectionDivX, this.sectionDivY2);
+  this.cmd("CreateLine", vLine, this.sectionDivX, this.sectionDivY2, this.sectionDivX, 960);
 
   // title in section 1
   this.titleID = this.nextIndex++;
@@ -233,7 +233,7 @@ PathSumII.prototype.setup = function () {
   }
   this.rootID = this.root ? this.root.id : -1;
 
-  // code snippet in section 3
+  // code snippet in section 2
   const code = [
     "public List<List<Integer>> pathSum(TreeNode root, int t) {",
     "    List<List<Integer>> res = new ArrayList<>();",
@@ -249,22 +249,22 @@ PathSumII.prototype.setup = function () {
     "    p.remove(p.size()-1);",
     "}",
   ];
-  const codeX = 270;
+  const codeX = 540 / 2 - 200; // approximate left start to center block
   for (let i = 0; i < code.length; i++) {
     const id = this.nextIndex++;
-    const y = this.sectionDivY2 + 20 + i * 20;
-    this.cmd("CreateLabel", id, code[i], codeX, y, 1);
+    const y = this.sectionDivY1 + 30 + i * 20;
+    this.cmd("CreateLabel", id, code[i], codeX, y, 0);
     this.codeIDs.push(id);
   }
 
-  // labels for current path and results in section 2
+  // labels for current path and results in section 3
   this.pathLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.pathLabelID,
     "Current Path:",
     this.sectionDivX / 2,
-    this.sectionDivY1 + 40,
+    this.sectionDivY2 + 40,
     1
   );
   this.resultLabelID = this.nextIndex++;
@@ -273,7 +273,7 @@ PathSumII.prototype.setup = function () {
     this.resultLabelID,
     "Result Path:",
     this.sectionDivX + (540 - this.sectionDivX) / 2,
-    this.sectionDivY1 + 40,
+    this.sectionDivY2 + 40,
     1
   );
 
@@ -336,7 +336,7 @@ PathSumII.prototype.findPaths = function () {
 
     highlight(7);
     const val = this.nodeValue[nodeID];
-    this.cmd("SetHighlight", nodeID, 1);
+    this.cmd("SetHighlight", nodeID, 1); // red outline for current node
     this.cmd("Step");
 
     const rectID = this.nextIndex++;
@@ -346,7 +346,7 @@ PathSumII.prototype.findPaths = function () {
     this.pathRectIDs.push(rectID);
     pathVals.push(val);
     pathNodeIDs.push(nodeID);
-    this.cmd("SetBackgroundColor", nodeID, "#ADD8E6");
+    this.cmd("SetBackgroundColor", nodeID, "#ADD8E6"); // light blue path
     sum += val;
     this.cmd("Step");
 
