@@ -4,10 +4,10 @@
  * PathSumII.js - Animated solution for LeetCode 113.
  * - Build tree from level-order input
  * - DFS search for target sum paths
- * - 9:16 layout with tree on top and code / paths on bottom
- *   Top: binary tree with centered title
- *   Bottom left: reference Java code
- *   Bottom right: current path and collected results
+ * - 9:16 layout with three sections:
+ *   1) top: binary tree with centered title
+ *   2) middle: current path (left column) and result paths (right column)
+ *   3) bottom: centered Java code snippet
  */
 
 function PathSumII(am, w, h) { this.init(am, w, h); }
@@ -35,16 +35,17 @@ PathSumII.prototype.init = function (am, w, h) {
   this.resultIndex = 0;
   this.codeIDs = [];
 
-  // layout constants
-  this.sectionDivY = 440; // separates tree from bottom panels
-  this.sectionDivX = 270; // splits bottom into code / path areas
+  // layout constants for 9:16 canvas (540x960)
+  this.sectionDivY1 = 360; // tree / path divider
+  this.sectionDivY2 = 660; // path / code divider
+  this.sectionDivX = 270; // splits middle section into path / result columns
   this.rectW = 40;
   this.rectH = 40;
   this.rectSP = 10;
-  this.pathStartX = this.sectionDivX + 20;
-  this.pathStartY = this.sectionDivY + 60;
-  this.resultStartX = this.sectionDivX + 20;
-  this.resultStartY = this.sectionDivY + 220;
+  this.pathStartX = 60;
+  this.pathStartY = this.sectionDivY1 + 80;
+  this.resultStartX = this.sectionDivX + 60;
+  this.resultStartY = this.sectionDivY1 + 80;
 };
 
 PathSumII.prototype.addControls = function () {
@@ -177,11 +178,13 @@ PathSumII.prototype.setup = function () {
   this.root = this.buildTreeFromArray(this.arr);
   this.layoutTree(this.root);
 
-  // divider lines for tree / bottom and code / path areas
-  const hLine = this.nextIndex++;
-  this.cmd("CreateLine", hLine, 0, this.sectionDivY, 540, this.sectionDivY);
+  // divider lines for sections
+  const hLine1 = this.nextIndex++;
+  this.cmd("CreateLine", hLine1, 0, this.sectionDivY1, 540, this.sectionDivY1);
+  const hLine2 = this.nextIndex++;
+  this.cmd("CreateLine", hLine2, 0, this.sectionDivY2, 540, this.sectionDivY2);
   const vLine = this.nextIndex++;
-  this.cmd("CreateLine", vLine, this.sectionDivX, this.sectionDivY, this.sectionDivX, 960);
+  this.cmd("CreateLine", vLine, this.sectionDivX, this.sectionDivY1, this.sectionDivX, this.sectionDivY2);
 
   // title in section 1
   this.titleID = this.nextIndex++;
@@ -191,8 +194,9 @@ PathSumII.prototype.setup = function () {
     "Path Sum II (LeetCode 113)",
     270,
     40,
-    0
+    1
   );
+  this.cmd("SetTextStyle", this.titleID, "bold 24");
 
   const queue = [];
   if (this.root) {
@@ -245,11 +249,11 @@ PathSumII.prototype.setup = function () {
     "    p.remove(p.size()-1);",
     "}",
   ];
-  const codeX = this.sectionDivX / 2;
+  const codeX = 270;
   for (let i = 0; i < code.length; i++) {
     const id = this.nextIndex++;
-    const y = this.sectionDivY + 20 + i * 20;
-    this.cmd("CreateLabel", id, code[i], codeX, y, 0);
+    const y = this.sectionDivY2 + 20 + i * 20;
+    this.cmd("CreateLabel", id, code[i], codeX, y, 1);
     this.codeIDs.push(id);
   }
 
@@ -259,9 +263,9 @@ PathSumII.prototype.setup = function () {
     "CreateLabel",
     this.pathLabelID,
     "Current Path:",
-    this.sectionDivX + (540 - this.sectionDivX) / 2,
-    this.pathStartY - 30,
-    0
+    this.sectionDivX / 2,
+    this.sectionDivY1 + 40,
+    1
   );
   this.resultLabelID = this.nextIndex++;
   this.cmd(
@@ -269,8 +273,8 @@ PathSumII.prototype.setup = function () {
     this.resultLabelID,
     "Result Path:",
     this.sectionDivX + (540 - this.sectionDivX) / 2,
-    this.resultStartY - 30,
-    0
+    this.sectionDivY1 + 40,
+    1
   );
 
   return this.commands;
