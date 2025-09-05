@@ -6,8 +6,8 @@
  * - DFS search for target sum paths
  * - 9:16 layout with three sections:
  *   1) top: binary tree with centered title
- *   2) middle: current path (left column) and result paths (right column)
- *   3) bottom: centered Java code snippet
+ *   2) middle: structured Java code snippet
+ *   3) bottom: current path (left) and result paths (right)
  */
 
 function PathSumII(am, w, h) { this.init(am, w, h); }
@@ -29,16 +29,19 @@ PathSumII.prototype.init = function (am, w, h) {
   this.nodeValue = {};
   this.leftChild = {};
   this.rightChild = {};
+  this.nodeX = {};
+  this.nodeY = {};
 
   this.pathRectIDs = [];
   this.resultRectIDs = [];
+  this.remainLabelIDs = [];
   this.resultIndex = 0;
   this.codeIDs = [];
 
   // layout constants for 9:16 canvas (540x960)
   this.sectionDivY1 = 360; // tree / code divider
   this.sectionDivY2 = 660; // code / path divider
-  this.sectionDivX = 270; // splits bottom section into current/result columns
+  this.sectionDivX = 270;  // splits bottom section into current/result columns
   this.rectW = 40;
   this.rectH = 40;
   this.rectSP = 10;
@@ -167,13 +170,14 @@ PathSumII.prototype.setup = function () {
     }
   }
 
-  if (!this.arr || this.arr.length === 0) {
-    return this.commands;
-  }
+  if (!this.arr || this.arr.length === 0) return this.commands;
 
   this.nodeValue = {};
   this.leftChild = {};
   this.rightChild = {};
+  this.nodeX = {};
+  this.nodeY = {};
+  this.remainLabelIDs = [];
 
   this.root = this.buildTreeFromArray(this.arr);
   this.layoutTree(this.root);
@@ -188,14 +192,7 @@ PathSumII.prototype.setup = function () {
 
   // title in section 1
   this.titleID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.titleID,
-    "Path Sum II (LeetCode 113)",
-    270,
-    40,
-    1
-  );
+  this.cmd("CreateLabel", this.titleID, "Path Sum II (LeetCode 113)", 270, 40, 1);
   this.cmd("SetTextStyle", this.titleID, "bold 24");
 
   const queue = [];
@@ -210,6 +207,8 @@ PathSumII.prototype.setup = function () {
   while (queue.length > 0) {
     const node = queue.shift();
     this.nodeValue[node.id] = node.val;
+    this.nodeX[node.id] = node.x;
+    this.nodeY[node.id] = node.y;
     if (node.left) {
       node.left.id = this.nextIndex++;
       this.cmd("CreateCircle", node.left.id, node.left.val, node.left.x, node.left.y);
@@ -287,10 +286,13 @@ PathSumII.prototype.reset = function () {
   }
   this.pathRectIDs = [];
   this.resultRectIDs = [];
+  this.remainLabelIDs = [];
   this.resultIndex = 0;
   this.nodeValue = {};
   this.leftChild = {};
   this.rightChild = {};
+  this.nodeX = {};
+  this.nodeY = {};
   this.rootID = -1;
   this.codeIDs = [];
 };
@@ -304,18 +306,16 @@ PathSumII.prototype.startCallback = function () {
 
 PathSumII.prototype.findPaths = function () {
   this.commands = [];
-  for (const id of this.pathRectIDs) {
-    this.cmd("Delete", id);
-  }
-  for (const id of this.resultRectIDs) {
-    this.cmd("Delete", id);
-  }
+  for (const id of this.pathRectIDs) this.cmd("Delete", id);
+  for (const id of this.resultRectIDs) this.cmd("Delete", id);
+  for (const id of this.remainLabelIDs) this.cmd("Delete", id);
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
     this.cmd("SetHighlight", parseInt(id), 0);
   }
   this.pathRectIDs = [];
   this.resultRectIDs = [];
+  this.remainLabelIDs = [];
   this.resultIndex = 0;
   const pathVals = [];
   const pathNodeIDs = [];
@@ -348,6 +348,12 @@ PathSumII.prototype.findPaths = function () {
     pathNodeIDs.push(nodeID);
     this.cmd("SetBackgroundColor", nodeID, "#ADD8E6"); // light blue path
     sum += val;
+    const rem = this.target - sum;
+    const remID = this.nextIndex++;
+    const rx = this.nodeX[nodeID];
+    const ry = this.nodeY[nodeID] - 40;
+    this.cmd("CreateLabel", remID, "s = " + String(rem), rx, ry, 0);
+    this.remainLabelIDs.push(remID);
     this.cmd("Step");
 
     highlight(8);
@@ -356,8 +362,8 @@ PathSumII.prototype.findPaths = function () {
         const y = this.resultStartY + this.resultIndex * (this.rectH + 10);
         for (let i = 0; i < pathVals.length; i++) {
           const id = this.nextIndex++;
-          const rx = this.resultStartX + i * (this.rectW + this.rectSP);
-          this.cmd("CreateRectangle", id, String(pathVals[i]), this.rectW, this.rectH, rx, y);
+          const rx2 = this.resultStartX + i * (this.rectW + this.rectSP);
+          this.cmd("CreateRectangle", id, String(pathVals[i]), this.rectW, this.rectH, rx2, y);
           this.resultRectIDs.push(id);
           this.keepBlue[pathNodeIDs[i]] = true;
         }
@@ -376,9 +382,9 @@ PathSumII.prototype.findPaths = function () {
     pathVals.pop();
     pathNodeIDs.pop();
     this.cmd("Delete", lastID);
-    if (!this.keepBlue[nodeID]) {
-      this.cmd("SetBackgroundColor", nodeID, "#FFF");
-    }
+    const remLabel = this.remainLabelIDs.pop();
+    this.cmd("Delete", remLabel);
+    if (!this.keepBlue[nodeID]) this.cmd("SetBackgroundColor", nodeID, "#FFF");
     this.cmd("SetHighlight", nodeID, 0);
     this.cmd("Step");
   };
