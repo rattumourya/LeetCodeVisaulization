@@ -46,9 +46,9 @@ PathSumII.prototype.init = function (am, w, h) {
   this.rectH = 40;
   this.rectSP = 10;
   this.pathStartX = 60;
-  this.pathStartY = this.sectionDivY2 + 80;
+  this.pathStartY = this.sectionDivY2 + 100;   // extra top margin
   this.resultStartX = this.sectionDivX + 60;
-  this.resultStartY = this.sectionDivY2 + 80;
+  this.resultStartY = this.sectionDivY2 + 100; // extra top margin
 };
 
 PathSumII.prototype.addControls = function () {
@@ -134,6 +134,7 @@ PathSumII.prototype.buildTreeFromArray = function (arr) {
 PathSumII.prototype.layoutTree = function (root) {
   const canvasElem = document.getElementById("canvas");
   const w = canvasElem ? canvasElem.width : 540;
+  the_queue = [];
   const startY = 100; // leave room for title
   const levelH = 80;
   const recurse = (node, x, y, offset) => {
@@ -242,9 +243,12 @@ PathSumII.prototype.setup = function () {
     "private void dfs(TreeNode n, int s, List<Integer> p, List<List<Integer>> r){",
     "    if (n == null) return;",
     "    p.add(n.val); s -= n.val;",
-    "    if(n.left==null && n.right==null && s==0) r.add(new ArrayList<>(p));",
-    "    dfs(n.left, s, p, r);",
-    "    dfs(n.right, s, p, r);",
+    "    if(n.left==null && n.right==null && s==0)",
+    "        r.add(new ArrayList<>(p));",
+    "    else {",
+    "        dfs(n.left, s, p, r);",
+    "        dfs(n.right, s, p, r);",
+    "    }",
     "    p.remove(p.size()-1);",
     "}",
   ];
@@ -263,7 +267,7 @@ PathSumII.prototype.setup = function () {
     this.pathLabelID,
     "Current Path:",
     this.sectionDivX / 2,
-    this.sectionDivY2 + 40,
+    this.sectionDivY2 + 60,
     1
   );
   this.resultLabelID = this.nextIndex++;
@@ -272,7 +276,7 @@ PathSumII.prototype.setup = function () {
     this.resultLabelID,
     "Result Path:",
     this.sectionDivX + (540 - this.sectionDivX) / 2,
-    this.sectionDivY2 + 40,
+    this.sectionDivY2 + 60,
     1
   );
 
@@ -333,7 +337,7 @@ PathSumII.prototype.findPaths = function () {
     highlight(6);
     if (nodeID == null) {
       this.cmd("Step");
-      highlight(12);
+      highlight(15);
       this.cmd("Step");
       return;
     }
@@ -363,6 +367,7 @@ PathSumII.prototype.findPaths = function () {
     highlight(8);
     if (this.leftChild[nodeID] == null && this.rightChild[nodeID] == null) {
       if (sum === this.target) {
+        highlight(9);
         const y = this.resultStartY + this.resultIndex * (this.rectH + 10);
         for (let i = 0; i < pathVals.length; i++) {
           const id = this.nextIndex++;
@@ -375,19 +380,23 @@ PathSumII.prototype.findPaths = function () {
         this.cmd("Step");
       }
     } else {
-      highlight(9);
-      this.cmd("SetForegroundColor", this.codeIDs[9], "#F00");
+      highlight(10);
+      this.cmd("Step");
+      highlight(11);
+      this.cmd("SetForegroundColor", this.codeIDs[11], "#F00");
       this.cmd("Step");
       if (this.leftChild[nodeID] != null) dfs(this.leftChild[nodeID], sum);
-      this.cmd("SetForegroundColor", this.codeIDs[9], "#000");
-      highlight(10);
-      this.cmd("SetForegroundColor", this.codeIDs[10], "#F00");
+      this.cmd("SetForegroundColor", this.codeIDs[11], "#000");
+      highlight(12);
+      this.cmd("SetForegroundColor", this.codeIDs[12], "#F00");
       this.cmd("Step");
       if (this.rightChild[nodeID] != null) dfs(this.rightChild[nodeID], sum);
-      this.cmd("SetForegroundColor", this.codeIDs[10], "#000");
+      this.cmd("SetForegroundColor", this.codeIDs[12], "#000");
+      highlight(13);
+      this.cmd("Step");
     }
 
-    highlight(11);
+    highlight(14);
     const lastID = this.pathRectIDs.pop();
     pathVals.pop();
     pathNodeIDs.pop();
@@ -397,7 +406,7 @@ PathSumII.prototype.findPaths = function () {
     if (!this.keepBlue[nodeID]) this.cmd("SetBackgroundColor", nodeID, "#FFF");
     this.cmd("SetHighlight", nodeID, 0);
     this.cmd("Step");
-    highlight(12);
+    highlight(15);
     this.cmd("Step");
   };
 
