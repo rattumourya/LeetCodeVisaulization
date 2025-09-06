@@ -328,8 +328,12 @@ PathSumII.prototype.findPaths = function () {
   };
 
   const dfs = (nodeID, sum) => {
+    highlight(5);
+    this.cmd("Step");
     highlight(6);
     if (nodeID == null) {
+      this.cmd("Step");
+      highlight(12);
       this.cmd("Step");
       return;
     }
@@ -372,9 +376,15 @@ PathSumII.prototype.findPaths = function () {
       }
     } else {
       highlight(9);
+      this.cmd("SetForegroundColor", this.codeIDs[9], "#F00");
+      this.cmd("Step");
       if (this.leftChild[nodeID] != null) dfs(this.leftChild[nodeID], sum);
+      this.cmd("SetForegroundColor", this.codeIDs[9], "#000");
       highlight(10);
+      this.cmd("SetForegroundColor", this.codeIDs[10], "#F00");
+      this.cmd("Step");
       if (this.rightChild[nodeID] != null) dfs(this.rightChild[nodeID], sum);
+      this.cmd("SetForegroundColor", this.codeIDs[10], "#000");
     }
 
     highlight(11);
@@ -387,6 +397,8 @@ PathSumII.prototype.findPaths = function () {
     if (!this.keepBlue[nodeID]) this.cmd("SetBackgroundColor", nodeID, "#FFF");
     this.cmd("SetHighlight", nodeID, 0);
     this.cmd("Step");
+    highlight(12);
+    this.cmd("Step");
   };
 
   highlight(0);
@@ -397,6 +409,8 @@ PathSumII.prototype.findPaths = function () {
   this.cmd("Step");
   dfs(this.rootID, 0);
   highlight(3);
+  this.cmd("Step");
+  highlight(4);
   this.cmd("Step");
   return this.commands;
 };
