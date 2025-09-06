@@ -46,9 +46,9 @@ PathSumII.prototype.init = function (am, w, h) {
   this.rectH = 40;
   this.rectSP = 10;
   this.pathStartX = 60;
-  this.pathStartY = this.sectionDivY2 + 100;   // extra top margin
+  this.pathStartY = this.sectionDivY2 + 120;
   this.resultStartX = this.sectionDivX + 60;
-  this.resultStartY = this.sectionDivY2 + 100; // extra top margin
+  this.resultStartY = this.sectionDivY2 + 120;
 };
 
 PathSumII.prototype.addControls = function () {
@@ -134,7 +134,6 @@ PathSumII.prototype.buildTreeFromArray = function (arr) {
 PathSumII.prototype.layoutTree = function (root) {
   const canvasElem = document.getElementById("canvas");
   const w = canvasElem ? canvasElem.width : 540;
-  the_queue = [];
   const startY = 100; // leave room for title
   const levelH = 80;
   const recurse = (node, x, y, offset) => {
@@ -267,18 +266,20 @@ PathSumII.prototype.setup = function () {
     this.pathLabelID,
     "Current Path:",
     this.sectionDivX / 2,
-    this.sectionDivY2 + 60,
+    this.sectionDivY2 + 80,
     1
   );
+  this.cmd("SetTextStyle", this.pathLabelID, "bold 16");
   this.resultLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.resultLabelID,
     "Result Path:",
     this.sectionDivX + (540 - this.sectionDivX) / 2,
-    this.sectionDivY2 + 60,
+    this.sectionDivY2 + 80,
     1
   );
+  this.cmd("SetTextStyle", this.resultLabelID, "bold 16");
 
   return this.commands;
 };
@@ -365,32 +366,34 @@ PathSumII.prototype.findPaths = function () {
     this.cmd("Step");
 
     highlight(8);
-    if (this.leftChild[nodeID] == null && this.rightChild[nodeID] == null) {
-      if (sum === this.target) {
-        highlight(9);
-        const y = this.resultStartY + this.resultIndex * (this.rectH + 10);
-        for (let i = 0; i < pathVals.length; i++) {
-          const id = this.nextIndex++;
-          const rx2 = this.resultStartX + i * (this.rectW + this.rectSP);
-          this.cmd("CreateRectangle", id, String(pathVals[i]), this.rectW, this.rectH, rx2, y);
-          this.resultRectIDs.push(id);
-          this.keepBlue[pathNodeIDs[i]] = true;
-        }
-        this.resultIndex++;
-        this.cmd("Step");
+    if (
+      this.leftChild[nodeID] == null &&
+      this.rightChild[nodeID] == null &&
+      sum === this.target
+    ) {
+      highlight(9);
+      const y = this.resultStartY + this.resultIndex * (this.rectH + 10);
+      for (let i = 0; i < pathVals.length; i++) {
+        const id = this.nextIndex++;
+        const rx2 = this.resultStartX + i * (this.rectW + this.rectSP);
+        this.cmd("CreateRectangle", id, String(pathVals[i]), this.rectW, this.rectH, rx2, y);
+        this.resultRectIDs.push(id);
+        this.keepBlue[pathNodeIDs[i]] = true;
       }
+      this.resultIndex++;
+      this.cmd("Step");
     } else {
       highlight(10);
       this.cmd("Step");
       highlight(11);
       this.cmd("SetForegroundColor", this.codeIDs[11], "#F00");
       this.cmd("Step");
-      if (this.leftChild[nodeID] != null) dfs(this.leftChild[nodeID], sum);
+      dfs(this.leftChild[nodeID], sum);
       this.cmd("SetForegroundColor", this.codeIDs[11], "#000");
       highlight(12);
       this.cmd("SetForegroundColor", this.codeIDs[12], "#F00");
       this.cmd("Step");
-      if (this.rightChild[nodeID] != null) dfs(this.rightChild[nodeID], sum);
+      dfs(this.rightChild[nodeID], sum);
       this.cmd("SetForegroundColor", this.codeIDs[12], "#000");
       highlight(13);
       this.cmd("Step");
