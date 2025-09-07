@@ -37,8 +37,8 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.pathLoopIDs = [];
   this.pathIdx = 0;
   this.pathColors = [
-    "#FFD700", "#00BFFF", "#FF6347",
-    "#32CD32", "#EE82EE", "#FFA500", "#8A2BE2"
+    "#00BFFF", "#FF0000", "#32CD32",
+    "#FFA500", "#EE82EE", "#FFD700", "#8A2BE2"
   ];
 
   // 540x960 canvas sections
@@ -298,7 +298,7 @@ PathSumIII.prototype.findPaths = function() {
 
     const xs = nodes.map((id) => this.nodeX[id]);
     const ys = nodes.map((id) => this.nodeY[id]);
-    const pad = 25;
+    const pad = 15;
     const minX = Math.min(...xs) - pad;
     const maxX = Math.max(...xs) + pad;
     const minY = Math.min(...ys) - pad;
