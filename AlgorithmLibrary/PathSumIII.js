@@ -297,49 +297,32 @@ PathSumIII.prototype.findPaths = function() {
 
     const xs = nodes.map((id) => this.nodeX[id]);
     const ys = nodes.map((id) => this.nodeY[id]);
-    const minX = Math.min(...xs) - 20;
-    const maxX = Math.max(...xs) + 20;
-    const minY = Math.min(...ys) - 20;
-    const maxY = Math.max(...ys) + 20;
+    const pad = 25;
+    const minX = Math.min(...xs) - pad;
+    const maxX = Math.max(...xs) + pad;
+    const minY = Math.min(...ys) - pad;
+    const maxY = Math.max(...ys) + pad;
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
-    const rx = (maxX - minX) / 2;
-    const ry = (maxY - minY) / 2;
+    const width = maxX - minX;
+    const height = maxY - minY;
 
-    // points along an ellipse to mimic a free-hand loop
-    const segments = 16;
-    const pts = [];
-    for (let i = 0; i <= segments; i++) {
-      const theta = (2 * Math.PI * i) / segments;
-      pts.push([
-        centerX + rx * Math.cos(theta),
-        centerY + ry * Math.sin(theta)
-      ]);
-    }
-
-    const penID = this.nextIndex++;
+    const loopID = this.nextIndex++;
     this.cmd(
-      "CreateHighlightCircle",
-      penID,
+      "CreateHighlightOval",
+      loopID,
       color,
-      pts[0][0],
-      pts[0][1],
-      2
+      this.nodeX[nodes[0]],
+      this.nodeY[nodes[0]],
+      0,
+      0
     );
+    this.cmd("Move", loopID, centerX, centerY);
+    this.cmd("SetWidth", loopID, width);
+    this.cmd("SetHeight", loopID, height);
     this.cmd("Step");
+    this.pathOvalIDs.push(loopID);
 
-    for (let i = 1; i < pts.length; i++) {
-      const prev = pts[i - 1];
-      const curr = pts[i];
-      this.cmd("Move", penID, curr[0], curr[1]);
-      this.cmd("Step");
-      const lineID = this.nextIndex++;
-      this.cmd("CreateLine", lineID, prev[0], prev[1], curr[0], curr[1]);
-      this.cmd("SetForegroundColor", lineID, color);
-      this.cmd("Step");
-      this.pathOvalIDs.push(lineID);
-    }
-    this.cmd("Delete", penID);
     this.pathIdx++;
   };
 
