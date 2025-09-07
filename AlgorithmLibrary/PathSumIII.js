@@ -284,10 +284,6 @@ PathSumIII.prototype.findPaths = function() {
   let count = 0;
   const prefix = { 0: [-1] };
   const path = [];
-  const visitID = this.nextIndex++;
-  this.cmd("CreateHighlightCircle", visitID, "#FF0000", 0, 0, 20);
-  this.cmd("Step");
-
   const highlight = (line) => {
     for (let i = 0; i < this.codeIDs.length; i++) {
       this.cmd("SetHighlight", this.codeIDs[i], i === line ? 1 : 0);
@@ -327,9 +323,6 @@ PathSumIII.prototype.findPaths = function() {
       highlight(5);
       return 0;
     }
-    this.cmd("SetHighlight", nodeID, 1); // red outline for nodes on current path
-    this.cmd("SetBackgroundColor", nodeID, "#ADD8E6");
-    this.cmd("Step");
     highlight(6);
     const val = this.nodeValue[nodeID];
     cur += val;
@@ -365,8 +358,6 @@ PathSumIII.prototype.findPaths = function() {
     const label = this.sumLabelIDs.pop();
     this.cmd("Delete", label);
     path.pop();
-    this.cmd("SetBackgroundColor", nodeID, "#FFF");
-    this.cmd("SetHighlight", nodeID, 0);
     this.cmd("Step");
     return 0;
   };
@@ -382,8 +373,6 @@ PathSumIII.prototype.findPaths = function() {
   this.cmd("Step");
   highlight(4);
   this.cmd("Step");
-  this.cmd("Delete", visitID);
-
   return this.commands;
 };
 
