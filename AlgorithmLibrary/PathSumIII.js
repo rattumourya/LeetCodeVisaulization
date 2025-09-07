@@ -303,29 +303,32 @@ PathSumIII.prototype.findPaths = function() {
 
   const showPath = (nodes) => {
     const color = this.nextPathColor();
-    let prevCircle = null;
+    let prevAnchor = null;
     for (const nid of nodes) {
       const sx = this.nodeX[nid];
       const sy = this.nodeY[nid];
+      // place star offset from node so it's visible
+      const starX = sx + 20;
+      const starY = sy - 20;
       const starID = this.nextIndex++;
-      this.cmd("CreateLabel", starID, "★", sx - 15, sy - 15, 0);
+      this.cmd("CreateLabel", starID, "★", starX, starY, 0);
       this.cmd("SetForegroundColor", starID, color);
       this.cmd("SetTextStyle", starID, "bold 20");
       this.cmd("Step");
       this.pathHighlightIDs.push({ type: "node", id: starID });
+      // hidden anchor for connecting colored lines through stars
+      const anchorID = this.nextIndex++;
+      this.cmd("CreateCircle", anchorID, "", starX, starY);
+      this.cmd("SetAlpha", anchorID, 0);
+      this.pathHighlightIDs.push({ type: "node", id: anchorID });
 
-      const circleID = this.nextIndex++;
-      this.cmd("CreateCircle", circleID, "", sx, sy);
-      this.cmd("SetAlpha", circleID, 0);
-      this.pathHighlightIDs.push({ type: "node", id: circleID });
-
-      if (prevCircle !== null) {
-        this.cmd("Connect", prevCircle, circleID);
-        this.cmd("SetEdgeColor", prevCircle, circleID, color);
+      if (prevAnchor !== null) {
+        this.cmd("Connect", prevAnchor, anchorID);
+        this.cmd("SetEdgeColor", prevAnchor, anchorID, color);
         this.cmd("Step");
-        this.pathHighlightIDs.push({ type: "edge", from: prevCircle, to: circleID });
+        this.pathHighlightIDs.push({ type: "edge", from: prevAnchor, to: anchorID });
       }
-      prevCircle = circleID;
+      prevAnchor = anchorID;
     }
   };
 
