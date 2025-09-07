@@ -5,7 +5,7 @@
  * - Build tree from level-order input
  * - DFS with prefix sums to count paths equal to target
  * - Control buttons: Build Tree, Find Paths, Prev/Next/Stop/Resume
- * - Each qualifying path is highlighted with animated colored lines
+ * - Each qualifying path is highlighted with colored stars and animated lines
  */
 
 function PathSumIII(am, w, h) { this.init(am, w, h); }
@@ -33,8 +33,9 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-  // IDs for colored path lines for successful paths
+  // IDs for stars and colored path lines for successful paths
   this.pathHighlightIDs = [];
+  this.starCounts = {};
   this.pathIdx = 0;
   // 540x960 canvas sections
   this.sectionDivY1 = 360;
@@ -295,6 +296,7 @@ PathSumIII.prototype.reset = function() {
   this.sumLabelIDs = [];
   this.countLabelID = -1;
   this.pathHighlightIDs = [];
+  this.starCounts = {};
   this.pathIdx = 0;
   this.starCounts = {};
 };
@@ -310,10 +312,12 @@ PathSumIII.prototype.findPaths = function() {
   this.commands = [];
   for (const id of this.sumLabelIDs) this.cmd("Delete", id);
   this.sumLabelIDs = [];
-  for (const edge of this.pathHighlightIDs) {
-    this.cmd("Disconnect", edge.from, edge.to);
+  for (const item of this.pathHighlightIDs) {
+    if (item.type === "edge") this.cmd("Disconnect", item.from, item.to);
+    else this.cmd("Delete", item.id);
   }
   this.pathHighlightIDs = [];
+  this.starCounts = {};
   this.pathIdx = 0;
   this.starCounts = {};
   for (const id in this.nodeValue) {
@@ -330,15 +334,25 @@ PathSumIII.prototype.findPaths = function() {
   };
 
   const showPath = (nodes) => {
-    // Draw straight line segments in a unique color for this path
+    // Draw stars and colored lines for this path
     const color = this.nextPathColor();
     let prev = null;
     for (const nid of nodes) {
+      const count = this.starCounts[nid] || 0;
+      const angle = (Math.PI * 2 * count) / 6;
+      const radius = 20;
+      const sx = this.nodeX[nid] + radius * Math.cos(angle);
+      const sy = this.nodeY[nid] + radius * Math.sin(angle);
+      const starID = this.nextIndex++;
+      this.cmd("CreateLabel", starID, "\u2605", sx, sy, 0);
+      this.cmd("SetForegroundColor", starID, color);
+      this.starCounts[nid] = count + 1;
+      this.pathHighlightIDs.push({ type: "star", id: starID });
+      this.cmd("Step");
       if (prev !== null) {
-        // Thicker straight segment for path highlighting
         this.cmd("Connect", prev, nid, color, 0, true, "", 3);
         this.cmd("Step");
-        this.pathHighlightIDs.push({ from: prev, to: nid });
+        this.pathHighlightIDs.push({ type: "edge", from: prev, to: nid });
       }
       prev = nid;
     }
