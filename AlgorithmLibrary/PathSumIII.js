@@ -307,6 +307,7 @@ PathSumIII.prototype.findPaths = function() {
     const height = maxY - minY + 60;
 
     const loopID = this.nextIndex++;
+    // start at the first node so the loop animates into position
     this.cmd(
       "CreateHighlightOval",
       loopID,
@@ -319,10 +320,13 @@ PathSumIII.prototype.findPaths = function() {
     this.cmd("Step");
     this.cmd("Move", loopID, centerX, centerY);
     this.cmd("Step");
-    this.cmd("SetWidth", loopID, width);
-    this.cmd("Step");
-    this.cmd("SetHeight", loopID, height);
-    this.cmd("Step");
+    // expand the loop in a few steps to mimic free-hand drawing
+    const steps = 6;
+    for (let s = 1; s <= steps; s++) {
+      this.cmd("SetWidth", loopID, (width * s) / steps);
+      this.cmd("SetHeight", loopID, (height * s) / steps);
+      this.cmd("Step");
+    }
     this.pathOvalIDs.push(loopID);
     this.pathIdx++;
   };
