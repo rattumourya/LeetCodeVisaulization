@@ -4,8 +4,8 @@
  * PathSumIII.js - Animated solution for LeetCode 437.
  * - Build tree from level-order input
  * - DFS with prefix sums to count paths equal to target
- * - Control buttons: build tree, find path sum, next, prev, stop, resume
- * - 9:16 canvas layout similar to PathSumII
+ * - Control buttons: Build Tree, Find Paths, Prev/Next/Stop/Resume
+ * - Each qualifying path is highlighted with a unique colored loop
  */
 
 function PathSumIII(am, w, h) { this.init(am, w, h); }
@@ -34,22 +34,17 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.sumLabelIDs = [];
   this.countLabelID = -1;
 
-  // store highlight circles for found paths
+  // highlight circles for successful paths
   this.pathCircleIDs = [];
   this.pathIdx = 0;
   this.pathColors = [
-    "#FFD700", // gold
-    "#00BFFF", // deep sky blue
-    "#FF6347", // tomato
-    "#32CD32", // lime green
-    "#EE82EE", // violet
-    "#FFA500", // orange
-    "#8A2BE2"  // blue violet
+    "#FFD700", "#00BFFF", "#FF6347",
+    "#32CD32", "#EE82EE", "#FFA500", "#8A2BE2"
   ];
 
-  // layout constants for 9:16 canvas (540x960)
-  this.sectionDivY1 = 360; // tree / code divider
-  this.sectionDivY2 = 660; // code / info divider
+  // 540x960 canvas sections
+  this.sectionDivY1 = 360;
+  this.sectionDivY2 = 660;
 };
 
 PathSumIII.prototype.addControls = function() {
@@ -187,7 +182,7 @@ PathSumIII.prototype.setup = function() {
     this.root.id = this.nextIndex++;
     this.cmd("CreateCircle", this.root.id, this.root.val, this.root.x, this.root.y);
     this.cmd("SetForegroundColor", this.root.id, "#000");
-       this.cmd("SetBackgroundColor", this.root.id, "#FFF");
+    this.cmd("SetBackgroundColor", this.root.id, "#FFF");
     this.cmd("Step");
     queue.push(this.root);
   }
@@ -219,7 +214,7 @@ PathSumIII.prototype.setup = function() {
   }
   this.rootID = this.root ? this.root.id : -1;
 
-  // code snippet
+  // code listing
   const code = [
     "function pathSum(root, target){",
     "  let map = {0:1};",
@@ -236,10 +231,10 @@ PathSumIII.prototype.setup = function() {
     "  return res;",
     "}",
   ];
-  const codeX = 540/2 - 200;
-  for (let i=0;i<code.length;i++) {
+  const codeX = 540 / 2 - 200;
+  for (let i = 0; i < code.length; i++) {
     const id = this.nextIndex++;
-    const y = this.sectionDivY1 + 30 + i*20;
+    const y = this.sectionDivY1 + 30 + i * 20;
     this.cmd("CreateLabel", id, code[i], codeX, y, 0);
     this.codeIDs.push(id);
   }
@@ -301,13 +296,22 @@ PathSumIII.prototype.findPaths = function() {
   const showPath = (nodes) => {
     const color = this.pathColors[this.pathIdx % this.pathColors.length];
     const radius = 25 + this.pathIdx * 4;
+    // moving circle to trace the path
+    const moveID = this.nextIndex++;
+    this.cmd("CreateHighlightCircle", moveID, color, this.nodeX[nodes[0]], this.nodeY[nodes[0]], radius);
+    this.cmd("Step");
+    for (let i = 1; i < nodes.length; i++) {
+      const nid = nodes[i];
+      this.cmd("Move", moveID, this.nodeX[nid], this.nodeY[nid]);
+      this.cmd("Step");
+    }
     for (const id of nodes) {
       const circleID = this.nextIndex++;
       this.cmd("CreateHighlightCircle", circleID, color, this.nodeX[id], this.nodeY[id], radius);
       this.pathCircleIDs.push(circleID);
     }
+    this.cmd("Delete", moveID);
     this.pathIdx++;
-    this.cmd("Step");
   };
 
   const dfs = (nodeID, cur) => {
@@ -341,7 +345,7 @@ PathSumIII.prototype.findPaths = function() {
     const x = this.nodeX[nodeID];
     const y = this.nodeY[nodeID] - 40;
     this.cmd("CreateLabel", sumID, "s=" + cur, x, y, 0);
-    this.sumLabelIDs.push(sumID    );
+    this.sumLabelIDs.push(sumID);
     this.cmd("Step");
     highlight(9);
     if (this.leftChild[nodeID] != null) dfs(this.leftChild[nodeID], cur);
