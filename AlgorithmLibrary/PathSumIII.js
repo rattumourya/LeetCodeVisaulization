@@ -284,6 +284,9 @@ PathSumIII.prototype.findPaths = function() {
   let count = 0;
   const prefix = { 0: [-1] };
   const path = [];
+  const visitID = this.nextIndex++;
+  this.cmd("CreateHighlightCircle", visitID, "#FF0000", 0, 0, 20);
+  this.cmd("Step");
 
   const highlight = (line) => {
     for (let i = 0; i < this.codeIDs.length; i++) {
@@ -410,6 +413,7 @@ PathSumIII.prototype.findPaths = function() {
   this.cmd("Step");
   highlight(4);
   this.cmd("Step");
+  this.cmd("Delete", visitID);
 
   return this.commands;
 };
