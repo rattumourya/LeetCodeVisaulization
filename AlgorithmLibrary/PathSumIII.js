@@ -33,9 +33,8 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-
-  // loops for successful paths
-  this.pathOvalIDs = [];
+  // line segments for successful paths
+  this.pathLoopIDs = [];
   this.pathIdx = 0;
   this.pathColors = [
     "#FFD700", "#00BFFF", "#FF6347",
@@ -260,7 +259,7 @@ PathSumIII.prototype.reset = function() {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-  this.pathOvalIDs = [];
+  this.pathLoopIDs = [];
   this.pathIdx = 0;
 };
 
@@ -275,8 +274,10 @@ PathSumIII.prototype.findPaths = function() {
   this.commands = [];
   for (const id of this.sumLabelIDs) this.cmd("Delete", id);
   this.sumLabelIDs = [];
-  for (const id of this.pathOvalIDs) this.cmd("Delete", id);
-  this.pathOvalIDs = [];
+  for (const segs of this.pathLoopIDs) {
+    for (const id of segs) this.cmd("Delete", id);
+  }
+  this.pathLoopIDs = [];
   this.pathIdx = 0;
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
@@ -306,23 +307,31 @@ PathSumIII.prototype.findPaths = function() {
     const centerY = (minY + maxY) / 2;
     const width = maxX - minX;
     const height = maxY - minY;
-
-    const loopID = this.nextIndex++;
-    this.cmd(
-      "CreateHighlightOval",
-      loopID,
-      color,
-      this.nodeX[nodes[0]],
-      this.nodeY[nodes[0]],
-      0,
-      0
-    );
-    this.cmd("Move", loopID, centerX, centerY);
-    this.cmd("SetWidth", loopID, width);
-    this.cmd("SetHeight", loopID, height);
+    const steps = 20;
+    const penID = this.nextIndex++;
+    let angle = 0;
+    const startX = centerX + (width / 2) * Math.cos(angle);
+    const startY = centerY + (height / 2) * Math.sin(angle);
+    this.cmd("CreateHighlightCircle", penID, color, startX, startY, 5);
     this.cmd("Step");
-    this.pathOvalIDs.push(loopID);
-
+    let prevX = startX;
+    let prevY = startY;
+    const segIDs = [];
+    for (let i = 1; i <= steps; i++) {
+      angle = (2 * Math.PI * i) / steps;
+      const x = centerX + (width / 2) * Math.cos(angle);
+      const y = centerY + (height / 2) * Math.sin(angle);
+      const lineID = this.nextIndex++;
+      this.cmd("CreateLine", lineID, prevX, prevY, x, y);
+      this.cmd("SetForegroundColor", lineID, color);
+      this.cmd("Move", penID, x, y);
+      this.cmd("Step");
+      segIDs.push(lineID);
+      prevX = x;
+      prevY = y;
+    }
+    this.cmd("Delete", penID);
+    this.pathLoopIDs.push(segIDs);
     this.pathIdx++;
   };
 
