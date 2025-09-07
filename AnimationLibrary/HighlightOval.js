@@ -36,6 +36,7 @@ var HighlightOval = function(objectID, color, width, height)
         this.x = 0;
         this.y = 0;
         this.alpha = 1;
+        this.angle = 0;
 }
 
 HighlightOval.prototype = new AnimatedObject();
@@ -49,6 +50,11 @@ HighlightOval.prototype.setWidth = function(w)
 HighlightOval.prototype.setHeight = function(h)
 {
         this.h = h;
+}
+
+HighlightOval.prototype.setAngle = function(a)
+{
+        this.angle = a;
 }
 
 HighlightOval.prototype.getWidth = function()
@@ -67,17 +73,17 @@ HighlightOval.prototype.draw = function(ctx)
         ctx.strokeStyle = this.foregroundColor;
         ctx.lineWidth = this.thickness;
         ctx.beginPath();
-        ctx.ellipse(this.x, this.y, this.w/2, this.h/2, 0, 0, Math.PI*2, true);
+        ctx.ellipse(this.x, this.y, this.w/2, this.h/2, this.angle, 0, Math.PI*2, true);
         ctx.closePath();
         ctx.stroke();
 }
 
 HighlightOval.prototype.createUndoDelete = function()
 {
-        return new UndoDeleteHighlightOval(this.objectID, this.x, this.y, this.foregroundColor, this.w, this.h, this.layer, this.alpha);
+        return new UndoDeleteHighlightOval(this.objectID, this.x, this.y, this.foregroundColor, this.w, this.h, this.angle, this.layer, this.alpha);
 }
 
-function UndoDeleteHighlightOval(objectID, x, y, color, w, h, layer, alpha)
+function UndoDeleteHighlightOval(objectID, x, y, color, w, h, angle, layer, alpha)
 {
         this.objectID = objectID;
         this.x = x;
@@ -85,6 +91,7 @@ function UndoDeleteHighlightOval(objectID, x, y, color, w, h, layer, alpha)
         this.color = color;
         this.w = w;
         this.h = h;
+        this.angle = angle;
         this.layer = layer;
         this.alpha = alpha;
 }
@@ -94,7 +101,7 @@ UndoDeleteHighlightOval.prototype.constructor = UndoDeleteHighlightOval;
 
 UndoDeleteHighlightOval.prototype.undoInitialStep = function(world)
 {
-        world.addHighlightOvalObject(this.objectID, this.color, this.w, this.h);
+        world.addHighlightOvalObject(this.objectID, this.color, this.w, this.h, this.angle);
         world.setLayer(this.objectID, this.layer);
         world.setNodePosition(this.objectID, this.x, this.y);
         world.setAlpha(this.objectID, this.alpha);
