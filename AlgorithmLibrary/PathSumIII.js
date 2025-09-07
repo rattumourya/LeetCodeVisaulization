@@ -36,14 +36,16 @@ PathSumIII.prototype.init = function(am, w, h) {
   // IDs for star markers and connecting lines for successful paths
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
-  this.pathColors = [
-    "#00BFFF", "#FF0000", "#32CD32",
-    "#FFA500", "#EE82EE", "#FFD700", "#8A2BE2"
-  ];
-
   // 540x960 canvas sections
   this.sectionDivY1 = 360;
   this.sectionDivY2 = 660;
+};
+
+// Generate a new distinct color for each discovered path
+PathSumIII.prototype.nextPathColor = function() {
+  const hue = (this.pathIdx * 137) % 360; // use golden angle for spacing
+  this.pathIdx++;
+  return `hsl(${hue}, 70%, 45%)`;
 };
 
 PathSumIII.prototype.addControls = function() {
@@ -274,7 +276,16 @@ PathSumIII.prototype.findPaths = function() {
   this.commands = [];
   for (const id of this.sumLabelIDs) this.cmd("Delete", id);
   this.sumLabelIDs = [];
-  for (const id of this.pathHighlightIDs) this.cmd("Delete", id);
+  for (const item of this.pathHighlightIDs) {
+    if (item.type === "edge") {
+      this.cmd("Disconnect", item.from, item.to);
+    }
+  }
+  for (const item of this.pathHighlightIDs) {
+    if (item.type === "node") {
+      this.cmd("Delete", item.id);
+    }
+  }
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
   for (const id in this.nodeValue) {
@@ -291,29 +302,31 @@ PathSumIII.prototype.findPaths = function() {
   };
 
   const showPath = (nodes) => {
-    const color = this.pathColors[this.pathIdx % this.pathColors.length];
-    let prevX = null;
-    let prevY = null;
+    const color = this.nextPathColor();
+    let prevCircle = null;
     for (const nid of nodes) {
       const sx = this.nodeX[nid];
       const sy = this.nodeY[nid];
       const starID = this.nextIndex++;
-      this.cmd("CreateLabel", starID, "★", sx, sy, 0);
+      this.cmd("CreateLabel", starID, "★", sx - 15, sy - 15, 0);
       this.cmd("SetForegroundColor", starID, color);
       this.cmd("SetTextStyle", starID, "bold 20");
       this.cmd("Step");
-      this.pathHighlightIDs.push(starID);
-      if (prevX !== null) {
-        const lineID = this.nextIndex++;
-        this.cmd("CreateLine", lineID, prevX, prevY, sx, sy);
-        this.cmd("SetForegroundColor", lineID, color);
+      this.pathHighlightIDs.push({ type: "node", id: starID });
+
+      const circleID = this.nextIndex++;
+      this.cmd("CreateCircle", circleID, "", sx, sy);
+      this.cmd("SetAlpha", circleID, 0);
+      this.pathHighlightIDs.push({ type: "node", id: circleID });
+
+      if (prevCircle !== null) {
+        this.cmd("Connect", prevCircle, circleID);
+        this.cmd("SetEdgeColor", prevCircle, circleID, color);
         this.cmd("Step");
-        this.pathHighlightIDs.push(lineID);
+        this.pathHighlightIDs.push({ type: "edge", from: prevCircle, to: circleID });
       }
-      prevX = sx;
-      prevY = sy;
+      prevCircle = circleID;
     }
-    this.pathIdx++;
   };
 
   const dfs = (nodeID, cur) => {
