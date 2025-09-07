@@ -141,15 +141,6 @@ function ObjectManager()
                 this.Nodes[objectID] = newNode;
         }
 
-        this.addHighlightOvalObject = function(objectID, objectColor, width, height)
-        {
-                if (this.Nodes[objectID] != null && this.Nodes[objectID] != undefined)
-                {
-                    throw "addHighlightOvalObject:Object with same ID (" + String(objectID) + ") already Exists!"
-                }
-                var newNode = new HighlightOval(objectID, objectColor, width, height)
-                this.Nodes[objectID] = newNode;
-        }
 
         this.setEdgeAlpha = function(fromID, toID, alphaVal)
         {

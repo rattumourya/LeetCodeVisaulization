@@ -796,21 +796,6 @@ function AnimationManager(objectManager)
 					this.animatedObjects.removeObject(objectID);
 				}
 			}
-                        else if (nextCommand[0].toUpperCase() == "CREATEHIGHLIGHTOVAL")
-                        {
-                                var id = parseInt(nextCommand[1]);
-                                var color = this.parseColor(nextCommand[2]);
-                                var width = (nextCommand.length > 5) ? parseFloat(nextCommand[5]) : 40;
-                                var height = (nextCommand.length > 6) ? parseFloat(nextCommand[6]) : width;
-                                this.animatedObjects.addHighlightOvalObject(id, color, width, height);
-                                if (nextCommand.length > 4)
-                                {
-                                        this.animatedObjects.setNodePosition(id, parseInt(nextCommand[3]), parseInt(nextCommand[4]));
-                                }
-                                undoBlock.push(new UndoCreate(id));
-
-
-                        }
                         else if (nextCommand[0].toUpperCase() == "CREATEHIGHLIGHTCIRCLE")
                         {
                                 if (nextCommand.length > 5)
