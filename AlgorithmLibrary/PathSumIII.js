@@ -34,8 +34,8 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.sumLabelIDs = [];
   this.countLabelID = -1;
 
-  // highlight circles for successful paths
-  this.pathCircleIDs = [];
+  // loops for successful paths
+  this.pathOvalIDs = [];
   this.pathIdx = 0;
   this.pathColors = [
     "#FFD700", "#00BFFF", "#FF6347",
@@ -260,7 +260,7 @@ PathSumIII.prototype.reset = function() {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-  this.pathCircleIDs = [];
+  this.pathOvalIDs = [];
   this.pathIdx = 0;
 };
 
@@ -275,12 +275,11 @@ PathSumIII.prototype.findPaths = function() {
   this.commands = [];
   for (const id of this.sumLabelIDs) this.cmd("Delete", id);
   this.sumLabelIDs = [];
-  for (const id of this.pathCircleIDs) this.cmd("Delete", id);
-  this.pathCircleIDs = [];
+  for (const id of this.pathOvalIDs) this.cmd("Delete", id);
+  this.pathOvalIDs = [];
   this.pathIdx = 0;
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
-    this.cmd("SetHighlight", parseInt(id), 0);
   }
   this.cmd("SetText", this.countLabelID, "Count: 0");
   let count = 0;
@@ -295,22 +294,36 @@ PathSumIII.prototype.findPaths = function() {
 
   const showPath = (nodes) => {
     const color = this.pathColors[this.pathIdx % this.pathColors.length];
-    const radius = 25 + this.pathIdx * 4;
-    // moving circle to trace the path
-    const moveID = this.nextIndex++;
-    this.cmd("CreateHighlightCircle", moveID, color, this.nodeX[nodes[0]], this.nodeY[nodes[0]], radius);
+
+    const xs = nodes.map((id) => this.nodeX[id]);
+    const ys = nodes.map((id) => this.nodeY[id]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const width = Math.max(maxX - minX, 40) + 20;
+    const height = Math.max(maxY - minY, 40) + 80;
+
+    const loopID = this.nextIndex++;
+    this.cmd(
+      "CreateHighlightOval",
+      loopID,
+      color,
+      this.nodeX[nodes[0]],
+      this.nodeY[nodes[0]],
+      10,
+      10
+    );
     this.cmd("Step");
-    for (let i = 1; i < nodes.length; i++) {
-      const nid = nodes[i];
-      this.cmd("Move", moveID, this.nodeX[nid], this.nodeY[nid]);
-      this.cmd("Step");
-    }
-    for (const id of nodes) {
-      const circleID = this.nextIndex++;
-      this.cmd("CreateHighlightCircle", circleID, color, this.nodeX[id], this.nodeY[id], radius);
-      this.pathCircleIDs.push(circleID);
-    }
-    this.cmd("Delete", moveID);
+    this.cmd("SetWidth", loopID, width);
+    this.cmd("Step");
+    this.cmd("SetHeight", loopID, height);
+    this.cmd("Step");
+    this.cmd("Move", loopID, centerX, centerY);
+    this.cmd("Step");
+    this.pathOvalIDs.push(loopID);
     this.pathIdx++;
   };
 
@@ -322,7 +335,6 @@ PathSumIII.prototype.findPaths = function() {
       return 0;
     }
     highlight(6);
-    this.cmd("SetHighlight", nodeID, 1);
     const val = this.nodeValue[nodeID];
     cur += val;
     path.push(nodeID);
@@ -357,7 +369,6 @@ PathSumIII.prototype.findPaths = function() {
     const label = this.sumLabelIDs.pop();
     this.cmd("Delete", label);
     path.pop();
-    this.cmd("SetHighlight", nodeID, 0);
     this.cmd("SetBackgroundColor", nodeID, "#FFF");
     this.cmd("Step");
     return 0;

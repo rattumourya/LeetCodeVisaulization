@@ -131,19 +131,29 @@ function ObjectManager()
 	}
 
 	
-	this.addHighlightCircleObject = function(objectID, objectColor, radius)
-	{
-		if (this.Nodes[objectID] != null && this.Nodes[objectID] != undefined)
-		{
-  	            throw "addHighlightCircleObject:Object with same ID (" + String(objectID) + ") already Exists!"
-		}
-		var newNode = new HighlightCircle(objectID, objectColor, radius)
-		this.Nodes[objectID] = newNode;		
-	}
-	
-	this.setEdgeAlpha = function(fromID, toID, alphaVal)
-	{
-		var oldAlpha = 1.0; 
+        this.addHighlightCircleObject = function(objectID, objectColor, radius)
+        {
+                if (this.Nodes[objectID] != null && this.Nodes[objectID] != undefined)
+                {
+                    throw "addHighlightCircleObject:Object with same ID (" + String(objectID) + ") already Exists!"
+                }
+                var newNode = new HighlightCircle(objectID, objectColor, radius)
+                this.Nodes[objectID] = newNode;
+        }
+
+        this.addHighlightOvalObject = function(objectID, objectColor, width, height)
+        {
+                if (this.Nodes[objectID] != null && this.Nodes[objectID] != undefined)
+                {
+                    throw "addHighlightOvalObject:Object with same ID (" + String(objectID) + ") already Exists!"
+                }
+                var newNode = new HighlightOval(objectID, objectColor, width, height)
+                this.Nodes[objectID] = newNode;
+        }
+
+        this.setEdgeAlpha = function(fromID, toID, alphaVal)
+        {
+                var oldAlpha = 1.0;
 		if (this.Edges[fromID] != null &&
 			this.Edges[fromID] != undefined)
 		{
