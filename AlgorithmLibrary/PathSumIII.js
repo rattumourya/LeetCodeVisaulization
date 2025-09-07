@@ -322,6 +322,7 @@ PathSumIII.prototype.findPaths = function() {
     this.cmd("SetHeight", loopID, height);
     this.cmd("Step");
     this.pathOvalIDs.push(loopID);
+
     this.pathIdx++;
   };
 
