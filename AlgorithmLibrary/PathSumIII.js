@@ -302,7 +302,8 @@ PathSumIII.prototype.findPaths = function() {
     let prev = null;
     for (const nid of nodes) {
       if (prev !== null) {
-        this.cmd("Connect", prev, nid, color, 0, true, "", 0);
+        // Thicker straight segment for path highlighting
+        this.cmd("Connect", prev, nid, color, 0, true, "", 3);
         this.cmd("Step");
         this.pathHighlightIDs.push({ from: prev, to: nid });
       }
