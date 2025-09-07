@@ -33,7 +33,6 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-
   // line segments for successful paths
   this.pathLoopIDs = [];
   this.pathIdx = 0;
@@ -296,7 +295,6 @@ PathSumIII.prototype.findPaths = function() {
 
   const showPath = (nodes) => {
     const color = this.pathColors[this.pathIdx % this.pathColors.length];
-
     // gather node coordinates
     const xs = nodes.map((id) => this.nodeX[id]);
     const ys = nodes.map((id) => this.nodeY[id]);
