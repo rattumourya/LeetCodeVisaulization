@@ -295,32 +295,61 @@ PathSumIII.prototype.findPaths = function() {
 
   const showPath = (nodes) => {
     const color = this.pathColors[this.pathIdx % this.pathColors.length];
-
+    // gather node coordinates
     const xs = nodes.map((id) => this.nodeX[id]);
     const ys = nodes.map((id) => this.nodeY[id]);
+
+    // center of ellipse at average position
+    const centerX = xs.reduce((a, b) => a + b, 0) / xs.length;
+    const centerY = ys.reduce((a, b) => a + b, 0) / ys.length;
+
+    // orientation approximated by line from first to last node
+    let theta = 0;
+    if (nodes.length > 1) {
+      const dx = xs[xs.length - 1] - xs[0];
+      const dy = ys[ys.length - 1] - ys[0];
+      theta = Math.atan2(dy, dx);
+    }
+    const cosT = Math.cos(theta);
+    const sinT = Math.sin(theta);
+
+    // rotate points into local frame to get tight bounds
     const pad = 15;
-    const minX = Math.min(...xs) - pad;
-    const maxX = Math.max(...xs) + pad;
-    const minY = Math.min(...ys) - pad;
-    const maxY = Math.max(...ys) + pad;
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
+    const localXs = [];
+    const localYs = [];
+    for (let i = 0; i < xs.length; i++) {
+      const dx = xs[i] - centerX;
+      const dy = ys[i] - centerY;
+      const lx = dx * cosT + dy * sinT;
+      const ly = -dx * sinT + dy * cosT;
+      localXs.push(lx);
+      localYs.push(ly);
+    }
+    const minX = Math.min(...localXs) - pad;
+    const maxX = Math.max(...localXs) + pad;
+    const minY = Math.min(...localYs) - pad;
+    const maxY = Math.max(...localYs) + pad;
     const width = maxX - minX;
     const height = maxY - minY;
-    const steps = 20;
+
+    const steps = 40;
     const penID = this.nextIndex++;
-    let angle = 0;
-    const startX = centerX + (width / 2) * Math.cos(angle);
-    const startY = centerY + (height / 2) * Math.sin(angle);
+    let t = 0;
+    const startX =
+      centerX + cosT * (width / 2 * Math.cos(t)) - sinT * (height / 2 * Math.sin(t));
+    const startY =
+      centerY + sinT * (width / 2 * Math.cos(t)) + cosT * (height / 2 * Math.sin(t));
     this.cmd("CreateHighlightCircle", penID, color, startX, startY, 5);
     this.cmd("Step");
     let prevX = startX;
     let prevY = startY;
     const segIDs = [];
     for (let i = 1; i <= steps; i++) {
-      angle = (2 * Math.PI * i) / steps;
-      const x = centerX + (width / 2) * Math.cos(angle);
-      const y = centerY + (height / 2) * Math.sin(angle);
+      t = (2 * Math.PI * i) / steps;
+      const x =
+        centerX + cosT * (width / 2 * Math.cos(t)) - sinT * (height / 2 * Math.sin(t));
+      const y =
+        centerY + sinT * (width / 2 * Math.cos(t)) + cosT * (height / 2 * Math.sin(t));
       const lineID = this.nextIndex++;
       this.cmd("CreateLine", lineID, prevX, prevY, x, y);
       this.cmd("SetForegroundColor", lineID, color);
