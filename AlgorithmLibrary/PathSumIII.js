@@ -41,11 +41,25 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.sectionDivY2 = 660;
 };
 
-// Generate a new distinct color for each discovered path
-PathSumIII.prototype.nextPathColor = function() {
+// Generate a unique star symbol and matching color for each discovered path
+PathSumIII.prototype.nextPathStyle = function() {
   const hue = (this.pathIdx * 137) % 360; // use golden angle for spacing
+  const starShapes = [
+    "★",
+    "✦",
+    "✶",
+    "✹",
+    "✸",
+    "✺",
+    "✻",
+    "✼",
+    "✽",
+    "✾",
+    "✿"
+  ];
+  const star = starShapes[this.pathIdx % starShapes.length];
   this.pathIdx++;
-  return `hsl(${hue}, 70%, 45%)`;
+  return { color: `hsl(${hue}, 70%, 45%)`, star };
 };
 
 PathSumIII.prototype.addControls = function() {
@@ -302,7 +316,9 @@ PathSumIII.prototype.findPaths = function() {
   };
 
   const showPath = (nodes) => {
-    const color = this.nextPathColor();
+    const style = this.nextPathStyle();
+    const color = style.color;
+    const starGlyph = style.star;
     let prevAnchor = null;
     let prevX = null;
     for (const nid of nodes) {
@@ -312,7 +328,7 @@ PathSumIII.prototype.findPaths = function() {
       const starX = sx + 20;
       const starY = sy - 20;
       const starID = this.nextIndex++;
-      this.cmd("CreateLabel", starID, "★", starX, starY, 0);
+      this.cmd("CreateLabel", starID, starGlyph, starX, starY, 0);
       this.cmd("SetForegroundColor", starID, color);
       this.cmd("SetTextStyle", starID, "bold 20");
       this.cmd("Step");
