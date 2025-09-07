@@ -814,8 +814,22 @@ function AnimationManager(objectManager)
 
 
                         }
-			else if (nextCommand[0].toUpperCase() == "CREATELABEL")
-			{
+                        else if (nextCommand[0].toUpperCase() == "CREATEHIGHLIGHTOVAL")
+                        {
+                                this.animatedObjects.addHighlightOvalObject(
+                                        parseInt(nextCommand[1]),
+                                        this.parseColor(nextCommand[2]),
+                                        parseFloat(nextCommand[5]),
+                                        parseFloat(nextCommand[6]),
+                                        nextCommand.length > 7 ? parseFloat(nextCommand[7]) : 0
+                                );
+                                this.animatedObjects.setNodePosition(parseInt(nextCommand[1]), parseInt(nextCommand[3]), parseInt(nextCommand[4]));
+                                undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
+
+
+                        }
+                        else if (nextCommand[0].toUpperCase() == "CREATELABEL")
+                        {
 				if (nextCommand.length == 6)
 				{
 					this.animatedObjects.addLabelObject(parseInt(nextCommand[1]), nextCommand[2], this.parseBool(nextCommand[5]));						
