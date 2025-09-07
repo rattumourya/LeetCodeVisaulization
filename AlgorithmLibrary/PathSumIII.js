@@ -5,7 +5,7 @@
  * - Build tree from level-order input
  * - DFS with prefix sums to count paths equal to target
  * - Control buttons: Build Tree, Find Paths, Prev/Next/Stop/Resume
- * - Each qualifying path is highlighted with colored stars and parallel animated lines
+ * - Each qualifying path is highlighted with an irregular, colored curve surrounding its nodes
  */
 
 function PathSumIII(am, w, h) { this.init(am, w, h); }
@@ -33,7 +33,7 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-  // IDs for stars, anchor circles, and colored path lines for successful paths
+  // IDs for anchor circles and colored curves for successful paths
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
   // 540x960 canvas sections
@@ -41,11 +41,9 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.sectionDivY2 = 660;
 };
 
-// Generate a distinct color and angle offset for each discovered path.
-// The angle keeps stars and lines for different paths separated, while the
-// color distinguishes them visually.  Both are spaced using the golden angle
-// for even distribution.
-PathSumIII.prototype.nextPathStyle = function() {
+// Generate a distinct color for each discovered path using the golden angle
+// to evenly distribute hues around the color wheel.
+PathSumIII.prototype.nextPathColor = function() {
   const idx = this.pathIdx++;
   const hue = (idx * 137) % 360;
   const s = 0.7;
@@ -79,9 +77,7 @@ PathSumIII.prototype.nextPathStyle = function() {
     const h = Math.round((v + m) * 255).toString(16);
     return h.length === 1 ? "0" + h : h;
   };
-  const color = "#" + toHex(r) + toHex(g) + toHex(b);
-  const angle = ((idx * 137) % 360) * (Math.PI / 180);
-  return { color, angle };
+  return "#" + toHex(r) + toHex(g) + toHex(b);
 };
 
 PathSumIII.prototype.addControls = function() {
@@ -334,32 +330,45 @@ PathSumIII.prototype.findPaths = function() {
   };
 
   const showPath = (nodes) => {
-    // Draw stars and a parallel colored line for this path
-    const { color, angle } = this.nextPathStyle();
-    const radius = 20;
-    const dx = radius * Math.cos(angle);
-    const dy = radius * Math.sin(angle);
+    // Draw an irregular closed curve around the nodes in this path
+    const color = this.nextPathColor();
     const anchors = [];
+    let cx = 0,
+      cy = 0;
     for (const nid of nodes) {
-      const sx = this.nodeX[nid] + dx;
-      const sy = this.nodeY[nid] + dy;
-      const starID = this.nextIndex++;
-      this.cmd("CreateLabel", starID, "\u2605", sx, sy, 0);
-      this.cmd("SetForegroundColor", starID, color);
-      this.pathHighlightIDs.push({ type: "star", id: starID });
-      const anchorID = this.nextIndex++;
-      this.cmd("CreateCircle", anchorID, "", sx, sy);
-      this.cmd("SetForegroundColor", anchorID, color);
-      this.cmd("SetBackgroundColor", anchorID, color);
-      this.cmd("SetAlpha", anchorID, 0);
-      anchors.push(anchorID);
-      this.pathHighlightIDs.push({ type: "anchor", id: anchorID });
+      cx += this.nodeX[nid];
+      cy += this.nodeY[nid];
+    }
+    cx /= nodes.length;
+    cy /= nodes.length;
+    const pts = [];
+    for (let i = 0; i < nodes.length; i++) {
+      const nid = nodes[i];
+      const angle = Math.atan2(this.nodeY[nid] - cy, this.nodeX[nid] - cx);
+      const jitter = 0.4 * Math.sin(i + this.pathIdx);
+      const dist = 30 + 5 * Math.cos(i);
+      const sx = this.nodeX[nid] + dist * Math.cos(angle + jitter);
+      const sy = this.nodeY[nid] + dist * Math.sin(angle + jitter);
+      pts.push({ angle, sx, sy });
+    }
+    pts.sort((a, b) => a.angle - b.angle);
+    for (const p of pts) {
+      const aID = this.nextIndex++;
+      this.cmd("CreateCircle", aID, "", p.sx, p.sy);
+      this.cmd("SetForegroundColor", aID, color);
+      this.cmd("SetBackgroundColor", aID, color);
+      this.cmd("SetAlpha", aID, 0);
+      anchors.push(aID);
+      this.pathHighlightIDs.push({ type: "anchor", id: aID });
       this.cmd("Step");
     }
-    for (let i = 1; i < anchors.length; i++) {
-      this.cmd("Connect", anchors[i - 1], anchors[i], color, 0, true, "", 3);
+    for (let i = 0; i < anchors.length; i++) {
+      const from = anchors[i];
+      const to = anchors[(i + 1) % anchors.length];
+      const curve = 0.3 * Math.sin(i + this.pathIdx);
+      this.cmd("Connect", from, to, color, curve, true, "", 3);
+      this.pathHighlightIDs.push({ type: "edge", from, to });
       this.cmd("Step");
-      this.pathHighlightIDs.push({ type: "edge", from: anchors[i - 1], to: anchors[i] });
     }
   };
 
