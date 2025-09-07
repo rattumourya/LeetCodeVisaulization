@@ -33,7 +33,6 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-
   // line segments for successful paths
   this.pathLoopIDs = [];
   this.pathIdx = 0;
@@ -308,7 +307,6 @@ PathSumIII.prototype.findPaths = function() {
     const centerY = (minY + maxY) / 2;
     const width = maxX - minX;
     const height = maxY - minY;
-
     const steps = 20;
     const penID = this.nextIndex++;
     let angle = 0;
