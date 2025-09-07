@@ -339,7 +339,6 @@ PathSumIII.prototype.findPaths = function() {
       this.cmd("Step");
       this.pathOvalIDs.push(lineID);
     }
-
     this.cmd("Delete", penID);
     this.pathIdx++;
   };
