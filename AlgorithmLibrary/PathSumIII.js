@@ -34,6 +34,19 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.sumLabelIDs = [];
   this.countLabelID = -1;
 
+  // store highlight circles for found paths
+  this.pathCircleIDs = [];
+  this.pathIdx = 0;
+  this.pathColors = [
+    "#FFD700", // gold
+    "#00BFFF", // deep sky blue
+    "#FF6347", // tomato
+    "#32CD32", // lime green
+    "#EE82EE", // violet
+    "#FFA500", // orange
+    "#8A2BE2"  // blue violet
+  ];
+
   // layout constants for 9:16 canvas (540x960)
   this.sectionDivY1 = 360; // tree / code divider
   this.sectionDivY2 = 660; // code / info divider
@@ -174,7 +187,7 @@ PathSumIII.prototype.setup = function() {
     this.root.id = this.nextIndex++;
     this.cmd("CreateCircle", this.root.id, this.root.val, this.root.x, this.root.y);
     this.cmd("SetForegroundColor", this.root.id, "#000");
-    this.cmd("SetBackgroundColor", this.root.id, "#FFF");
+       this.cmd("SetBackgroundColor", this.root.id, "#FFF");
     this.cmd("Step");
     queue.push(this.root);
   }
@@ -252,6 +265,8 @@ PathSumIII.prototype.reset = function() {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
+  this.pathCircleIDs = [];
+  this.pathIdx = 0;
 };
 
 PathSumIII.prototype.startCallback = function() {
@@ -265,18 +280,34 @@ PathSumIII.prototype.findPaths = function() {
   this.commands = [];
   for (const id of this.sumLabelIDs) this.cmd("Delete", id);
   this.sumLabelIDs = [];
+  for (const id of this.pathCircleIDs) this.cmd("Delete", id);
+  this.pathCircleIDs = [];
+  this.pathIdx = 0;
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
     this.cmd("SetHighlight", parseInt(id), 0);
   }
   this.cmd("SetText", this.countLabelID, "Count: 0");
   let count = 0;
-  const prefix = {0:1};
+  const prefix = { 0: [-1] };
+  const path = [];
 
-  const highlight = line => {
-    for (let i=0;i<this.codeIDs.length;i++) {
-      this.cmd("SetHighlight", this.codeIDs[i], i===line?1:0);
+  const highlight = (line) => {
+    for (let i = 0; i < this.codeIDs.length; i++) {
+      this.cmd("SetHighlight", this.codeIDs[i], i === line ? 1 : 0);
     }
+  };
+
+  const showPath = (nodes) => {
+    const color = this.pathColors[this.pathIdx % this.pathColors.length];
+    const radius = 25 + this.pathIdx * 4;
+    for (const id of nodes) {
+      const circleID = this.nextIndex++;
+      this.cmd("CreateHighlightCircle", circleID, color, this.nodeX[id], this.nodeY[id], radius);
+      this.pathCircleIDs.push(circleID);
+    }
+    this.pathIdx++;
+    this.cmd("Step");
   };
 
   const dfs = (nodeID, cur) => {
@@ -290,31 +321,40 @@ PathSumIII.prototype.findPaths = function() {
     this.cmd("SetHighlight", nodeID, 1);
     const val = this.nodeValue[nodeID];
     cur += val;
+    path.push(nodeID);
     this.cmd("Step");
     highlight(7);
     const need = cur - this.target;
     if (prefix[need]) {
-      count += prefix[need];
+      for (const idx of prefix[need]) {
+        const nodes = path.slice(idx + 1);
+        showPath(nodes);
+        count++;
+      }
       this.cmd("SetText", this.countLabelID, "Count: " + count);
     }
     this.cmd("Step");
     highlight(8);
-    prefix[cur] = (prefix[cur]||0) + 1;
+    if (!prefix[cur]) prefix[cur] = [];
+    prefix[cur].push(path.length - 1);
     const sumID = this.nextIndex++;
     const x = this.nodeX[nodeID];
-    const y = this.nodeY[nodeID]-40;
-    this.cmd("CreateLabel", sumID, "s="+cur, x, y, 0);
-    this.sumLabelIDs.push(sumID);
+    const y = this.nodeY[nodeID] - 40;
+    this.cmd("CreateLabel", sumID, "s=" + cur, x, y, 0);
+    this.sumLabelIDs.push(sumID    );
     this.cmd("Step");
     highlight(9);
     if (this.leftChild[nodeID] != null) dfs(this.leftChild[nodeID], cur);
     highlight(10);
     if (this.rightChild[nodeID] != null) dfs(this.rightChild[nodeID], cur);
     highlight(11);
-    prefix[cur]--;
+    prefix[cur].pop();
+    if (prefix[cur].length === 0) delete prefix[cur];
     const label = this.sumLabelIDs.pop();
     this.cmd("Delete", label);
+    path.pop();
     this.cmd("SetHighlight", nodeID, 0);
+    this.cmd("SetBackgroundColor", nodeID, "#FFF");
     this.cmd("Step");
     return 0;
   };
@@ -363,4 +403,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new PathSumIII(animManag, canvas.width, canvas.height);
 }
-
