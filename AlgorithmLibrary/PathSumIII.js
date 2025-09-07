@@ -5,7 +5,7 @@
  * - Build tree from level-order input
  * - DFS with prefix sums to count paths equal to target
  * - Control buttons: Build Tree, Find Paths, Prev/Next/Stop/Resume
- * - Each qualifying path is highlighted with colored stars and lines
+ * - Each qualifying path is highlighted with animated colored lines
  */
 
 function PathSumIII(am, w, h) { this.init(am, w, h); }
@@ -33,35 +33,19 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-  // IDs for star markers and connecting lines for successful paths
+  // IDs for colored path lines for successful paths
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
-  // Track how many stars have been placed at each node to offset them uniquely
-  this.starCounts = {};
   // 540x960 canvas sections
   this.sectionDivY1 = 360;
   this.sectionDivY2 = 660;
 };
 
-// Generate a unique star symbol and matching color for each discovered path
-PathSumIII.prototype.nextPathStyle = function() {
+// Generate a unique color for each discovered path
+PathSumIII.prototype.nextPathColor = function() {
   const hue = (this.pathIdx * 137) % 360; // use golden angle for spacing
-  const starShapes = [
-    "★",
-    "✦",
-    "✶",
-    "✹",
-    "✸",
-    "✺",
-    "✻",
-    "✼",
-    "✽",
-    "✾",
-    "✿"
-  ];
-  const star = starShapes[this.pathIdx % starShapes.length];
   this.pathIdx++;
-  return { color: `hsl(${hue}, 70%, 45%)`, star };
+  return `hsl(${hue}, 70%, 45%)`;
 };
 
 PathSumIII.prototype.addControls = function() {
@@ -293,15 +277,8 @@ PathSumIII.prototype.findPaths = function() {
   this.commands = [];
   for (const id of this.sumLabelIDs) this.cmd("Delete", id);
   this.sumLabelIDs = [];
-  for (const item of this.pathHighlightIDs) {
-    if (item.type === "edge") {
-      this.cmd("Disconnect", item.from, item.to);
-    }
-  }
-  for (const item of this.pathHighlightIDs) {
-    if (item.type === "node") {
-      this.cmd("Delete", item.id);
-    }
+  for (const edge of this.pathHighlightIDs) {
+    this.cmd("Disconnect", edge.from, edge.to);
   }
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
@@ -320,41 +297,16 @@ PathSumIII.prototype.findPaths = function() {
   };
 
   const showPath = (nodes) => {
-    const style = this.nextPathStyle();
-    const color = style.color;
-    const starGlyph = style.star;
-    let prevAnchor = null;
-    let prevX = null;
+    const color = this.nextPathColor();
+    let prev = null;
     for (const nid of nodes) {
-      const sx = this.nodeX[nid];
-      const sy = this.nodeY[nid];
-      const idx = this.starCounts[nid] || 0;
-      const radius = 25;
-      const angle = (idx * 45 * Math.PI) / 180;
-      const starX = sx + radius * Math.cos(angle);
-      const starY = sy - radius * Math.sin(angle);
-      this.starCounts[nid] = idx + 1;
-      const starID = this.nextIndex++;
-      this.cmd("CreateLabel", starID, starGlyph, starX, starY, 0);
-      this.cmd("SetTextColor", starID, color);
-      this.cmd("SetTextStyle", starID, "bold 20");
-      this.cmd("Step");
-      this.pathHighlightIDs.push({ type: "node", id: starID });
-
-      // hidden anchor for connecting colored lines through stars
-      const anchorID = this.nextIndex++;
-      this.cmd("CreateCircle", anchorID, "", starX, starY);
-      this.cmd("SetAlpha", anchorID, 0);
-      this.pathHighlightIDs.push({ type: "node", id: anchorID });
-
-      if (prevAnchor !== null) {
-        const curve = prevX !== null && starX < prevX ? -0.2 : 0.2;
-        this.cmd("Connect", prevAnchor, anchorID, color, curve, true, "", 0);
+      if (prev !== null) {
+        const curve = this.nodeX[prev] > this.nodeX[nid] ? -0.2 : 0.2;
+        this.cmd("Connect", prev, nid, color, curve, true, "", 0);
         this.cmd("Step");
-        this.pathHighlightIDs.push({ type: "edge", from: prevAnchor, to: anchorID });
+        this.pathHighlightIDs.push({ from: prev, to: nid });
       }
-      prevAnchor = anchorID;
-      prevX = starX;
+      prev = nid;
     }
   };
 
