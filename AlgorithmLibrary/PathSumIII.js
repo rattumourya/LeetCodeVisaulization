@@ -298,6 +298,7 @@ PathSumIII.prototype.reset = function() {
   this.pathHighlightIDs = [];
   this.starCounts = {};
   this.pathIdx = 0;
+  this.starCounts = {};
 };
 
 PathSumIII.prototype.startCallback = function() {
@@ -318,6 +319,7 @@ PathSumIII.prototype.findPaths = function() {
   this.pathHighlightIDs = [];
   this.starCounts = {};
   this.pathIdx = 0;
+  this.starCounts = {};
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
   }
