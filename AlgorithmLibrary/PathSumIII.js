@@ -36,6 +36,8 @@ PathSumIII.prototype.init = function(am, w, h) {
   // IDs for star markers and connecting lines for successful paths
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
+  // Track how many stars have been placed at each node to offset them uniquely
+  this.starCounts = {};
   // 540x960 canvas sections
   this.sectionDivY1 = 360;
   this.sectionDivY2 = 660;
@@ -277,6 +279,7 @@ PathSumIII.prototype.reset = function() {
   this.countLabelID = -1;
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
+  this.starCounts = {};
 };
 
 PathSumIII.prototype.startCallback = function() {
@@ -302,6 +305,7 @@ PathSumIII.prototype.findPaths = function() {
   }
   this.pathHighlightIDs = [];
   this.pathIdx = 0;
+  this.starCounts = {};
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
   }
@@ -324,15 +328,19 @@ PathSumIII.prototype.findPaths = function() {
     for (const nid of nodes) {
       const sx = this.nodeX[nid];
       const sy = this.nodeY[nid];
-      // place star offset from node so it's visible
-      const starX = sx + 20;
-      const starY = sy - 20;
+      const idx = this.starCounts[nid] || 0;
+      const radius = 25;
+      const angle = (idx * 45 * Math.PI) / 180;
+      const starX = sx + radius * Math.cos(angle);
+      const starY = sy - radius * Math.sin(angle);
+      this.starCounts[nid] = idx + 1;
       const starID = this.nextIndex++;
       this.cmd("CreateLabel", starID, starGlyph, starX, starY, 0);
-      this.cmd("SetForegroundColor", starID, color);
+      this.cmd("SetTextColor", starID, color);
       this.cmd("SetTextStyle", starID, "bold 20");
       this.cmd("Step");
       this.pathHighlightIDs.push({ type: "node", id: starID });
+
       // hidden anchor for connecting colored lines through stars
       const anchorID = this.nextIndex++;
       this.cmd("CreateCircle", anchorID, "", starX, starY);
