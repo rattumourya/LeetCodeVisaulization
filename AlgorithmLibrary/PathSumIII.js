@@ -303,8 +303,8 @@ PathSumIII.prototype.findPaths = function() {
     const maxY = Math.max(...ys);
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
-    const width = Math.max(maxX - minX, 40) + 40;
-    const height = Math.max(maxY - minY, 40) + 40;
+    const width = maxX - minX + 60;
+    const height = maxY - minY + 60;
 
     const loopID = this.nextIndex++;
     this.cmd(
@@ -320,6 +320,7 @@ PathSumIII.prototype.findPaths = function() {
     this.cmd("Move", loopID, centerX, centerY);
     this.cmd("Step");
     this.cmd("SetWidth", loopID, width);
+    this.cmd("Step");
     this.cmd("SetHeight", loopID, height);
     this.cmd("Step");
     this.pathOvalIDs.push(loopID);
