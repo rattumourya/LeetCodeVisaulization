@@ -314,8 +314,10 @@ PathSumIII.prototype.findPaths = function() {
     const cosT = Math.cos(theta);
     const sinT = Math.sin(theta);
 
-    // rotate points into local frame to get tight bounds
-    const pad = 15;
+    // rotate points into local frame to get tight bounds.
+    // pad generously so the node circles (radius ~20)
+    // are completely enclosed by the ellipse
+    const pad = 35;
     const localXs = [];
     const localYs = [];
     for (let i = 0; i < xs.length; i++) {
@@ -356,7 +358,8 @@ PathSumIII.prototype.findPaths = function() {
       highlight(5);
       return 0;
     }
-    this.cmd("Move", visitID, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("SetHighlight", nodeID, 1); // red outline for nodes on current path
+    this.cmd("SetBackgroundColor", nodeID, "#ADD8E6");
     this.cmd("Step");
     highlight(6);
     const val = this.nodeValue[nodeID];
@@ -394,6 +397,7 @@ PathSumIII.prototype.findPaths = function() {
     this.cmd("Delete", label);
     path.pop();
     this.cmd("SetBackgroundColor", nodeID, "#FFF");
+    this.cmd("SetHighlight", nodeID, 0);
     this.cmd("Step");
     return 0;
   };
