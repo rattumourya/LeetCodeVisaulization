@@ -304,6 +304,7 @@ PathSumIII.prototype.findPaths = function() {
   const showPath = (nodes) => {
     const color = this.nextPathColor();
     let prevAnchor = null;
+    let prevX = null;
     for (const nid of nodes) {
       const sx = this.nodeX[nid];
       const sy = this.nodeY[nid];
@@ -323,12 +324,13 @@ PathSumIII.prototype.findPaths = function() {
       this.pathHighlightIDs.push({ type: "node", id: anchorID });
 
       if (prevAnchor !== null) {
-        this.cmd("Connect", prevAnchor, anchorID);
-        this.cmd("SetEdgeColor", prevAnchor, anchorID, color);
+        const curve = prevX !== null && starX < prevX ? -0.2 : 0.2;
+        this.cmd("Connect", prevAnchor, anchorID, color, curve, true, "", 0);
         this.cmd("Step");
         this.pathHighlightIDs.push({ type: "edge", from: prevAnchor, to: anchorID });
       }
       prevAnchor = anchorID;
+      prevX = starX;
     }
   };
 
