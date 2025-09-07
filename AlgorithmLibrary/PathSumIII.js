@@ -297,12 +297,12 @@ PathSumIII.prototype.findPaths = function() {
   };
 
   const showPath = (nodes) => {
+    // Draw straight line segments in a unique color for this path
     const color = this.nextPathColor();
     let prev = null;
     for (const nid of nodes) {
       if (prev !== null) {
-        const curve = this.nodeX[prev] > this.nodeX[nid] ? -0.2 : 0.2;
-        this.cmd("Connect", prev, nid, color, curve, true, "", 0);
+        this.cmd("Connect", prev, nid, color, 0, true, "", 0);
         this.cmd("Step");
         this.pathHighlightIDs.push({ from: prev, to: nid });
       }
