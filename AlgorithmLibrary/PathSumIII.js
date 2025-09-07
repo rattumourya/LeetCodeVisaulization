@@ -333,7 +333,6 @@ PathSumIII.prototype.findPaths = function() {
       this.cmd("SetTextStyle", starID, "bold 20");
       this.cmd("Step");
       this.pathHighlightIDs.push({ type: "node", id: starID });
-
       // hidden anchor for connecting colored lines through stars
       const anchorID = this.nextIndex++;
       this.cmd("CreateCircle", anchorID, "", starX, starY);
