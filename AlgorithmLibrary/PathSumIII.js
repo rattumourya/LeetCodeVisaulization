@@ -41,11 +41,44 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.sectionDivY2 = 660;
 };
 
-// Generate a unique color for each discovered path
+// Generate a distinct hex color for each discovered path.
+// Animation library only accepts "#RRGGBB" or "0xRRGGBB" formats,
+// so convert from HSL spacing to an RGB hex string.
 PathSumIII.prototype.nextPathColor = function() {
-  const hue = (this.pathIdx * 137) % 360; // use golden angle for spacing
+  const hue = (this.pathIdx * 137) % 360; // use golden-angle increment
   this.pathIdx++;
-  return `hsl(${hue}, 70%, 45%)`;
+  const s = 0.7;
+  const l = 0.45;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0,
+    g = 0,
+    b = 0;
+  if (hue < 60) {
+    r = c;
+    g = x;
+  } else if (hue < 120) {
+    r = x;
+    g = c;
+  } else if (hue < 180) {
+    g = c;
+    b = x;
+  } else if (hue < 240) {
+    g = x;
+    b = c;
+  } else if (hue < 300) {
+    r = x;
+    b = c;
+  } else {
+    r = c;
+    b = x;
+  }
+  const toHex = (v) => {
+    const h = Math.round((v + m) * 255).toString(16);
+    return h.length === 1 ? "0" + h : h;
+  };
+  return "#" + toHex(r) + toHex(g) + toHex(b);
 };
 
 PathSumIII.prototype.addControls = function() {
