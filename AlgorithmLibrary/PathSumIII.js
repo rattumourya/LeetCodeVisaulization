@@ -5,7 +5,7 @@
  * - Build tree from level-order input
  * - DFS with prefix sums to count paths equal to target
  * - Control buttons: Build Tree, Find Paths, Prev/Next/Stop/Resume
- * - Each qualifying path is highlighted with a unique colored loop
+ * - Each qualifying path is highlighted with animated colored lines
  */
 
 function PathSumIII(am, w, h) { this.init(am, w, h); }
@@ -33,17 +33,19 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-  // highlight ovals for successful paths
-  this.pathLoopIDs = [];
+  // IDs for colored path lines for successful paths
+  this.pathHighlightIDs = [];
   this.pathIdx = 0;
-  this.pathColors = [
-    "#00BFFF", "#FF0000", "#32CD32",
-    "#FFA500", "#EE82EE", "#FFD700", "#8A2BE2"
-  ];
-
   // 540x960 canvas sections
   this.sectionDivY1 = 360;
   this.sectionDivY2 = 660;
+};
+
+// Generate a unique color for each discovered path
+PathSumIII.prototype.nextPathColor = function() {
+  const hue = (this.pathIdx * 137) % 360; // use golden angle for spacing
+  this.pathIdx++;
+  return `hsl(${hue}, 70%, 45%)`;
 };
 
 PathSumIII.prototype.addControls = function() {
@@ -259,7 +261,7 @@ PathSumIII.prototype.reset = function() {
   this.codeIDs = [];
   this.sumLabelIDs = [];
   this.countLabelID = -1;
-  this.pathLoopIDs = [];
+  this.pathHighlightIDs = [];
   this.pathIdx = 0;
 };
 
@@ -274,8 +276,10 @@ PathSumIII.prototype.findPaths = function() {
   this.commands = [];
   for (const id of this.sumLabelIDs) this.cmd("Delete", id);
   this.sumLabelIDs = [];
-  for (const id of this.pathLoopIDs) this.cmd("Delete", id);
-  this.pathLoopIDs = [];
+  for (const edge of this.pathHighlightIDs) {
+    this.cmd("Disconnect", edge.from, edge.to);
+  }
+  this.pathHighlightIDs = [];
   this.pathIdx = 0;
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
@@ -284,10 +288,6 @@ PathSumIII.prototype.findPaths = function() {
   let count = 0;
   const prefix = { 0: [-1] };
   const path = [];
-  const visitID = this.nextIndex++;
-  this.cmd("CreateHighlightCircle", visitID, "#FF0000", 0, 0, 20);
-  this.cmd("Step");
-
   const highlight = (line) => {
     for (let i = 0; i < this.codeIDs.length; i++) {
       this.cmd("SetHighlight", this.codeIDs[i], i === line ? 1 : 0);
@@ -295,60 +295,18 @@ PathSumIII.prototype.findPaths = function() {
   };
 
   const showPath = (nodes) => {
-    const color = this.pathColors[this.pathIdx % this.pathColors.length];
-    // gather node coordinates
-    const xs = nodes.map((id) => this.nodeX[id]);
-    const ys = nodes.map((id) => this.nodeY[id]);
-
-    // center of ellipse at average position
-    const centerX = xs.reduce((a, b) => a + b, 0) / xs.length;
-    const centerY = ys.reduce((a, b) => a + b, 0) / ys.length;
-
-    // orientation approximated by line from first to last node
-    let theta = 0;
-    if (nodes.length > 1) {
-      const dx = xs[xs.length - 1] - xs[0];
-      const dy = ys[ys.length - 1] - ys[0];
-      theta = Math.atan2(dy, dx);
+    // Draw straight line segments in a unique color for this path
+    const color = this.nextPathColor();
+    let prev = null;
+    for (const nid of nodes) {
+      if (prev !== null) {
+        // Thicker straight segment for path highlighting
+        this.cmd("Connect", prev, nid, color, 0, true, "", 3);
+        this.cmd("Step");
+        this.pathHighlightIDs.push({ from: prev, to: nid });
+      }
+      prev = nid;
     }
-    const cosT = Math.cos(theta);
-    const sinT = Math.sin(theta);
-
-    // rotate points into local frame to get tight bounds.
-    // pad generously so the node circles (radius ~20)
-    // are completely enclosed by the ellipse
-    const pad = 35;
-    const localXs = [];
-    const localYs = [];
-    for (let i = 0; i < xs.length; i++) {
-      const dx = xs[i] - centerX;
-      const dy = ys[i] - centerY;
-      const lx = dx * cosT + dy * sinT;
-      const ly = -dx * sinT + dy * cosT;
-      localXs.push(lx);
-      localYs.push(ly);
-    }
-    const minX = Math.min(...localXs) - pad;
-    const maxX = Math.max(...localXs) + pad;
-    const minY = Math.min(...localYs) - pad;
-    const maxY = Math.max(...localYs) + pad;
-    const width = maxX - minX;
-    const height = maxY - minY;
-
-    const ovalID = this.nextIndex++;
-    this.cmd(
-      "CreateHighlightOval",
-      ovalID,
-      color,
-      centerX,
-      centerY,
-      width,
-      height,
-      theta
-    );
-    this.cmd("Step");
-    this.pathLoopIDs.push(ovalID);
-    this.pathIdx++;
   };
 
   const dfs = (nodeID, cur) => {
@@ -358,9 +316,6 @@ PathSumIII.prototype.findPaths = function() {
       highlight(5);
       return 0;
     }
-    this.cmd("SetHighlight", nodeID, 1); // red outline for nodes on current path
-    this.cmd("SetBackgroundColor", nodeID, "#ADD8E6");
-    this.cmd("Step");
     highlight(6);
     const val = this.nodeValue[nodeID];
     cur += val;
@@ -396,8 +351,6 @@ PathSumIII.prototype.findPaths = function() {
     const label = this.sumLabelIDs.pop();
     this.cmd("Delete", label);
     path.pop();
-    this.cmd("SetBackgroundColor", nodeID, "#FFF");
-    this.cmd("SetHighlight", nodeID, 0);
     this.cmd("Step");
     return 0;
   };
@@ -413,8 +366,6 @@ PathSumIII.prototype.findPaths = function() {
   this.cmd("Step");
   highlight(4);
   this.cmd("Step");
-  this.cmd("Delete", visitID);
-
   return this.commands;
 };
 
