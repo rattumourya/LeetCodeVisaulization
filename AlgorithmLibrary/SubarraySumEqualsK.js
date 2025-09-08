@@ -135,6 +135,7 @@ SubarraySumEqualsK.prototype.setup = function() {
     const y = ARR_START_Y;
     this.arrRectIDs.push(id);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
+
     this.cmd("SetTextStyle", id, SubarraySumEqualsK.ARRAY_FONT_SIZE);
   }
 
