@@ -116,9 +116,10 @@ SubarraySumEqualsK.prototype.setup = function() {
   const RECT_W = 50;
   const RECT_H = 50;
   const RECT_SP = 10;
-  const ARR_START_X = Math.floor(
+
+  const ARR_START_X = Math.round(
     (CANVAS_W - (this.arr.length * (RECT_W + RECT_SP) - RECT_SP)) / 2
-  ); // round to avoid pixel jitter
+  ); // round to whole pixel to avoid jitter
   const ARR_START_Y = 100;
 
   this.commands = [];
@@ -126,14 +127,14 @@ SubarraySumEqualsK.prototype.setup = function() {
 
   // Title
   this.titleID = this.nextIndex++;
-  const title = "Animated solution for Subarray Sum Equals K";
+  const title = "Animated solution for Subarray Sum Equals K LeetCode 560";
   this.cmd("CreateLabel", this.titleID, title, CANVAS_W/2, 40, 1);
   this.cmd("SetTextStyle", this.titleID, "bold 23");
 
   // Array display
   for (let i = 0; i < this.arr.length; i++) {
     const id = this.nextIndex++;
-    const x = ARR_START_X + i * (RECT_W + RECT_SP);
+    const x = Math.round(ARR_START_X + i * (RECT_W + RECT_SP));
     const y = ARR_START_Y;
     this.arrRectIDs.push(id);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
