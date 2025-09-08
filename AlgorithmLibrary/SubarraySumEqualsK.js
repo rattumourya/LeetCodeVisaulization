@@ -116,7 +116,9 @@ SubarraySumEqualsK.prototype.setup = function() {
   const RECT_W = 50;
   const RECT_H = 50;
   const RECT_SP = 10;
-  const ARR_START_X = (CANVAS_W - (this.arr.length * (RECT_W + RECT_SP) - RECT_SP)) / 2;
+  const ARR_START_X = Math.floor(
+    (CANVAS_W - (this.arr.length * (RECT_W + RECT_SP) - RECT_SP)) / 2
+  ); // round to avoid pixel jitter
   const ARR_START_Y = 100;
 
   this.commands = [];
@@ -135,7 +137,6 @@ SubarraySumEqualsK.prototype.setup = function() {
     const y = ARR_START_Y;
     this.arrRectIDs.push(id);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
-
     this.cmd("SetTextStyle", id, SubarraySumEqualsK.ARRAY_FONT_SIZE);
   }
 
@@ -168,7 +169,12 @@ SubarraySumEqualsK.prototype.setup = function() {
 
   // Pseudocode display centered below the map
   const CODE_START_Y = VAR_START_Y + 140;
-  const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
+  const ctx = document.createElement("canvas").getContext("2d");
+  ctx.font = SubarraySumEqualsK.CODE_FONT_SIZE + "px sans-serif";
+  const maxCodeWidth = Math.max(
+    ...SubarraySumEqualsK.CODE.map(line => ctx.measureText(line[0]).width)
+  );
+  const CODE_START_X = Math.floor((CANVAS_W - maxCodeWidth) / 2);
   this.codeID = this.addCodeToCanvasBase(
     SubarraySumEqualsK.CODE,
     CODE_START_X,
