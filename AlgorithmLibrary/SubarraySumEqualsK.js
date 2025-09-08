@@ -13,6 +13,27 @@ SubarraySumEqualsK.prototype = new Algorithm();
 SubarraySumEqualsK.prototype.constructor = SubarraySumEqualsK;
 SubarraySumEqualsK.superclass = Algorithm.prototype;
 
+// Code panel constants
+SubarraySumEqualsK.CODE_LINE_HEIGHT = 20;
+SubarraySumEqualsK.CODE_STANDARD_COLOR = "#000000";
+SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR = "#FF0000";
+
+// Java implementation displayed beside the animation
+SubarraySumEqualsK.CODE = [
+  ["int subarraySum(int[] nums, int k) {"],
+  ["    int prefix = 0, count = 0;"],
+  ["    Map<Integer, Integer> map = new HashMap<>();"],
+  ["    map.put(0, 1);"],
+  ["    for (int num : nums) {"],
+  ["        prefix += num;"],
+  ["        if (map.containsKey(prefix - k))"],
+  ["            count += map.get(prefix - k);"],
+  ["        map.put(prefix, map.getOrDefault(prefix, 0) + 1);"],
+  ["    }"],
+  ["    return count;"],
+  ["}"],
+];
+
 SubarraySumEqualsK.prototype.init = function(am, w, h) {
   SubarraySumEqualsK.superclass.init.call(this, am, w, h);
 
@@ -27,10 +48,12 @@ SubarraySumEqualsK.prototype.init = function(am, w, h) {
   this.prefixValueID = -1;
   this.countLabelID = -1;
   this.countValueID = -1;
-  this.mapTitleID = -1;
-  this.mapIDs = {};
+  this.mapLabelID = -1;
+  this.mapValueID = -1;
+  this.codeID = [];
 
-  this.setup();
+  // initial render via animation manager
+  this.implementAction(this.reset.bind(this), 0);
 };
 
 SubarraySumEqualsK.prototype.addControls = function() {
@@ -66,15 +89,23 @@ SubarraySumEqualsK.prototype.buildArrayCallback = function() {
   const vals = raw.split(/[\s,;]+/).map(Number).filter(v => !isNaN(v));
   if (vals.length === 0) return;
   this.arr = vals;
-  const tgt = parseInt(this.kField.value);
+  const tgt = parseInt(this.kField.value, 10);
   if (!isNaN(tgt)) this.k = tgt;
-  this.reset();
+  // rebuild the visuals with new input
+  this.implementAction(this.reset.bind(this), 0);
 };
 
 SubarraySumEqualsK.prototype.setup = function() {
   if (!this.arr || this.arr.length === 0) {
     this.arr = [1, 2, 3];
     this.k = 3;
+  }
+  // ensure input fields reflect current array and target
+  if (this.inputField) {
+    this.inputField.value = this.arr.join(",");
+  }
+  if (this.kField) {
+    this.kField.value = String(this.k);
   }
   const canvas = document.getElementById("canvas");
   const CANVAS_W = canvas ? canvas.width : 540;
@@ -87,13 +118,12 @@ SubarraySumEqualsK.prototype.setup = function() {
 
   this.commands = [];
   this.arrRectIDs = [];
-  this.mapIDs = {};
 
   // Title
   this.titleID = this.nextIndex++;
   const title = "Animated solution for Subarray Sum Equals K";
   this.cmd("CreateLabel", this.titleID, title, CANVAS_W/2, 40, 1);
-  this.cmd("SetTextStyle", this.titleID, "bold 20");
+  this.cmd("SetTextStyle", this.titleID, "bold 23");
 
   // Array display
   for (let i = 0; i < this.arr.length; i++) {
@@ -110,47 +140,47 @@ SubarraySumEqualsK.prototype.setup = function() {
 
   this.prefixLabelID = this.nextIndex++;
   this.prefixValueID = this.nextIndex++;
+  const VALUE_X = VAR_X + 130;
   this.cmd("CreateLabel", this.prefixLabelID, "prefixSum:", VAR_X, VAR_START_Y, 0);
-  this.cmd("CreateLabel", this.prefixValueID, "0", VAR_X + 100, VAR_START_Y, 0);
+  this.cmd("CreateLabel", this.prefixValueID, "0", VALUE_X, VAR_START_Y, 0);
+  this.cmd("SetTextStyle", this.prefixLabelID, "bold 18");
+  this.cmd("SetTextStyle", this.prefixValueID, "bold 18");
 
   this.countLabelID = this.nextIndex++;
   this.countValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.countLabelID, "count:", VAR_X, VAR_START_Y + 40, 0);
-  this.cmd("CreateLabel", this.countValueID, "0", VAR_X + 100, VAR_START_Y + 40, 0);
+  this.cmd("CreateLabel", this.countValueID, "0", VALUE_X, VAR_START_Y + 40, 0);
+  this.cmd("SetTextStyle", this.countLabelID, "bold 18");
+  this.cmd("SetTextStyle", this.countValueID, "bold 18");
 
-  // Map title
-  this.mapTitleID = this.nextIndex++;
-  this.cmd("CreateLabel", this.mapTitleID, "Map (sum:freq)", CANVAS_W / 2, VAR_START_Y + 120, 0);
+  // Map display as dictionary, start empty until algorithm begins
+  this.mapLabelID = this.nextIndex++;
+  this.mapValueID = this.nextIndex++;
+  this.cmd("CreateLabel", this.mapLabelID, "Map(sum:freq):", VAR_X, VAR_START_Y + 80, 0);
+  this.cmd("CreateLabel", this.mapValueID, "{}", VALUE_X, VAR_START_Y + 80, 0);
+  this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
+  this.cmd("SetTextStyle", this.mapValueID, "bold 18");
 
-  this.mapStartX = VAR_X;
-  this.mapStartY = VAR_START_Y + 150;
-  this.mapRectW = 120;
-  this.mapRectH = 30;
-  this.mapRectSP = 5;
-
-  // initialize map with {0:1}
-  this.createMapEntry(0, 1);
+  // Pseudocode display centered below the map
+  const CODE_START_Y = VAR_START_Y + 140;
+  const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
+  this.codeID = this.addCodeToCanvasBase(
+    SubarraySumEqualsK.CODE,
+    CODE_START_X,
+    CODE_START_Y,
+    SubarraySumEqualsK.CODE_LINE_HEIGHT,
+    SubarraySumEqualsK.CODE_STANDARD_COLOR
+  );
 
   this.cmd("Step");
   return this.commands;
 };
 
-SubarraySumEqualsK.prototype.createMapEntry = function(sum, freq) {
-  const idx = Object.keys(this.mapIDs).length;
-  const x = this.mapStartX;
-  const y = this.mapStartY + idx * (this.mapRectH + this.mapRectSP);
-  const id = this.nextIndex++;
-  this.cmd("CreateRectangle", id, `${sum}:${freq}`, this.mapRectW, this.mapRectH, x, y);
-  this.mapIDs[sum] = { id: id, freq: freq };
-  return id;
-};
-
-SubarraySumEqualsK.prototype.updateMapEntry = function(sum, freq) {
-  const entry = this.mapIDs[sum];
-  if (entry) {
-    entry.freq = freq;
-    this.cmd("SetText", entry.id, `${sum}:${freq}`);
-  }
+SubarraySumEqualsK.prototype.formatMap = function(map) {
+  return '{' + Object.keys(map)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(key => `${key}:${map[key]}`)
+    .join(',') + '}';
 };
 
 SubarraySumEqualsK.prototype.startCallback = function() {
@@ -164,45 +194,77 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   let count = 0;
   const map = {0:1};
 
+  // show variables with an empty map before seeding
   this.cmd("SetText", this.prefixValueID, prefix);
   this.cmd("SetText", this.countValueID, count);
+  this.cmd("SetText", this.mapValueID, "{}");
+
+  // Highlight function signature and initialization lines
+  this.cmd("SetForegroundColor", this.codeID[0][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+  this.cmd("Step");
+  this.cmd("SetForegroundColor", this.codeID[0][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
+
+  this.cmd("SetForegroundColor", this.codeID[1][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+  this.cmd("Step");
+  this.cmd("SetForegroundColor", this.codeID[1][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
+
+  this.cmd("SetForegroundColor", this.codeID[2][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+  this.cmd("Step");
+  this.cmd("SetForegroundColor", this.codeID[2][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
+
+  // seed map with 0:1
+  this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+  this.cmd("SetText", this.mapValueID, this.formatMap(map));
+  this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
+  this.cmd("Step");
+  this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
+  this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
   for (let i = 0; i < this.arr.length; i++) {
     const rectID = this.arrRectIDs[i];
+    this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     this.cmd("SetBackgroundColor", rectID, "#FFD700");
     this.cmd("Step");
+    this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
+    this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     prefix += this.arr[i];
     this.cmd("SetText", this.prefixValueID, prefix);
     this.cmd("Step");
+    this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
+    this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     const need = prefix - this.k;
+    this.cmd("Step");
     if (map[need] != null) {
+      this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
       count += map[need];
       this.cmd("SetText", this.countValueID, count);
-      if (this.mapIDs[need]) {
-        this.cmd("SetBackgroundColor", this.mapIDs[need].id, "#FF9999");
-        this.cmd("Step");
-        this.cmd("SetBackgroundColor", this.mapIDs[need].id, "#FFFFFF");
-      }
+      this.cmd("SetBackgroundColor", this.mapValueID, "#FF9999");
+      this.cmd("Step");
+      this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
+      this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
     }
+    this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
+    this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     if (map[prefix] == null) {
       map[prefix] = 1;
-      this.createMapEntry(prefix, 1);
     } else {
       map[prefix]++;
-      this.updateMapEntry(prefix, map[prefix]);
     }
-    if (this.mapIDs[prefix]) {
-      this.cmd("SetBackgroundColor", this.mapIDs[prefix].id, "#99CCFF");
-      this.cmd("Step");
-      this.cmd("SetBackgroundColor", this.mapIDs[prefix].id, "#FFFFFF");
-    }
+    this.cmd("SetText", this.mapValueID, this.formatMap(map));
+    this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
+    this.cmd("Step");
+    this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
+    this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
     this.cmd("SetBackgroundColor", rectID, "#FFFFFF");
   }
 
+  this.cmd("SetForegroundColor", this.codeID[10][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+  this.cmd("Step");
+  this.cmd("SetForegroundColor", this.codeID[10][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
   return this.commands;
 };
 
@@ -211,7 +273,7 @@ SubarraySumEqualsK.prototype.reset = function() {
   if (typeof animationManager !== "undefined" && animationManager.animatedObjects) {
     animationManager.animatedObjects.clearAllObjects();
   }
-  this.setup();
+  return this.setup();
 };
 
 SubarraySumEqualsK.prototype.disableUI = function() {
@@ -226,4 +288,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new SubarraySumEqualsK(animManag, canvas.width, canvas.height);
 }
-
