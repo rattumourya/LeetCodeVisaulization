@@ -14,9 +14,12 @@ SubarraySumEqualsK.prototype.constructor = SubarraySumEqualsK;
 SubarraySumEqualsK.superclass = Algorithm.prototype;
 
 // Code panel constants
-SubarraySumEqualsK.CODE_LINE_HEIGHT = 20;
+SubarraySumEqualsK.CODE_LINE_HEIGHT = 23; // increased from 20
+SubarraySumEqualsK.CODE_FONT_SIZE = 19; // default was 16
 SubarraySumEqualsK.CODE_STANDARD_COLOR = "#000000";
 SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR = "#FF0000";
+// Array element font size
+SubarraySumEqualsK.ARRAY_FONT_SIZE = 23; // default was 20
 
 // Java implementation displayed beside the animation
 SubarraySumEqualsK.CODE = [
@@ -132,6 +135,7 @@ SubarraySumEqualsK.prototype.setup = function() {
     const y = ARR_START_Y;
     this.arrRectIDs.push(id);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
+    this.cmd("SetTextStyle", id, SubarraySumEqualsK.ARRAY_FONT_SIZE);
   }
 
   // Prefix sum and count labels
@@ -171,6 +175,13 @@ SubarraySumEqualsK.prototype.setup = function() {
     SubarraySumEqualsK.CODE_LINE_HEIGHT,
     SubarraySumEqualsK.CODE_STANDARD_COLOR
   );
+
+  // Increase pseudocode font size
+  for (const line of this.codeID) {
+    for (const id of line) {
+      this.cmd("SetTextStyle", id, SubarraySumEqualsK.CODE_FONT_SIZE);
+    }
+  }
 
   this.cmd("Step");
   return this.commands;
