@@ -14,9 +14,13 @@ SubarraySumEqualsK.prototype.constructor = SubarraySumEqualsK;
 SubarraySumEqualsK.superclass = Algorithm.prototype;
 
 // Code panel constants
-SubarraySumEqualsK.CODE_LINE_HEIGHT = 20;
+SubarraySumEqualsK.CODE_FONT_SIZE = 16; // increased by 2px
+SubarraySumEqualsK.CODE_LINE_HEIGHT = 22; // line height adjusted for larger font
 SubarraySumEqualsK.CODE_STANDARD_COLOR = "#000000";
 SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR = "#FF0000";
+
+// Array element font size
+SubarraySumEqualsK.ARRAY_TEXT_SIZE = 18; // increased by 2px
 
 // Java implementation displayed beside the animation
 SubarraySumEqualsK.CODE = [
@@ -138,6 +142,7 @@ SubarraySumEqualsK.prototype.setup = function() {
     this.arrRectX.push(x);
     this.arrRectY.push(y);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
+    this.cmd("SetTextStyle", id, SubarraySumEqualsK.ARRAY_TEXT_SIZE);
   }
   
   // Prefix sum and count labels
@@ -174,7 +179,9 @@ SubarraySumEqualsK.prototype.setup = function() {
   
   // Pseudocode display centered below the map
   const CODE_START_Y = VAR_START_Y + 140;
-  const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
+  const longestCode = Math.max(...SubarraySumEqualsK.CODE.map(l => l[0].length));
+  const codeWidth = longestCode * SubarraySumEqualsK.CODE_FONT_SIZE * 0.6; // rough character width
+  const CODE_START_X = (CANVAS_W - codeWidth) / 2;
   this.codeID = this.addCodeToCanvasBase(
     SubarraySumEqualsK.CODE,
     CODE_START_X,
@@ -182,6 +189,11 @@ SubarraySumEqualsK.prototype.setup = function() {
     SubarraySumEqualsK.CODE_LINE_HEIGHT,
     SubarraySumEqualsK.CODE_STANDARD_COLOR
   );
+  for (let line of this.codeID) {
+    for (let id of line) {
+      this.cmd("SetTextStyle", id, SubarraySumEqualsK.CODE_FONT_SIZE);
+    }
+  }
   
   this.cmd("Step");
   return this.commands;
