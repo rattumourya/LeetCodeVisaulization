@@ -116,6 +116,7 @@ SubarraySumEqualsK.prototype.setup = function() {
   const RECT_W = 50;
   const RECT_H = 50;
   const RECT_SP = 10;
+
   const ARR_START_X = Math.round(
     (CANVAS_W - (this.arr.length * (RECT_W + RECT_SP) - RECT_SP)) / 2
   ); // round to whole pixel to avoid jitter
@@ -129,7 +130,6 @@ SubarraySumEqualsK.prototype.setup = function() {
 
   this.commands = [];
   this.arrRectIDs = [];
-
   // Title (wrapped if too wide)
   const titleLines = [];
   const fullTitle = "Animated solution for Subarray Sum Equals K LeetCode 560";
