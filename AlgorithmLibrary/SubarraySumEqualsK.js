@@ -121,9 +121,14 @@ SubarraySumEqualsK.prototype.setup = function() {
   ); // round to whole pixel to avoid jitter
   const ARR_START_Y = 100;
 
+  // store positions for later highlighting
+  this.rectWidth = RECT_W;
+  this.rectSpacing = RECT_SP;
+  this.arrStartX = ARR_START_X;
+  this.arrStartY = ARR_START_Y;
+
   this.commands = [];
   this.arrRectIDs = [];
-
   // Title (wrapped if too wide)
   const titleLines = [];
   const fullTitle = "Animated solution for Subarray Sum Equals K LeetCode 560";
@@ -258,6 +263,16 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
   this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
+  const highlightID = this.nextIndex++;
+  this.cmd(
+    "CreateHighlightCircle",
+    highlightID,
+    "#FFD700",
+    this.arrStartX,
+    this.arrStartY,
+    25
+  );
+
   for (let i = 0; i < this.arr.length; i++) {
     const rectID = this.arrRectIDs[i];
     this.cmd(
@@ -304,9 +319,9 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("Step");
     this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
     this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
-
-    this.cmd("SetBackgroundColor", rectID, "#FFFFFF");
   }
+
+  this.cmd("Delete", highlightID);
 
   this.cmd("SetForegroundColor", this.codeID[10][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
   this.cmd("Step");
