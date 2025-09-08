@@ -138,25 +138,29 @@ SubarraySumEqualsK.prototype.setup = function() {
   const VAR_START_Y = ARR_START_Y + 80;
   const VAR_X = 80;
   
+  // Variable labels and values aligned in two columns
+  const VAR_LABEL_X = VAR_X;
+  const VAR_VALUE_X = VAR_LABEL_X + 100;
+
   this.prefixLabelID = this.nextIndex++;
   this.prefixValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.prefixLabelID, "prefixSum", VAR_X, VAR_START_Y, 0);
-  this.cmd("CreateLabel", this.prefixValueID, "0", VAR_X + 100, VAR_START_Y, 0);
+  this.cmd("CreateLabel", this.prefixLabelID, "prefix", VAR_LABEL_X, VAR_START_Y, 0);
+  this.cmd("CreateLabel", this.prefixValueID, "0", VAR_VALUE_X, VAR_START_Y, 0);
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 18");
   this.cmd("SetTextStyle", this.prefixValueID, "bold 18");
-  
+
   this.countLabelID = this.nextIndex++;
   this.countValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.countLabelID, "count", VAR_X, VAR_START_Y + 40, 0);
-  this.cmd("CreateLabel", this.countValueID, "0", VAR_X + 100, VAR_START_Y + 40, 0);
+  this.cmd("CreateLabel", this.countLabelID, "count", VAR_LABEL_X, VAR_START_Y + 40, 0);
+  this.cmd("CreateLabel", this.countValueID, "0", VAR_VALUE_X, VAR_START_Y + 40, 0);
   this.cmd("SetTextStyle", this.countLabelID, "bold 18");
   this.cmd("SetTextStyle", this.countValueID, "bold 18");
-  
+
   // Map display as dictionary, start empty until algorithm begins
   this.mapLabelID = this.nextIndex++;
   this.mapValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.mapLabelID, "Map(sum:freq)", VAR_X, VAR_START_Y + 80, 0);
-  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_X + 100, VAR_START_Y + 80, 0);
+  this.cmd("CreateLabel", this.mapLabelID, "map", VAR_LABEL_X, VAR_START_Y + 80, 0);
+  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, VAR_START_Y + 80, 0);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
   
