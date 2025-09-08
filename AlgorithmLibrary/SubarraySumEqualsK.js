@@ -167,8 +167,11 @@ SubarraySumEqualsK.prototype.setup = function() {
   // Map display as dictionary, start empty until algorithm begins
   this.mapLabelID = this.nextIndex++;
   this.mapValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.mapLabelID, "map", VAR_LABEL_X, VAR_START_Y + 80, 0);
-  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, VAR_START_Y + 80, 0);
+  const MAP_Y = VAR_START_Y + 80;
+  this.cmd("CreateLabel", this.mapLabelID, "map", VAR_LABEL_X, MAP_Y, 0);
+  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, MAP_Y, 0);
+  this.mapValueX = VAR_VALUE_X;
+  this.mapValueY = MAP_Y;
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
   
@@ -240,7 +243,8 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     
     this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     const moveID = this.nextIndex++;
-    this.cmd("CreateLabel", moveID, "+" + this.arr[i], this.arrRectX[i], this.arrRectY[i]);
+    const moveText = this.arr[i] >= 0 ? "+" + this.arr[i] : String(this.arr[i]);
+    this.cmd("CreateLabel", moveID, moveText, this.arrRectX[i], this.arrRectY[i]);
     this.cmd("Move", moveID, this.prefixValueX, this.prefixValueY);
     this.cmd("Step");
     this.cmd("Delete", moveID);
@@ -251,6 +255,12 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     
     this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     const need = prefix - this.k;
+    const lookupID = this.nextIndex++;
+    this.cmd("CreateLabel", lookupID, String(need), this.prefixValueX, this.prefixValueY);
+    this.cmd("Move", lookupID, this.mapValueX, this.mapValueY);
+    this.cmd("Step");
+    this.cmd("Delete", lookupID);
+    this.cmd("SetBackgroundColor", this.mapValueID, "#FFCC99");
     this.cmd("Step");
     if (map[need] != null) {
       this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
@@ -258,9 +268,9 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
       this.cmd("SetText", this.countValueID, count);
       this.cmd("SetBackgroundColor", this.mapValueID, "#FF9999");
       this.cmd("Step");
-      this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
       this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
     }
+    this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
     this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
     
     this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
