@@ -14,9 +14,12 @@ SubarraySumEqualsK.prototype.constructor = SubarraySumEqualsK;
 SubarraySumEqualsK.superclass = Algorithm.prototype;
 
 // Code panel constants
-SubarraySumEqualsK.CODE_LINE_HEIGHT = 20;
+SubarraySumEqualsK.CODE_LINE_HEIGHT = 23; // increased from 20
+SubarraySumEqualsK.CODE_FONT_SIZE = 19; // default was 16
 SubarraySumEqualsK.CODE_STANDARD_COLOR = "#000000";
 SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR = "#FF0000";
+// Array element font size
+SubarraySumEqualsK.ARRAY_FONT_SIZE = 23; // default was 20
 
 // Java implementation displayed beside the animation
 SubarraySumEqualsK.CODE = [
@@ -113,25 +116,54 @@ SubarraySumEqualsK.prototype.setup = function() {
   const RECT_W = 50;
   const RECT_H = 50;
   const RECT_SP = 10;
-  const ARR_START_X = (CANVAS_W - (this.arr.length * (RECT_W + RECT_SP) - RECT_SP)) / 2;
+  const ARR_START_X = Math.round(
+    (CANVAS_W - (this.arr.length * (RECT_W + RECT_SP) - RECT_SP)) / 2
+  ); // round to whole pixel to avoid jitter
   const ARR_START_Y = 100;
+
+  // store positions for later highlighting
+  this.rectWidth = RECT_W;
+  this.rectSpacing = RECT_SP;
+  this.arrStartX = ARR_START_X;
+  this.arrStartY = ARR_START_Y;
 
   this.commands = [];
   this.arrRectIDs = [];
 
-  // Title
-  this.titleID = this.nextIndex++;
-  const title = "Animated solution for Subarray Sum Equals K";
-  this.cmd("CreateLabel", this.titleID, title, CANVAS_W/2, 40, 1);
-  this.cmd("SetTextStyle", this.titleID, "bold 23");
+  // Title (wrapped if too wide)
+  const titleLines = [];
+  const fullTitle = "Animated solution for Subarray Sum Equals K LeetCode 560";
+  const tctx = document.createElement("canvas").getContext("2d");
+  tctx.font = "bold 23px sans-serif";
+  const words = fullTitle.split(" ");
+  let line = "";
+  const maxWidth = CANVAS_W - 20;
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (tctx.measureText(test).width > maxWidth && line) {
+      titleLines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  titleLines.push(line);
+  this.titleIDs = [];
+  for (let i = 0; i < titleLines.length; i++) {
+    const id = this.nextIndex++;
+    this.titleIDs.push(id);
+    this.cmd("CreateLabel", id, titleLines[i], CANVAS_W / 2, 40 + i * 24, 1);
+    this.cmd("SetTextStyle", id, "bold 23");
+  }
 
   // Array display
   for (let i = 0; i < this.arr.length; i++) {
     const id = this.nextIndex++;
-    const x = ARR_START_X + i * (RECT_W + RECT_SP);
+    const x = Math.round(ARR_START_X + i * (RECT_W + RECT_SP));
     const y = ARR_START_Y;
     this.arrRectIDs.push(id);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
+    this.cmd("SetTextStyle", id, SubarraySumEqualsK.ARRAY_FONT_SIZE);
   }
 
   // Prefix sum and count labels
@@ -163,7 +195,12 @@ SubarraySumEqualsK.prototype.setup = function() {
 
   // Pseudocode display centered below the map
   const CODE_START_Y = VAR_START_Y + 140;
-  const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
+  const ctx = document.createElement("canvas").getContext("2d");
+  ctx.font = SubarraySumEqualsK.CODE_FONT_SIZE + "px sans-serif";
+  const maxCodeWidth = Math.max(
+    ...SubarraySumEqualsK.CODE.map(line => ctx.measureText(line[0]).width)
+  );
+  const CODE_START_X = Math.floor((CANVAS_W - maxCodeWidth) / 2);
   this.codeID = this.addCodeToCanvasBase(
     SubarraySumEqualsK.CODE,
     CODE_START_X,
@@ -171,6 +208,13 @@ SubarraySumEqualsK.prototype.setup = function() {
     SubarraySumEqualsK.CODE_LINE_HEIGHT,
     SubarraySumEqualsK.CODE_STANDARD_COLOR
   );
+
+  // Increase pseudocode font size
+  for (const line of this.codeID) {
+    for (const id of line) {
+      this.cmd("SetTextStyle", id, SubarraySumEqualsK.CODE_FONT_SIZE);
+    }
+  }
 
   this.cmd("Step");
   return this.commands;
@@ -220,10 +264,20 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
   this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
+  const highlightID = this.nextIndex++;
+  this.cmd(
+    "CreateHighlightCircle",
+    highlightID,
+    "#FFD700",
+    this.arrStartX,
+    this.arrStartY,
+    25
+  );
+
   for (let i = 0; i < this.arr.length; i++) {
-    const rectID = this.arrRectIDs[i];
+    const x = Math.round(this.arrStartX + i * (this.rectWidth + this.rectSpacing));
+    this.cmd("Move", highlightID, x, this.arrStartY);
     this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
-    this.cmd("SetBackgroundColor", rectID, "#FFD700");
     this.cmd("Step");
     this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
@@ -258,9 +312,9 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("Step");
     this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
     this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
-
-    this.cmd("SetBackgroundColor", rectID, "#FFFFFF");
   }
+
+  this.cmd("Delete", highlightID);
 
   this.cmd("SetForegroundColor", this.codeID[10][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
   this.cmd("Step");

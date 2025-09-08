@@ -35,14 +35,15 @@ AnimatedRectangle = function(id, val, wth, hgt,  xJust, yJust, fillColor, edgeCo
 	this.label = val;
 	this.labelColor = edgeColor
 	
-	this.backgroundColor = fillColor;
-	this.foregroundColor = edgeColor;
-	this.labelColor = this.foregroundColor;
-	this.highlighted = false;
-	this.objectID = id;
-	this.nullPointer = false;
-	this.alpha = 1.0;
-	this.addedToScene = true;
+        this.backgroundColor = fillColor;
+        this.foregroundColor = edgeColor;
+        this.labelColor = this.foregroundColor;
+        this.highlighted = false;
+        this.objectID = id;
+        this.nullPointer = false;
+        this.alpha = 1.0;
+        this.addedToScene = true;
+        this.textSize = 10;
 	
 }
 
@@ -278,11 +279,11 @@ AnimatedRectangle.prototype.draw = function(context)
 	
 	context.fillStyle = this.labelColor;
 	
-	context.textAlign = 'center';
-	context.font         = '10px sans-serif';
-	context.textBaseline   = 'middle'; 
-	context.lineWidth = 1;
-	context.fillText(this.label, this.x, this.y); 
+        context.textAlign = 'center';
+        context.font         = (typeof this.textSize === "number" ? this.textSize + 'px sans-serif' : this.textSize);
+        context.textBaseline   = 'middle';
+        context.lineWidth = 1;
+        context.fillText(this.label, this.x, this.y);
 	
 	
 	
@@ -290,8 +291,13 @@ AnimatedRectangle.prototype.draw = function(context)
 
 AnimatedRectangle.prototype.setText = function(newText, textIndex)
 {
-	this.label = newText;
-	// TODO:  setting text position?
+        this.label = newText;
+        // TODO:  setting text position?
+}
+
+AnimatedRectangle.prototype.setTextStyle = function(style)
+{
+        this.textSize = style;
 }
 
 
