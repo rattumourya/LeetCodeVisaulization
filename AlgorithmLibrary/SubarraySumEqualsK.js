@@ -116,7 +116,6 @@ SubarraySumEqualsK.prototype.setup = function() {
   const RECT_W = 50;
   const RECT_H = 50;
   const RECT_SP = 10;
-
   const ARR_START_X = Math.round(
     (CANVAS_W - (this.arr.length * (RECT_W + RECT_SP) - RECT_SP)) / 2
   ); // round to whole pixel to avoid jitter
@@ -275,11 +274,19 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   );
 
   for (let i = 0; i < this.arr.length; i++) {
-    const x = Math.round(this.arrStartX + i * (this.rectWidth + this.rectSpacing));
-    this.cmd("Move", highlightID, x, this.arrStartY);
-    this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+    const rectID = this.arrRectIDs[i];
+    this.cmd(
+      "SetForegroundColor",
+      this.codeID[4][0],
+      SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR
+    );
+    this.cmd("SetBackgroundColor", rectID, "#FFD700");
     this.cmd("Step");
-    this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
+    this.cmd(
+      "SetForegroundColor",
+      this.codeID[4][0],
+      SubarraySumEqualsK.CODE_STANDARD_COLOR
+    );
 
     this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     prefix += this.arr[i];
