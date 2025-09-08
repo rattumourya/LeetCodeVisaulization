@@ -240,7 +240,8 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     
     this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     const moveID = this.nextIndex++;
-    this.cmd("CreateLabel", moveID, "+" + this.arr[i], this.arrRectX[i], this.arrRectY[i]);
+    const moveText = this.arr[i] >= 0 ? "+" + this.arr[i] : String(this.arr[i]);
+    this.cmd("CreateLabel", moveID, moveText, this.arrRectX[i], this.arrRectY[i]);
     this.cmd("Move", moveID, this.prefixValueX, this.prefixValueY);
     this.cmd("Step");
     this.cmd("Delete", moveID);
