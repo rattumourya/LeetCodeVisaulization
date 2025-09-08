@@ -14,9 +14,13 @@ SubarraySumEqualsK.prototype.constructor = SubarraySumEqualsK;
 SubarraySumEqualsK.superclass = Algorithm.prototype;
 
 // Code panel constants
-SubarraySumEqualsK.CODE_LINE_HEIGHT = 20;
+SubarraySumEqualsK.CODE_FONT_SIZE = 16; // increased by 2px
+SubarraySumEqualsK.CODE_LINE_HEIGHT = 22; // line height adjusted for larger font
 SubarraySumEqualsK.CODE_STANDARD_COLOR = "#000000";
 SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR = "#FF0000";
+
+// Array element font size
+SubarraySumEqualsK.ARRAY_TEXT_SIZE = 18; // increased by 2px
 
 // Java implementation displayed beside the animation
 SubarraySumEqualsK.CODE = [
@@ -44,6 +48,8 @@ SubarraySumEqualsK.prototype.init = function(am, w, h) {
   this.k = 0;
   
   this.arrRectIDs = [];
+  this.arrRectX = [];
+  this.arrRectY = [];
   this.prefixLabelID = -1;
   this.prefixValueID = -1;
   this.countLabelID = -1;
@@ -118,6 +124,8 @@ SubarraySumEqualsK.prototype.setup = function() {
   
   this.commands = [];
   this.arrRectIDs = [];
+  this.arrRectX = [];
+  this.arrRectY = [];
   
   // Title
   this.titleID = this.nextIndex++;
@@ -131,38 +139,49 @@ SubarraySumEqualsK.prototype.setup = function() {
     const x = ARR_START_X + i * (RECT_W + RECT_SP);
     const y = ARR_START_Y;
     this.arrRectIDs.push(id);
+    this.arrRectX.push(x);
+    this.arrRectY.push(y);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
+    this.cmd("SetTextStyle", id, SubarraySumEqualsK.ARRAY_TEXT_SIZE);
   }
   
   // Prefix sum and count labels
   const VAR_START_Y = ARR_START_Y + 80;
   const VAR_X = 80;
   
+  // Variable labels and values aligned in two columns
+  const VAR_LABEL_X = VAR_X;
+  const VAR_VALUE_X = VAR_LABEL_X + 100;
+
   this.prefixLabelID = this.nextIndex++;
   this.prefixValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.prefixLabelID, "prefixSum", VAR_X, VAR_START_Y, 0);
-  this.cmd("CreateLabel", this.prefixValueID, "0", VAR_X + 100, VAR_START_Y, 0);
+  this.cmd("CreateLabel", this.prefixLabelID, "prefix", VAR_LABEL_X, VAR_START_Y, 0);
+  this.cmd("CreateLabel", this.prefixValueID, "0", VAR_VALUE_X, VAR_START_Y, 0);
+  this.prefixValueX = VAR_VALUE_X;
+  this.prefixValueY = VAR_START_Y;
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 18");
   this.cmd("SetTextStyle", this.prefixValueID, "bold 18");
-  
+
   this.countLabelID = this.nextIndex++;
   this.countValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.countLabelID, "count", VAR_X, VAR_START_Y + 40, 0);
-  this.cmd("CreateLabel", this.countValueID, "0", VAR_X + 100, VAR_START_Y + 40, 0);
+  this.cmd("CreateLabel", this.countLabelID, "count", VAR_LABEL_X, VAR_START_Y + 40, 0);
+  this.cmd("CreateLabel", this.countValueID, "0", VAR_VALUE_X, VAR_START_Y + 40, 0);
   this.cmd("SetTextStyle", this.countLabelID, "bold 18");
   this.cmd("SetTextStyle", this.countValueID, "bold 18");
-  
+
   // Map display as dictionary, start empty until algorithm begins
   this.mapLabelID = this.nextIndex++;
   this.mapValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.mapLabelID, "Map(sum:freq)", VAR_X, VAR_START_Y + 80, 0);
-  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_X + 100, VAR_START_Y + 80, 0);
+  this.cmd("CreateLabel", this.mapLabelID, "map", VAR_LABEL_X, VAR_START_Y + 80, 0);
+  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, VAR_START_Y + 80, 0);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
   
   // Pseudocode display centered below the map
   const CODE_START_Y = VAR_START_Y + 140;
-  const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
+  const longestCode = Math.max(...SubarraySumEqualsK.CODE.map(l => l[0].length));
+  const codeWidth = longestCode * SubarraySumEqualsK.CODE_FONT_SIZE * 0.6; // rough character width
+  const CODE_START_X = (CANVAS_W - codeWidth) / 2;
   this.codeID = this.addCodeToCanvasBase(
     SubarraySumEqualsK.CODE,
     CODE_START_X,
@@ -170,6 +189,11 @@ SubarraySumEqualsK.prototype.setup = function() {
     SubarraySumEqualsK.CODE_LINE_HEIGHT,
     SubarraySumEqualsK.CODE_STANDARD_COLOR
   );
+  for (let line of this.codeID) {
+    for (let id of line) {
+      this.cmd("SetTextStyle", id, SubarraySumEqualsK.CODE_FONT_SIZE);
+    }
+  }
   
   this.cmd("Step");
   return this.commands;
@@ -227,6 +251,11 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
     
     this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+    const moveID = this.nextIndex++;
+    this.cmd("CreateLabel", moveID, "+" + this.arr[i], this.arrRectX[i], this.arrRectY[i]);
+    this.cmd("Move", moveID, this.prefixValueX, this.prefixValueY);
+    this.cmd("Step");
+    this.cmd("Delete", moveID);
     prefix += this.arr[i];
     this.cmd("SetText", this.prefixValueID, prefix);
     this.cmd("Step");
