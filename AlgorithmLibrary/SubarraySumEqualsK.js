@@ -168,13 +168,15 @@ SubarraySumEqualsK.prototype.setup = function() {
 
   // Pseudocode display centered below the map
   const CODE_START_Y = VAR_START_Y + 140;
-  const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
+  const CODE_CENTER_X = CANVAS_W/2;
   this.codeID = this.addCodeToCanvasBase(
     SubarraySumEqualsK.CODE,
-    CODE_START_X,
+    CODE_CENTER_X,
     CODE_START_Y,
     SubarraySumEqualsK.CODE_LINE_HEIGHT,
-    SubarraySumEqualsK.CODE_STANDARD_COLOR
+    SubarraySumEqualsK.CODE_STANDARD_COLOR,
+    0,
+    1
   );
 
   // Increase pseudocode font size
@@ -272,6 +274,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
     this.cmd("SetBackgroundColor", rectID, "#FFFFFF");
+    this.cmd("Step");
   }
 
   this.cmd("SetForegroundColor", this.codeID[10][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
