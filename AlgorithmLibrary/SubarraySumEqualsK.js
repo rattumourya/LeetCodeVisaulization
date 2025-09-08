@@ -44,6 +44,8 @@ SubarraySumEqualsK.prototype.init = function(am, w, h) {
   this.k = 0;
   
   this.arrRectIDs = [];
+  this.arrRectX = [];
+  this.arrRectY = [];
   this.prefixLabelID = -1;
   this.prefixValueID = -1;
   this.countLabelID = -1;
@@ -118,6 +120,8 @@ SubarraySumEqualsK.prototype.setup = function() {
   
   this.commands = [];
   this.arrRectIDs = [];
+  this.arrRectX = [];
+  this.arrRectY = [];
   
   // Title
   this.titleID = this.nextIndex++;
@@ -131,6 +135,8 @@ SubarraySumEqualsK.prototype.setup = function() {
     const x = ARR_START_X + i * (RECT_W + RECT_SP);
     const y = ARR_START_Y;
     this.arrRectIDs.push(id);
+    this.arrRectX.push(x);
+    this.arrRectY.push(y);
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
   }
   
@@ -146,6 +152,8 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.prefixValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.prefixLabelID, "prefix", VAR_LABEL_X, VAR_START_Y, 0);
   this.cmd("CreateLabel", this.prefixValueID, "0", VAR_VALUE_X, VAR_START_Y, 0);
+  this.prefixValueX = VAR_VALUE_X;
+  this.prefixValueY = VAR_START_Y;
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 18");
   this.cmd("SetTextStyle", this.prefixValueID, "bold 18");
 
@@ -231,6 +239,11 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
     
     this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+    const moveID = this.nextIndex++;
+    this.cmd("CreateLabel", moveID, "+" + this.arr[i], this.arrRectX[i], this.arrRectY[i]);
+    this.cmd("Move", moveID, this.prefixValueX, this.prefixValueY);
+    this.cmd("Step");
+    this.cmd("Delete", moveID);
     prefix += this.arr[i];
     this.cmd("SetText", this.prefixValueID, prefix);
     this.cmd("Step");
