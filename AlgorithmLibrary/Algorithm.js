@@ -135,9 +135,10 @@ Algorithm.prototype.setCodeAlpha = function(code, newAlpha)
 }
 
 
-Algorithm.prototype.addCodeToCanvasBase  = function(code, start_x, start_y, line_height, standard_color, layer)
+Algorithm.prototype.addCodeToCanvasBase  = function(code, start_x, start_y, line_height, standard_color, layer, centered)
 {
         layer = typeof layer !== 'undefined' ? layer : 0;
+        centered = typeof centered !== 'undefined' ? centered : 0;
 	var codeID = Array(code.length);
 	var i, j;
 	for (i = 0; i < code.length; i++)
@@ -146,7 +147,7 @@ Algorithm.prototype.addCodeToCanvasBase  = function(code, start_x, start_y, line
 		for (j = 0; j < code[i].length; j++)
 		{
 			codeID[i][j] = this.nextIndex++;
-			this.cmd("CreateLabel", codeID[i][j], code[i][j], start_x, start_y + i * line_height, 0);
+			this.cmd("CreateLabel", codeID[i][j], code[i][j], start_x, start_y + i * line_height, centered);
 			this.cmd("SetForegroundColor", codeID[i][j], standard_color);
 			this.cmd("SetLayer", codeID[i][j], layer);
 			if (j > 0)
