@@ -122,14 +122,39 @@ SubarraySumEqualsK.prototype.setup = function() {
   ); // round to whole pixel to avoid jitter
   const ARR_START_Y = 100;
 
+  // store positions for later highlighting
+  this.rectWidth = RECT_W;
+  this.rectSpacing = RECT_SP;
+  this.arrStartX = ARR_START_X;
+  this.arrStartY = ARR_START_Y;
+
   this.commands = [];
   this.arrRectIDs = [];
-
-  // Title
-  this.titleID = this.nextIndex++;
-  const title = "Animated solution for Subarray Sum Equals K LeetCode 560";
-  this.cmd("CreateLabel", this.titleID, title, CANVAS_W/2, 40, 1);
-  this.cmd("SetTextStyle", this.titleID, "bold 23");
+  // Title (wrapped if too wide)
+  const titleLines = [];
+  const fullTitle = "Animated solution for Subarray Sum Equals K LeetCode 560";
+  const tctx = document.createElement("canvas").getContext("2d");
+  tctx.font = "bold 23px sans-serif";
+  const words = fullTitle.split(" ");
+  let line = "";
+  const maxWidth = CANVAS_W - 20;
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (tctx.measureText(test).width > maxWidth && line) {
+      titleLines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  titleLines.push(line);
+  this.titleIDs = [];
+  for (let i = 0; i < titleLines.length; i++) {
+    const id = this.nextIndex++;
+    this.titleIDs.push(id);
+    this.cmd("CreateLabel", id, titleLines[i], CANVAS_W / 2, 40 + i * 24, 1);
+    this.cmd("SetTextStyle", id, "bold 23");
+  }
 
   // Array display
   for (let i = 0; i < this.arr.length; i++) {
@@ -239,10 +264,20 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
   this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
+  const highlightID = this.nextIndex++;
+  this.cmd(
+    "CreateHighlightCircle",
+    highlightID,
+    "#FFD700",
+    this.arrStartX,
+    this.arrStartY,
+    25
+  );
+
   for (let i = 0; i < this.arr.length; i++) {
-    const rectID = this.arrRectIDs[i];
+    const x = Math.round(this.arrStartX + i * (this.rectWidth + this.rectSpacing));
+    this.cmd("Move", highlightID, x, this.arrStartY);
     this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
-    this.cmd("SetBackgroundColor", rectID, "#FFD700");
     this.cmd("Step");
     this.cmd("SetForegroundColor", this.codeID[4][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
 
@@ -277,9 +312,9 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("Step");
     this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
     this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
-
-    this.cmd("SetBackgroundColor", rectID, "#FFFFFF");
   }
+
+  this.cmd("Delete", highlightID);
 
   this.cmd("SetForegroundColor", this.codeID[10][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
   this.cmd("Step");
