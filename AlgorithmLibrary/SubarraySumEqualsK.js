@@ -52,6 +52,8 @@ SubarraySumEqualsK.prototype.init = function(am, w, h) {
   this.countValueID = -1;
   this.mapLabelID = -1;
   this.mapValueID = -1;
+  this.containsLabelID = -1;
+  this.containsValueID = -1;
   this.codeID = [];
   
   // initial render via animation manager
@@ -171,9 +173,31 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, VAR_START_Y + 80, 0);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
-  
+
+  // Display whether the map contains (prefix - k)
+  this.containsLabelID = this.nextIndex++;
+  this.containsValueID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.containsLabelID,
+    "map contains {prefix-k}",
+    VAR_LABEL_X,
+    VAR_START_Y + 120,
+    0
+  );
+  this.cmd(
+    "CreateLabel",
+    this.containsValueID,
+    "",
+    VAR_VALUE_X,
+    VAR_START_Y + 120,
+    0
+  );
+  this.cmd("SetTextStyle", this.containsLabelID, "bold 18");
+  this.cmd("SetTextStyle", this.containsValueID, "bold 18");
+
   // Pseudocode display centered below the map
-  const CODE_START_Y = VAR_START_Y + 140;
+  const CODE_START_Y = VAR_START_Y + 180;
   const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
   this.codeID = this.addCodeToCanvasBase(
     SubarraySumEqualsK.CODE,
@@ -209,6 +233,8 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   this.cmd("SetText", this.prefixValueID, prefix);
   this.cmd("SetText", this.countValueID, count);
   this.cmd("SetText", this.mapValueID, "{}");
+  this.cmd("SetText", this.containsLabelID, "map contains {prefix-k}");
+  this.cmd("SetText", this.containsValueID, "");
   
   // Highlight function signature and initialization lines
   this.cmd("SetForegroundColor", this.codeID[0][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
@@ -252,8 +278,11 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     
     this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     const need = prefix - this.k;
+    this.cmd("SetText", this.containsLabelID, `map contains {${need}}`);
+    const contains = map[need] != null;
+    this.cmd("SetText", this.containsValueID, contains ? "true" : "false");
     this.cmd("Step");
-    if (map[need] != null) {
+    if (contains) {
       this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
       count += map[need];
       this.cmd("SetText", this.countValueID, count);
