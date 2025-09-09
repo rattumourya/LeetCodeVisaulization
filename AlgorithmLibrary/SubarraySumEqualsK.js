@@ -145,7 +145,8 @@ SubarraySumEqualsK.prototype.setup = function() {
   // Layout variables in a 3x2 invisible grid
   const GRID_START_Y = ARR_START_Y + 80;
   const GRID_START_X = 80;
-  const CELL_W = 220;
+  // widen columns so the second row cells don't crowd each other
+  const CELL_W = 260;
   const CELL_H = 40;
 
   // Row 1, Col 1 : prefix and its value
@@ -234,6 +235,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   // show variables with an empty map before seeding
   this.cmd("SetText", this.prefixValueID, prefix);
   this.cmd("SetText", this.countValueID, count);
+  this.cmd("SetText", this.mapLabelID, "map");
   this.cmd("SetText", this.mapValueID, "{}");
   this.cmd("SetText", this.containsLabelID, "map contains {prefix-k}");
   this.cmd("SetText", this.containsValueID, "");
