@@ -299,6 +299,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
         this.codeID[7][0],
         SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR
       );
+
       // Show the retrieved map value moving to the count variable.
       // Break the motion into small segments so the transfer is slow and easy to see.
       const moveID = this.nextIndex++;
