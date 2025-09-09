@@ -14,7 +14,9 @@ SubarraySumEqualsK.prototype.constructor = SubarraySumEqualsK;
 SubarraySumEqualsK.superclass = Algorithm.prototype;
 
 // Code panel constants
-SubarraySumEqualsK.CODE_LINE_HEIGHT = 20;
+// Display the pseudocode slightly larger for readability
+SubarraySumEqualsK.CODE_FONT_SIZE = 17;
+SubarraySumEqualsK.CODE_LINE_HEIGHT = 23;
 SubarraySumEqualsK.CODE_STANDARD_COLOR = "#000000";
 SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR = "#FF0000";
 
@@ -216,6 +218,17 @@ SubarraySumEqualsK.prototype.setup = function() {
     SubarraySumEqualsK.CODE_LINE_HEIGHT,
     SubarraySumEqualsK.CODE_STANDARD_COLOR
   );
+
+  // Apply larger font size to the pseudocode display
+  for (let i = 0; i < this.codeID.length; i++) {
+    for (let j = 0; j < this.codeID[i].length; j++) {
+      this.cmd(
+        "SetTextStyle",
+        this.codeID[i][j],
+        String(SubarraySumEqualsK.CODE_FONT_SIZE)
+      );
+    }
+  }
   
   this.cmd("Step");
   return this.commands;
