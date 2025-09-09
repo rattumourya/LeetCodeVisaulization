@@ -173,7 +173,8 @@ SubarraySumEqualsK.prototype.setup = function() {
     CONTAINS_Y,
     0
   );
-  this.cmd("CreateLabel", this.containsValueID, "", CONTAINS_X + 200, CONTAINS_Y, 0);
+  // value placed with extra padding so it doesn't collide with count column
+  this.cmd("CreateLabel", this.containsValueID, "", CONTAINS_X + 160, CONTAINS_Y, 0);
   this.cmd("SetTextStyle", this.containsLabelID, "bold 18");
   this.cmd("SetTextStyle", this.containsValueID, "bold 18");
 
@@ -193,7 +194,8 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.mapLabelID = this.nextIndex++;
   this.mapValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.mapLabelID, "map", MAP_X, MAP_Y, 0);
-  this.cmd("CreateLabel", this.mapValueID, ": {}", MAP_X + 60, MAP_Y, 0);
+  // map value displayed without a leading colon
+  this.cmd("CreateLabel", this.mapValueID, "{}", MAP_X + 60, MAP_Y, 0);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
   // Pseudocode display centered below the map
@@ -232,7 +234,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   // show variables with an empty map before seeding
   this.cmd("SetText", this.prefixValueID, prefix);
   this.cmd("SetText", this.countValueID, count);
-  this.cmd("SetText", this.mapValueID, ": {}");
+  this.cmd("SetText", this.mapValueID, "{}");
   this.cmd("SetText", this.containsLabelID, "map contains {prefix-k}");
   this.cmd("SetText", this.containsValueID, "");
   
