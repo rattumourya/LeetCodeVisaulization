@@ -169,14 +169,14 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd(
     "CreateLabel",
     this.containsLabelID,
-    "map contains {prefix-k}",
+    "map.containsKey(prefix-k)",
     CONTAINS_X,
     CONTAINS_Y,
     0
   );
   // value placed with extra padding so it doesn't collide with count column
-  this.cmd("CreateLabel", this.containsValueID, "", CONTAINS_X + 160, CONTAINS_Y, 0);
-  this.cmd("SetTextStyle", this.containsLabelID, "18");
+  this.cmd("CreateLabel", this.containsValueID, "", CONTAINS_X + 190, CONTAINS_Y, 0);
+  this.cmd("SetTextStyle", this.containsLabelID, "bold 18");
   this.cmd("SetTextStyle", this.containsValueID, "18");
 
 
@@ -185,8 +185,8 @@ SubarraySumEqualsK.prototype.setup = function() {
   const COUNT_Y = GRID_START_Y + CELL_H;
   this.countLabelID = this.nextIndex++;
   this.countValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.countLabelID, "count", COUNT_X, COUNT_Y, 0);
-  this.cmd("CreateLabel", this.countValueID, "0", COUNT_X + 60, COUNT_Y, 0);
+  this.cmd("CreateLabel", this.countLabelID, "count", COUNT_X + 40, COUNT_Y, 0);
+  this.cmd("CreateLabel", this.countValueID, "0", COUNT_X + 120, COUNT_Y, 0);
   this.cmd("SetTextStyle", this.countLabelID, "bold 18");
   this.cmd("SetTextStyle", this.countValueID, "18");
 
@@ -198,7 +198,7 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("CreateLabel", this.mapLabelID, "map", MAP_X, MAP_Y, 0);
   // map value displayed without a leading colon
   this.cmd("CreateLabel", this.mapValueID, "{}", MAP_X + 60, MAP_Y, 0);
-  this.cmd("SetTextStyle", this.mapLabelID, "18");
+  this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "18");
   // Pseudocode display centered below the map
   const CODE_START_Y = GRID_START_Y + 180;
@@ -238,7 +238,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   this.cmd("SetText", this.countValueID, count);
   this.cmd("SetText", this.mapLabelID, "map");
   this.cmd("SetText", this.mapValueID, "{}");
-  this.cmd("SetText", this.containsLabelID, "map contains {prefix-k}");
+  this.cmd("SetText", this.containsLabelID, "map.containsKey(prefix-k)");
   this.cmd("SetText", this.containsValueID, "");
   
   // Highlight function signature and initialization lines
@@ -283,7 +283,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     
     this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     const need = prefix - this.k;
-    this.cmd("SetText", this.containsLabelID, `map contains {${need}}`);
+    this.cmd("SetText", this.containsLabelID, `map.containsKey(${need})`);
     const contains = map[need] != null;
     this.cmd("SetText", this.containsValueID, contains ? "true" : "false");
     this.cmd("Step");
