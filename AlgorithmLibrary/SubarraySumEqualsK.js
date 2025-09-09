@@ -299,12 +299,22 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
         this.codeID[7][0],
         SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR
       );
-      // Show the retrieved map value moving to the count variable
+
+      // Show the retrieved map value moving to the count variable.
+      // Break the motion into small segments so the transfer is slow and easy to see.
       const moveID = this.nextIndex++;
       const moveText = `+map.get(${need}) = ${map[need]}`;
       this.cmd("SetBackgroundColor", this.mapValueID, "#FF9999");
       this.cmd("CreateLabel", moveID, moveText, this.mapValueX, this.mapValueY);
-      this.cmd("Move", moveID, this.countValueX, this.countValueY);
+      const STEPS = 5;
+      for (let s = 1; s <= STEPS; s++) {
+        const t = s / STEPS;
+        const x = this.mapValueX + (this.countValueX - this.mapValueX) * t;
+        const y = this.mapValueY + (this.countValueY - this.mapValueY) * t;
+        this.cmd("Move", moveID, x, y);
+        this.cmd("Step");
+      }
+      // Hold the label at the count position briefly before removing it
       this.cmd("Step");
       this.cmd("Delete", moveID);
       this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
