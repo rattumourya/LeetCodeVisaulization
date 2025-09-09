@@ -142,62 +142,62 @@ SubarraySumEqualsK.prototype.setup = function() {
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
   }
   
-  // Prefix sum and count labels
-  const VAR_START_Y = ARR_START_Y + 80;
-  const VAR_X = 80;
-  
-  // Variable labels and values aligned in two columns
-  const VAR_LABEL_X = VAR_X;
-  const VAR_VALUE_X = VAR_LABEL_X + 100;
+  // Layout variables in a 3x2 invisible grid
+  const GRID_START_Y = ARR_START_Y + 80;
+  const GRID_START_X = 80;
+  const CELL_W = 220;
+  const CELL_H = 40;
 
+  // Row 1, Col 1 : prefix and its value
+  const PREFIX_X = GRID_START_X;
+  const PREFIX_Y = GRID_START_Y;
   this.prefixLabelID = this.nextIndex++;
   this.prefixValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.prefixLabelID, "prefix", VAR_LABEL_X, VAR_START_Y, 0);
-  this.cmd("CreateLabel", this.prefixValueID, "0", VAR_VALUE_X, VAR_START_Y, 0);
-  this.prefixValueX = VAR_VALUE_X;
-  this.prefixValueY = VAR_START_Y;
+  this.cmd("CreateLabel", this.prefixLabelID, "prefix", PREFIX_X, PREFIX_Y, 0);
+  this.cmd("CreateLabel", this.prefixValueID, "0", PREFIX_X + 60, PREFIX_Y, 0);
+  this.prefixValueX = PREFIX_X + 60;
+  this.prefixValueY = PREFIX_Y;
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 18");
   this.cmd("SetTextStyle", this.prefixValueID, "bold 18");
 
-  this.countLabelID = this.nextIndex++;
-  this.countValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.countLabelID, "count", VAR_LABEL_X, VAR_START_Y + 40, 0);
-  this.cmd("CreateLabel", this.countValueID, "0", VAR_VALUE_X, VAR_START_Y + 40, 0);
-  this.cmd("SetTextStyle", this.countLabelID, "bold 18");
-  this.cmd("SetTextStyle", this.countValueID, "bold 18");
-
-  // Map display as dictionary, start empty until algorithm begins
-  this.mapLabelID = this.nextIndex++;
-  this.mapValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.mapLabelID, "map", VAR_LABEL_X, VAR_START_Y + 80, 0);
-  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, VAR_START_Y + 80, 0);
-  this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
-  this.cmd("SetTextStyle", this.mapValueID, "bold 18");
-
-  // Display whether the map contains (prefix - k)
+  // Row 2, Col 1 : map contains {prefix-k} and its result
+  const CONTAINS_X = GRID_START_X;
+  const CONTAINS_Y = GRID_START_Y + CELL_H;
   this.containsLabelID = this.nextIndex++;
   this.containsValueID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.containsLabelID,
     "map contains {prefix-k}",
-    VAR_LABEL_X,
-    VAR_START_Y + 120,
+    CONTAINS_X,
+    CONTAINS_Y,
     0
   );
-  this.cmd(
-    "CreateLabel",
-    this.containsValueID,
-    "",
-    VAR_VALUE_X,
-    VAR_START_Y + 120,
-    0
-  );
+  this.cmd("CreateLabel", this.containsValueID, "", CONTAINS_X + 200, CONTAINS_Y, 0);
   this.cmd("SetTextStyle", this.containsLabelID, "bold 18");
   this.cmd("SetTextStyle", this.containsValueID, "bold 18");
 
+  // Row 2, Col 2 : count and its value
+  const COUNT_X = GRID_START_X + CELL_W;
+  const COUNT_Y = GRID_START_Y + CELL_H;
+  this.countLabelID = this.nextIndex++;
+  this.countValueID = this.nextIndex++;
+  this.cmd("CreateLabel", this.countLabelID, "count", COUNT_X, COUNT_Y, 0);
+  this.cmd("CreateLabel", this.countValueID, "0", COUNT_X + 60, COUNT_Y, 0);
+  this.cmd("SetTextStyle", this.countLabelID, "bold 18");
+  this.cmd("SetTextStyle", this.countValueID, "bold 18");
+
+  // Row 3 : map and its value spanning both columns
+  const MAP_X = GRID_START_X;
+  const MAP_Y = GRID_START_Y + CELL_H * 2;
+  this.mapLabelID = this.nextIndex++;
+  this.mapValueID = this.nextIndex++;
+  this.cmd("CreateLabel", this.mapLabelID, "map", MAP_X, MAP_Y, 0);
+  this.cmd("CreateLabel", this.mapValueID, ": {}", MAP_X + 60, MAP_Y, 0);
+  this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
+  this.cmd("SetTextStyle", this.mapValueID, "bold 18");
   // Pseudocode display centered below the map
-  const CODE_START_Y = VAR_START_Y + 180;
+  const CODE_START_Y = GRID_START_Y + 180;
   const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
   this.codeID = this.addCodeToCanvasBase(
     SubarraySumEqualsK.CODE,
@@ -232,7 +232,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   // show variables with an empty map before seeding
   this.cmd("SetText", this.prefixValueID, prefix);
   this.cmd("SetText", this.countValueID, count);
-  this.cmd("SetText", this.mapValueID, "{}");
+  this.cmd("SetText", this.mapValueID, ": {}");
   this.cmd("SetText", this.containsLabelID, "map contains {prefix-k}");
   this.cmd("SetText", this.containsValueID, "");
   
@@ -251,7 +251,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   
   // seed map with 0:1
   this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
-  this.cmd("SetText", this.mapValueID, this.formatMap(map));
+  this.cmd("SetText", this.mapValueID, ": " + this.formatMap(map));
   this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
   this.cmd("Step");
   this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
@@ -299,7 +299,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     } else {
       map[prefix]++;
     }
-    this.cmd("SetText", this.mapValueID, this.formatMap(map));
+    this.cmd("SetText", this.mapValueID, ": " + this.formatMap(map));
     this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
     this.cmd("Step");
     this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
