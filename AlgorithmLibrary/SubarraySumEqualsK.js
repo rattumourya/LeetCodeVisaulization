@@ -199,7 +199,6 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("CreateLabel", this.mapValueID, "{}", MAP_X + 60, MAP_Y, 0);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
-
   // Pseudocode display centered below the map
   const CODE_START_Y = GRID_START_Y + 180;
   const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
@@ -256,7 +255,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   
   // seed map with 0:1
   this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
-  this.cmd("SetText", this.mapValueID, this.formatMap(map));
+  this.cmd("SetText", this.mapValueID, ": " + this.formatMap(map));
   this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
   this.cmd("Step");
   this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
@@ -304,7 +303,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     } else {
       map[prefix]++;
     }
-    this.cmd("SetText", this.mapValueID, this.formatMap(map));
+    this.cmd("SetText", this.mapValueID, ": " + this.formatMap(map));
     this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
     this.cmd("Step");
     this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
