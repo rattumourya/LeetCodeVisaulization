@@ -159,7 +159,7 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.prefixValueX = PREFIX_X + 60;
   this.prefixValueY = PREFIX_Y;
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 18");
-  this.cmd("SetTextStyle", this.prefixValueID, "bold 18");
+  this.cmd("SetTextStyle", this.prefixValueID, 18);
 
   // Row 2, Col 1 : map contains {prefix-k} and its result
   const CONTAINS_X = GRID_START_X;
@@ -176,8 +176,9 @@ SubarraySumEqualsK.prototype.setup = function() {
   );
   // value placed with extra padding so it doesn't collide with count column
   this.cmd("CreateLabel", this.containsValueID, "", CONTAINS_X + 160, CONTAINS_Y, 0);
-  this.cmd("SetTextStyle", this.containsLabelID, "bold 18");
-  this.cmd("SetTextStyle", this.containsValueID, "bold 18");
+  this.cmd("SetTextStyle", this.containsLabelID, 18);
+  this.cmd("SetTextStyle", this.containsValueID, 18);
+
 
   // Row 2, Col 2 : count and its value
   const COUNT_X = GRID_START_X + CELL_W;
@@ -197,8 +198,8 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("CreateLabel", this.mapLabelID, "map", MAP_X, MAP_Y, 0);
   // map value displayed without a leading colon
   this.cmd("CreateLabel", this.mapValueID, "{}", MAP_X + 60, MAP_Y, 0);
-  this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
-  this.cmd("SetTextStyle", this.mapValueID, "bold 18");
+  this.cmd("SetTextStyle", this.mapLabelID, 18);
+  this.cmd("SetTextStyle", this.mapValueID, 18);
   // Pseudocode display centered below the map
   const CODE_START_Y = GRID_START_Y + 180;
   const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
