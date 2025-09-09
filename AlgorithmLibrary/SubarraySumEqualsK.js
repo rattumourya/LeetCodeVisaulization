@@ -50,8 +50,6 @@ SubarraySumEqualsK.prototype.init = function(am, w, h) {
   this.prefixValueID = -1;
   this.countLabelID = -1;
   this.countValueID = -1;
-  this.containsLabelID = -1;
-  this.containsValueID = -1;
   this.mapLabelID = -1;
   this.mapValueID = -1;
   this.codeID = [];
@@ -142,7 +140,7 @@ SubarraySumEqualsK.prototype.setup = function() {
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, y);
   }
   
-    // Prefix sum, condition check, and count labels
+  // Prefix sum and count labels
   const VAR_START_Y = ARR_START_Y + 80;
   const VAR_X = 80;
   
@@ -159,58 +157,18 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 18");
   this.cmd("SetTextStyle", this.prefixValueID, "bold 18");
 
-  this.containsLabelID = this.nextIndex++;
-  this.containsValueID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.containsLabelID,
-    "map.containsKey(prefix - k)",
-    VAR_LABEL_X,
-    VAR_START_Y + 40,
-    0
-  );
-  this.cmd(
-    "CreateLabel",
-    this.containsValueID,
-    "false",
-    VAR_VALUE_X,
-    VAR_START_Y + 40,
-    0
-  );
-  this.cmd("SetTextStyle", this.containsLabelID, "bold 18");
-  this.cmd("SetTextStyle", this.containsValueID, "bold 18");
-
   this.countLabelID = this.nextIndex++;
   this.countValueID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.countLabelID,
-    "count",
-    VAR_LABEL_X,
-    VAR_START_Y + 80,
-    0
-  );
-  this.cmd(
-    "CreateLabel",
-    this.countValueID,
-    "0",
-    VAR_VALUE_X,
-    VAR_START_Y + 80,
-    0
-  );
-  this.countValueX = VAR_VALUE_X;
-  this.countValueY = VAR_START_Y + 80;
+  this.cmd("CreateLabel", this.countLabelID, "count", VAR_LABEL_X, VAR_START_Y + 40, 0);
+  this.cmd("CreateLabel", this.countValueID, "0", VAR_VALUE_X, VAR_START_Y + 40, 0);
   this.cmd("SetTextStyle", this.countLabelID, "bold 18");
   this.cmd("SetTextStyle", this.countValueID, "bold 18");
 
-    // Map display as dictionary, start empty until algorithm begins
-    this.mapLabelID = this.nextIndex++;
-    this.mapValueID = this.nextIndex++;
-    const MAP_Y = VAR_START_Y + 120;
-  this.cmd("CreateLabel", this.mapLabelID, "map", VAR_LABEL_X, MAP_Y, 0);
-  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, MAP_Y, 0);
-  this.mapValueX = VAR_VALUE_X;
-  this.mapValueY = MAP_Y;
+  // Map display as dictionary, start empty until algorithm begins
+  this.mapLabelID = this.nextIndex++;
+  this.mapValueID = this.nextIndex++;
+  this.cmd("CreateLabel", this.mapLabelID, "map", VAR_LABEL_X, VAR_START_Y + 80, 0);
+  this.cmd("CreateLabel", this.mapValueID, "{}", VAR_VALUE_X, VAR_START_Y + 80, 0);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
   
@@ -250,7 +208,6 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   // show variables with an empty map before seeding
   this.cmd("SetText", this.prefixValueID, prefix);
   this.cmd("SetText", this.countValueID, count);
-  this.cmd("SetText", this.containsValueID, "false");
   this.cmd("SetText", this.mapValueID, "{}");
   
   // Highlight function signature and initialization lines
@@ -292,35 +249,19 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("SetText", this.prefixValueID, prefix);
     this.cmd("Step");
     this.cmd("SetForegroundColor", this.codeID[5][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
-
+    
     this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
     const need = prefix - this.k;
-    const lookupID = this.nextIndex++;
-    this.cmd("CreateLabel", lookupID, String(need), this.prefixValueX, this.prefixValueY);
-    this.cmd("Move", lookupID, this.mapValueX, this.mapValueY);
     this.cmd("Step");
-    this.cmd("Delete", lookupID);
-    const found = map[need] != null;
-    this.cmd("SetText", this.containsValueID, found ? "true" : "false");
-    this.cmd("SetBackgroundColor", this.containsValueID, "#FFFF00");
-    this.cmd("Step");
-    this.cmd("SetBackgroundColor", this.containsValueID, "#FFFFFF");
-    if (found) {
-        this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
-        const valID = this.nextIndex++;
-        this.cmd("CreateLabel", valID, String(map[need]), this.mapValueX, this.mapValueY);
-        this.cmd("SetBackgroundColor", this.mapValueID, "#FF9999");
-        this.cmd("Move", valID, this.countValueX, this.countValueY);
-        this.cmd("Step");
-        this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
-        this.cmd("Delete", valID);
-        count += map[need];
-        this.cmd("SetText", this.countValueID, count);
-        this.cmd("Step");
-
-        this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
-      }
-    this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
+    if (map[need] != null) {
+      this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+      count += map[need];
+      this.cmd("SetText", this.countValueID, count);
+      this.cmd("SetBackgroundColor", this.mapValueID, "#FF9999");
+      this.cmd("Step");
+      this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
+      this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
+    }
     this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
     
     this.cmd("SetForegroundColor", this.codeID[8][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
