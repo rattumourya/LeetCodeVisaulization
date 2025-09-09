@@ -187,6 +187,9 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.countValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.countLabelID, "count", COUNT_X + 40, COUNT_Y, 0);
   this.cmd("CreateLabel", this.countValueID, "0", COUNT_X + 120, COUNT_Y, 0);
+  // Remember position of count value for later animations
+  this.countValueX = COUNT_X + 120;
+  this.countValueY = COUNT_Y;
   this.cmd("SetTextStyle", this.countLabelID, "bold 18");
   this.cmd("SetTextStyle", this.countValueID, "18");
 
@@ -198,6 +201,9 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("CreateLabel", this.mapLabelID, "map", MAP_X, MAP_Y, 0);
   // map value displayed without a leading colon
   this.cmd("CreateLabel", this.mapValueID, "{}", MAP_X + 60, MAP_Y, 0);
+  // Remember position of map values so we can animate retrievals
+  this.mapValueX = MAP_X + 60;
+  this.mapValueY = MAP_Y;
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "18");
   // Pseudocode display centered below the map
@@ -288,13 +294,30 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     this.cmd("SetText", this.containsValueID, contains ? "true" : "false");
     this.cmd("Step");
     if (contains) {
-      this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
+      this.cmd(
+        "SetForegroundColor",
+        this.codeID[7][0],
+        SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR
+      );
+      // Show the retrieved map value moving to the count variable
+      const moveID = this.nextIndex++;
+      const moveText = `+map.get(${need}) = ${map[need]}`;
+      this.cmd("SetBackgroundColor", this.mapValueID, "#FF9999");
+      this.cmd("CreateLabel", moveID, moveText, this.mapValueX, this.mapValueY);
+      this.cmd("Move", moveID, this.countValueX, this.countValueY);
+      this.cmd("Step");
+      this.cmd("Delete", moveID);
+      this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
       count += map[need];
       this.cmd("SetText", this.countValueID, count);
-      this.cmd("SetBackgroundColor", this.mapValueID, "#FF9999");
+      this.cmd("SetBackgroundColor", this.countValueID, "#FF9999");
       this.cmd("Step");
-      this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
-      this.cmd("SetForegroundColor", this.codeID[7][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
+      this.cmd("SetBackgroundColor", this.countValueID, "#FFFFFF");
+      this.cmd(
+        "SetForegroundColor",
+        this.codeID[7][0],
+        SubarraySumEqualsK.CODE_STANDARD_COLOR
+      );
     }
     this.cmd("SetForegroundColor", this.codeID[6][0], SubarraySumEqualsK.CODE_STANDARD_COLOR);
     
