@@ -255,7 +255,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
   
   // seed map with 0:1
   this.cmd("SetForegroundColor", this.codeID[3][0], SubarraySumEqualsK.CODE_HIGHLIGHT_COLOR);
-  this.cmd("SetText", this.mapValueID, ": " + this.formatMap(map));
+  this.cmd("SetText", this.mapValueID, this.formatMap(map));
   this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
   this.cmd("Step");
   this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
@@ -303,7 +303,7 @@ SubarraySumEqualsK.prototype.doAlgorithm = function() {
     } else {
       map[prefix]++;
     }
-    this.cmd("SetText", this.mapValueID, ": " + this.formatMap(map));
+    this.cmd("SetText", this.mapValueID, this.formatMap(map));
     this.cmd("SetBackgroundColor", this.mapValueID, "#99CCFF");
     this.cmd("Step");
     this.cmd("SetBackgroundColor", this.mapValueID, "#FFFFFF");
