@@ -179,6 +179,7 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("SetTextStyle", this.containsLabelID, 18);
   this.cmd("SetTextStyle", this.containsValueID, 18);
 
+
   // Row 2, Col 2 : count and its value
   const COUNT_X = GRID_START_X + CELL_W;
   const COUNT_Y = GRID_START_Y + CELL_H;
@@ -199,7 +200,6 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("CreateLabel", this.mapValueID, "{}", MAP_X + 60, MAP_Y, 0);
   this.cmd("SetTextStyle", this.mapLabelID, 18);
   this.cmd("SetTextStyle", this.mapValueID, 18);
-
   // Pseudocode display centered below the map
   const CODE_START_Y = GRID_START_Y + 180;
   const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
