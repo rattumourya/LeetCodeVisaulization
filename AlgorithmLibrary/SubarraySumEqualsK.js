@@ -196,7 +196,6 @@ SubarraySumEqualsK.prototype.setup = function() {
   this.cmd("CreateLabel", this.mapValueID, ": {}", MAP_X + 60, MAP_Y, 0);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 18");
   this.cmd("SetTextStyle", this.mapValueID, "bold 18");
-
   // Pseudocode display centered below the map
   const CODE_START_Y = GRID_START_Y + 180;
   const CODE_START_X = CANVAS_W / 2 - 140; // approximate center
