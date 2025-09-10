@@ -243,7 +243,7 @@ PathSumIII.prototype.setup = function () {
   }
 
   // grid layout constants
-  const CANVAS_W = 540;
+  const CANVAS_W = canvasElem ? canvasElem.width : 540;
   const firstColW = 200; // wider first column for long labels
   const otherColW = (CANVAS_W - firstColW) / 4;
   this.firstColW = firstColW;
@@ -322,7 +322,7 @@ PathSumIII.prototype.setup = function () {
     maxWidth =
       PathSumIII.CODE_FONT_SIZE * 0.6 * Math.max(...PathSumIII.CODE.map((s) => s.length));
   }
-  const codeStartX = CANVAS_W / 2 - maxWidth / 2;
+  const codeStartX = (CANVAS_W - maxWidth) / 2;
   const codeStartY = row3Y + this.cellH / 2 + 60;
   for (let i = 0; i < PathSumIII.CODE.length; i++) {
     const id = this.nextIndex++;
