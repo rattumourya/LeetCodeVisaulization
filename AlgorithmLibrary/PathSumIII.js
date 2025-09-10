@@ -303,9 +303,19 @@ PathSumIII.prototype.setup = function () {
   this.updateContainsLabel();
 
   // code block centered horizontally (left-aligned text)
-  const maxLen = Math.max(...PathSumIII.CODE.map((s) => s.length));
-  const approxWidth = (PathSumIII.CODE_FONT_SIZE * 0.6) * maxLen;
-  const codeStartX = CANVAS_W / 2 - approxWidth / 2;
+  let maxWidth = 0;
+  if (canvasElem) {
+    const ctx = canvasElem.getContext("2d");
+    ctx.font = PathSumIII.CODE_FONT_SIZE + "px Arial";
+    for (let i = 0; i < PathSumIII.CODE.length; i++) {
+      const w = ctx.measureText(PathSumIII.CODE[i]).width;
+      if (w > maxWidth) maxWidth = w;
+    }
+  }
+  if (maxWidth === 0) {
+    maxWidth = (PathSumIII.CODE_FONT_SIZE * 0.6) * Math.max(...PathSumIII.CODE.map((s) => s.length));
+  }
+  const codeStartX = CANVAS_W / 2 - maxWidth / 2;
   const codeStartY = row3Y + this.cellH / 2 + 60;
   for (let i = 0; i < PathSumIII.CODE.length; i++) {
     const id = this.nextIndex++;
