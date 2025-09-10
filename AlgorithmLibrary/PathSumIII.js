@@ -310,15 +310,19 @@ PathSumIII.prototype.setup = function () {
 
   // code block centered horizontally (left-aligned text)
   let maxWidth = 0;
+  let ctx;
   if (canvasElem) {
-    const ctx = canvasElem.getContext("2d");
+    ctx = canvasElem.getContext("2d");
     ctx.font = PathSumIII.CODE_FONT_SIZE + "px Arial";
-    for (let i = 0; i < PathSumIII.CODE.length; i++) {
-      const w = ctx.measureText(PathSumIII.CODE[i]).width;
+    for (const line of PathSumIII.CODE) {
+      const w = ctx.measureText(line).width;
       if (w > maxWidth) maxWidth = w;
     }
-  }
-  if (maxWidth === 0) {
+    if (maxWidth === 0) {
+      const charW = ctx.measureText("M").width || PathSumIII.CODE_FONT_SIZE * 0.6;
+      maxWidth = charW * Math.max(...PathSumIII.CODE.map((s) => s.length));
+    }
+  } else {
     maxWidth =
       PathSumIII.CODE_FONT_SIZE * 0.6 * Math.max(...PathSumIII.CODE.map((s) => s.length));
   }
