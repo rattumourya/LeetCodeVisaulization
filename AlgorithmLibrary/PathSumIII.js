@@ -361,7 +361,7 @@ PathSumIII.prototype.setup = function () {
 
 PathSumIII.prototype.renderMap = function () {
   for (const key in this.mapEntryIDs) {
-    this.cmd("Delete", this.mapEntryIDs[key]);
+    this.cmd("Delete", this.mapEntryIDs[key].id);
   }
   this.mapEntryIDs = {};
   const keys = Object.keys(this.map).map(Number).sort((a, b) => a - b);
