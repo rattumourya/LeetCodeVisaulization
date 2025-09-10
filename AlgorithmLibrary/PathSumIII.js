@@ -232,6 +232,7 @@ PathSumIII.prototype.setup = function () {
   const y2 = this.gridStartY + this.cellH * 1 + this.cellH / 2;
   const y3 = this.gridStartY + this.cellH * 2 + this.cellH / 2;
 
+
   const margin = 10;
   const x1 = margin;
   const x2 = this.cellW + margin;
@@ -247,6 +248,7 @@ PathSumIII.prototype.setup = function () {
   this.mapLabelID = this.nextIndex++;
 
   this.cmd("CreateLabel", this.prefixLabelID, "prefix", x1, y1, 0);
+
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 16");
   this.cmd("CreateLabel", this.prefixValID, "0", x2, y1, 0);
   this.cmd("SetTextStyle", this.prefixValID, "16");
@@ -261,6 +263,7 @@ PathSumIII.prototype.setup = function () {
     y2,
     0
   );
+
   this.cmd("SetTextStyle", this.containsLabelID, "bold 16");
   this.cmd("CreateLabel", this.containsValID, "false", x2, y2, 0);
   this.cmd("SetTextStyle", this.containsValID, "16");
