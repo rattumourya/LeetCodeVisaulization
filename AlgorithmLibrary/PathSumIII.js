@@ -451,8 +451,6 @@ PathSumIII.prototype.runDFS = function () {
     if (nodeID == null) {
       return 0;
     }
-    this.cmd("SetHighlight", nodeID, 1);
-    this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
     this.cmd("Step");
 
     this.highlight(7);
@@ -558,8 +556,7 @@ PathSumIII.prototype.runDFS = function () {
 
     this.highlight(15);
     this.cmd("Step");
-    this.cmd("SetHighlight", nodeID, 0);
-    this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
+
     return countLocal;
   };
 
