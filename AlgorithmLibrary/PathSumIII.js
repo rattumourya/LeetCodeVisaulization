@@ -96,13 +96,7 @@ PathSumIII.prototype.buildTreeCallback = function () {
   if (raw.length === 0) {
     return;
   }
-  const t = parseInt(this.targetField.value, 10);
-  if (!isNaN(t)) {
-    this.k = t;
-  }
-  // fully reset existing visualization before building a new tree
-  this.reset();
-  // allow bracketed LeetCode style input and ignore empty tokens
+  // allow bracketed LeetCode-style input and ignore empty tokens
   const vals = raw
     .replace(/^\[|\]$/g, "")
     .split(/[\s,]+/)
@@ -111,6 +105,15 @@ PathSumIII.prototype.buildTreeCallback = function () {
       v === "null" || v === "NULL" || v === "None" ? null : parseInt(v, 10)
     );
   this.arr = vals;
+
+
+  const t = parseInt(this.targetField.value, 10);
+  if (!isNaN(t)) {
+    this.k = t;
+  }
+
+  // fully reset existing visualization before building a new tree
+  this.reset();
   this.implementAction(this.setup.bind(this), 0);
 };
 
@@ -184,7 +187,6 @@ PathSumIII.prototype.setup = function () {
     this.computeNodePositions(root, this.treeRootX, this.treeRootY, 200);
     this.rootID = root.id;
     // create nodes & edges
-
     this.cmd("CreateCircle", root.id, root.val, root.x, root.y);
     this.cmd("SetForegroundColor", root.id, "#000");
     this.cmd("SetBackgroundColor", root.id, "#FFF");
@@ -193,7 +195,6 @@ PathSumIII.prototype.setup = function () {
     while (queue.length > 0) {
       const node = queue.shift();
       const id = node.id;
-
       if (node.left) {
         this.cmd("CreateCircle", node.left.id, node.left.val, node.left.x, node.left.y);
         this.cmd("SetForegroundColor", node.left.id, "#000");
@@ -206,7 +207,6 @@ PathSumIII.prototype.setup = function () {
         this.cmd("CreateCircle", node.right.id, node.right.val, node.right.x, node.right.y);
         this.cmd("SetForegroundColor", node.right.id, "#000");
         this.cmd("SetBackgroundColor", node.right.id, "#FFF");
-
         this.cmd("Connect", id, node.right.id);
         queue.push(node.right);
       }
@@ -297,7 +297,6 @@ PathSumIII.prototype.setup = function () {
 
 PathSumIII.prototype.reset = function () {
   this.nextIndex = 0;
-
   if (typeof animationManager !== "undefined") {
     animationManager.resetAll();
   }
