@@ -92,6 +92,7 @@ PathSumIII.prototype.addControls = function () {
 // callback to build tree from user input
 PathSumIII.prototype.buildTreeCallback = function () {
   const raw = this.inputField.value.trim();
+
   if (raw.length === 0) {
     return;
   }
@@ -183,6 +184,7 @@ PathSumIII.prototype.setup = function () {
     this.computeNodePositions(root, this.treeRootX, this.treeRootY, 200);
     this.rootID = root.id;
     // create nodes & edges
+
     this.cmd("CreateCircle", root.id, root.val, root.x, root.y);
     this.cmd("SetForegroundColor", root.id, "#000");
     this.cmd("SetBackgroundColor", root.id, "#FFF");
@@ -191,6 +193,7 @@ PathSumIII.prototype.setup = function () {
     while (queue.length > 0) {
       const node = queue.shift();
       const id = node.id;
+
       if (node.left) {
         this.cmd("CreateCircle", node.left.id, node.left.val, node.left.x, node.left.y);
         this.cmd("SetForegroundColor", node.left.id, "#000");
@@ -199,9 +202,11 @@ PathSumIII.prototype.setup = function () {
         queue.push(node.left);
       }
       if (node.right) {
+
         this.cmd("CreateCircle", node.right.id, node.right.val, node.right.x, node.right.y);
         this.cmd("SetForegroundColor", node.right.id, "#000");
         this.cmd("SetBackgroundColor", node.right.id, "#FFF");
+
         this.cmd("Connect", id, node.right.id);
         queue.push(node.right);
       }
@@ -292,9 +297,11 @@ PathSumIII.prototype.setup = function () {
 
 PathSumIII.prototype.reset = function () {
   this.nextIndex = 0;
+
   if (typeof animationManager !== "undefined") {
     animationManager.resetAll();
   }
+
   this.commands = [];
   this.nodeValue = {};
   this.leftChild = {};
