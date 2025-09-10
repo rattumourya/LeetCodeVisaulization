@@ -92,7 +92,6 @@ PathSumIII.prototype.addControls = function () {
 // callback to build tree from user input
 PathSumIII.prototype.buildTreeCallback = function () {
   const raw = this.inputField.value.trim();
-
   if (raw.length === 0) {
     return;
   }
@@ -105,7 +104,6 @@ PathSumIII.prototype.buildTreeCallback = function () {
       v === "null" || v === "NULL" || v === "None" ? null : parseInt(v, 10)
     );
   this.arr = vals;
-
 
   const t = parseInt(this.targetField.value, 10);
   if (!isNaN(t)) {
@@ -203,7 +201,6 @@ PathSumIII.prototype.setup = function () {
         queue.push(node.left);
       }
       if (node.right) {
-
         this.cmd("CreateCircle", node.right.id, node.right.val, node.right.x, node.right.y);
         this.cmd("SetForegroundColor", node.right.id, "#000");
         this.cmd("SetBackgroundColor", node.right.id, "#FFF");
@@ -300,7 +297,6 @@ PathSumIII.prototype.reset = function () {
   if (typeof animationManager !== "undefined") {
     animationManager.resetAll();
   }
-
   this.commands = [];
   this.nodeValue = {};
   this.leftChild = {};
@@ -319,6 +315,20 @@ PathSumIII.prototype.startCallback = function () {
   if (this.rootID === -1) return;
   this.disableUI();
   this.implementAction(this.runSearch.bind(this), 0);
+};
+
+
+PathSumIII.prototype.pauseCallback = function () {
+  if (typeof doPlayPause === "function") doPlayPause();
+};
+
+PathSumIII.prototype.stepCallback = function () {
+  if (typeof animationManager !== "undefined") {
+    if (!animationManager.animationPaused && typeof doPlayPause === "function") {
+      doPlayPause();
+    }
+    animationManager.step();
+  }
 };
 
 PathSumIII.prototype.runSearch = function () {
