@@ -282,13 +282,13 @@ PathSumIII.prototype.setup = function () {
   this.cmd(
     "CreateLabel",
     this.containsLabelID,
-    "map.containsKey(0)",
+    "map.containsKey(prefix-k)",
     x1,
     y2,
     1
   );
   this.cmd("SetTextStyle", this.containsLabelID, "bold 16");
-  this.cmd("CreateLabel", this.containsValID, "false", x2, y2, 1);
+  this.cmd("CreateLabel", this.containsValID, "", x2, y2, 1);
   this.cmd("SetTextStyle", this.containsValID, "16");
 
   this.cmd("CreateLabel", this.countLabelID, "count", x4, y2, 1);
@@ -424,15 +424,7 @@ PathSumIII.prototype.runSearch = function () {
 };
 
 PathSumIII.prototype.updateGrid = function () {
-  const diff = this.prefix - this.k;
   this.cmd("SetText", this.prefixValID, String(this.prefix));
-  this.cmd(
-    "SetText",
-    this.containsLabelID,
-    "map.containsKey(" + String(diff) + ")"
-  );
-  const exists = this.map.hasOwnProperty(diff);
-  this.cmd("SetText", this.containsValID, exists ? "true" : "false");
   this.cmd("SetText", this.countValID, String(this.count));
 
   // update map row
@@ -454,6 +446,17 @@ PathSumIII.prototype.updateGrid = function () {
     this.mapPairIDs[k] = id;
     x += 60;
   }
+};
+
+PathSumIII.prototype.evaluateContains = function (diff) {
+  this.cmd(
+    "SetText",
+    this.containsLabelID,
+    "map.containsKey(" + String(diff) + ")"
+  );
+  const exists = this.map.hasOwnProperty(diff);
+  this.cmd("SetText", this.containsValID, exists ? "true" : "false");
+  return exists;
 };
 
 PathSumIII.prototype.highlightCode = function (line) {
@@ -530,7 +533,7 @@ PathSumIII.prototype.dfs = function (nodeID) {
 
   this.highlightCode(7); // if(map.containsKey(prefix-k))
   const diff = this.prefix - this.k;
-  const exists = this.map.hasOwnProperty(diff);
+  const exists = this.evaluateContains(diff);
   if (exists) {
     this.cmd("SetForegroundColor", this.mapPairIDs[diff], "#F00");
   }
@@ -554,6 +557,8 @@ PathSumIII.prototype.dfs = function (nodeID) {
     this.cmd("Step");
     this.cmd("SetForegroundColor", this.mapPairIDs[diff], "#000");
   }
+  this.cmd("SetText", this.containsLabelID, "map.containsKey(prefix-k)");
+  this.cmd("SetText", this.containsValID, "");
 
   this.highlightCode(9); // map.put(prefix,...)
   if (this.map[this.prefix] == null) this.map[this.prefix] = 0;
