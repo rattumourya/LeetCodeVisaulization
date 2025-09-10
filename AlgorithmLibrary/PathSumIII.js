@@ -499,6 +499,9 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.cmd("Step");
 
   if (nodeID == null) {
+    // function returns immediately
+    this.highlightCode(14);
+    this.cmd("Step");
     this.popStack();
     return;
   }
@@ -562,6 +565,8 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.cmd("Step");
   this.dfs(this.leftChild[nodeID]);
   if (this.leftChild[nodeID] != null) {
+    // returning from left child
+    this.highlightCode(10);
     this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
     this.cmd("Step");
   }
@@ -569,6 +574,8 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.cmd("Step");
   this.dfs(this.rightChild[nodeID]);
   if (this.rightChild[nodeID] != null) {
+    // returning from right child
+    this.highlightCode(11);
     this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
     this.cmd("Step");
   }
