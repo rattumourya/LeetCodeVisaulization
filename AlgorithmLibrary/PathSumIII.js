@@ -484,6 +484,7 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.highlightCode(11); // dfs(right)
   this.cmd("Step");
   if (this.rightChild[nodeID] != null) {
+
     // traverse right subtree
     this.dfs(this.rightChild[nodeID]);
     // backtrack to current node
