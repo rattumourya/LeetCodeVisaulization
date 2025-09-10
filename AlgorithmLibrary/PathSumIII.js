@@ -445,6 +445,7 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
     this.cmd("Step");
     this.cmd("SetHighlight", nodeID, 1);
+    this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
 
     this.highlight(7);
     this.cmd("Step");
@@ -499,20 +500,30 @@ PathSumIII.prototype.runDFS = function () {
     this.highlight(11);
     this.cmd("Step");
     if (this.leftChild[nodeID] != null) {
+      this.cmd("SetHighlight", nodeID, 0);
+      this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
       this.cmd("Move", this.travID, this.nodeX[this.leftChild[nodeID]], this.nodeY[this.leftChild[nodeID]]);
       this.cmd("Step");
       dfs(this.leftChild[nodeID], prefix);
       this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
+      this.cmd("Step");
+      this.cmd("SetHighlight", nodeID, 1);
+      this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
       this.cmd("Step");
     }
 
     this.highlight(12);
     this.cmd("Step");
     if (this.rightChild[nodeID] != null) {
+      this.cmd("SetHighlight", nodeID, 0);
+      this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
       this.cmd("Move", this.travID, this.nodeX[this.rightChild[nodeID]], this.nodeY[this.rightChild[nodeID]]);
       this.cmd("Step");
       dfs(this.rightChild[nodeID], prefix);
       this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
+      this.cmd("Step");
+      this.cmd("SetHighlight", nodeID, 1);
+      this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
       this.cmd("Step");
     }
 
@@ -540,6 +551,7 @@ PathSumIII.prototype.runDFS = function () {
     this.highlight(15);
     this.cmd("Step");
     this.cmd("SetHighlight", nodeID, 0);
+    this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
     return countLocal;
   };
 
