@@ -232,11 +232,12 @@ PathSumIII.prototype.setup = function () {
   const y2 = this.gridStartY + this.cellH * 1 + this.cellH / 2;
   const y3 = this.gridStartY + this.cellH * 2 + this.cellH / 2;
 
-  const x1 = this.cellW / 2;
-  const x2 = this.cellW * 1 + this.cellW / 2;
-  const x3 = this.cellW * 2 + this.cellW / 2;
-  const x4 = this.cellW * 3 + this.cellW / 2;
-  const x5 = this.cellW * 4 + this.cellW / 2;
+
+  const margin = 10;
+  const x1 = margin;
+  const x2 = this.cellW + margin;
+  const x4 = this.cellW * 3 + margin;
+  const x5 = this.cellW * 4 + margin;
 
   this.prefixLabelID = this.nextIndex++;
   this.prefixValID = this.nextIndex++;
@@ -247,9 +248,12 @@ PathSumIII.prototype.setup = function () {
   this.mapLabelID = this.nextIndex++;
 
   this.cmd("CreateLabel", this.prefixLabelID, "prefix", x1, y1, 0);
-  this.cmd("SetTextStyle", this.prefixLabelID, 16);
+
+  this.cmd("SetTextStyle", this.prefixLabelID, "bold 16");
   this.cmd("CreateLabel", this.prefixValID, "0", x2, y1, 0);
-  this.cmd("SetTextStyle", this.prefixValID, 14);
+  this.cmd("SetTextStyle", this.prefixValID, "16");
+  this.prefixValX = x2;
+  this.prefixValY = y1;
 
   this.cmd(
     "CreateLabel",
@@ -259,17 +263,22 @@ PathSumIII.prototype.setup = function () {
     y2,
     0
   );
-  this.cmd("SetTextStyle", this.containsLabelID, 16);
+
+  this.cmd("SetTextStyle", this.containsLabelID, "bold 16");
   this.cmd("CreateLabel", this.containsValID, "false", x2, y2, 0);
-  this.cmd("SetTextStyle", this.containsValID, 14);
+  this.cmd("SetTextStyle", this.containsValID, "16");
 
   this.cmd("CreateLabel", this.countLabelID, "count", x4, y2, 0);
-  this.cmd("SetTextStyle", this.countLabelID, 16);
+  this.cmd("SetTextStyle", this.countLabelID, "bold 16");
   this.cmd("CreateLabel", this.countValID, "0", x5, y2, 0);
-  this.cmd("SetTextStyle", this.countValID, 14);
+  this.cmd("SetTextStyle", this.countValID, "16");
+  this.countValX = x5;
+  this.countValY = y2;
 
   this.cmd("CreateLabel", this.mapLabelID, "map", x1, y3, 0);
-  this.cmd("SetTextStyle", this.mapLabelID, 16);
+  this.cmd("SetTextStyle", this.mapLabelID, "bold 16");
+  this.mapStartX = x2;
+  this.mapStartY = y3;
 
   // code block
   const code = [
@@ -396,15 +405,15 @@ PathSumIII.prototype.updateGrid = function () {
   }
   this.mapPairIDs = {};
   const keys = Object.keys(this.map).sort((a, b) => parseInt(a) - parseInt(b));
-  const startX = this.cellW * 1 + 10;
-  const y = this.gridStartY + this.cellH * 2 + this.cellH / 2;
+  const startX = this.mapStartX;
+  const y = this.mapStartY;
   let x = startX;
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     const id = this.nextIndex++;
     const text = k + ':' + this.map[k];
     this.cmd("CreateLabel", id, text, x, y, 0);
-    this.cmd("SetTextStyle", id, 14);
+    this.cmd("SetTextStyle", id, "16");
     this.mapPairIDs[k] = id;
     x += 60;
   }
@@ -437,8 +446,8 @@ PathSumIII.prototype.dfs = function (nodeID) {
     this.nodeY[nodeID],
     0
   );
-  const pX = this.cellW * 1 + this.cellW / 2;
-  const pY = this.gridStartY + this.cellH / 2;
+  const pX = this.prefixValX;
+  const pY = this.prefixValY;
   this.cmd("Move", dropID, pX, pY);
   this.cmd("Step");
   this.cmd("Delete", dropID);
@@ -459,11 +468,11 @@ PathSumIII.prototype.dfs = function (nodeID) {
     let lab = this.nextIndex++;
     const ordered = Object.keys(this.map).sort((a, b) => parseInt(a) - parseInt(b));
     const pairIndex = ordered.indexOf(String(diff));
-    const pairX = this.cellW * 1 + 10 + pairIndex * 60;
-    const pairY = this.gridStartY + this.cellH * 2 + this.cellH / 2;
+    const pairX = this.mapStartX + pairIndex * 60;
+    const pairY = this.mapStartY;
     this.cmd("CreateLabel", lab, "+" + add, pairX, pairY, 0);
-    const countX = this.cellW * 4 + this.cellW / 2;
-    const countY = this.gridStartY + this.cellH * 1 + this.cellH / 2;
+    const countX = this.countValX;
+    const countY = this.countValY;
     this.cmd("Move", lab, countX, countY);
     this.cmd("Step");
     this.cmd("Delete", lab);
