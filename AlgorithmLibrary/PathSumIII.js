@@ -204,7 +204,7 @@ PathSumIII.prototype.setup = function () {
   if (canvasElem) {
     canvasElem.width = canvasW;
     canvasElem.height = canvasH;
-    if (animationManager?.animatedObjects) {
+    if (animationManager && animationManager.animatedObjects) {
       animationManager.animatedObjects.width = canvasW;
       animationManager.animatedObjects.height = canvasH;
     }
@@ -434,7 +434,16 @@ PathSumIII.prototype.runDFS = function () {
 
   // create traversal highlight circle
   this.travID = this.nextIndex++;
-  this.cmd("CreateHighlightCircle", this.travID, "#FF0000", this.nodeX[this.rootID], this.nodeY[this.rootID]);
+  this.cmd(
+    "CreateHighlightCircle",
+    this.travID,
+    "#FF0000",
+    this.nodeX[this.rootID],
+    this.nodeY[this.rootID]
+  );
+  // start at the root so first movement is visible
+  this.cmd("Move", this.travID, this.nodeX[this.rootID], this.nodeY[this.rootID]);
+  this.cmd("Step");
 
   const dfs = (nodeID, prefix) => {
     this.highlight(6);
@@ -442,10 +451,9 @@ PathSumIII.prototype.runDFS = function () {
     if (nodeID == null) {
       return 0;
     }
-    this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
-    this.cmd("Step");
     this.cmd("SetHighlight", nodeID, 1);
     this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
+    this.cmd("Step");
 
     this.highlight(7);
     this.cmd("Step");
@@ -575,6 +583,8 @@ PathSumIII.prototype.stepCallback = function () {
 
 PathSumIII.prototype.reset = function () {
   this.nextIndex = 0;
+  this.rootID = -1;
+  this.mapEntryIDs = {};
   if (typeof animationManager !== "undefined" && animationManager.animatedObjects) {
     animationManager.animatedObjects.clearAllObjects();
   }
