@@ -188,23 +188,40 @@ PathSumIII.prototype.setup = function () {
     this.cmd("CreateCircle", root.id, root.val, root.x, root.y);
     this.cmd("SetForegroundColor", root.id, "#000");
     this.cmd("SetBackgroundColor", root.id, "#FFF");
+    this.cmd("Step");
 
     const queue = [root];
     while (queue.length > 0) {
       const node = queue.shift();
       const id = node.id;
       if (node.left) {
-        this.cmd("CreateCircle", node.left.id, node.left.val, node.left.x, node.left.y);
+        this.cmd(
+          "CreateCircle",
+          node.left.id,
+          node.left.val,
+          node.left.x,
+          node.left.y
+        );
         this.cmd("SetForegroundColor", node.left.id, "#000");
         this.cmd("SetBackgroundColor", node.left.id, "#FFF");
+        this.cmd("Step");
         this.cmd("Connect", id, node.left.id);
+        this.cmd("Step");
         queue.push(node.left);
       }
       if (node.right) {
-        this.cmd("CreateCircle", node.right.id, node.right.val, node.right.x, node.right.y);
+        this.cmd(
+          "CreateCircle",
+          node.right.id,
+          node.right.val,
+          node.right.x,
+          node.right.y
+        );
         this.cmd("SetForegroundColor", node.right.id, "#000");
         this.cmd("SetBackgroundColor", node.right.id, "#FFF");
+        this.cmd("Step");
         this.cmd("Connect", id, node.right.id);
+        this.cmd("Step");
         queue.push(node.right);
       }
     }
@@ -316,7 +333,6 @@ PathSumIII.prototype.startCallback = function () {
   this.disableUI();
   this.implementAction(this.runSearch.bind(this), 0);
 };
-
 
 PathSumIII.prototype.pauseCallback = function () {
   if (typeof doPlayPause === "function") doPlayPause();
