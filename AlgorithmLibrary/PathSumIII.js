@@ -452,10 +452,12 @@ PathSumIII.prototype.runDFS = function () {
     const text = val >= 0 ? "+" + val : String(val);
     this.cmd("CreateLabel", moveID, text, this.nodeX[nodeID], this.nodeY[nodeID]);
     this.cmd("Move", moveID, this.prefixValueX, this.prefixValueY);
+    this.cmd("SetForegroundColor", this.prefixValueID, "#FF0000");
     this.cmd("Step");
     this.cmd("Delete", moveID);
     prefix += val;
     this.cmd("SetText", this.prefixValueID, String(prefix));
+    this.cmd("SetForegroundColor", this.prefixValueID, "#000000");
     this.cmd("Step");
 
     this.highlight(8);
@@ -468,13 +470,15 @@ PathSumIII.prototype.runDFS = function () {
     if (contains) {
       const entry = this.mapEntryIDs[need];
       if (entry) {
-        this.cmd("SetBackgroundColor", entry.id, "#FF9999");
+        this.cmd("SetForegroundColor", entry.id, "#FF0000");
         const mv = this.nextIndex++;
         this.cmd("CreateLabel", mv, "+" + this.map[need], entry.x, this.mapValueY);
         this.cmd("Move", mv, this.countValueX, this.countValueY);
+        this.cmd("SetForegroundColor", this.countValueID, "#FF0000");
         this.cmd("Step");
         this.cmd("Delete", mv);
-        this.cmd("SetBackgroundColor", entry.id, "#FFFFFF");
+        this.cmd("SetForegroundColor", this.countValueID, "#000000");
+        this.cmd("SetForegroundColor", entry.id, "#000000");
       }
       this.count += this.map[need];
       this.cmd("SetText", this.countValueID, String(this.count));
@@ -520,10 +524,12 @@ PathSumIII.prototype.runDFS = function () {
     const text2 = val >= 0 ? "-" + val : "+" + -val;
     this.cmd("CreateLabel", moveID2, text2, this.nodeX[nodeID], this.nodeY[nodeID]);
     this.cmd("Move", moveID2, this.prefixValueX, this.prefixValueY);
+    this.cmd("SetForegroundColor", this.prefixValueID, "#FF0000");
     this.cmd("Step");
     this.cmd("Delete", moveID2);
     prefix -= val;
     this.cmd("SetText", this.prefixValueID, String(prefix));
+    this.cmd("SetForegroundColor", this.prefixValueID, "#000000");
     this.cmd("Step");
 
     this.highlight(14);
