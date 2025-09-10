@@ -40,6 +40,7 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.treeRootY = 80;
   this.levelHeight = 80;
 
+
   this.gridStartY = 300;
   this.cellW = w / 5;
   this.cellH = 40;
@@ -250,6 +251,7 @@ PathSumIII.prototype.setup = function () {
   this.cmd("CreateLabel", this.prefixLabelID, "prefix", x1, y1, 1);
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 16");
   this.cmd("CreateLabel", this.prefixValID, "0", x2, y1, 1);
+
   this.cmd("SetTextStyle", this.prefixValID, "16");
   this.prefixValX = x2;
   this.prefixValY = y1;
@@ -260,6 +262,7 @@ PathSumIII.prototype.setup = function () {
     "map.containsKey(0)",
     x1,
     y2,
+
     1
   );
   this.cmd("SetTextStyle", this.containsLabelID, "bold 16");
@@ -272,6 +275,7 @@ PathSumIII.prototype.setup = function () {
   this.cmd("SetTextStyle", this.countValID, "16");
   this.countValX = x5;
   this.countValY = y2;
+
 
   this.cmd("CreateLabel", this.mapLabelID, "map", x1, y3, 1);
   this.cmd("SetTextStyle", this.mapLabelID, "bold 16");
@@ -543,4 +547,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new PathSumIII(animManag, canvas.width, canvas.height);
 }
-
