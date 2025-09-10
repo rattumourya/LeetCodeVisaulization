@@ -306,12 +306,11 @@ PathSumIII.prototype.setup = function () {
   this.cmd(
     "CreateHighlightCircle",
     this.hlID,
-    "#F00",
+    "#FF0000",
     this.treeRootX,
     this.treeRootY,
     20
   );
-  this.cmd("SetWidth", this.hlID, 5);
   this.cmd("SetAlpha", this.hlID, 0);
 
   return this.commands;
