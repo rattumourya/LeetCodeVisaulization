@@ -164,7 +164,6 @@ PathSumIII.prototype.layoutTree = function (root) {
 PathSumIII.prototype.setup = function () {
   this.commands = [];
 
-  // Measure code width for centering
   let maxWidth = 0;
   const measureCtx = document.createElement("canvas").getContext("2d");
   if (measureCtx) {
@@ -325,6 +324,7 @@ PathSumIII.prototype.runDFS = function () {
     this.nodeX[this.rootID],
     this.nodeY[this.rootID]
   );
+
   this.cmd("Move", this.travID, this.nodeX[this.rootID], this.nodeY[this.rootID]);
   this.cmd("Step");
 
@@ -343,6 +343,7 @@ PathSumIII.prototype.runDFS = function () {
     this.highlight(8);
     let countLocal = 0;
     this.cmd("Step");
+
 
     this.highlight(9);
     const need = prefix - this.k;
@@ -365,6 +366,9 @@ PathSumIII.prototype.runDFS = function () {
       countLocal += dfs(this.leftChild[nodeID], prefix);
       this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
       this.cmd("Step");
+      this.cmd("SetHighlight", nodeID, 1);
+      this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
+      this.cmd("Step");
     }
 
     this.highlight(12);
@@ -375,9 +379,13 @@ PathSumIII.prototype.runDFS = function () {
         this.nodeX[this.rightChild[nodeID]],
         this.nodeY[this.rightChild[nodeID]]
       );
+
       this.cmd("Step");
       countLocal += dfs(this.rightChild[nodeID], prefix);
       this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
+      this.cmd("Step");
+      this.cmd("SetHighlight", nodeID, 1);
+      this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
       this.cmd("Step");
     }
 
@@ -387,7 +395,9 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("Step");
 
     this.highlight(14);
+
     prefix -= this.nodeValue[nodeID];
+
     this.cmd("Step");
 
     this.highlight(15);
@@ -396,6 +406,7 @@ PathSumIII.prototype.runDFS = function () {
   };
 
   const total = dfs(this.rootID, 0);
+
   this.highlight(16);
   this.cmd("Step");
   this.cmd("SetText", this.resultID, "Paths: " + total);
