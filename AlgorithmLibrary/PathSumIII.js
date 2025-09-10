@@ -40,7 +40,7 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.treeRootY = 80;
   this.levelHeight = 80;
 
-  this.gridStartY = 300;
+  this.gridStartY = 380;
   this.cellW = w / 5;
   this.cellH = 40;
 
@@ -232,8 +232,7 @@ PathSumIII.prototype.setup = function () {
   const y2 = this.gridStartY + this.cellH * 1 + this.cellH / 2;
   const y3 = this.gridStartY + this.cellH * 2 + this.cellH / 2;
 
-
-  const margin = 10;
+  const margin = 60;
   const x1 = margin;
   const x2 = this.cellW + margin;
   const x4 = this.cellW * 3 + margin;
@@ -248,7 +247,6 @@ PathSumIII.prototype.setup = function () {
   this.mapLabelID = this.nextIndex++;
 
   this.cmd("CreateLabel", this.prefixLabelID, "prefix", x1, y1, 0);
-
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 16");
   this.cmd("CreateLabel", this.prefixValID, "0", x2, y1, 0);
   this.cmd("SetTextStyle", this.prefixValID, "16");
@@ -263,7 +261,6 @@ PathSumIII.prototype.setup = function () {
     y2,
     0
   );
-
   this.cmd("SetTextStyle", this.containsLabelID, "bold 16");
   this.cmd("CreateLabel", this.containsValID, "false", x2, y2, 0);
   this.cmd("SetTextStyle", this.containsValID, "16");
@@ -303,8 +300,9 @@ PathSumIII.prototype.setup = function () {
   const codeY = this.codeStartY;
   for (let i = 0; i < code.length; i++) {
     const id = this.nextIndex++;
-    const y = codeY + i * 18;
+    const y = codeY + i * 19;
     this.cmd("CreateLabel", id, code[i], codeX, y, 0);
+    this.cmd("SetTextStyle", id, "16");
     this.codeIDs.push(id);
   }
 
@@ -544,4 +542,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new PathSumIII(animManag, canvas.width, canvas.height);
 }
-
