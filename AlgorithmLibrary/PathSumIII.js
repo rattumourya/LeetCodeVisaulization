@@ -1,11 +1,12 @@
 // BSD-2-Clause license header retained from original framework.
 
 /*
- * PathSumIII.js - Animated solution for LeetCode 437.
- * - Build tree from level-order input
- * - DFS with prefix sums to count paths equal to target
- * - Control buttons: Build Tree, Find Paths, Prev/Next/Stop/Resume
- * - Each qualifying path is highlighted with an irregular, colored curve surrounding its nodes
+ * PathSumIII.js - Visualization for LeetCode 437 Path Sum III.
+ * Rewritten from scratch to use DFS + prefix sum.
+ * - User provides level-order array and target.
+ * - Build binary tree and show prefix / map / count grid.
+ * - Animation highlights traversal, prefix updates, map lookups,
+ *   and Java code lines in red while executing.
  */
 
 function PathSumIII(am, w, h) { this.init(am, w, h); }
@@ -14,14 +15,39 @@ PathSumIII.prototype = new Algorithm();
 PathSumIII.prototype.constructor = PathSumIII;
 PathSumIII.superclass = Algorithm.prototype;
 
-PathSumIII.prototype.init = function(am, w, h) {
+// Code display constants
+PathSumIII.CODE_FONT_SIZE = 17;
+PathSumIII.CODE_LINE_HEIGHT = 23;
+PathSumIII.CODE_STANDARD_COLOR = "#000000";
+PathSumIII.CODE_HIGHLIGHT_COLOR = "#FF0000";
+
+PathSumIII.CODE = [
+  "int pathSum(TreeNode root, int k) {",
+  "    Map<Integer,Integer> map = new HashMap<>();",
+  "    map.put(0, 1);",
+  "    return dfs(root, 0, k, map);",
+  "}",
+  "int dfs(TreeNode node, int prefix, int k, Map<Integer,Integer> map) {",
+  "    if (node == null) return 0;",
+  "    prefix += node.val;",
+  "    int count = map.getOrDefault(prefix - k, 0);",
+  "    map.put(prefix, map.getOrDefault(prefix, 0) + 1);",
+  "    count += dfs(node.left, prefix, k, map);",
+  "    count += dfs(node.right, prefix, k, map);",
+  "    map.put(prefix, map.get(prefix) - 1);",
+  "    prefix -= node.val;",
+  "    return count;",
+  "}",
+];
+
+PathSumIII.prototype.init = function (am, w, h) {
   PathSumIII.superclass.init.call(this, am, w, h);
 
   this.addControls();
 
   this.nextIndex = 0;
   this.arr = [];
-  this.target = 8;
+  this.k = 0;
   this.rootID = -1;
 
   this.nodeValue = {};
@@ -30,104 +56,64 @@ PathSumIII.prototype.init = function(am, w, h) {
   this.nodeX = {};
   this.nodeY = {};
 
-  this.codeIDs = [];
-  this.sumLabelIDs = [];
+  this.prefixLabelID = -1;
+  this.prefixValueID = -1;
+  this.containsLabelID = -1;
+  this.containsValueID = -1;
   this.countLabelID = -1;
-  // IDs for anchor circles and colored curves for successful paths
-  this.pathHighlightIDs = [];
-  this.pathIdx = 0;
-  // 540x960 canvas sections
-  this.sectionDivY1 = 360;
-  this.sectionDivY2 = 660;
+  this.countValueID = -1;
+  this.mapLabelID = -1;
+  this.mapEntryIDs = {};
+
+  this.codeIDs = [];
+
+  this.travID = -1;
+
+  // default setup
+  this.reset();
 };
 
-// Generate a distinct color for each discovered path using the golden angle
-// to evenly distribute hues around the color wheel.
-PathSumIII.prototype.nextPathColor = function() {
-  const idx = this.pathIdx++;
-  const hue = (idx * 137) % 360;
-  const s = 0.7;
-  const l = 0.45;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
-  const m = l - c / 2;
-  let r = 0,
-    g = 0,
-    b = 0;
-  if (hue < 60) {
-    r = c;
-    g = x;
-  } else if (hue < 120) {
-    r = x;
-    g = c;
-  } else if (hue < 180) {
-    g = c;
-    b = x;
-  } else if (hue < 240) {
-    g = x;
-    b = c;
-  } else if (hue < 300) {
-    r = x;
-    b = c;
-  } else {
-    r = c;
-    b = x;
-  }
-  const toHex = (v) => {
-    const h = Math.round((v + m) * 255).toString(16);
-    return h.length === 1 ? "0" + h : h;
-  };
-  return "#" + toHex(r) + toHex(g) + toHex(b);
-};
-
-PathSumIII.prototype.addControls = function() {
+PathSumIII.prototype.addControls = function () {
   this.controls = [];
 
-  addLabelToAlgorithmBar("Tree (level-order, use null for empty):");
+  addLabelToAlgorithmBar("Tree (level-order):");
   this.inputField = addControlToAlgorithmBar("Text", "");
   this.inputField.size = 40;
 
-  addLabelToAlgorithmBar("Target Sum:");
-  this.targetField = addControlToAlgorithmBar("Text", "8");
-  this.targetField.size = 5;
+  addLabelToAlgorithmBar("Target:");
+  this.kField = addControlToAlgorithmBar("Text", "8");
+  this.kField.size = 5;
 
-  this.buildButton = addControlToAlgorithmBar("Button", "Build Tree");
+  this.buildButton = addControlToAlgorithmBar("Button", "Build Binary Tree");
   this.buildButton.onclick = this.buildTreeCallback.bind(this);
 
-  this.startButton = addControlToAlgorithmBar("Button", "Find Paths");
+  this.startButton = addControlToAlgorithmBar("Button", "Find Path");
   this.startButton.onclick = this.startCallback.bind(this);
 
   addLabelToAlgorithmBar("\u00A0");
-  this.prevButton = addControlToAlgorithmBar("Button", "Prev Step");
-  this.prevButton.onclick = this.prevCallback.bind(this);
-  this.nextButton = addControlToAlgorithmBar("Button", "Next Step");
-  this.nextButton.onclick = this.nextCallback.bind(this);
-  this.stopButton = addControlToAlgorithmBar("Button", "Stop");
-  this.stopButton.onclick = this.stopCallback.bind(this);
-  this.resumeButton = addControlToAlgorithmBar("Button", "Resume");
-  this.resumeButton.onclick = this.resumeCallback.bind(this);
+  this.pauseButton = addControlToAlgorithmBar("Button", "Pause / Play");
+  this.pauseButton.onclick = this.pauseCallback.bind(this);
+
+  this.stepButton = addControlToAlgorithmBar("Button", "Next Step");
+  this.stepButton.onclick = this.stepCallback.bind(this);
 
   this.controls.push(
     this.inputField,
-    this.targetField,
+    this.kField,
     this.buildButton,
-    this.startButton,
-    this.prevButton,
-    this.nextButton,
-    this.stopButton,
-    this.resumeButton
+    this.startButton
   );
 };
 
-PathSumIII.prototype.buildTreeCallback = function() {
+PathSumIII.prototype.buildTreeCallback = function () {
   const raw = this.inputField.value.trim();
   if (raw.length === 0) return;
   const vals = raw
     .split(/[\s,]+/)
-    .map(v => (v === "null" || v === "NULL" || v === "None" ? null : parseInt(v)));
+    .map((v) => (v === "null" || v === "NULL" || v === "None" ? null : parseInt(v)));
   this.arr = vals;
-  const t = parseInt(this.targetField.value);
-  if (!isNaN(t)) this.target = t;
+  const t = parseInt(this.kField.value);
+  if (!isNaN(t)) this.k = t;
   this.reset();
   this.implementAction(this.setup.bind(this), 0);
 };
@@ -141,7 +127,7 @@ function TreeNode(val) {
   this.id = -1;
 }
 
-PathSumIII.prototype.buildTreeFromArray = function(arr) {
+PathSumIII.prototype.buildTreeFromArray = function (arr) {
   if (!arr || arr.length === 0 || arr[0] === null) return null;
   const root = new TreeNode(arr[0]);
   const queue = [root];
@@ -166,50 +152,57 @@ PathSumIII.prototype.buildTreeFromArray = function(arr) {
   return root;
 };
 
-PathSumIII.prototype.layoutTree = function(root) {
-  const setPos = (node, depth, x) => {
+PathSumIII.prototype.layoutTree = function (root) {
+  const canvasElem = document.getElementById("canvas");
+  const w = canvasElem ? canvasElem.width : 540;
+  const startY = 100; // leave room for title
+  const levelH = 80;
+  const recurse = (node, x, y, offset) => {
     if (!node) return;
-    const spacing = 540 / Math.pow(2, depth + 1);
     node.x = x;
-    node.y = 60 + depth * 60;
-    setPos(node.left, depth + 1, x - spacing / 2);
-    setPos(node.right, depth + 1, x + spacing / 2);
+    node.y = y;
+    if (node.left) recurse(node.left, x - offset, y + levelH, offset / 2);
+    if (node.right) recurse(node.right, x + offset, y + levelH, offset / 2);
   };
-  setPos(root, 0, 270);
+  recurse(root, w / 2, startY, w / 4);
 };
 
-PathSumIII.prototype.setup = function() {
+PathSumIII.prototype.setup = function () {
   this.commands = [];
+
   const canvasElem = document.getElementById("canvas");
   if (canvasElem) {
     canvasElem.width = 540;
     canvasElem.height = 960;
-    if (animationManager && animationManager.animatedObjects) {
+    if (animationManager?.animatedObjects) {
       animationManager.animatedObjects.width = 540;
       animationManager.animatedObjects.height = 960;
     }
   }
-  if (!this.arr || this.arr.length === 0) return this.commands;
+
+  if (!this.arr || this.arr.length === 0) {
+    this.arr = [10, 5, -3, 3, 2, null, 11, 3, -2, null, 1];
+    this.k = 8;
+  }
+  if (this.inputField) this.inputField.value = this.arr.join(",");
+  if (this.kField) this.kField.value = String(this.k);
 
   this.nodeValue = {};
   this.leftChild = {};
   this.rightChild = {};
   this.nodeX = {};
   this.nodeY = {};
-  this.sumLabelIDs = [];
+  this.mapEntryIDs = {};
 
   this.root = this.buildTreeFromArray(this.arr);
   this.layoutTree(this.root);
 
-  const hLine1 = this.nextIndex++;
-  this.cmd("CreateLine", hLine1, 0, this.sectionDivY1, 540, this.sectionDivY1);
-  const hLine2 = this.nextIndex++;
-  this.cmd("CreateLine", hLine2, 0, this.sectionDivY2, 540, this.sectionDivY2);
-
+  // title on canvas
   this.titleID = this.nextIndex++;
-  this.cmd("CreateLabel", this.titleID, "Path Sum III (LeetCode 437)", 270, 40, 1);
+  this.cmd("CreateLabel", this.titleID, "PathSumIII (Leetcode 437)", 270, 40, 1);
   this.cmd("SetTextStyle", this.titleID, "bold 24");
 
+  // draw tree
   const queue = [];
   if (this.root) {
     this.root.id = this.nextIndex++;
@@ -218,6 +211,7 @@ PathSumIII.prototype.setup = function() {
     this.cmd("SetBackgroundColor", this.root.id, "#FFF");
     this.cmd("Step");
     queue.push(this.root);
+    this.rootID = this.root.id;
   }
   while (queue.length > 0) {
     const node = queue.shift();
@@ -245,214 +239,273 @@ PathSumIII.prototype.setup = function() {
     this.leftChild[node.id] = node.left ? node.left.id : null;
     this.rightChild[node.id] = node.right ? node.right.id : null;
   }
-  this.rootID = this.root ? this.root.id : -1;
 
-  // code listing
-  const code = [
-    "function pathSum(root, target){",
-    "  let map = {0:1};",
-    "  return dfs(root,0,target,map);",
-    "}",
-    "function dfs(n,c,t,m){",
-    "  if(!n) return 0;",
-    "  c += n.val;",
-    "  let res = m[c-t]||0;",
-    "  m[c] = (m[c]||0)+1;",
-    "  res += dfs(n.left,c,t,m);",
-    "  res += dfs(n.right,c,t,m);",
-    "  m[c]--;",
-    "  return res;",
-    "}",
-  ];
-  const codeX = 540 / 2 - 200;
-  for (let i = 0; i < code.length; i++) {
+  // grid layout constants
+  const CANVAS_W = 540;
+  this.cellW = CANVAS_W / 2; // two columns share canvas width
+  this.cellH = 40;
+  this.rowGap = 20;
+  this.gridStartY = 320;
+  const col1X = this.cellW / 2;
+  const col2X = CANVAS_W - this.cellW / 2;
+  const row1Y = this.gridStartY + this.cellH / 2;
+  const row2Y = row1Y + this.cellH + this.rowGap;
+  const row3Y = row2Y + this.cellH + this.rowGap;
+
+  // row1 prefix cell (no rectangle)
+  this.prefixLabelID = this.nextIndex++;
+  this.cmd("CreateLabel", this.prefixLabelID, "prefix", col1X, row1Y, 0, 16, "right");
+  this.cmd("SetTextStyle", this.prefixLabelID, "bold 16");
+  this.prefixValueID = this.nextIndex++;
+  this.prefixValueX = col1X + 10;
+  this.prefixValueY = row1Y;
+  this.cmd("CreateLabel", this.prefixValueID, "0", this.prefixValueX, this.prefixValueY, 0, 16, "left");
+
+  // row2 contains cell
+  this.containsLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.containsLabelID,
+    "map.containsKey(0)",
+    col1X,
+    row2Y,
+    0,
+    16,
+    "right"
+  );
+  this.cmd("SetTextStyle", this.containsLabelID, "bold 16");
+  this.containsValueID = this.nextIndex++;
+  this.cmd("CreateLabel", this.containsValueID, "false", col1X + 10, row2Y, 0, 16, "left");
+
+  // row2 count cell
+  this.countLabelID = this.nextIndex++;
+  this.cmd("CreateLabel", this.countLabelID, "count", col2X, row2Y, 0, 16, "right");
+  this.cmd("SetTextStyle", this.countLabelID, "bold 16");
+  this.countValueID = this.nextIndex++;
+  this.countValueX = col2X + 10;
+  this.countValueY = row2Y;
+  this.cmd("CreateLabel", this.countValueID, "0", this.countValueX, this.countValueY, 0, 16, "left");
+
+  // row3 map cell spanning both columns
+  this.mapLabelID = this.nextIndex++;
+  this.cmd("CreateLabel", this.mapLabelID, "map", CANVAS_W / 2 - 10, row3Y, 0, 16, "right");
+  this.cmd("SetTextStyle", this.mapLabelID, "bold 16");
+  this.mapValueY = row3Y;
+  this.mapValueStartX = CANVAS_W / 2 + 10;
+
+  // initial map {0:1}
+  this.prefix = 0;
+  this.count = 0;
+  this.map = { 0: 1 };
+  this.renderMap();
+
+  // code block centered horizontally (left-aligned text)
+  const codeStartX = CANVAS_W / 2 - 170;
+  const codeStartY = row3Y + this.cellH / 2 + 60;
+  for (let i = 0; i < PathSumIII.CODE.length; i++) {
     const id = this.nextIndex++;
-    const y = this.sectionDivY1 + 30 + i * 20;
-    this.cmd("CreateLabel", id, code[i], codeX, y, 0);
+    this.cmd(
+      "CreateLabel",
+      id,
+      PathSumIII.CODE[i],
+      codeStartX,
+      codeStartY + i * PathSumIII.CODE_LINE_HEIGHT,
+      0,
+      PathSumIII.CODE_FONT_SIZE,
+      "left"
+    );
+    this.cmd("SetForegroundColor", id, PathSumIII.CODE_STANDARD_COLOR);
     this.codeIDs.push(id);
   }
 
-  this.countLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.countLabelID, "Count: 0", 270, this.sectionDivY2 + 40, 1);
-
   return this.commands;
 };
 
-PathSumIII.prototype.reset = function() {
-  this.nextIndex = 0;
-  if (animationManager && animationManager.animatedObjects) {
-    animationManager.animatedObjects.clearAllObjects();
+PathSumIII.prototype.renderMap = function () {
+  for (const key in this.mapEntryIDs) {
+    this.cmd("Delete", this.mapEntryIDs[key]);
   }
-  this.root = null;
-  this.rootID = -1;
-  this.nodeValue = {};
-  this.leftChild = {};
-  this.rightChild = {};
-  this.nodeX = {};
-  this.nodeY = {};
-  this.codeIDs = [];
-  this.sumLabelIDs = [];
-  this.countLabelID = -1;
-  this.pathHighlightIDs = [];
-  this.pathIdx = 0;
-  this.starCounts = {};
+  this.mapEntryIDs = {};
+  const keys = Object.keys(this.map).map(Number).sort((a, b) => a - b);
+  let x = this.mapValueStartX;
+  for (const k of keys) {
+    const id = this.nextIndex++;
+    const text = k + ":" + this.map[k];
+    this.cmd("CreateLabel", id, text, x, this.mapValueY, 0);
+    this.mapEntryIDs[k] = { id: id, x: x };
+    x += 60;
+  }
 };
 
-PathSumIII.prototype.startCallback = function() {
-  const t = parseInt(this.targetField.value);
-  if (!isNaN(t)) this.target = t;
+PathSumIII.prototype.highlight = function (line) {
+  for (let i = 0; i < this.codeIDs.length; i++) {
+    this.cmd(
+      "SetForegroundColor",
+      this.codeIDs[i],
+      i === line ? PathSumIII.CODE_HIGHLIGHT_COLOR : PathSumIII.CODE_STANDARD_COLOR
+    );
+  }
+};
+
+PathSumIII.prototype.startCallback = function () {
   if (this.rootID === -1) return;
-  this.implementAction(this.findPaths.bind(this), 0);
+  this.disableUI();
+  this.implementAction(this.runDFS.bind(this), 0);
 };
 
-PathSumIII.prototype.findPaths = function() {
+PathSumIII.prototype.runDFS = function () {
   this.commands = [];
-  for (const id of this.sumLabelIDs) this.cmd("Delete", id);
-  this.sumLabelIDs = [];
-  for (const item of this.pathHighlightIDs) {
-    if (item.type === "edge") this.cmd("Disconnect", item.from, item.to);
-    else this.cmd("Delete", item.id);
-  }
-  this.pathHighlightIDs = [];
-  this.pathIdx = 0;
-  this.starCounts = {};
-  for (const id in this.nodeValue) {
-    this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
-  }
-  this.cmd("SetText", this.countLabelID, "Count: 0");
-  let count = 0;
-  const prefix = { 0: [-1] };
-  const path = [];
-  const highlight = (line) => {
-    for (let i = 0; i < this.codeIDs.length; i++) {
-      this.cmd("SetHighlight", this.codeIDs[i], i === line ? 1 : 0);
-    }
-  };
+  this.prefix = 0;
+  this.count = 0;
+  this.map = { 0: 1 };
+  this.renderMap();
+  this.cmd("SetText", this.prefixValueID, "0");
+  this.cmd("SetText", this.countValueID, "0");
 
-  const showPath = (nodes) => {
-    // Draw an irregular closed curve around the nodes in this path
-    const color = this.nextPathColor();
-    const anchors = [];
-    let cx = 0,
-      cy = 0;
-    for (const nid of nodes) {
-      cx += this.nodeX[nid];
-      cy += this.nodeY[nid];
-    }
-    cx /= nodes.length;
-    cy /= nodes.length;
-    const pts = [];
-    for (let i = 0; i < nodes.length; i++) {
-      const nid = nodes[i];
-      const angle = Math.atan2(this.nodeY[nid] - cy, this.nodeX[nid] - cx);
-      const jitter = 0.4 * Math.sin(i + this.pathIdx);
-      const dist = 30 + 5 * Math.cos(i);
-      const sx = this.nodeX[nid] + dist * Math.cos(angle + jitter);
-      const sy = this.nodeY[nid] + dist * Math.sin(angle + jitter);
-      pts.push({ angle, sx, sy });
-    }
-    pts.sort((a, b) => a.angle - b.angle);
-    for (const p of pts) {
-      const aID = this.nextIndex++;
-      this.cmd("CreateCircle", aID, "", p.sx, p.sy);
-      this.cmd("SetForegroundColor", aID, color);
-      this.cmd("SetBackgroundColor", aID, color);
-      this.cmd("SetAlpha", aID, 0);
-      anchors.push(aID);
-      this.pathHighlightIDs.push({ type: "anchor", id: aID });
-      this.cmd("Step");
-    }
-    for (let i = 0; i < anchors.length; i++) {
-      const from = anchors[i];
-      const to = anchors[(i + 1) % anchors.length];
-      const curve = 0.3 * Math.sin(i + this.pathIdx);
-      this.cmd("Connect", from, to, color, curve, true, "", 3);
-      this.pathHighlightIDs.push({ type: "edge", from, to });
-      this.cmd("Step");
-    }
-  };
+  // code prelude
+  this.highlight(0);
+  this.cmd("Step");
+  this.highlight(1);
+  this.cmd("Step");
+  this.highlight(2);
+  this.cmd("Step");
+  this.highlight(3);
+  this.cmd("Step");
+  this.highlight(5);
+  this.cmd("Step");
 
-  const dfs = (nodeID, cur) => {
-    highlight(5);
+  // create traversal highlight circle
+  this.travID = this.nextIndex++;
+  this.cmd("CreateHighlightCircle", this.travID, "#FF0000", this.nodeX[this.rootID], this.nodeY[this.rootID]);
+
+  const dfs = (nodeID, prefix) => {
+    this.highlight(6);
     this.cmd("Step");
     if (nodeID == null) {
-      highlight(5);
       return 0;
     }
-    highlight(6);
+    this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Step");
+    this.cmd("SetHighlight", nodeID, 1);
+
+    this.highlight(7);
+    this.cmd("Step");
     const val = this.nodeValue[nodeID];
-    cur += val;
-    path.push(nodeID);
+    const moveID = this.nextIndex++;
+    const text = val >= 0 ? "+" + val : String(val);
+    this.cmd("CreateLabel", moveID, text, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Move", moveID, this.prefixValueX, this.prefixValueY);
     this.cmd("Step");
-    highlight(7);
-    const need = cur - this.target;
-    if (prefix[need]) {
-      for (const idx of prefix[need]) {
-        const nodes = path.slice(idx + 1);
-        showPath(nodes);
-        count++;
+    this.cmd("Delete", moveID);
+    prefix += val;
+    this.cmd("SetText", this.prefixValueID, String(prefix));
+    this.cmd("Step");
+
+    this.highlight(8);
+    this.cmd("Step");
+    const need = prefix - this.k;
+    this.cmd("SetText", this.containsLabelID, `map.containsKey(${need})`);
+    const contains = this.map[need] != null;
+    this.cmd("SetText", this.containsValueID, contains ? "true" : "false");
+    this.cmd("Step");
+    let countLocal = contains ? this.map[need] : 0;
+    if (contains) {
+      const entry = this.mapEntryIDs[need];
+      if (entry) {
+        this.cmd("SetBackgroundColor", entry.id, "#FF9999");
+        const mv = this.nextIndex++;
+        this.cmd("CreateLabel", mv, "+" + this.map[need], entry.x, this.mapValueY);
+        this.cmd("Move", mv, this.countValueX, this.countValueY);
+        this.cmd("Step");
+        this.cmd("Delete", mv);
+        this.cmd("SetBackgroundColor", entry.id, "#FFFFFF");
       }
-      this.cmd("SetText", this.countLabelID, "Count: " + count);
+      this.count += this.map[need];
+      this.cmd("SetText", this.countValueID, String(this.count));
+      this.cmd("Step");
     }
+
+    this.highlight(9);
     this.cmd("Step");
-    highlight(8);
-    if (!prefix[cur]) prefix[cur] = [];
-    prefix[cur].push(path.length - 1);
-    const sumID = this.nextIndex++;
-    const x = this.nodeX[nodeID];
-    const y = this.nodeY[nodeID] - 40;
-    this.cmd("CreateLabel", sumID, "s=" + cur, x, y, 0);
-    this.sumLabelIDs.push(sumID);
+    this.map[prefix] = (this.map[prefix] || 0) + 1;
+    this.renderMap();
     this.cmd("Step");
-    highlight(9);
-    if (this.leftChild[nodeID] != null) dfs(this.leftChild[nodeID], cur);
-    highlight(10);
-    if (this.rightChild[nodeID] != null) dfs(this.rightChild[nodeID], cur);
-    highlight(11);
-    prefix[cur].pop();
-    if (prefix[cur].length === 0) delete prefix[cur];
-    const label = this.sumLabelIDs.pop();
-    this.cmd("Delete", label);
-    path.pop();
+
+    this.highlight(10);
     this.cmd("Step");
-    return 0;
+    if (this.leftChild[nodeID] != null) {
+      this.cmd("Move", this.travID, this.nodeX[this.leftChild[nodeID]], this.nodeY[this.leftChild[nodeID]]);
+      this.cmd("Step");
+      dfs(this.leftChild[nodeID], prefix);
+      this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
+      this.cmd("Step");
+    }
+
+    this.highlight(11);
+    this.cmd("Step");
+    if (this.rightChild[nodeID] != null) {
+      this.cmd("Move", this.travID, this.nodeX[this.rightChild[nodeID]], this.nodeY[this.rightChild[nodeID]]);
+      this.cmd("Step");
+      dfs(this.rightChild[nodeID], prefix);
+      this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
+      this.cmd("Step");
+    }
+
+    this.highlight(12);
+    this.cmd("Step");
+    this.map[prefix]--;
+    if (this.map[prefix] === 0) delete this.map[prefix];
+    this.renderMap();
+    this.cmd("Step");
+
+    this.highlight(13);
+    this.cmd("Step");
+    const moveID2 = this.nextIndex++;
+    const text2 = val >= 0 ? "-" + val : "+" + -val;
+    this.cmd("CreateLabel", moveID2, text2, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Move", moveID2, this.prefixValueX, this.prefixValueY);
+    this.cmd("Step");
+    this.cmd("Delete", moveID2);
+    prefix -= val;
+    this.cmd("SetText", this.prefixValueID, String(prefix));
+    this.cmd("Step");
+
+    this.highlight(14);
+    this.cmd("Step");
+    this.cmd("SetHighlight", nodeID, 0);
+    return countLocal;
   };
 
-  highlight(0);
-  this.cmd("Step");
-  highlight(1);
-  this.cmd("Step");
-  highlight(2);
-  this.cmd("Step");
   dfs(this.rootID, 0);
-  highlight(3);
+  this.highlight(15);
   this.cmd("Step");
-  highlight(4);
-  this.cmd("Step");
+  this.enableUI();
   return this.commands;
 };
 
-PathSumIII.prototype.prevCallback = function() {
-  this.animationManager.stepBack();
+PathSumIII.prototype.pauseCallback = function () {
+  if (typeof doPlayPause === "function") doPlayPause();
 };
 
-PathSumIII.prototype.nextCallback = function() {
-  this.animationManager.step();
+PathSumIII.prototype.stepCallback = function () {
+  if (typeof animationManager !== "undefined") {
+    if (!animationManager.animationPaused && typeof doPlayPause === "function") doPlayPause();
+    animationManager.step();
+  }
 };
 
-PathSumIII.prototype.stopCallback = function() {
-  this.animationManager.SetPaused(true);
+PathSumIII.prototype.reset = function () {
+  this.nextIndex = 0;
+  if (typeof animationManager !== "undefined" && animationManager.animatedObjects) {
+    animationManager.animatedObjects.clearAllObjects();
+  }
 };
 
-PathSumIII.prototype.resumeCallback = function() {
-  this.animationManager.SetPaused(false);
-};
-
-PathSumIII.prototype.disableUI = function() {
+PathSumIII.prototype.disableUI = function () {
   for (let c of this.controls) c.disabled = true;
 };
 
-PathSumIII.prototype.enableUI = function() {
+PathSumIII.prototype.enableUI = function () {
   for (let c of this.controls) c.disabled = false;
 };
 
