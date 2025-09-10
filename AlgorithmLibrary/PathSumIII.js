@@ -275,17 +275,21 @@ PathSumIII.prototype.setup = function () {
 
 PathSumIII.prototype.reset = function () {
   this.nextIndex = 0;
+
   if (animationManager?.animatedObjects) {
     animationManager.animatedObjects.clearAllObjects();
   }
+
   this.commands = [];
   this.nodeValue = {};
   this.leftChild = {};
   this.rightChild = {};
   this.nodeX = {};
   this.nodeY = {};
+
   this.rootID = -1;
   this.codeIDs = [];
+
   this.mapPairIDs = {};
   this.prefix = 0;
   this.count = 0;
