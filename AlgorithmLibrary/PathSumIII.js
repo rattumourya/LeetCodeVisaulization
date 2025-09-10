@@ -470,7 +470,6 @@ PathSumIII.prototype.runDFS = function () {
     this.highlight(8);
     let countLocal = 0;
     this.cmd("Step");
-
     this.highlight(9);
     const need = prefix - this.k;
     this.cmd("SetText", this.containsLabelID, `map.containsKey(${need})`);
@@ -492,6 +491,7 @@ PathSumIII.prototype.runDFS = function () {
       this.count += countLocal;
       this.cmd("SetText", this.countValueID, String(this.count));
     }
+
     this.cmd("Step");
 
     this.highlight(10);
@@ -500,30 +500,44 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("Step");
 
     this.highlight(11);
+
     if (this.leftChild[nodeID] != null) {
+      this.cmd("SetHighlight", nodeID, 0);
+      this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
       this.cmd("Move", this.travID, this.nodeX[this.leftChild[nodeID]], this.nodeY[this.leftChild[nodeID]]);
       this.cmd("Step");
       dfs(this.leftChild[nodeID], prefix);
       this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
       this.cmd("Step");
+      this.cmd("SetHighlight", nodeID, 1);
+      this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
+      this.cmd("Step");
     }
 
     this.highlight(12);
+
     if (this.rightChild[nodeID] != null) {
+      this.cmd("SetHighlight", nodeID, 0);
+      this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
       this.cmd("Move", this.travID, this.nodeX[this.rightChild[nodeID]], this.nodeY[this.rightChild[nodeID]]);
       this.cmd("Step");
       dfs(this.rightChild[nodeID], prefix);
       this.cmd("Move", this.travID, this.nodeX[nodeID], this.nodeY[nodeID]);
       this.cmd("Step");
+      this.cmd("SetHighlight", nodeID, 1);
+      this.cmd("SetBackgroundColor", nodeID, "#FFAAAA");
+      this.cmd("Step");
     }
 
     this.highlight(13);
+
     this.map[prefix]--;
     if (this.map[prefix] === 0) delete this.map[prefix];
     this.renderMap();
     this.cmd("Step");
 
     this.highlight(14);
+
     const moveID2 = this.nextIndex++;
     const text2 = val >= 0 ? "-" + val : "+" + -val;
     this.cmd("CreateLabel", moveID2, text2, this.nodeX[nodeID], this.nodeY[nodeID]);
@@ -538,6 +552,7 @@ PathSumIII.prototype.runDFS = function () {
 
     this.highlight(15);
     this.cmd("Step");
+
     return countLocal;
   };
 
