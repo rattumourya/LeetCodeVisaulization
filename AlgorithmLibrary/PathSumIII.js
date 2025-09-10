@@ -92,6 +92,7 @@ PathSumIII.prototype.addControls = function () {
 // callback to build tree from user input
 PathSumIII.prototype.buildTreeCallback = function () {
   const raw = this.inputField.value.trim();
+
   if (raw.length === 0) {
     return;
   }
@@ -285,9 +286,11 @@ PathSumIII.prototype.setup = function () {
 
 PathSumIII.prototype.reset = function () {
   this.nextIndex = 0;
+
   if (typeof animationManager !== "undefined") {
     animationManager.resetAll();
   }
+
   this.commands = [];
   this.nodeValue = {};
   this.leftChild = {};
