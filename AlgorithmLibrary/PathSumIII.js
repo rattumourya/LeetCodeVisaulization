@@ -30,7 +30,8 @@ PathSumIII.CODE = [
   "int dfs(TreeNode node, int prefix, int k, Map<Integer,Integer> map) {",
   "    if (node == null) return 0;",
   "    prefix += node.val;",
-  "    int count = map.getOrDefault(prefix - k, 0);",
+  "    int count = 0;",
+  "    if (map.containsKey(prefix - k)) count = map.get(prefix - k);",
   "    map.put(prefix, map.getOrDefault(prefix, 0) + 1);",
   "    count += dfs(node.left, prefix, k, map);",
   "    count += dfs(node.right, prefix, k, map);",
@@ -337,7 +338,7 @@ PathSumIII.prototype.setup = function () {
   this.updateContainsLabel();
 
   // code block centered horizontally (left-aligned text)
-  const codeStartX = (CANVAS_W - maxWidth) / 2;
+  const codeStartX = Math.round((CANVAS_W - maxWidth) / 2);
   const codeStartY = row3Y + this.cellH / 2 + 60;
   for (let i = 0; i < PathSumIII.CODE.length; i++) {
     const id = this.nextIndex++;
@@ -462,11 +463,14 @@ PathSumIII.prototype.runDFS = function () {
 
     this.highlight(8);
     this.cmd("Step");
+    let countLocal = 0;
+
+    this.highlight(9);
+    this.cmd("Step");
     const need = prefix - this.k;
     this.cmd("SetText", this.containsLabelID, `map.containsKey(${need})`);
     const contains = this.updateContainsLabel(need);
     this.cmd("Step");
-    let countLocal = contains ? this.map[need] : 0;
     if (contains) {
       const entry = this.mapEntryIDs[need];
       if (entry) {
@@ -480,18 +484,19 @@ PathSumIII.prototype.runDFS = function () {
         this.cmd("SetForegroundColor", this.countValueID, "#000000");
         this.cmd("SetForegroundColor", entry.id, "#000000");
       }
-      this.count += this.map[need];
+      countLocal = this.map[need];
+      this.count += countLocal;
       this.cmd("SetText", this.countValueID, String(this.count));
       this.cmd("Step");
     }
 
-    this.highlight(9);
+    this.highlight(10);
     this.cmd("Step");
     this.map[prefix] = (this.map[prefix] || 0) + 1;
     this.renderMap();
     this.cmd("Step");
 
-    this.highlight(10);
+    this.highlight(11);
     this.cmd("Step");
     if (this.leftChild[nodeID] != null) {
       this.cmd("Move", this.travID, this.nodeX[this.leftChild[nodeID]], this.nodeY[this.leftChild[nodeID]]);
@@ -501,7 +506,7 @@ PathSumIII.prototype.runDFS = function () {
       this.cmd("Step");
     }
 
-    this.highlight(11);
+    this.highlight(12);
     this.cmd("Step");
     if (this.rightChild[nodeID] != null) {
       this.cmd("Move", this.travID, this.nodeX[this.rightChild[nodeID]], this.nodeY[this.rightChild[nodeID]]);
@@ -511,14 +516,14 @@ PathSumIII.prototype.runDFS = function () {
       this.cmd("Step");
     }
 
-    this.highlight(12);
+    this.highlight(13);
     this.cmd("Step");
     this.map[prefix]--;
     if (this.map[prefix] === 0) delete this.map[prefix];
     this.renderMap();
     this.cmd("Step");
 
-    this.highlight(13);
+    this.highlight(14);
     this.cmd("Step");
     const moveID2 = this.nextIndex++;
     const text2 = val >= 0 ? "-" + val : "+" + -val;
@@ -532,14 +537,14 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("SetForegroundColor", this.prefixValueID, "#000000");
     this.cmd("Step");
 
-    this.highlight(14);
+    this.highlight(15);
     this.cmd("Step");
     this.cmd("SetHighlight", nodeID, 0);
     return countLocal;
   };
 
   dfs(this.rootID, 0);
-  this.highlight(15);
+  this.highlight(16);
   this.cmd("Step");
   this.enableUI();
   return this.commands;
