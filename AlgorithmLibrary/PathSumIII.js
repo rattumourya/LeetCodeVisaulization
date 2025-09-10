@@ -317,6 +317,7 @@ PathSumIII.prototype.startCallback = function () {
   this.implementAction(this.runSearch.bind(this), 0);
 };
 
+
 PathSumIII.prototype.pauseCallback = function () {
   if (typeof doPlayPause === "function") doPlayPause();
 };
