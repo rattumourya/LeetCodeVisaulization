@@ -302,7 +302,15 @@ PathSumIII.prototype.setup = function () {
   // highlight circle hidden initially
   this.hlID = this.nextIndex++;
   // red circle that tracks the current node during traversal
-  this.cmd("CreateHighlightCircle", this.hlID, "#F00", this.treeRootX, this.treeRootY);
+  // make highlight circle same size as tree nodes (default radius 20)
+  this.cmd(
+    "CreateHighlightCircle",
+    this.hlID,
+    "#F00",
+    this.treeRootX,
+    this.treeRootY,
+    20
+  );
   this.cmd("SetWidth", this.hlID, 5);
   this.cmd("SetAlpha", this.hlID, 0);
 
@@ -484,7 +492,6 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.highlightCode(11); // dfs(right)
   this.cmd("Step");
   if (this.rightChild[nodeID] != null) {
-
     // traverse right subtree
     this.dfs(this.rightChild[nodeID]);
     // backtrack to current node
