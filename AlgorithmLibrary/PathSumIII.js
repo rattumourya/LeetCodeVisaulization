@@ -74,7 +74,6 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.stackStartY = this.codeStartY;
   this.callStackIDs = [];
   this.stackLabelID = -1;
-
 };
 
 PathSumIII.prototype.addControls = function () {
@@ -603,7 +602,6 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.prefix -= val;
   this.updateGrid();
   this.cmd("Step");
-
   this.highlightCode(14);
   this.cmd("Step");
   this.popStack();
@@ -622,4 +620,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new PathSumIII(animManag, canvas.width, canvas.height);
 }
-
