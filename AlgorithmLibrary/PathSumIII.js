@@ -36,8 +36,13 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.nodeY = {};
 
   // layout constants
+  // store canvas dimensions for later use
+  this.canvasW = w;
+  this.canvasH = h;
+
   this.treeRootX = w / 2;
-  this.treeRootY = 80;
+  // push tree slightly lower to make room for a title label
+  this.treeRootY = 120;
   this.levelHeight = 80;
 
   this.gridStartY = 300;
@@ -62,9 +67,11 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.map = {};
 
   // call stack visualization
-  this.stackX = w - 150;
+  this.stackRectW = 120;
+  this.stackRectH = 20;
+  this.stackSpacing = this.stackRectH + 5;
+  this.stackX = w - this.stackRectW / 2 - 10;
   this.stackStartY = this.codeStartY;
-  this.stackSpacing = 20;
   this.callStackIDs = [];
   this.stackLabelID = -1;
 };
@@ -183,6 +190,18 @@ PathSumIII.prototype.computeNodePositions = function (node, x, y, width) {
 
 PathSumIII.prototype.setup = function () {
   this.commands = [];
+
+  // canvas title
+  this.titleID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.titleID,
+    "PathSumIII (Leetcode 437)",
+    this.canvasW / 2,
+    40,
+    0
+  );
+  this.cmd("SetTextStyle", this.titleID, "bold 20");
 
   // build tree structure
   const root = this.buildTreeFromArray(this.arr);
@@ -447,9 +466,17 @@ PathSumIII.prototype.pushStack = function (text) {
   const id = this.nextIndex++;
   const x = this.stackX;
   const y = this.stackStartY + this.callStackIDs.length * this.stackSpacing;
-  this.cmd("CreateLabel", id, text, x, y, 0);
-  this.cmd("SetTextStyle", id, "16");
+  this.cmd(
+    "CreateRectangle",
+    id,
+    text,
+    this.stackRectW,
+    this.stackRectH,
+    x,
+    y
+  );
   this.callStackIDs.push(id);
+  this.cmd("Step");
   return id;
 };
 
@@ -457,6 +484,7 @@ PathSumIII.prototype.popStack = function () {
   if (this.callStackIDs.length === 0) return;
   const id = this.callStackIDs.pop();
   this.cmd("Delete", id);
+  this.cmd("Step");
 };
 
 PathSumIII.prototype.dfs = function (nodeID) {
@@ -472,7 +500,6 @@ PathSumIII.prototype.dfs = function (nodeID) {
 
   if (nodeID == null) {
     this.popStack();
-    this.cmd("Step");
     return;
   }
 
@@ -568,11 +595,9 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.prefix -= val;
   this.updateGrid();
   this.cmd("Step");
-
   this.highlightCode(14);
   this.cmd("Step");
   this.popStack();
-  this.cmd("Step");
 };
 
 PathSumIII.prototype.disableUI = function () {
