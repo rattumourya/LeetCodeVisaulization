@@ -70,8 +70,9 @@ PathSumIII.prototype.init = function (am, w, h) {
 
   this.travID = -1;
 
-  // default setup
+  // build default example on load
   this.reset();
+  this.buildTreeCallback();
 };
 
 PathSumIII.prototype.addControls = function () {
@@ -108,11 +109,16 @@ PathSumIII.prototype.addControls = function () {
 
 PathSumIII.prototype.buildTreeCallback = function () {
   const raw = this.inputField.value.trim();
-  if (raw.length === 0) return;
-  const vals = raw
-    .split(/[\s,]+/)
-    .map((v) => (v === "null" || v === "NULL" || v === "None" ? null : parseInt(v)));
-  this.arr = vals;
+  if (raw.length > 0) {
+    this.arr = raw
+      .split(/[\s,]+/)
+      .map((v) =>
+        v === "null" || v === "NULL" || v === "None" ? null : parseInt(v)
+      );
+  } else {
+    // fall back to default example when no input provided
+    this.arr = [10, 5, -3, 3, 2, null, 11, 3, -2, null, 1];
+  }
   const t = parseInt(this.kField.value);
   if (!isNaN(t)) this.k = t;
   this.reset();
@@ -131,7 +137,6 @@ function TreeNode(val) {
 PathSumIII.prototype.buildTreeFromArray = function (arr) {
   if (!arr || arr.length === 0 || arr[0] === null) return null;
   const root = new TreeNode(arr[0]);
-  1;
   const queue = [root];
   let i = 1;
   while (queue.length > 0 && i < arr.length) {
@@ -172,13 +177,35 @@ PathSumIII.prototype.layoutTree = function (root) {
 PathSumIII.prototype.setup = function () {
   this.commands = [];
 
+  // Measure code width first so we can size the canvas accordingly
+  let maxWidth = 0;
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  if (measureCtx) {
+    measureCtx.font = PathSumIII.CODE_FONT_SIZE + "px Arial";
+    for (const line of PathSumIII.CODE) {
+      const w = measureCtx.measureText(line).width;
+      if (w > maxWidth) maxWidth = w;
+    }
+    if (maxWidth === 0) {
+      const charW =
+        measureCtx.measureText("M").width || PathSumIII.CODE_FONT_SIZE * 0.6;
+      maxWidth = charW * Math.max(...PathSumIII.CODE.map((s) => s.length));
+    }
+  } else {
+    maxWidth =
+      PathSumIII.CODE_FONT_SIZE * 0.6 * Math.max(...PathSumIII.CODE.map((s) => s.length));
+  }
+
+  const baseW = 540;
+  const canvasW = Math.max(baseW, Math.ceil(maxWidth) + 20);
+  const canvasH = 960;
   const canvasElem = document.getElementById("canvas");
   if (canvasElem) {
-    canvasElem.width = 540;
-    canvasElem.height = 960;
+    canvasElem.width = canvasW;
+    canvasElem.height = canvasH;
     if (animationManager?.animatedObjects) {
-      animationManager.animatedObjects.width = 540;
-      animationManager.animatedObjects.height = 960;
+      animationManager.animatedObjects.width = canvasW;
+      animationManager.animatedObjects.height = canvasH;
     }
   }
 
@@ -201,7 +228,8 @@ PathSumIII.prototype.setup = function () {
 
   // title on canvas
   this.titleID = this.nextIndex++;
-  this.cmd("CreateLabel", this.titleID, "PathSumIII (Leetcode 437)", 270, 40, 1);
+  const titleX = (canvasElem ? canvasElem.width : canvasW) / 2;
+  this.cmd("CreateLabel", this.titleID, "PathSumIII (Leetcode 437)", titleX, 40, 1);
   this.cmd("SetTextStyle", this.titleID, "bold 24");
 
   // draw tree
@@ -243,7 +271,7 @@ PathSumIII.prototype.setup = function () {
   }
 
   // grid layout constants
-  const CANVAS_W = 540;
+  const CANVAS_W = canvasElem ? canvasElem.width : canvasW;
   const firstColW = 200; // wider first column for long labels
   const otherColW = (CANVAS_W - firstColW) / 4;
   this.firstColW = firstColW;
@@ -309,20 +337,7 @@ PathSumIII.prototype.setup = function () {
   this.updateContainsLabel();
 
   // code block centered horizontally (left-aligned text)
-  let maxWidth = 0;
-  if (canvasElem) {
-    const ctx = canvasElem.getContext("2d");
-    ctx.font = PathSumIII.CODE_FONT_SIZE + "px Arial";
-    for (let i = 0; i < PathSumIII.CODE.length; i++) {
-      const w = ctx.measureText(PathSumIII.CODE[i]).width;
-      if (w > maxWidth) maxWidth = w;
-    }
-  }
-  if (maxWidth === 0) {
-    maxWidth =
-      PathSumIII.CODE_FONT_SIZE * 0.6 * Math.max(...PathSumIII.CODE.map((s) => s.length));
-  }
-  const codeStartX = CANVAS_W / 2 - maxWidth / 2;
+  const codeStartX = (CANVAS_W - maxWidth) / 2;
   const codeStartY = row3Y + this.cellH / 2 + 60;
   for (let i = 0; i < PathSumIII.CODE.length; i++) {
     const id = this.nextIndex++;
