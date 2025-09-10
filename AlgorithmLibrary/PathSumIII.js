@@ -314,6 +314,7 @@ PathSumIII.prototype.setup = function () {
       PathSumIII.CODE_FONT_SIZE,
       "left"
     );
+
     this.cmd("SetForegroundColor", id, PathSumIII.CODE_STANDARD_COLOR);
     this.codeIDs.push(id);
   }
@@ -334,6 +335,7 @@ PathSumIII.prototype.renderMap = function () {
     this.cmd("CreateLabel", id, text, x, this.mapValueY, 0);
     this.mapEntryIDs[k] = { id: id, x: x };
     x += 60;
+
   }
 };
 
@@ -389,6 +391,7 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("SetHighlight", nodeID, 1);
 
     this.highlight(7);
+
     this.cmd("Step");
     const val = this.nodeValue[nodeID];
     const moveID = this.nextIndex++;
