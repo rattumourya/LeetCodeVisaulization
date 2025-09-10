@@ -67,7 +67,6 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.stackSpacing = 20;
   this.callStackIDs = [];
   this.stackLabelID = -1;
-
 };
 
 PathSumIII.prototype.addControls = function () {
@@ -360,6 +359,7 @@ PathSumIII.prototype.reset = function () {
   this.prefix = 0;
   this.count = 0;
   this.map = {};
+
   this.callStackIDs = [];
 };
 
@@ -443,6 +443,7 @@ PathSumIII.prototype.highlightCode = function (line) {
     this.cmd("SetHighlight", this.codeIDs[i], i === line ? 1 : 0);
   }
 };
+
 
 PathSumIII.prototype.pushStack = function (text) {
   const id = this.nextIndex++;
@@ -569,11 +570,10 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.prefix -= val;
   this.updateGrid();
   this.cmd("Step");
-
   this.highlightCode(14);
   this.cmd("Step");
   this.popStack();
-  this.cmd("Step");
+  this.cmd("Step")
 };
 
 PathSumIII.prototype.disableUI = function () {
@@ -589,4 +589,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new PathSumIII(animManag, canvas.width, canvas.height);
 }
-
