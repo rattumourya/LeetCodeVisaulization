@@ -447,14 +447,13 @@ PathSumIII.prototype.runDFS = function () {
 
   const dfs = (nodeID, prefix) => {
     this.highlight(6);
-    this.cmd("Step");
     if (nodeID == null) {
+      this.cmd("Step");
       return 0;
     }
     this.cmd("Step");
 
     this.highlight(7);
-    this.cmd("Step");
     const val = this.nodeValue[nodeID];
     const moveID = this.nextIndex++;
     const text = val >= 0 ? "+" + val : String(val);
@@ -469,15 +468,12 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("Step");
 
     this.highlight(8);
-    this.cmd("Step");
     let countLocal = 0;
-
-    this.highlight(9);
     this.cmd("Step");
+    this.highlight(9);
     const need = prefix - this.k;
     this.cmd("SetText", this.containsLabelID, `map.containsKey(${need})`);
     const contains = this.updateContainsLabel(need);
-    this.cmd("Step");
     if (contains) {
       const entry = this.mapEntryIDs[need];
       if (entry) {
@@ -494,17 +490,17 @@ PathSumIII.prototype.runDFS = function () {
       countLocal = this.map[need];
       this.count += countLocal;
       this.cmd("SetText", this.countValueID, String(this.count));
-      this.cmd("Step");
     }
 
-    this.highlight(10);
     this.cmd("Step");
+
+    this.highlight(10);
     this.map[prefix] = (this.map[prefix] || 0) + 1;
     this.renderMap();
     this.cmd("Step");
 
     this.highlight(11);
-    this.cmd("Step");
+
     if (this.leftChild[nodeID] != null) {
       this.cmd("SetHighlight", nodeID, 0);
       this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
@@ -519,7 +515,7 @@ PathSumIII.prototype.runDFS = function () {
     }
 
     this.highlight(12);
-    this.cmd("Step");
+
     if (this.rightChild[nodeID] != null) {
       this.cmd("SetHighlight", nodeID, 0);
       this.cmd("SetBackgroundColor", nodeID, "#FFFFFF");
@@ -534,14 +530,14 @@ PathSumIII.prototype.runDFS = function () {
     }
 
     this.highlight(13);
-    this.cmd("Step");
+
     this.map[prefix]--;
     if (this.map[prefix] === 0) delete this.map[prefix];
     this.renderMap();
     this.cmd("Step");
 
     this.highlight(14);
-    this.cmd("Step");
+
     const moveID2 = this.nextIndex++;
     const text2 = val >= 0 ? "-" + val : "+" + -val;
     this.cmd("CreateLabel", moveID2, text2, this.nodeX[nodeID], this.nodeY[nodeID]);
