@@ -62,7 +62,7 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.map = {};
 
   // call stack visualization
-  this.stackX = w - 80;
+  this.stackX = w - 150;
   this.stackStartY = this.codeStartY;
   this.stackSpacing = 20;
   this.callStackIDs = [];
@@ -303,13 +303,13 @@ PathSumIII.prototype.setup = function () {
     "}"
   ];
   this.codeIDs = [];
-  const codeX = 540 / 2 - 150; // left start to center block
+  const codeX = 30;
   const codeY = this.codeStartY;
   for (let i = 0; i < code.length; i++) {
     const id = this.nextIndex++;
-    const y = codeY + i * 19;
+    const y = codeY + i * 18;
     this.cmd("CreateLabel", id, code[i], codeX, y, 0);
-    this.cmd("SetTextStyle", id, "19");
+    this.cmd("SetTextStyle", id, "16");
     this.codeIDs.push(id);
   }
 
@@ -321,7 +321,7 @@ PathSumIII.prototype.setup = function () {
     "Call Stack",
     this.stackX,
     this.stackStartY - 30,
-    1
+    0
   );
   this.cmd("SetTextStyle", this.stackLabelID, "bold 16");
 
@@ -359,7 +359,6 @@ PathSumIII.prototype.reset = function () {
   this.prefix = 0;
   this.count = 0;
   this.map = {};
-
   this.callStackIDs = [];
 };
 
@@ -444,12 +443,11 @@ PathSumIII.prototype.highlightCode = function (line) {
   }
 };
 
-
 PathSumIII.prototype.pushStack = function (text) {
   const id = this.nextIndex++;
   const x = this.stackX;
   const y = this.stackStartY + this.callStackIDs.length * this.stackSpacing;
-  this.cmd("CreateLabel", id, text, x, y, 1);
+  this.cmd("CreateLabel", id, text, x, y, 0);
   this.cmd("SetTextStyle", id, "16");
   this.callStackIDs.push(id);
   return id;
@@ -462,18 +460,22 @@ PathSumIII.prototype.popStack = function () {
 };
 
 PathSumIII.prototype.dfs = function (nodeID) {
+  const label = nodeID == null ? "dfs(null)" : "dfs(" + this.nodeValue[nodeID] + ")";
+  this.pushStack(label);
   this.highlightCode(4); // void dfs(TreeNode node){
   this.cmd("Step");
   this.highlightCode(5); // if(node==null) return;
-  this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
+  if (nodeID != null) {
+    this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
+  }
   this.cmd("Step");
 
   if (nodeID == null) {
+    this.popStack();
     this.cmd("Step");
     return;
   }
 
-  this.pushStack("dfs(" + this.nodeValue[nodeID] + ")");
   this.cmd("Step");
 
   const val = this.nodeValue[nodeID];
@@ -531,19 +533,15 @@ PathSumIII.prototype.dfs = function (nodeID) {
 
   this.highlightCode(10); // dfs(left)
   this.cmd("Step");
+  this.dfs(this.leftChild[nodeID]);
   if (this.leftChild[nodeID] != null) {
-    // traverse left subtree
-    this.dfs(this.leftChild[nodeID]);
-    // backtrack to current node
     this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
     this.cmd("Step");
   }
   this.highlightCode(11); // dfs(right)
   this.cmd("Step");
+  this.dfs(this.rightChild[nodeID]);
   if (this.rightChild[nodeID] != null) {
-    // traverse right subtree
-    this.dfs(this.rightChild[nodeID]);
-    // backtrack to current node
     this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
     this.cmd("Step");
   }
@@ -570,10 +568,11 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.prefix -= val;
   this.updateGrid();
   this.cmd("Step");
+
   this.highlightCode(14);
   this.cmd("Step");
   this.popStack();
-  this.cmd("Step")
+  this.cmd("Step");
 };
 
 PathSumIII.prototype.disableUI = function () {
