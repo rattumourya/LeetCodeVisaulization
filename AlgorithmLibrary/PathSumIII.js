@@ -184,18 +184,29 @@ PathSumIII.prototype.setup = function () {
     this.computeNodePositions(root, this.treeRootX, this.treeRootY, 200);
     this.rootID = root.id;
     // create nodes & edges
+
+    this.cmd("CreateCircle", root.id, root.val, root.x, root.y);
+    this.cmd("SetForegroundColor", root.id, "#000");
+    this.cmd("SetBackgroundColor", root.id, "#FFF");
+
     const queue = [root];
     while (queue.length > 0) {
       const node = queue.shift();
       const id = node.id;
-      this.cmd("CreateCircle", id, node.val, node.x, node.y);
-      this.cmd("SetForegroundColor", id, "#000");
-      this.cmd("SetBackgroundColor", id, "#FFF");
+
       if (node.left) {
+        this.cmd("CreateCircle", node.left.id, node.left.val, node.left.x, node.left.y);
+        this.cmd("SetForegroundColor", node.left.id, "#000");
+        this.cmd("SetBackgroundColor", node.left.id, "#FFF");
         this.cmd("Connect", id, node.left.id);
         queue.push(node.left);
       }
       if (node.right) {
+
+        this.cmd("CreateCircle", node.right.id, node.right.val, node.right.x, node.right.y);
+        this.cmd("SetForegroundColor", node.right.id, "#000");
+        this.cmd("SetBackgroundColor", node.right.id, "#FFF");
+
         this.cmd("Connect", id, node.right.id);
         queue.push(node.right);
       }
