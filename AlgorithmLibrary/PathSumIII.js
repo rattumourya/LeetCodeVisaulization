@@ -64,6 +64,7 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.countValueID = -1;
   this.mapLabelID = -1;
   this.mapEntryIDs = {};
+  this.containsKey = 0;
 
   this.codeIDs = [];
 
@@ -297,9 +298,9 @@ PathSumIII.prototype.setup = function () {
   this.prefix = 0;
   this.count = 0;
   this.map = { 0: 1 };
+  this.containsKey = 0;
   this.renderMap();
-  // map initially contains 0 so map.containsKey(0) is true
-  this.cmd("SetText", this.containsValueID, "true");
+  this.updateContainsLabel();
 
   // code block centered horizontally (left-aligned text)
   const maxLen = Math.max(...PathSumIII.CODE.map((s) => s.length));
@@ -345,6 +346,16 @@ PathSumIII.prototype.renderMap = function () {
     this.mapEntryIDs[k] = { id: id, x: x };
     x += 80;
   }
+  this.updateContainsLabel();
+};
+
+PathSumIII.prototype.updateContainsLabel = function (key) {
+  if (key !== undefined) {
+    this.containsKey = key;
+  }
+  const has = this.map[this.containsKey] != null;
+  this.cmd("SetText", this.containsValueID, has ? "true" : "false");
+  return has;
 };
 
 PathSumIII.prototype.highlight = function (line) {
@@ -368,11 +379,12 @@ PathSumIII.prototype.runDFS = function () {
   this.prefix = 0;
   this.count = 0;
   this.map = { 0: 1 };
+  this.containsKey = 0;
   this.renderMap();
   this.cmd("SetText", this.prefixValueID, "0");
   this.cmd("SetText", this.countValueID, "0");
   this.cmd("SetText", this.containsLabelID, "map.containsKey(0)");
-  this.cmd("SetText", this.containsValueID, "true");
+  this.updateContainsLabel();
 
   // code prelude
   this.highlight(0);
@@ -417,8 +429,7 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("Step");
     const need = prefix - this.k;
     this.cmd("SetText", this.containsLabelID, `map.containsKey(${need})`);
-    const contains = this.map[need] != null;
-    this.cmd("SetText", this.containsValueID, contains ? "true" : "false");
+    const contains = this.updateContainsLabel(need);
     this.cmd("Step");
     let countLocal = contains ? this.map[need] : 0;
     if (contains) {
