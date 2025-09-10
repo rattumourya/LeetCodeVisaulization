@@ -92,14 +92,25 @@ PathSumIII.prototype.addControls = function () {
 // callback to build tree from user input
 PathSumIII.prototype.buildTreeCallback = function () {
   const raw = this.inputField.value.trim();
-  if (raw.length === 0) return;
-  const vals = raw
-    .split(/[\s,]+/)
-    .map((v) => (v === "null" || v === "NULL" || v === "None" ? null : parseInt(v)));
-  this.arr = vals;
-  const t = parseInt(this.targetField.value);
-  if (!isNaN(t)) this.k = t;
+
+  if (raw.length === 0) {
+    return;
+  }
+  const t = parseInt(this.targetField.value, 10);
+  if (!isNaN(t)) {
+    this.k = t;
+  }
+  // fully reset existing visualization before building a new tree
   this.reset();
+  // allow bracketed LeetCode style input and ignore empty tokens
+  const vals = raw
+    .replace(/^\[|\]$/g, "")
+    .split(/[\s,]+/)
+    .filter((v) => v.length > 0)
+    .map((v) =>
+      v === "null" || v === "NULL" || v === "None" ? null : parseInt(v, 10)
+    );
+  this.arr = vals;
   this.implementAction(this.setup.bind(this), 0);
 };
 
@@ -276,8 +287,8 @@ PathSumIII.prototype.setup = function () {
 PathSumIII.prototype.reset = function () {
   this.nextIndex = 0;
 
-  if (animationManager?.animatedObjects) {
-    animationManager.animatedObjects.clearAllObjects();
+  if (typeof animationManager !== "undefined") {
+    animationManager.resetAll();
   }
 
   this.commands = [];
@@ -286,10 +297,8 @@ PathSumIII.prototype.reset = function () {
   this.rightChild = {};
   this.nodeX = {};
   this.nodeY = {};
-
   this.rootID = -1;
   this.codeIDs = [];
-
   this.mapPairIDs = {};
   this.prefix = 0;
   this.count = 0;
