@@ -70,8 +70,9 @@ PathSumIII.prototype.init = function (am, w, h) {
 
   this.travID = -1;
 
-  // default setup
+  // build default example on load
   this.reset();
+  this.buildTreeCallback();
 };
 
 PathSumIII.prototype.addControls = function () {
@@ -108,11 +109,16 @@ PathSumIII.prototype.addControls = function () {
 
 PathSumIII.prototype.buildTreeCallback = function () {
   const raw = this.inputField.value.trim();
-  if (raw.length === 0) return;
-  const vals = raw
-    .split(/[\s,]+/)
-    .map((v) => (v === "null" || v === "NULL" || v === "None" ? null : parseInt(v)));
-  this.arr = vals;
+  if (raw.length > 0) {
+    this.arr = raw
+      .split(/[\s,]+/)
+      .map((v) =>
+        v === "null" || v === "NULL" || v === "None" ? null : parseInt(v)
+      );
+  } else {
+    // fall back to default example when no input provided
+    this.arr = [10, 5, -3, 3, 2, null, 11, 3, -2, null, 1];
+  }
   const t = parseInt(this.kField.value);
   if (!isNaN(t)) this.k = t;
   this.reset();
@@ -131,7 +137,6 @@ function TreeNode(val) {
 PathSumIII.prototype.buildTreeFromArray = function (arr) {
   if (!arr || arr.length === 0 || arr[0] === null) return null;
   const root = new TreeNode(arr[0]);
-  1;
   const queue = [root];
   let i = 1;
   while (queue.length > 0 && i < arr.length) {
