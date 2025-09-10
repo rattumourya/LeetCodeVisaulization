@@ -298,9 +298,13 @@ PathSumIII.prototype.setup = function () {
   this.count = 0;
   this.map = { 0: 1 };
   this.renderMap();
+  // map initially contains 0 so map.containsKey(0) is true
+  this.cmd("SetText", this.containsValueID, "true");
 
   // code block centered horizontally (left-aligned text)
-  const codeStartX = CANVAS_W / 2 - 170;
+  const maxLen = Math.max(...PathSumIII.CODE.map((s) => s.length));
+  const approxWidth = (PathSumIII.CODE_FONT_SIZE * 0.6) * maxLen;
+  const codeStartX = CANVAS_W / 2 - approxWidth / 2;
   const codeStartY = row3Y + this.cellH / 2 + 60;
   for (let i = 0; i < PathSumIII.CODE.length; i++) {
     const id = this.nextIndex++;
@@ -314,7 +318,6 @@ PathSumIII.prototype.setup = function () {
       PathSumIII.CODE_FONT_SIZE,
       "left"
     );
-
     this.cmd("SetForegroundColor", id, PathSumIII.CODE_STANDARD_COLOR);
     this.codeIDs.push(id);
   }
@@ -329,13 +332,18 @@ PathSumIII.prototype.renderMap = function () {
   this.mapEntryIDs = {};
   const keys = Object.keys(this.map).map(Number).sort((a, b) => a - b);
   let x = this.mapValueStartX;
-  for (const k of keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
     const id = this.nextIndex++;
-    const text = k + ":" + this.map[k];
+    const text =
+      (i === 0 ? "{ " : "") +
+      k +
+      " : " +
+      this.map[k] +
+      (i === keys.length - 1 ? " }" : " , ");
     this.cmd("CreateLabel", id, text, x, this.mapValueY, 0);
     this.mapEntryIDs[k] = { id: id, x: x };
-    x += 60;
-
+    x += 80;
   }
 };
 
@@ -363,6 +371,8 @@ PathSumIII.prototype.runDFS = function () {
   this.renderMap();
   this.cmd("SetText", this.prefixValueID, "0");
   this.cmd("SetText", this.countValueID, "0");
+  this.cmd("SetText", this.containsLabelID, "map.containsKey(0)");
+  this.cmd("SetText", this.containsValueID, "true");
 
   // code prelude
   this.highlight(0);
@@ -391,7 +401,6 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("SetHighlight", nodeID, 1);
 
     this.highlight(7);
-
     this.cmd("Step");
     const val = this.nodeValue[nodeID];
     const moveID = this.nextIndex++;
