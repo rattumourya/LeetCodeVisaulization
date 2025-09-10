@@ -62,7 +62,6 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.containsValueID = -1;
   this.countLabelID = -1;
   this.countValueID = -1;
-  this.mapRectID = -1;
   this.mapLabelID = -1;
   this.mapEntryIDs = {};
 
@@ -243,58 +242,56 @@ PathSumIII.prototype.setup = function () {
 
   // grid layout constants
   const CANVAS_W = 540;
-  this.cellW = 150;
+  this.cellW = CANVAS_W / 2; // two columns share canvas width
   this.cellH = 40;
-  this.cellGapX = 80; // gap between columns in row2
   this.rowGap = 20;
   this.gridStartY = 320;
-  const totalW = this.cellW * 2 + this.cellGapX;
-  const startX = (CANVAS_W - totalW) / 2;
-  const col1X = startX + this.cellW / 2;
-  const col2X = startX + this.cellW + this.cellGapX + this.cellW / 2;
+  const col1X = this.cellW / 2;
+  const col2X = CANVAS_W - this.cellW / 2;
   const row1Y = this.gridStartY + this.cellH / 2;
   const row2Y = row1Y + this.cellH + this.rowGap;
   const row3Y = row2Y + this.cellH + this.rowGap;
 
-  // row1 prefix cell
-  this.cmd("CreateRectangle", this.nextIndex, "", this.cellW, this.cellH, col1X, row1Y);
-  this.prefixRectID = this.nextIndex++;
+  // row1 prefix cell (no rectangle)
   this.prefixLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.prefixLabelID, "prefix", col1X - 40, row1Y, 0);
+  this.cmd("CreateLabel", this.prefixLabelID, "prefix", col1X, row1Y, 0, 16, "right");
   this.cmd("SetTextStyle", this.prefixLabelID, "bold 16");
   this.prefixValueID = this.nextIndex++;
-  this.prefixValueX = col1X + 40;
+  this.prefixValueX = col1X + 10;
   this.prefixValueY = row1Y;
-  this.cmd("CreateLabel", this.prefixValueID, "0", this.prefixValueX, this.prefixValueY, 0);
+  this.cmd("CreateLabel", this.prefixValueID, "0", this.prefixValueX, this.prefixValueY, 0, 16, "left");
 
   // row2 contains cell
-  this.cmd("CreateRectangle", this.nextIndex, "", this.cellW, this.cellH, col1X, row2Y);
-  this.containsRectID = this.nextIndex++;
   this.containsLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.containsLabelID, "map.containsKey(0)", col1X - 40, row2Y, 0);
+  this.cmd(
+    "CreateLabel",
+    this.containsLabelID,
+    "map.containsKey(0)",
+    col1X,
+    row2Y,
+    0,
+    16,
+    "right"
+  );
   this.cmd("SetTextStyle", this.containsLabelID, "bold 16");
   this.containsValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.containsValueID, "false", col1X + 40, row2Y, 0);
+  this.cmd("CreateLabel", this.containsValueID, "false", col1X + 10, row2Y, 0, 16, "left");
 
   // row2 count cell
-  this.cmd("CreateRectangle", this.nextIndex, "", this.cellW, this.cellH, col2X, row2Y);
-  this.countRectID = this.nextIndex++;
   this.countLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.countLabelID, "count", col2X - 40, row2Y, 0);
+  this.cmd("CreateLabel", this.countLabelID, "count", col2X, row2Y, 0, 16, "right");
   this.cmd("SetTextStyle", this.countLabelID, "bold 16");
   this.countValueID = this.nextIndex++;
-  this.countValueX = col2X + 40;
+  this.countValueX = col2X + 10;
   this.countValueY = row2Y;
-  this.cmd("CreateLabel", this.countValueID, "0", this.countValueX, this.countValueY, 0);
+  this.cmd("CreateLabel", this.countValueID, "0", this.countValueX, this.countValueY, 0, 16, "left");
 
   // row3 map cell spanning both columns
-  this.mapRectID = this.nextIndex++;
-  this.cmd("CreateRectangle", this.mapRectID, "", totalW, this.cellH, CANVAS_W / 2, row3Y);
   this.mapLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.mapLabelID, "map", CANVAS_W / 2 - totalW / 2 + 30, row3Y, 0);
+  this.cmd("CreateLabel", this.mapLabelID, "map", CANVAS_W / 2 - 10, row3Y, 0, 16, "right");
   this.cmd("SetTextStyle", this.mapLabelID, "bold 16");
   this.mapValueY = row3Y;
-  this.mapValueStartX = CANVAS_W / 2 - totalW / 2 + 80;
+  this.mapValueStartX = CANVAS_W / 2 + 10;
 
   // initial map {0:1}
   this.prefix = 0;
@@ -302,12 +299,22 @@ PathSumIII.prototype.setup = function () {
   this.map = { 0: 1 };
   this.renderMap();
 
-  // code block
-  const codeStartX = 40;
+  // code block centered horizontally (left-aligned text)
+  const codeStartX = CANVAS_W / 2 - 170;
   const codeStartY = row3Y + this.cellH / 2 + 60;
   for (let i = 0; i < PathSumIII.CODE.length; i++) {
     const id = this.nextIndex++;
-    this.cmd("CreateLabel", id, PathSumIII.CODE[i], codeStartX, codeStartY + i * PathSumIII.CODE_LINE_HEIGHT, 0, PathSumIII.CODE_FONT_SIZE, "left");
+    this.cmd(
+      "CreateLabel",
+      id,
+      PathSumIII.CODE[i],
+      codeStartX,
+      codeStartY + i * PathSumIII.CODE_LINE_HEIGHT,
+      0,
+      PathSumIII.CODE_FONT_SIZE,
+      "left"
+    );
+
     this.cmd("SetForegroundColor", id, PathSumIII.CODE_STANDARD_COLOR);
     this.codeIDs.push(id);
   }
@@ -328,6 +335,7 @@ PathSumIII.prototype.renderMap = function () {
     this.cmd("CreateLabel", id, text, x, this.mapValueY, 0);
     this.mapEntryIDs[k] = { id: id, x: x };
     x += 60;
+
   }
 };
 
@@ -383,6 +391,8 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("SetHighlight", nodeID, 1);
 
     this.highlight(7);
+
+    this.cmd("Step");
     const val = this.nodeValue[nodeID];
     const moveID = this.nextIndex++;
     const text = val >= 0 ? "+" + val : String(val);
@@ -395,6 +405,7 @@ PathSumIII.prototype.runDFS = function () {
     this.cmd("Step");
 
     this.highlight(8);
+    this.cmd("Step");
     const need = prefix - this.k;
     this.cmd("SetText", this.containsLabelID, `map.containsKey(${need})`);
     const contains = this.map[need] != null;
@@ -418,11 +429,13 @@ PathSumIII.prototype.runDFS = function () {
     }
 
     this.highlight(9);
+    this.cmd("Step");
     this.map[prefix] = (this.map[prefix] || 0) + 1;
     this.renderMap();
     this.cmd("Step");
 
     this.highlight(10);
+    this.cmd("Step");
     if (this.leftChild[nodeID] != null) {
       this.cmd("Move", this.travID, this.nodeX[this.leftChild[nodeID]], this.nodeY[this.leftChild[nodeID]]);
       this.cmd("Step");
@@ -432,6 +445,7 @@ PathSumIII.prototype.runDFS = function () {
     }
 
     this.highlight(11);
+    this.cmd("Step");
     if (this.rightChild[nodeID] != null) {
       this.cmd("Move", this.travID, this.nodeX[this.rightChild[nodeID]], this.nodeY[this.rightChild[nodeID]]);
       this.cmd("Step");
@@ -441,12 +455,14 @@ PathSumIII.prototype.runDFS = function () {
     }
 
     this.highlight(12);
+    this.cmd("Step");
     this.map[prefix]--;
     if (this.map[prefix] === 0) delete this.map[prefix];
     this.renderMap();
     this.cmd("Step");
 
     this.highlight(13);
+    this.cmd("Step");
     const moveID2 = this.nextIndex++;
     const text2 = val >= 0 ? "-" + val : "+" + -val;
     this.cmd("CreateLabel", moveID2, text2, this.nodeX[nodeID], this.nodeY[nodeID]);
