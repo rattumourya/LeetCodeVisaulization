@@ -301,8 +301,8 @@ PathSumIII.prototype.setup = function () {
 
   // highlight circle hidden initially
   this.hlID = this.nextIndex++;
-  this.cmd("CreateHighlightCircle", this.hlID, "", this.treeRootX, this.treeRootY);
-  this.cmd("SetForegroundColor", this.hlID, "#F00");
+  // red circle that tracks the current node during traversal
+  this.cmd("CreateHighlightCircle", this.hlID, "#F00", this.treeRootX, this.treeRootY);
   this.cmd("SetWidth", this.hlID, 5);
   this.cmd("SetAlpha", this.hlID, 0);
 
@@ -475,12 +475,21 @@ PathSumIII.prototype.dfs = function (nodeID) {
   this.highlightCode(10); // dfs(left)
   this.cmd("Step");
   if (this.leftChild[nodeID] != null) {
+    // traverse left subtree
     this.dfs(this.leftChild[nodeID]);
+    // backtrack to current node
+    this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Step");
   }
   this.highlightCode(11); // dfs(right)
   this.cmd("Step");
   if (this.rightChild[nodeID] != null) {
+
+    // traverse right subtree
     this.dfs(this.rightChild[nodeID]);
+    // backtrack to current node
+    this.cmd("Move", this.hlID, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Step");
   }
 
   this.highlightCode(12); // map.put(prefix, map.get(prefix)-1);
