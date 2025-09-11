@@ -396,6 +396,7 @@ PathSumI.prototype.runSearch = function () {
 
     highlight(4);
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
+
     let right = false;
     if (this.rightChild[nodeID] != null) {
       const r = this.rightChild[nodeID];
