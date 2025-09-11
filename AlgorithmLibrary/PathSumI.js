@@ -36,6 +36,7 @@ PathSumI.prototype.init = function (am, w, h) {
   this.remainLabelIDs = [];
   this.codeIDs = [];
   this.resultTextID = -1;
+  this.traverseCircleID = -1;
 
   // layout constants for 9:16 canvas (540x960)
   this.sectionDivY1 = 360; // tree / code divider
@@ -271,6 +272,7 @@ PathSumI.prototype.reset = function () {
   this.rootID = -1;
   this.codeIDs = [];
   this.resultTextID = -1;
+  this.traverseCircleID = -1;
 };
 
 PathSumI.prototype.startCallback = function () {
@@ -285,6 +287,7 @@ PathSumI.prototype.runSearch = function () {
   for (const id of this.pathRectIDs) this.cmd("Delete", id);
   for (const id of this.remainLabelIDs) this.cmd("Delete", id);
   if (this.resultTextID !== -1) this.cmd("Delete", this.resultTextID);
+  if (this.traverseCircleID !== -1) this.cmd("Delete", this.traverseCircleID);
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
     this.cmd("SetHighlight", parseInt(id), 0);
@@ -292,6 +295,17 @@ PathSumI.prototype.runSearch = function () {
   this.pathRectIDs = [];
   this.remainLabelIDs = [];
   this.resultTextID = -1;
+  this.traverseCircleID = this.nextIndex++;
+  if (this.rootID !== -1) {
+    this.cmd(
+      "CreateHighlightCircle",
+      this.traverseCircleID,
+      "#F00",
+      this.nodeX[this.rootID],
+      this.nodeY[this.rootID]
+    );
+    this.cmd("SetLayer", this.traverseCircleID, 1);
+  }
   const pathNodeIDs = [];
   this.keepGreen = {};
 
@@ -307,6 +321,8 @@ PathSumI.prototype.runSearch = function () {
     if (nodeID == null) {
       return false;
     }
+    this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Step");
 
     highlight(2);
     const val = this.nodeValue[nodeID];
@@ -320,15 +336,27 @@ PathSumI.prototype.runSearch = function () {
     this.cmd("SetBackgroundColor", nodeID, "#ADD8E6");
     this.cmd("Step");
 
+    highlight(3);
+    const next = target - val;
+    const remID = this.nextIndex++;
+    const rx = this.nodeX[nodeID];
+    const ry = this.nodeY[nodeID] - 40;
+    this.cmd("CreateLabel", remID, "next = " + String(next), rx, ry, 0);
+    this.remainLabelIDs.push(remID);
+    this.cmd("Step");
+
     if (this.leftChild[nodeID] == null && this.rightChild[nodeID] == null) {
       highlight(2);
       this.cmd("Step");
       if (target === val) {
         this.keepGreen[nodeID] = true;
         this.cmd("SetBackgroundColor", nodeID, "#90EE90");
+        this.cmd("SetHighlight", nodeID, 0);
         this.cmd("Step");
         return true;
       } else {
+        const remLabel = this.remainLabelIDs.pop();
+        this.cmd("Delete", remLabel);
         const lastRect = this.pathRectIDs.pop();
         this.cmd("Delete", lastRect);
         pathNodeIDs.pop();
@@ -339,15 +367,6 @@ PathSumI.prototype.runSearch = function () {
       }
     }
 
-    highlight(3);
-    const next = target - val;
-    const remID = this.nextIndex++;
-    const rx = this.nodeX[nodeID];
-    const ry = this.nodeY[nodeID] - 40;
-    this.cmd("CreateLabel", remID, "next = " + String(next), rx, ry, 0);
-    this.remainLabelIDs.push(remID);
-    this.cmd("Step");
-
     highlight(4);
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
     this.cmd("Step");
@@ -356,6 +375,7 @@ PathSumI.prototype.runSearch = function () {
     if (left) {
       this.keepGreen[nodeID] = true;
       this.cmd("SetBackgroundColor", nodeID, "#90EE90");
+      this.cmd("SetHighlight", nodeID, 0);
       return true;
     }
 
@@ -367,6 +387,7 @@ PathSumI.prototype.runSearch = function () {
     if (right) {
       this.keepGreen[nodeID] = true;
       this.cmd("SetBackgroundColor", nodeID, "#90EE90");
+      this.cmd("SetHighlight", nodeID, 0);
       return true;
     }
 
@@ -384,6 +405,12 @@ PathSumI.prototype.runSearch = function () {
   highlight(0);
   this.cmd("Step");
   const res = dfs(this.rootID, this.target);
+  if (this.traverseCircleID !== -1) {
+    this.cmd("Delete", this.traverseCircleID);
+    this.traverseCircleID = -1;
+    this.cmd("Step");
+  }
+
   const resID = this.nextIndex++;
   this.resultTextID = resID;
   this.cmd(
