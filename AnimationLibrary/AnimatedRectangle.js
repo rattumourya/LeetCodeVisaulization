@@ -43,7 +43,7 @@ AnimatedRectangle = function(id, val, wth, hgt,  xJust, yJust, fillColor, edgeCo
         this.nullPointer = false;
         this.alpha = 1.0;
         this.addedToScene = true;
-        this.textSize = 10;
+        this.textSize = 16;
 	
 }
 

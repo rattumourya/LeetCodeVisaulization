@@ -45,7 +45,7 @@ PathSumIII.prototype.init = function (am, w, h) {
   this.treeRootY = 120;
   this.levelHeight = 80;
 
-  this.gridStartY = 300;
+  this.gridStartY = 440;
   this.cellW = w / 5;
   this.cellH = 40;
 
@@ -79,7 +79,7 @@ PathSumIII.prototype.init = function (am, w, h) {
 PathSumIII.prototype.addControls = function () {
   this.controls = [];
 
-  addLabelToAlgorithmBar("Tree (level-order, use null for empty):");
+  addLabelToAlgorithmBar("Inputs : ");
   this.inputField = addControlToAlgorithmBar("Text", "");
   this.inputField.size = 40;
 
@@ -196,8 +196,8 @@ PathSumIII.prototype.setup = function () {
   this.cmd(
     "CreateLabel",
     this.titleID,
-    "PathSumIII (Leetcode 437)",
-    this.canvasW / 2,
+    "PathSumIII (Leetcode 437) for k = 8",
+    this.canvasW / 2 - 150,
     40,
     0
   );
@@ -258,11 +258,12 @@ PathSumIII.prototype.setup = function () {
   const y3 = this.gridStartY + this.cellH * 2 + this.cellH / 2;
 
   // centers of the five grid columns
-  const x1 = this.cellW / 2;
-  const x2 = this.cellW * 1.5;
+  const margin = 50;
+  const x1 = this.cellW / 2 + margin;
+  const x2 = this.cellW * 1.5 + margin;
   const x3 = this.cellW * 2.5; // unused column for spacing
-  const x4 = this.cellW * 3.5;
-  const x5 = this.cellW * 4.5;
+  const x4 = this.cellW * 3 + margin;
+  const x5 = this.cellW * 3.7 + margin;
 
   this.prefixLabelID = this.nextIndex++;
   this.prefixValID = this.nextIndex++;
@@ -338,7 +339,7 @@ PathSumIII.prototype.setup = function () {
     "CreateLabel",
     this.stackLabelID,
     "Call Stack",
-    this.stackX,
+    this.stackX - 40,
     this.stackStartY - 30,
     0
   );
