@@ -7,7 +7,7 @@
  * - 9:16 layout with three sections:
  *   1) top: binary tree with centered title
  *   2) middle: structured Java code snippet
- *   3) bottom: current path values
+ *   3) bottom: call stack visualization
  */
 
 function PathSumI(am, w, h) { this.init(am, w, h); }
@@ -32,20 +32,19 @@ PathSumI.prototype.init = function (am, w, h) {
   this.nodeX = {};
   this.nodeY = {};
 
-  this.pathRectIDs = [];
+  this.callStackIDs = [];
   this.remainLabelIDs = [];
   this.codeIDs = [];
-  this.resultTextID = -1;
   this.traverseCircleID = -1;
 
   // layout constants for 9:16 canvas (540x960)
   this.sectionDivY1 = 360; // tree / code divider
-  this.sectionDivY2 = 660; // code / path divider
-  this.rectW = 40;
-  this.rectH = 40;
-  this.rectSP = 10;
-  this.pathStartX = 60;
-  this.pathStartY = this.sectionDivY2 + 120;
+  this.sectionDivY2 = 660; // code / stack divider
+  this.stackRectW = 80;
+  this.stackRectH = 30;
+  this.stackSpacing = this.stackRectH + 10;
+  this.stackStartX = 270;
+  this.stackStartY = this.sectionDivY2 + 120;
 };
 
 PathSumI.prototype.addControls = function () {
@@ -173,10 +172,9 @@ PathSumI.prototype.setup = function () {
   this.rightChild = {};
   this.nodeX = {};
   this.nodeY = {};
-  this.pathRectIDs = [];
+  this.callStackIDs = [];
   this.remainLabelIDs = [];
   this.codeIDs = [];
-  this.resultTextID = -1;
 
   this.root = this.buildTreeFromArray(this.arr);
   this.layoutTree(this.root);
@@ -240,19 +238,20 @@ PathSumI.prototype.setup = function () {
     const id = this.nextIndex++;
     const y = this.sectionDivY1 + 30 + i * 20;
     this.cmd("CreateLabel", id, code[i], codeX, y, 0);
+    this.cmd("SetTextStyle", id, "18");
     this.codeIDs.push(id);
   }
 
-  this.pathLabelID = this.nextIndex++;
+  this.stackLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
-    this.pathLabelID,
-    "Current Path:",
+    this.stackLabelID,
+    "Call Stack:",
     270,
     this.sectionDivY2 + 80,
     1
   );
-  this.cmd("SetTextStyle", this.pathLabelID, "bold 16");
+  this.cmd("SetTextStyle", this.stackLabelID, "bold 16");
 
   return this.commands;
 };
@@ -262,7 +261,7 @@ PathSumI.prototype.reset = function () {
   if (animationManager?.animatedObjects) {
     animationManager.animatedObjects.clearAllObjects();
   }
-  this.pathRectIDs = [];
+  this.callStackIDs = [];
   this.remainLabelIDs = [];
   this.nodeValue = {};
   this.leftChild = {};
@@ -271,7 +270,6 @@ PathSumI.prototype.reset = function () {
   this.nodeY = {};
   this.rootID = -1;
   this.codeIDs = [];
-  this.resultTextID = -1;
   this.traverseCircleID = -1;
 };
 
@@ -284,17 +282,15 @@ PathSumI.prototype.startCallback = function () {
 
 PathSumI.prototype.runSearch = function () {
   this.commands = [];
-  for (const id of this.pathRectIDs) this.cmd("Delete", id);
+  for (const id of this.callStackIDs) this.cmd("Delete", id);
   for (const id of this.remainLabelIDs) this.cmd("Delete", id);
-  if (this.resultTextID !== -1) this.cmd("Delete", this.resultTextID);
   if (this.traverseCircleID !== -1) this.cmd("Delete", this.traverseCircleID);
   for (const id in this.nodeValue) {
     this.cmd("SetBackgroundColor", parseInt(id), "#FFF");
     this.cmd("SetHighlight", parseInt(id), 0);
   }
-  this.pathRectIDs = [];
+  this.callStackIDs = [];
   this.remainLabelIDs = [];
-  this.resultTextID = -1;
   this.traverseCircleID = this.nextIndex++;
   if (this.rootID !== -1) {
     this.cmd(
@@ -315,21 +311,45 @@ PathSumI.prototype.runSearch = function () {
     }
   };
 
+  const pushStack = (text) => {
+    const id = this.nextIndex++;
+    const x = this.stackStartX;
+    const y = this.stackStartY + this.callStackIDs.length * this.stackSpacing;
+    this.cmd(
+      "CreateRectangle",
+      id,
+      text,
+      this.stackRectW,
+      this.stackRectH,
+      x,
+      y
+    );
+    this.callStackIDs.push(id);
+    this.cmd("Step");
+    return id;
+  };
+
+  const popStack = () => {
+    if (this.callStackIDs.length === 0) return;
+    const id = this.callStackIDs.pop();
+    this.cmd("Delete", id);
+    this.cmd("Step");
+  };
+
   const dfs = (nodeID, target) => {
+    const label =
+      (nodeID == null ? "null" : this.nodeValue[nodeID]) + "," + target;
+    pushStack(label);
     highlight(1);
     this.cmd("Step");
     if (nodeID == null) {
+      popStack();
       return false;
     }
 
     highlight(2);
     const val = this.nodeValue[nodeID];
     this.cmd("SetHighlight", nodeID, 1);
-    const rectID = this.nextIndex++;
-    const idx = this.pathRectIDs.length;
-    const x = this.pathStartX + idx * (this.rectW + this.rectSP);
-    this.cmd("CreateRectangle", rectID, String(val), this.rectW, this.rectH, x, this.pathStartY);
-    this.pathRectIDs.push(rectID);
     pathNodeIDs.push(nodeID);
     this.cmd("SetBackgroundColor", nodeID, "#ADD8E6");
     this.cmd("Step");
@@ -340,7 +360,7 @@ PathSumI.prototype.runSearch = function () {
     const rx = this.nodeX[nodeID];
     const ry = this.nodeY[nodeID] - 40;
     this.cmd("CreateLabel", remID, "next = " + String(next), rx, ry, 0);
-    this.remainLabelIDs.push(remID);
+    this.remainLabelIDs.push(remID    );
     this.cmd("Step");
 
     if (this.leftChild[nodeID] == null && this.rightChild[nodeID] == null) {
@@ -355,16 +375,16 @@ PathSumI.prototype.runSearch = function () {
           this.traverseCircleID = -1;
         }
         this.cmd("Step");
+        popStack();
         return true;
       } else {
         const remLabel = this.remainLabelIDs.pop();
         this.cmd("Delete", remLabel);
-        const lastRect = this.pathRectIDs.pop();
-        this.cmd("Delete", lastRect);
         pathNodeIDs.pop();
         this.cmd("SetBackgroundColor", nodeID, "#FFF");
         this.cmd("SetHighlight", nodeID, 0);
         this.cmd("Step");
+        popStack();
         return false;
       }
     }
@@ -391,12 +411,12 @@ PathSumI.prototype.runSearch = function () {
       this.keepGreen[nodeID] = true;
       this.cmd("SetBackgroundColor", nodeID, "#90EE90");
       this.cmd("SetHighlight", nodeID, 0);
+      popStack();
       return true;
     }
 
     highlight(4);
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
-
     let right = false;
     if (this.rightChild[nodeID] != null) {
       const r = this.rightChild[nodeID];
@@ -417,39 +437,28 @@ PathSumI.prototype.runSearch = function () {
       this.keepGreen[nodeID] = true;
       this.cmd("SetBackgroundColor", nodeID, "#90EE90");
       this.cmd("SetHighlight", nodeID, 0);
+      popStack();
       return true;
     }
 
-    const remLabel = this.remainLabelIDs.pop();
-    this.cmd("Delete", remLabel);
-    const lastRect = this.pathRectIDs.pop();
-    this.cmd("Delete", lastRect);
-    pathNodeIDs.pop();
-    if (!this.keepGreen[nodeID]) this.cmd("SetBackgroundColor", nodeID, "#FFF");
-    this.cmd("SetHighlight", nodeID, 0);
-    this.cmd("Step");
-    return false;
+  const remLabel = this.remainLabelIDs.pop();
+  this.cmd("Delete", remLabel);
+  pathNodeIDs.pop();
+  if (!this.keepGreen[nodeID]) this.cmd("SetBackgroundColor", nodeID, "#FFF");
+  this.cmd("SetHighlight", nodeID, 0);
+  this.cmd("Step");
+  popStack();
+  return false;
   };
 
   highlight(0);
   this.cmd("Step");
-  const res = dfs(this.rootID, this.target);
+  dfs(this.rootID, this.target);
   if (this.traverseCircleID !== -1) {
     this.cmd("Delete", this.traverseCircleID);
     this.traverseCircleID = -1;
     this.cmd("Step");
   }
-  const resID = this.nextIndex++;
-  this.resultTextID = resID;
-  this.cmd(
-    "CreateLabel",
-    resID,
-    "Result: " + (res ? "True" : "False"),
-    270,
-    this.sectionDivY2 + 80,
-    1
-  );
-  this.cmd("SetTextStyle", resID, "bold 16");
   return this.commands;
 };
 
@@ -466,4 +475,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new PathSumI(animManag, canvas.width, canvas.height);
 }
-
