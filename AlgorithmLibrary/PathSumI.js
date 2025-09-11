@@ -6,8 +6,8 @@
  * - DFS search to check for target sum path
  * - 9:16 layout with three sections:
  *   1) top: binary tree with centered title
- *   2) middle: structured Java code snippet
- *   3) bottom: call stack visualization
+ *   2) middle: call stack visualization
+ *   3) bottom: structured Java code snippet
  */
 
 function PathSumI(am, w, h) { this.init(am, w, h); }
@@ -38,13 +38,13 @@ PathSumI.prototype.init = function (am, w, h) {
   this.traverseCircleID = -1;
 
   // layout constants for 9:16 canvas (540x960)
-  this.sectionDivY1 = 360; // tree / code divider
-  this.sectionDivY2 = 660; // code / stack divider
-  this.stackRectW = 80;
+  this.sectionDivY1 = 360; // tree / stack divider
+  this.sectionDivY2 = 660; // stack / code divider
+  this.stackRectW = 180;
   this.stackRectH = 30;
   this.stackSpacing = this.stackRectH + 10;
   this.stackStartX = 270;
-  this.stackStartY = this.sectionDivY2 + 120;
+  this.stackStartY = this.sectionDivY1 + 80;
 };
 
 PathSumI.prototype.addControls = function () {
@@ -233,14 +233,6 @@ PathSumI.prototype.setup = function () {
     "    return hasPathSum(root.left, next) || hasPathSum(root.right, next);",
     "}",
   ];
-  const codeX = 540 / 2 - 220;
-  for (let i = 0; i < code.length; i++) {
-    const id = this.nextIndex++;
-    const y = this.sectionDivY1 + 30 + i * 20;
-    this.cmd("CreateLabel", id, code[i], codeX, y, 0);
-    this.cmd("SetTextStyle", id, "18");
-    this.codeIDs.push(id);
-  }
 
   this.stackLabelID = this.nextIndex++;
   this.cmd(
@@ -248,10 +240,19 @@ PathSumI.prototype.setup = function () {
     this.stackLabelID,
     "Call Stack:",
     270,
-    this.sectionDivY2 + 80,
+    this.sectionDivY1 + 40,
     1
   );
   this.cmd("SetTextStyle", this.stackLabelID, "bold 16");
+
+  const codeX = 540 / 2 - 220;
+  for (let i = 0; i < code.length; i++) {
+    const id = this.nextIndex++;
+    const y = this.sectionDivY2 + 30 + i * 20;
+    this.cmd("CreateLabel", id, code[i], codeX, y, 0);
+    this.cmd("SetTextStyle", id, "18");
+    this.codeIDs.push(id);
+  }
 
   return this.commands;
 };
@@ -311,7 +312,9 @@ PathSumI.prototype.runSearch = function () {
     }
   };
 
-  const pushStack = (text) => {
+  const pushStack = (nodeID, target) => {
+    const valStr = nodeID == null ? "null" : this.nodeValue[nodeID];
+    const text = `hasPathSum(${valStr}, ${target})`;
     const id = this.nextIndex++;
     const x = this.stackStartX;
     const y = this.stackStartY + this.callStackIDs.length * this.stackSpacing;
@@ -337,9 +340,7 @@ PathSumI.prototype.runSearch = function () {
   };
 
   const dfs = (nodeID, target) => {
-    const label =
-      (nodeID == null ? "null" : this.nodeValue[nodeID]) + "," + target;
-    pushStack(label);
+    pushStack(nodeID, target);
     highlight(1);
     this.cmd("Step");
     if (nodeID == null) {
