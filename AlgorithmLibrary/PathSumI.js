@@ -350,6 +350,10 @@ PathSumI.prototype.runSearch = function () {
         this.keepGreen[nodeID] = true;
         this.cmd("SetBackgroundColor", nodeID, "#90EE90");
         this.cmd("SetHighlight", nodeID, 0);
+        if (this.traverseCircleID !== -1) {
+          this.cmd("Delete", this.traverseCircleID);
+          this.traverseCircleID = -1;
+        }
         this.cmd("Step");
         return true;
       } else {
@@ -367,18 +371,21 @@ PathSumI.prototype.runSearch = function () {
 
     highlight(4);
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
+    let left = false;
     if (this.leftChild[nodeID] != null) {
-      this.cmd(
-        "Move",
-        this.traverseCircleID,
-        this.nodeX[this.leftChild[nodeID]],
-        this.nodeY[this.leftChild[nodeID]]
-      );
+      const l = this.leftChild[nodeID];
+      this.cmd("SetEdgeHighlight", nodeID, l, 1);
+      this.cmd("Move", this.traverseCircleID, this.nodeX[l], this.nodeY[l]);
+      this.cmd("Step");
+      left = dfs(l, next);
+      if (!left && this.traverseCircleID !== -1) {
+        this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
+        this.cmd("Step");
+      }
+      this.cmd("SetEdgeHighlight", nodeID, l, 0);
+    } else {
+      this.cmd("Step");
     }
-    this.cmd("Step");
-    const left = dfs(this.leftChild[nodeID], next);
-    this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
-    this.cmd("Step");
     this.cmd("SetForegroundColor", this.codeIDs[4], "#000");
     if (left) {
       this.keepGreen[nodeID] = true;
@@ -389,18 +396,22 @@ PathSumI.prototype.runSearch = function () {
 
     highlight(4);
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
+
+    let right = false;
     if (this.rightChild[nodeID] != null) {
-      this.cmd(
-        "Move",
-        this.traverseCircleID,
-        this.nodeX[this.rightChild[nodeID]],
-        this.nodeY[this.rightChild[nodeID]]
-      );
+      const r = this.rightChild[nodeID];
+      this.cmd("SetEdgeHighlight", nodeID, r, 1);
+      this.cmd("Move", this.traverseCircleID, this.nodeX[r], this.nodeY[r]);
+      this.cmd("Step");
+      right = dfs(r, next);
+      if (!right && this.traverseCircleID !== -1) {
+        this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
+        this.cmd("Step");
+      }
+      this.cmd("SetEdgeHighlight", nodeID, r, 0);
+    } else {
+      this.cmd("Step");
     }
-    this.cmd("Step");
-    const right = dfs(this.rightChild[nodeID], next);
-    this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
-    this.cmd("Step");
     this.cmd("SetForegroundColor", this.codeIDs[4], "#000");
     if (right) {
       this.keepGreen[nodeID] = true;
