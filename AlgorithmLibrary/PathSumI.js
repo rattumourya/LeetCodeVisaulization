@@ -321,8 +321,6 @@ PathSumI.prototype.runSearch = function () {
     if (nodeID == null) {
       return false;
     }
-    this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
-    this.cmd("Step");
 
     highlight(2);
     const val = this.nodeValue[nodeID];
@@ -369,6 +367,14 @@ PathSumI.prototype.runSearch = function () {
 
     highlight(4);
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
+    if (this.leftChild[nodeID] != null) {
+      this.cmd(
+        "Move",
+        this.traverseCircleID,
+        this.nodeX[this.leftChild[nodeID]],
+        this.nodeY[this.leftChild[nodeID]]
+      );
+    }
     this.cmd("Step");
     const left = dfs(this.leftChild[nodeID], next);
     this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
@@ -383,6 +389,14 @@ PathSumI.prototype.runSearch = function () {
 
     highlight(4);
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
+    if (this.rightChild[nodeID] != null) {
+      this.cmd(
+        "Move",
+        this.traverseCircleID,
+        this.nodeX[this.rightChild[nodeID]],
+        this.nodeY[this.rightChild[nodeID]]
+      );
+    }
     this.cmd("Step");
     const right = dfs(this.rightChild[nodeID], next);
     this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
