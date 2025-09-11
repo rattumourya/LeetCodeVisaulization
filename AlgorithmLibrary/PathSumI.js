@@ -410,6 +410,7 @@ PathSumI.prototype.runSearch = function () {
     this.traverseCircleID = -1;
     this.cmd("Step");
   }
+
   const resID = this.nextIndex++;
   this.resultTextID = resID;
   this.cmd(
