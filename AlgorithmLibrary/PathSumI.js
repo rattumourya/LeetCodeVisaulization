@@ -371,6 +371,8 @@ PathSumI.prototype.runSearch = function () {
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
     this.cmd("Step");
     const left = dfs(this.leftChild[nodeID], next);
+    this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Step");
     this.cmd("SetForegroundColor", this.codeIDs[4], "#000");
     if (left) {
       this.keepGreen[nodeID] = true;
@@ -383,6 +385,8 @@ PathSumI.prototype.runSearch = function () {
     this.cmd("SetForegroundColor", this.codeIDs[4], "#F00");
     this.cmd("Step");
     const right = dfs(this.rightChild[nodeID], next);
+    this.cmd("Move", this.traverseCircleID, this.nodeX[nodeID], this.nodeY[nodeID]);
+    this.cmd("Step");
     this.cmd("SetForegroundColor", this.codeIDs[4], "#000");
     if (right) {
       this.keepGreen[nodeID] = true;
@@ -410,7 +414,6 @@ PathSumI.prototype.runSearch = function () {
     this.traverseCircleID = -1;
     this.cmd("Step");
   }
-
   const resID = this.nextIndex++;
   this.resultTextID = resID;
   this.cmd(
