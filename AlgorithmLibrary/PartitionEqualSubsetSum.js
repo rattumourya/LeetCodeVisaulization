@@ -167,7 +167,9 @@ PartitionEqualSubsetSum.prototype.setup = function () {
     // Row label (index centered beside row)
     const rlabel = this.nextIndex++;
     const rtext = String(i);
-    this.cmd("CreateLabel", rlabel, rtext, startX - 15, y + RECT_H / 2, 0);
+    const rlabelX = startX - (RECT_W / 2 + RECT_SP);
+    const rlabelY = y + RECT_H / 2;
+    this.cmd("CreateLabel", rlabel, rtext, rlabelX, rlabelY, 0);
     this.cmd("SetForegroundColor", rlabel, "#888888");
     for (let j = 0; j <= target; j++) {
       const id = this.nextIndex++;
@@ -185,10 +187,11 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   }
 
   // Column labels (indices centered above columns)
+  const colLabelY = dpStartY - (RECT_H / 2 + RECT_SP);
   for (let j = 0; j <= target; j++) {
     const lid = this.nextIndex++;
     const x = startX + j * (RECT_W + RECT_SP) + RECT_W / 2;
-    this.cmd("CreateLabel", lid, String(j), x, dpStartY - 15, 0);
+    this.cmd("CreateLabel", lid, String(j), x, colLabelY, 0);
     this.cmd("SetForegroundColor", lid, "#888888");
   }
 
