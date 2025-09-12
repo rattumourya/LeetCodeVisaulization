@@ -139,9 +139,6 @@ PartitionEqualSubsetSum.prototype.setup = function () {
     this.cmd("CreateRectangle", id, String(this.arr[i]), RECT_W, RECT_H, x, startY);
     this.cmd("SetBackgroundColor", id, "#f0f7ff");
     this.cmd("SetForegroundColor", id, "#000000");
-    const lid = this.nextIndex++;
-    this.cmd("CreateLabel", lid, "nums[" + i + "]", x + RECT_W / 2, startY + RECT_H + 15, 1);
-    this.cmd("SetForegroundColor", lid, "#888888");
   }
 
   // Sum and target labels
@@ -200,6 +197,12 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const resY = colY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
+  // Explanatory message centered beneath result
+  const messageY = resY + 40;
+  this.messageID = this.nextIndex++;
+  this.cmd("CreateLabel", this.messageID, "", canvasW / 2, messageY, 1);
+  this.cmd("SetForegroundColor", this.messageID, "#003366");
+
   // Explanatory message centered beneath result
   const messageY = resY + 40;
   this.messageID = this.nextIndex++;
