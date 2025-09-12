@@ -18,11 +18,13 @@ PartitionEqualSubsetSum.CODE = [
   "sum = total(nums)",
   "if sum % 2 == 1: return false",
   "target = sum / 2",
-  "dp[0] = true",
-  "for num in nums:",
-  "  for j = target..num:",
-  "    dp[j] |= dp[j-num]",
-  "return dp[target]"
+  "dp[0][0] = true",
+  "for i in 1..n:",
+  "  for j in 0..target:",
+  "    dp[i][j] = dp[i-1][j]",
+  "    if j ≥ nums[i-1]:",
+  "      dp[i][j] |= dp[i-1][j-nums[i-1]]",
+  "return dp[n][target]"
 ];
 
 PartitionEqualSubsetSum.prototype.init = function (am, w, h) {
@@ -101,12 +103,16 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const canvas = document.getElementById("canvas");
   const canvasW = canvas ? canvas.width : 540;
 
-  const RECT_W = 50;
-  const RECT_H = 50;
-  const RECT_SP = 10;
+  const RECT_W = 40;
+  const RECT_H = 40;
+  const RECT_SP = 5;
 
+  const total = this.arr.reduce((a, b) => a + b, 0);
+  const target = Math.floor(total / 2);
+  const gridWidth = (target + 1) * (RECT_W + RECT_SP) - RECT_SP;
   const arrWidth = this.n * (RECT_W + RECT_SP) - RECT_SP;
-  const startX = Math.max(10, Math.floor((canvasW - arrWidth) / 2));
+  const maxWidth = Math.max(arrWidth, gridWidth);
+  const startX = Math.max(10, Math.floor((canvasW - maxWidth) / 2));
   const startY = 80;
 
   this.commands = [];
@@ -148,27 +154,48 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd("CreateLabel", this.targetLabelID, "target:", startX, infoY + 30, 0);
   this.cmd("CreateLabel", this.targetValueID, "", this.targetValueX, this.targetValueY, 0);
 
-  // DP array setup (size based on current target estimate)
-  const total = this.arr.reduce((a, b) => a + b, 0);
-  const target = Math.floor(total / 2);
-  const dpY = infoY + 110;
+  // DP matrix setup (n+1 by target+1)
+  const dpStartY = infoY + 110;
+  this.dpIDs = [];
+  this.dpX = [];
+  this.dpY = [];
+  for (let i = 0; i <= this.n; i++) {
+    const rowIDs = [];
+    const rowX = [];
+    const rowY = [];
+    const y = dpStartY + i * (RECT_H + RECT_SP);
+    // Row label: value or 0 for header row
+    const rlabel = this.nextIndex++;
+    const rtext = i === 0 ? "0" : String(this.arr[i - 1]);
+    this.cmd("CreateLabel", rlabel, rtext, startX - 30, y + RECT_H / 2, 0);
+    this.cmd("SetForegroundColor", rlabel, "#888888");
+    for (let j = 0; j <= target; j++) {
+      const id = this.nextIndex++;
+      const x = startX + j * (RECT_W + RECT_SP);
+      rowIDs.push(id);
+      rowX.push(x);
+      rowY.push(y);
+      this.cmd("CreateRectangle", id, "F", RECT_W, RECT_H, x, y);
+      this.cmd("SetBackgroundColor", id, "#eeeeee");
+      this.cmd("SetForegroundColor", id, "#000000");
+    }
+    this.dpIDs.push(rowIDs);
+    this.dpX.push(rowX);
+    this.dpY.push(rowY);
+  }
+
+  // Column labels
+  const colY = dpStartY + (this.n + 1) * (RECT_H + RECT_SP);
   for (let j = 0; j <= target; j++) {
-    const id = this.nextIndex++;
-    this.dpIDs.push(id);
-    const x = startX + j * (RECT_W + RECT_SP);
-    this.dpX.push(x);
-    this.dpY.push(dpY);
-    this.cmd("CreateRectangle", id, "F", RECT_W, RECT_H, x, dpY);
-    this.cmd("SetBackgroundColor", id, "#eeeeee");
-    this.cmd("SetForegroundColor", id, "#000000");
     const lid = this.nextIndex++;
-    this.cmd("CreateLabel", lid, String(j), x + RECT_W / 2, dpY + RECT_H + 15, 1);
+    const x = startX + j * (RECT_W + RECT_SP) + RECT_W / 2;
+    this.cmd("CreateLabel", lid, String(j), x, colY + 15, 1);
     this.cmd("SetForegroundColor", lid, "#888888");
   }
 
   this.resultLabelID = this.nextIndex++;
   this.resultValueID = this.nextIndex++;
-  const resY = dpY + RECT_H + 40;
+  const resY = colY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
 
@@ -258,44 +285,78 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   const target = Math.floor(sum / 2);
   this.cmd("SetText", this.targetValueID, String(target));
 
-  // ensure dp array has enough cells
-  if (this.dpIDs.length < target + 1) {
-    // rebuild visualization to have larger dp array
+  // ensure dp matrix big enough
+  if (
+    this.dpIDs.length < this.n + 1 ||
+    (this.dpIDs[0] && this.dpIDs[0].length < target + 1)
+  ) {
     this.setup();
     return this.runAlgorithm();
   }
 
   this.highlightCode(3);
-  const dp = new Array(target + 1).fill(false);
-  dp[0] = true;
-  this.cmd("SetText", this.dpIDs[0], "T");
-  this.cmd("SetBackgroundColor", this.dpIDs[0], "#dff7df");
+  const dp = Array.from({ length: this.n + 1 }, () =>
+    new Array(target + 1).fill(false)
+  );
+  dp[0][0] = true;
+  this.cmd("SetText", this.dpIDs[0][0], "T");
+  this.cmd("SetBackgroundColor", this.dpIDs[0][0], "#dff7df");
   this.cmd("Step");
 
-  for (let i = 0; i < this.n; i++) {
+  for (let i = 1; i <= this.n; i++) {
     this.highlightCode(4);
-    this.cmd("SetBackgroundColor", this.arrIDs[i], "#ffe9a8");
+    this.cmd("SetBackgroundColor", this.arrIDs[i - 1], "#ffe9a8");
     this.cmd("Step");
-    for (let j = target; j >= this.arr[i]; j--) {
+    for (let j = 0; j <= target; j++) {
       this.highlightCode(5);
-      this.cmd("SetBackgroundColor", this.dpIDs[j], "#ffd4d4");
-      this.cmd("SetBackgroundColor", this.dpIDs[j - this.arr[i]], "#ffd4d4");
+      this.cmd("SetBackgroundColor", this.dpIDs[i][j], "#ffd4d4");
+      this.cmd("SetBackgroundColor", this.dpIDs[i - 1][j], "#ffd4d4");
       this.cmd("Step");
       this.highlightCode(6);
-      if (dp[j - this.arr[i]]) {
-        dp[j] = true;
-        this.cmd("SetText", this.dpIDs[j], "T");
-        this.cmd("SetBackgroundColor", this.dpIDs[j], "#dff7df");
+      if (dp[i - 1][j]) {
+        dp[i][j] = true;
       }
-      this.cmd("SetBackgroundColor", this.dpIDs[j - this.arr[i]], dp[j - this.arr[i]] ? "#dff7df" : "#eeeeee");
-      this.cmd("SetBackgroundColor", this.dpIDs[j], dp[j] ? "#dff7df" : "#eeeeee");
+      this.cmd(
+        "SetBackgroundColor",
+        this.dpIDs[i - 1][j],
+        dp[i - 1][j] ? "#dff7df" : "#eeeeee"
+      );
+      if (j >= this.arr[i - 1]) {
+        this.highlightCode(7);
+        this.cmd(
+          "SetBackgroundColor",
+          this.dpIDs[i - 1][j - this.arr[i - 1]],
+          "#ffd4d4"
+        );
+        this.cmd("Step");
+        this.highlightCode(8);
+        if (dp[i - 1][j - this.arr[i - 1]]) {
+          dp[i][j] = true;
+        }
+        this.cmd(
+          "SetBackgroundColor",
+          this.dpIDs[i - 1][j - this.arr[i - 1]],
+          dp[i - 1][j - this.arr[i - 1]] ? "#dff7df" : "#eeeeee"
+        );
+      }
+      this.cmd("SetText", this.dpIDs[i][j], dp[i][j] ? "T" : "F");
+      this.cmd(
+        "SetBackgroundColor",
+        this.dpIDs[i][j],
+        dp[i][j] ? "#dff7df" : "#eeeeee"
+      );
       this.cmd("Step");
     }
-    this.cmd("SetBackgroundColor", this.arrIDs[i], "#f0f7ff");
+    this.cmd("SetBackgroundColor", this.arrIDs[i - 1], "#f0f7ff");
   }
 
-  this.highlightCode(7);
-  this.cmd("SetText", this.resultValueID, dp[target] ? "true" : "false");
+  this.highlightCode(9);
+  this.cmd(
+    "SetText",
+    this.resultValueID,
+    dp[this.n][target] ? "true" : "false"
+  );
+  this.cmd("Step");
   return this.commands;
 };
 
