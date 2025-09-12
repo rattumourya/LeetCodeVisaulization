@@ -267,6 +267,7 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.highlightCode(1); // int sum = total(nums)
   this.cmd("SetText", this.messageID, "Computing total sum");
   this.cmd("Step");
+
   for (let i = 0; i < this.n; i++) {
     const moveID = this.nextIndex++;
     this.cmd("CreateLabel", moveID, String(this.arr[i]), this.arrX[i], this.arrY[i]);
