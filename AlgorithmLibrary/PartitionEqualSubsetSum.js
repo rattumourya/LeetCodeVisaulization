@@ -32,7 +32,7 @@ PartitionEqualSubsetSum.CODE = [
   "    }",
   "  }",
   "  return dp[n][target];",
-  "}",
+  "}"
 ];
 
 PartitionEqualSubsetSum.prototype.init = function (am, w, h) {
@@ -197,11 +197,6 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const resY = colY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
-  // Explanatory message centered beneath result
-  const messageY = resY + 40;
-  this.messageID = this.nextIndex++;
-  this.cmd("CreateLabel", this.messageID, "", canvasW / 2, messageY, 1);
-  this.cmd("SetForegroundColor", this.messageID, "#003366");
 
   // Explanatory message centered beneath result
   const messageY = resY + 40;
