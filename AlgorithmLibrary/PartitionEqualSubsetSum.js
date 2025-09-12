@@ -58,6 +58,7 @@ PartitionEqualSubsetSum.prototype.init = function (am, w, h) {
   this.targetValueID = -1;
   this.resultLabelID = -1;
   this.resultValueID = -1;
+  this.messageID = -1;
 
   this.setup();
 };
@@ -107,9 +108,9 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const canvas = document.getElementById("canvas");
   const canvasW = canvas ? canvas.width : 540;
 
-  const RECT_W = 30;
-  const RECT_H = 30;
-  const RECT_SP = 4;
+  const RECT_W = 25;
+  const RECT_H = 25;
+  const RECT_SP = 3;
 
   const total = this.arr.reduce((a, b) => a + b, 0);
   const target = Math.floor(total / 2);
@@ -199,10 +200,16 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const resY = colY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
+  // Explanatory message centered beneath result
+  const messageY = resY + 40;
+  this.messageID = this.nextIndex++;
+  this.cmd("CreateLabel", this.messageID, "", canvasW / 2, messageY, 1);
+  this.cmd("SetForegroundColor", this.messageID, "#003366");
 
-  // Code lines displayed beneath result, centered in canvas
+  // Code lines displayed beneath message, centered in canvas
   const CODE_LINE_H = 22;
-  const codeY = resY + 40;
+  const codeY = messageY + 40;
+
   const maxCodeLen = Math.max(...PartitionEqualSubsetSum.CODE.map((s) => s.length));
   const CODE_CHAR_W = 7;
   const codeStartX = Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2);
@@ -257,6 +264,9 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.commands = [];
   let sum = 0;
   this.highlightCode(1); // int sum = total(nums)
+  this.cmd("SetText", this.messageID, "Computing total sum");
+  this.cmd("Step");
+
   for (let i = 0; i < this.n; i++) {
     const moveID = this.nextIndex++;
     this.cmd("CreateLabel", moveID, String(this.arr[i]), this.arrX[i], this.arrY[i]);
@@ -265,18 +275,22 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
     this.cmd("Delete", moveID);
     sum += this.arr[i];
     this.cmd("SetText", this.sumValueID, String(sum));
+    this.cmd("SetText", this.messageID, "Sum = " + sum);
     this.cmd("Step");
   }
 
   this.highlightCode(2); // if odd
   if (sum % 2 === 1) {
     this.cmd("SetText", this.resultValueID, "false");
+    this.cmd("SetText", this.messageID, "Total sum is odd -> cannot partition");
     return this.commands;
   }
 
   this.highlightCode(3); // target
   const target = Math.floor(sum / 2);
   this.cmd("SetText", this.targetValueID, String(target));
+  this.cmd("SetText", this.messageID, "Target = " + target);
+  this.cmd("Step");
 
   // ensure dp matrix big enough
   if (this.dpIDs.length < this.n + 1 || (this.dpIDs[0] && this.dpIDs[0].length < target + 1)) {
@@ -290,16 +304,19 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   dp[0][0] = true;
   this.cmd("SetText", this.dpIDs[0][0], "T");
   this.cmd("SetBackgroundColor", this.dpIDs[0][0], "#dff7df");
+  this.cmd("SetText", this.messageID, "Base case: dp[0][0] = true");
   this.cmd("Step");
 
   for (let i = 1; i <= this.n; i++) {
     this.highlightCode(6); // for (int i ...)
     this.cmd("SetBackgroundColor", this.arrIDs[i - 1], "#ffe9a8");
+    this.cmd("SetText", this.messageID, "Considering number " + this.arr[i - 1]);
     this.cmd("Step");
     for (let j = 0; j <= target; j++) {
       this.highlightCode(7); // for (int j ...)
       this.cmd("SetBackgroundColor", this.dpIDs[i][j], "#ffd4d4");
       this.cmd("SetBackgroundColor", this.dpIDs[i - 1][j], "#ffd4d4");
+      this.cmd("SetText", this.messageID, "Try sum " + j);
       this.cmd("Step");
       this.highlightCode(8); // dp[i][j] = dp[i - 1][j]
       if (dp[i - 1][j]) {
@@ -334,6 +351,9 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
         this.dpIDs[i][j],
         dp[i][j] ? "#dff7df" : "#eeeeee"
       );
+      if (dp[i][j]) {
+        this.cmd("SetText", this.messageID, "Found sum " + j);
+      }
       this.cmd("Step");
     }
     this.cmd("SetBackgroundColor", this.arrIDs[i - 1], "#f0f7ff");
@@ -344,6 +364,11 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
     "SetText",
     this.resultValueID,
     dp[this.n][target] ? "true" : "false"
+  );
+  this.cmd(
+    "SetText",
+    this.messageID,
+    dp[this.n][target] ? "Partition possible" : "No partition"
   );
   this.cmd("Step");
   return this.commands;
