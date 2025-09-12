@@ -197,6 +197,11 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const resY = colY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
+  // Explanatory message centered beneath result
+  const messageY = resY + 40;
+  this.messageID = this.nextIndex++;
+  this.cmd("CreateLabel", this.messageID, "", canvasW / 2, messageY, 1);
+  this.cmd("SetForegroundColor", this.messageID, "#003366");
 
   // Explanatory message centered beneath result
   const messageY = resY + 40;
@@ -207,6 +212,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   // Code lines displayed beneath message, centered in canvas
   const CODE_LINE_H = 22;
   const codeY = messageY + 40;
+
   const maxCodeLen = Math.max(...PartitionEqualSubsetSum.CODE.map((s) => s.length));
   const CODE_CHAR_W = 7;
   const codeStartX = Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2);
@@ -263,6 +269,7 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.highlightCode(1); // int sum = total(nums)
   this.cmd("SetText", this.messageID, "Computing total sum");
   this.cmd("Step");
+
   for (let i = 0; i < this.n; i++) {
     const moveID = this.nextIndex++;
     this.cmd("CreateLabel", moveID, String(this.arr[i]), this.arrX[i], this.arrY[i]);
