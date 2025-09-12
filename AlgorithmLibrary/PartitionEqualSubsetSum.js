@@ -158,15 +158,16 @@ PartitionEqualSubsetSum.prototype.setup = function () {
 
   // DP matrix setup (n+1 by target+1)
   const dpStartY = infoY + 100;
+  const gridHeight = (this.n + 1) * (RECT_H + RECT_SP) - RECT_SP;
   for (let i = 0; i <= this.n; i++) {
     const rowIDs = [];
     const rowX = [];
     const rowY = [];
     const y = dpStartY + i * (RECT_H + RECT_SP);
-    // Row label
+    // Row label (index centered beside row)
     const rlabel = this.nextIndex++;
-    const rtext = i === 0 ? "0" : String(this.arr[i - 1]);
-    this.cmd("CreateLabel", rlabel, rtext, startX - 30, y + RECT_H / 2, 0);
+    const rtext = String(i);
+    this.cmd("CreateLabel", rlabel, rtext, startX - 15, y + RECT_H / 2, 0);
     this.cmd("SetForegroundColor", rlabel, "#888888");
     for (let j = 0; j <= target; j++) {
       const id = this.nextIndex++;
@@ -183,18 +184,18 @@ PartitionEqualSubsetSum.prototype.setup = function () {
     this.dpY.push(rowY);
   }
 
-  // Column labels
-  const colY = dpStartY + (this.n + 1) * (RECT_H + RECT_SP);
+  // Column labels (indices centered above columns)
   for (let j = 0; j <= target; j++) {
     const lid = this.nextIndex++;
     const x = startX + j * (RECT_W + RECT_SP) + RECT_W / 2;
-    this.cmd("CreateLabel", lid, String(j), x, colY + 15, 1);
+    this.cmd("CreateLabel", lid, String(j), x, dpStartY - 15, 0);
     this.cmd("SetForegroundColor", lid, "#888888");
   }
 
   this.resultLabelID = this.nextIndex++;
   this.resultValueID = this.nextIndex++;
-  const resY = colY + 40;
+  const gridBottomY = dpStartY + gridHeight;
+  const resY = gridBottomY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
 
@@ -207,7 +208,6 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   // Code lines displayed beneath message, centered in canvas
   const CODE_LINE_H = 22;
   const codeY = messageY + 40;
-
   const maxCodeLen = Math.max(...PartitionEqualSubsetSum.CODE.map((s) => s.length));
   const CODE_CHAR_W = 7;
   const codeStartX = Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2);
