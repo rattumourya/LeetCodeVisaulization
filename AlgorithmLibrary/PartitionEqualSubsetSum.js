@@ -240,18 +240,16 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
     this.dpIDs.push(rowIDs);
     this.dpX.push(rowX);
     this.dpY.push(rowY);
-    if (i > 0) {
-      const vlabel = this.nextIndex++;
-      const vtext = String(this.arr[i - 1]);
-      const vlabelX = startX - (RECT_W / 2 + RECT_SP);
-      const vlabelY = y; // center vertically with the row
-      this.cmd("CreateLabel", vlabel, vtext, vlabelX, vlabelY, 0);
-      this.cmd("SetForegroundColor", vlabel, "#000000");
-      this.cmd("SetTextStyle", vlabel, "12");
-      this.weightLabelIDs.push(vlabel);
-    }
-  }
 
+    const vlabel = this.nextIndex++;
+    const vtext = i === 0 ? "0" : String(this.arr[i - 1]);
+    const vlabelX = startX - (RECT_W / 2 + RECT_SP);
+    const vlabelY = y; // center vertically with the row
+    this.cmd("CreateLabel", vlabel, vtext, vlabelX, vlabelY, 0);
+    this.cmd("SetForegroundColor", vlabel, "#000000");
+    this.cmd("SetTextStyle", vlabel, "12");
+    this.weightLabelIDs.push(vlabel);
+  }
 
   const gridBottomY = dpStartY + this.n * (RECT_H + RECT_SP);
   const capLabelY = gridBottomY + RECT_H / 2 + RECT_SP;
