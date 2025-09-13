@@ -146,7 +146,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd(
     "CreateLabel",
     this.titleID,
-    "Bottom-Up 2D Tabulation (0/1 Knapsack)",
+    "Bottom-Up Tabulation (0/1 Knapsack)",
     canvasW / 2,
     TITLE_Y,
     1
@@ -389,8 +389,8 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
         this.dpIDs[i - 1][j],
         dp[i - 1][j] ? "#dff7df" : "#eeeeee"
       );
+      this.highlightCode(9); // if (j >= nums[i - 1])
       if (j >= this.arr[i - 1]) {
-        this.highlightCode(9); // if (j >= nums[i - 1])
         this.cmd(
           "SetBackgroundColor",
           this.dpIDs[i - 1][j - this.arr[i - 1]],
