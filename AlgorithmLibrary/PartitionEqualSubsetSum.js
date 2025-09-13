@@ -142,6 +142,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
     1
   );
   this.cmd("SetForegroundColor", this.titleID, "#000000");
+  this.cmd("SetTextStyle", this.titleID, "bold 16");
 
   // Draw array numbers
   for (let i = 0; i < this.n; i++) {
@@ -169,6 +170,8 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd("CreateLabel", this.sumValueID, "0", this.sumValueX, infoY, 0);
   this.cmd("CreateLabel", this.targetLabelID, "target:", startX, infoY + 30, 0);
   this.cmd("CreateLabel", this.targetValueID, "", this.targetValueX, this.targetValueY, 0);
+  this.cmd("SetTextStyle", this.sumLabelID, "bold 14");
+  this.cmd("SetTextStyle", this.targetLabelID, "bold 14");
 
   // DP matrix setup (n+1 by target+1)
   const dpStartY = infoY + 100;
@@ -178,13 +181,6 @@ PartitionEqualSubsetSum.prototype.setup = function () {
     const rowX = [];
     const rowY = [];
     const y = dpStartY + i * (RECT_H + RECT_SP);
-    // Row label (index centered beside row)
-    const rlabel = this.nextIndex++;
-    const rtext = String(i);
-    const rlabelX = startX - (RECT_W / 2 + RECT_SP);
-    const rlabelY = y + RECT_H / 2;
-    this.cmd("CreateLabel", rlabel, rtext, rlabelX, rlabelY, 0);
-    this.cmd("SetForegroundColor", rlabel, "#888888");
     for (let j = 0; j <= target; j++) {
       const id = this.nextIndex++;
       const x = startX + j * (RECT_W + RECT_SP);
@@ -198,6 +194,14 @@ PartitionEqualSubsetSum.prototype.setup = function () {
     this.dpIDs.push(rowIDs);
     this.dpX.push(rowX);
     this.dpY.push(rowY);
+    if (i > 0) {
+      const vlabel = this.nextIndex++;
+      const vtext = String(this.arr[i - 1]);
+      const vlabelX = startX + gridWidth + (RECT_W / 2 + RECT_SP);
+      const vlabelY = y + RECT_H / 2;
+      this.cmd("CreateLabel", vlabel, vtext, vlabelX, vlabelY, 0);
+      this.cmd("SetForegroundColor", vlabel, "#888888");
+    }
   }
 
   // Column labels (indices centered above columns)
@@ -215,16 +219,18 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const resY = gridBottomY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
+  this.cmd("SetTextStyle", this.resultLabelID, "bold 14");
 
-  // Explanatory message centered beneath result
-  const messageY = resY + 40;
+  // Explanatory message moved to top-right
+  const messageX = canvasW - 150;
+  const messageY = TITLE_Y + 40;
   this.messageID = this.nextIndex++;
-  this.cmd("CreateLabel", this.messageID, "", canvasW / 2, messageY, 1);
+  this.cmd("CreateLabel", this.messageID, "", messageX, messageY, 0);
   this.cmd("SetForegroundColor", this.messageID, "#003366");
 
-  // Code lines displayed beneath message, centered in canvas
+  // Code lines displayed beneath result, centered in canvas
   const CODE_LINE_H = 22;
-  const codeY = messageY + 40;
+  const codeY = resY + 40;
   const maxCodeLen = Math.max(...PartitionEqualSubsetSum.CODE.map((s) => s.length));
   const CODE_CHAR_W = 7;
   const codeStartX = Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2);
