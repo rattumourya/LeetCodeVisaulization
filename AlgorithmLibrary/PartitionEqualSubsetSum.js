@@ -146,7 +146,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd(
     "CreateLabel",
     this.titleID,
-    "Bottom-Up Tabulation (0/1 Knapsack)",
+    "Bottom-Up 2D Tabulation (0/1 Knapsack)",
     canvasW / 2,
     TITLE_Y,
     1
@@ -185,12 +185,12 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd("SetTextStyle", this.targetLabelID, "bold 14");
 
   // Explanatory message moved slightly left and enlarged
-  const messageX = canvasW - 220;
+  const messageX = canvasW - 240;
   const messageY = TITLE_Y + 40;
   this.messageID = this.nextIndex++;
   this.cmd("CreateLabel", this.messageID, "", messageX, messageY, 0);
   this.cmd("SetForegroundColor", this.messageID, "#003366");
-  this.cmd("SetTextStyle", this.messageID, "16");
+  this.cmd("SetTextStyle", this.messageID, "18");
 
   animationManager.StartNewAnimation(this.commands);
   animationManager.skipForward();
@@ -243,7 +243,7 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
 
     const vlabel = this.nextIndex++;
     const vtext = i === 0 ? "0" : String(this.arr[i - 1]);
-    const vlabelX = startX - (RECT_W / 2 + RECT_SP);
+    const vlabelX = startX - (RECT_W / 2 + RECT_SP + 12);
     const vlabelY = y; // center vertically with the row
     this.cmd("CreateLabel", vlabel, vtext, vlabelX, vlabelY, 0);
     this.cmd("SetForegroundColor", vlabel, "#000000");
