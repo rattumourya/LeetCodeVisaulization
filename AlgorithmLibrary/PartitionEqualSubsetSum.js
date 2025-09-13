@@ -197,36 +197,37 @@ PartitionEqualSubsetSum.prototype.setup = function () {
     if (i > 0) {
       const vlabel = this.nextIndex++;
       const vtext = String(this.arr[i - 1]);
-      const vlabelX = startX + gridWidth + (RECT_W / 2 + RECT_SP);
+      const vlabelX = startX - (RECT_W / 2 + RECT_SP);
       const vlabelY = y + RECT_H / 2;
       this.cmd("CreateLabel", vlabel, vtext, vlabelX, vlabelY, 0);
       this.cmd("SetForegroundColor", vlabel, "#888888");
     }
   }
 
-  // Column labels (indices centered above columns)
-  const colLabelY = dpStartY - (RECT_H / 2 + RECT_SP);
+  const gridBottomY = dpStartY + gridHeight;
+  // Capacity labels (indices centered below columns)
+  const capLabelY = gridBottomY + (RECT_H / 2 + RECT_SP);
   for (let j = 0; j <= target; j++) {
     const lid = this.nextIndex++;
     const x = startX + j * (RECT_W + RECT_SP) + RECT_W / 2;
-    this.cmd("CreateLabel", lid, String(j), x, colLabelY, 0);
+    this.cmd("CreateLabel", lid, String(j), x, capLabelY, 0);
     this.cmd("SetForegroundColor", lid, "#888888");
   }
 
   this.resultLabelID = this.nextIndex++;
   this.resultValueID = this.nextIndex++;
-  const gridBottomY = dpStartY + gridHeight;
-  const resY = gridBottomY + 40;
+  const resY = capLabelY + 40;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
   this.cmd("SetTextStyle", this.resultLabelID, "bold 14");
 
-  // Explanatory message moved to top-right
-  const messageX = canvasW - 150;
+  // Explanatory message moved slightly left and enlarged
+  const messageX = canvasW - 220;
   const messageY = TITLE_Y + 40;
   this.messageID = this.nextIndex++;
   this.cmd("CreateLabel", this.messageID, "", messageX, messageY, 0);
   this.cmd("SetForegroundColor", this.messageID, "#003366");
+  this.cmd("SetTextStyle", this.messageID, "16");
 
   // Code lines displayed beneath result, centered in canvas
   const CODE_LINE_H = 22;
