@@ -184,7 +184,6 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd("SetTextStyle", this.sumLabelID, "bold 14");
   this.cmd("SetTextStyle", this.targetLabelID, "bold 14");
 
-
   // Explanatory message moved slightly left and enlarged
   const messageX = canvasW - 220;
   const messageY = TITLE_Y + 40;
@@ -205,7 +204,6 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
   const RECT_SP = this.RECT_SP;
   const startX = this.startX;
   const dpStartY = this.infoY + 100;
-  const gridHeight = (this.n + 1) * (RECT_H + RECT_SP) - RECT_SP;
 
   // clear any existing grid/labels
   for (const row of this.dpIDs) {
@@ -246,20 +244,23 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
       const vlabel = this.nextIndex++;
       const vtext = String(this.arr[i - 1]);
       const vlabelX = startX - (RECT_W / 2 + RECT_SP);
-      const vlabelY = y + RECT_H / 2;
+      const vlabelY = y; // center vertically with the row
       this.cmd("CreateLabel", vlabel, vtext, vlabelX, vlabelY, 0);
-      this.cmd("SetForegroundColor", vlabel, "#888888");
+      this.cmd("SetForegroundColor", vlabel, "#000000");
+      this.cmd("SetTextStyle", vlabel, "12");
       this.weightLabelIDs.push(vlabel);
     }
   }
 
-  const gridBottomY = dpStartY + gridHeight;
-  const capLabelY = gridBottomY + (RECT_H / 2 + RECT_SP);
+
+  const gridBottomY = dpStartY + this.n * (RECT_H + RECT_SP);
+  const capLabelY = gridBottomY + RECT_H / 2 + RECT_SP;
   for (let j = 0; j <= target; j++) {
     const lid = this.nextIndex++;
-    const x = startX + j * (RECT_W + RECT_SP) + RECT_W / 2;
+    const x = startX + j * (RECT_W + RECT_SP);
     this.cmd("CreateLabel", lid, String(j), x, capLabelY, 0);
-    this.cmd("SetForegroundColor", lid, "#888888");
+    this.cmd("SetForegroundColor", lid, "#000000");
+    this.cmd("SetTextStyle", lid, "12");
     this.capacityLabelIDs.push(lid);
   }
 
