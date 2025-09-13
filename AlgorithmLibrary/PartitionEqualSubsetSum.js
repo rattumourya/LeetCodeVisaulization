@@ -52,6 +52,7 @@ PartitionEqualSubsetSum.prototype.init = function (am, w, h) {
   this.dpY = [];
   this.codeIDs = [];
 
+  this.titleID = -1;
   this.sumLabelID = -1;
   this.sumValueID = -1;
   this.targetLabelID = -1;
@@ -108,6 +109,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const canvas = document.getElementById("canvas");
   const canvasW = canvas ? canvas.width : 540;
 
+  const TITLE_Y = 30;
   const RECT_W = 25;
   const RECT_H = 25;
   const RECT_SP = 3;
@@ -118,7 +120,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const arrWidth = this.n * (RECT_W + RECT_SP) - RECT_SP;
   const maxWidth = Math.max(arrWidth, gridWidth);
   const startX = Math.floor((canvasW - maxWidth) / 2);
-  const startY = 60;
+  const startY = 80;
 
   this.commands = [];
   this.arrIDs = [];
@@ -128,6 +130,18 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.dpX = [];
   this.dpY = [];
   this.codeIDs = [];
+
+  // Title centered at top of canvas
+  this.titleID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.titleID,
+    "Bottom-Up Tabulation (0/1 Knapsack)",
+    canvasW / 2,
+    TITLE_Y,
+    1
+  );
+  this.cmd("SetForegroundColor", this.titleID, "#000000");
 
   // Draw array numbers
   for (let i = 0; i < this.n; i++) {
@@ -142,7 +156,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   }
 
   // Sum and target labels
-  const infoY = startY + RECT_H + 60;
+  const infoY = startY + RECT_H + 40;
   this.sumLabelID = this.nextIndex++;
   this.sumValueID = this.nextIndex++;
   this.sumValueX = startX + 60;
