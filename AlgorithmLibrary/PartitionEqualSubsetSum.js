@@ -252,6 +252,7 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
     }
   }
 
+
   const gridBottomY = dpStartY + this.n * (RECT_H + RECT_SP);
   const capLabelY = gridBottomY + RECT_H / 2 + RECT_SP;
   for (let j = 0; j <= target; j++) {
@@ -280,6 +281,7 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
   for (let i = 0; i < PartitionEqualSubsetSum.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
+
     this.cmd(
       "CreateLabel",
       id,
