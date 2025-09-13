@@ -51,6 +51,10 @@ PartitionEqualSubsetSum.prototype.init = function (am, w, h) {
   this.dpX = [];
   this.dpY = [];
   this.codeIDs = [];
+  this.weightLabelIDs = [];
+  this.capacityLabelIDs = [];
+  this.weightLabelIDs = [];
+  this.capacityLabelIDs = [];
 
   this.titleID = -1;
   this.sumLabelID = -1;
@@ -122,6 +126,12 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   const startX = Math.floor((canvasW - maxWidth) / 2);
   const startY = 80;
 
+  this.RECT_W = RECT_W;
+  this.RECT_H = RECT_H;
+  this.RECT_SP = RECT_SP;
+  this.startX = startX;
+  this.startY = startY;
+
   this.commands = [];
   this.arrIDs = [];
   this.arrX = [];
@@ -158,6 +168,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
 
   // Sum and target labels
   const infoY = startY + RECT_H + 40;
+  this.infoY = infoY;
   this.sumLabelID = this.nextIndex++;
   this.sumValueID = this.nextIndex++;
   this.sumValueX = startX + 60;
@@ -173,9 +184,46 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd("SetTextStyle", this.sumLabelID, "bold 14");
   this.cmd("SetTextStyle", this.targetLabelID, "bold 14");
 
-  // DP matrix setup (n+1 by target+1)
-  const dpStartY = infoY + 100;
+
+  // Explanatory message moved slightly left and enlarged
+  const messageX = canvasW - 220;
+  const messageY = TITLE_Y + 40;
+  this.messageID = this.nextIndex++;
+  this.cmd("CreateLabel", this.messageID, "", messageX, messageY, 0);
+  this.cmd("SetForegroundColor", this.messageID, "#003366");
+  this.cmd("SetTextStyle", this.messageID, "16");
+
+  animationManager.StartNewAnimation(this.commands);
+  animationManager.skipForward();
+  animationManager.clearHistory();
+};
+
+// Build the visual DP table once the target is known
+PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
+  const RECT_W = this.RECT_W;
+  const RECT_H = this.RECT_H;
+  const RECT_SP = this.RECT_SP;
+  const startX = this.startX;
+  const dpStartY = this.infoY + 100;
   const gridHeight = (this.n + 1) * (RECT_H + RECT_SP) - RECT_SP;
+
+  // clear any existing grid/labels
+  for (const row of this.dpIDs) {
+    for (const id of row) this.cmd("Delete", id);
+  }
+  for (const id of this.weightLabelIDs) this.cmd("Delete", id);
+  for (const id of this.capacityLabelIDs) this.cmd("Delete", id);
+  if (this.resultLabelID !== -1) this.cmd("Delete", this.resultLabelID);
+  if (this.resultValueID !== -1) this.cmd("Delete", this.resultValueID);
+  for (const id of this.codeIDs) this.cmd("Delete", id);
+
+  this.dpIDs = [];
+  this.dpX = [];
+  this.dpY = [];
+  this.weightLabelIDs = [];
+  this.capacityLabelIDs = [];
+  this.codeIDs = [];
+
   for (let i = 0; i <= this.n; i++) {
     const rowIDs = [];
     const rowX = [];
@@ -201,17 +249,18 @@ PartitionEqualSubsetSum.prototype.setup = function () {
       const vlabelY = y + RECT_H / 2;
       this.cmd("CreateLabel", vlabel, vtext, vlabelX, vlabelY, 0);
       this.cmd("SetForegroundColor", vlabel, "#888888");
+      this.weightLabelIDs.push(vlabel);
     }
   }
 
   const gridBottomY = dpStartY + gridHeight;
-  // Capacity labels (indices centered below columns)
   const capLabelY = gridBottomY + (RECT_H / 2 + RECT_SP);
   for (let j = 0; j <= target; j++) {
     const lid = this.nextIndex++;
     const x = startX + j * (RECT_W + RECT_SP) + RECT_W / 2;
     this.cmd("CreateLabel", lid, String(j), x, capLabelY, 0);
     this.cmd("SetForegroundColor", lid, "#888888");
+    this.capacityLabelIDs.push(lid);
   }
 
   this.resultLabelID = this.nextIndex++;
@@ -221,28 +270,28 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
   this.cmd("SetTextStyle", this.resultLabelID, "bold 14");
 
-  // Explanatory message moved slightly left and enlarged
-  const messageX = canvasW - 220;
-  const messageY = TITLE_Y + 40;
-  this.messageID = this.nextIndex++;
-  this.cmd("CreateLabel", this.messageID, "", messageX, messageY, 0);
-  this.cmd("SetForegroundColor", this.messageID, "#003366");
-  this.cmd("SetTextStyle", this.messageID, "16");
-
-  // Code lines displayed beneath result, centered in canvas
   const CODE_LINE_H = 22;
   const codeY = resY + 40;
+  const canvas = document.getElementById("canvas");
+  const canvasW = canvas ? canvas.width : 540;
   const maxCodeLen = Math.max(...PartitionEqualSubsetSum.CODE.map((s) => s.length));
   const CODE_CHAR_W = 7;
   const codeStartX = Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2);
   for (let i = 0; i < PartitionEqualSubsetSum.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
-    this.cmd("CreateLabel", id, PartitionEqualSubsetSum.CODE[i], codeStartX, codeY + i * CODE_LINE_H, 0);
+
+    this.cmd(
+      "CreateLabel",
+      id,
+      PartitionEqualSubsetSum.CODE[i],
+      codeStartX,
+      codeY + i * CODE_LINE_H,
+      0
+    );
     this.cmd("SetForegroundColor", id, "#000000");
   }
 
-  // extend canvas height if needed
   const neededH = codeY + PartitionEqualSubsetSum.CODE.length * CODE_LINE_H + 80;
   const canvasElem = document.getElementById("canvas");
   if (canvasElem) {
@@ -253,10 +302,6 @@ PartitionEqualSubsetSum.prototype.setup = function () {
       }
     }
   }
-
-  animationManager.StartNewAnimation(this.commands);
-  animationManager.skipForward();
-  animationManager.clearHistory();
 };
 
 PartitionEqualSubsetSum.prototype.highlightCode = function (line) {
@@ -288,7 +333,6 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.highlightCode(1); // int sum = total(nums)
   this.cmd("SetText", this.messageID, "Computing total sum");
   this.cmd("Step");
-
   for (let i = 0; i < this.n; i++) {
     const moveID = this.nextIndex++;
     this.cmd("CreateLabel", moveID, String(this.arr[i]), this.arrX[i], this.arrY[i]);
@@ -314,11 +358,8 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.cmd("SetText", this.messageID, "Target = " + target);
   this.cmd("Step");
 
-  // ensure dp matrix big enough
-  if (this.dpIDs.length < this.n + 1 || (this.dpIDs[0] && this.dpIDs[0].length < target + 1)) {
-    this.setup();
-    return this.runAlgorithm();
-  }
+  this.createDPGrid(target);
+  this.cmd("Step");
 
   this.highlightCode(4); // boolean[][] dp...
   const dp = Array.from({ length: this.n + 1 }, () => new Array(target + 1).fill(false));
