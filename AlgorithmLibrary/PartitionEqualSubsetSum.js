@@ -184,6 +184,7 @@ PartitionEqualSubsetSum.prototype.setup = function () {
   this.cmd("SetTextStyle", this.sumLabelID, "bold 14");
   this.cmd("SetTextStyle", this.targetLabelID, "bold 14");
 
+
   // Explanatory message moved slightly left and enlarged
   const messageX = canvasW - 220;
   const messageY = TITLE_Y + 40;
@@ -279,6 +280,7 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
   for (let i = 0; i < PartitionEqualSubsetSum.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
+
     this.cmd(
       "CreateLabel",
       id,
