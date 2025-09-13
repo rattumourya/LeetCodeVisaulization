@@ -279,6 +279,7 @@ PartitionEqualSubsetSum.prototype.createDPGrid = function (target) {
   for (let i = 0; i < PartitionEqualSubsetSum.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
+
     this.cmd(
       "CreateLabel",
       id,
