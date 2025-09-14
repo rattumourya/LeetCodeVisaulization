@@ -329,6 +329,7 @@ PartitionEqualSubsetSum.prototype.stepCallback = function () {
 PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.commands = [];
   let sum = 0;
+  var captionID = this.displayCaption("Computing total sum");
   this.highlightCode(1); // int sum = total(nums)
   this.cmd("SetText", this.messageID, "Computing total sum");
   this.cmd("Step");
@@ -343,13 +344,21 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
     this.cmd("SetText", this.messageID, "Sum = " + sum);
     this.cmd("Step");
   }
-
+  
+  this.removeCaption(captionID);
+  captionID = this.displayCaption("Checking if sum is odd");
   this.highlightCode(2); // if odd
   if (sum % 2 === 1) {
     this.cmd("SetText", this.resultValueID, "false");
     this.cmd("SetText", this.messageID, "Total sum is odd -> cannot partition");
+    this.removeCaption(captionID);
+    captionID = this.displayCaption("Total sum is odd - cannot partition");
+    this.cmd("Step");
+    this.removeCaption(captionID);
+    this.showOutroSlide("Thanks for watching! Subscribe and comment!");
     return this.commands;
   }
+  this.removeCaption(captionID);
 
   this.highlightCode(3); // target
   const target = Math.floor(sum / 2);
@@ -357,6 +366,7 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.cmd("SetText", this.messageID, "Target = " + target);
   this.cmd("Step");
 
+  captionID = this.displayCaption("Building DP table");
   this.createDPGrid(target);
   this.cmd("Step");
 
@@ -370,6 +380,8 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
   this.cmd("Step");
 
   for (let i = 1; i <= this.n; i++) {
+    this.removeCaption(captionID);
+    captionID = this.displayCaption("Considering number " + this.arr[i - 1]);
     this.highlightCode(6); // for (int i ...)
     this.cmd("SetBackgroundColor", this.arrIDs[i - 1], "#ffe9a8");
     this.cmd("SetText", this.messageID, "Considering number " + this.arr[i - 1]);
@@ -420,7 +432,8 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
     }
     this.cmd("SetBackgroundColor", this.arrIDs[i - 1], "#f0f7ff");
   }
-
+ 
+  this.removeCaption(captionID);
   this.highlightCode(14); // return dp[n][target]
   this.cmd(
     "SetText",
@@ -432,7 +445,12 @@ PartitionEqualSubsetSum.prototype.runAlgorithm = function () {
     this.messageID,
     dp[this.n][target] ? "Partition possible" : "No partition"
   );
+  captionID = this.displayCaption(
+    dp[this.n][target] ? "Partition possible" : "No partition"
+  );
   this.cmd("Step");
+  this.removeCaption(captionID);
+  this.showOutroSlide("Thanks for watching! Subscribe and comment!");
   return this.commands;
 };
 
