@@ -370,13 +370,46 @@ Algorithm.prototype.undo = function(event)
 	{
 		this.actionHistory[i][0](this.actionHistory[i][1]);
 	}
-	this.recordAnimation = true;
+        this.recordAnimation = true;
 }
 
 
+// Display a caption centered near the bottom of the canvas using an
+// AnimatedLabel. Returns the ID of the created label so it can be
+// removed later.
+Algorithm.prototype.displayCaption = function(text)
+{
+        var captionID = this.nextIndex++;
+        this.cmd("CreateLabel", captionID, text,
+                 this.canvasWidth / 2, this.canvasHeight - 20, 0);
+        this.cmd("SetForegroundColor", captionID, "#000000");
+        this.cmd("SetLayer", captionID, 3);
+        return captionID;
+}
+
+// Remove a caption previously created with displayCaption
+Algorithm.prototype.removeCaption = function(id)
+{
+        this.cmd("Delete", id);
+}
+
+// Show an outro slide encouraging viewers to subscribe or comment.
+// The slide remains on screen for two animation steps (~2-3 seconds)
+// before being removed.
+Algorithm.prototype.showOutroSlide = function(text)
+{
+        var outroID = this.nextIndex++;
+        this.cmd("CreateLabel", outroID, text,
+                 this.canvasWidth / 2, this.canvasHeight / 2, 0);
+        this.cmd("SetLayer", outroID, 3);
+        this.cmd("Step");
+        this.cmd("Step");
+        this.cmd("Delete", outroID);
+}
+
 Algorithm.prototype.clearHistory = function()
 {
-	this.actionHistory = [];
+        this.actionHistory = [];
 }
 		
 		// Helper method to add text input with nice border.
