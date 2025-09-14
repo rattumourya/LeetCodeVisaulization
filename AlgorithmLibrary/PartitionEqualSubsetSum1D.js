@@ -8,7 +8,9 @@
  * The animation code borrows heavily from PartitionEqualSubsetSum.js
  * but replaces the DP table construction and update logic to reflect
  * the 1‑D transition:
- *   dp[j] |= dp[j - num]  (iterate j from target down to num)
+ *   dp[j] = dp[j] || dp[j - num]  (iterate j from target down to num)
+=======
+ 
  */
 
 function PartitionEqualSubsetSum1D(am, w, h) {
@@ -28,7 +30,7 @@ PartitionEqualSubsetSum1D.CODE = [
   "  dp[0] = true;",
   "  for (int num : nums) {",
   "    for (int j = target; j >= num; j--) {",
-  "      dp[j] |= dp[j - num];",
+  "      dp[j] = dp[j] || dp[j - num];",
   "    }",
   "  }",
   "  return dp[target];",
@@ -233,6 +235,7 @@ PartitionEqualSubsetSum1D.prototype.createDPArray = function (target) {
     this.cmd("CreateRectangle", id, "F", RECT_W, RECT_H, x, y);
     this.cmd("SetBackgroundColor", id, "#eeeeee");
     this.cmd("SetForegroundColor", id, "#000000");
+
   }
 
   const capLabelY = dpStartY + RECT_H / 2 + RECT_SP + 10;
@@ -380,10 +383,8 @@ PartitionEqualSubsetSum1D.prototype.runAlgorithm = function () {
       );
       this.cmd("SetText", this.messageID, "Check j=" + j);
       this.cmd("Step");
-      this.highlightCode(8); // dp[j] |= dp[j - num]
-      if (dp[j - this.arr[i]]) {
-        dp[j] = true;
-      }
+      this.highlightCode(8); // dp[j] = dp[j] || dp[j - num]
+      dp[j] = dp[j] || dp[j - this.arr[i]];
       this.cmd("SetText", this.dpIDs[j], dp[j] ? "T" : "F");
       this.cmd("SetBackgroundColor", this.dpIDs[j], dp[j] ? "#dff7df" : "#eeeeee");
       this.cmd(
