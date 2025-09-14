@@ -9,6 +9,8 @@
  * but replaces the DP table construction and update logic to reflect
  * the 1‑D transition:
  *   dp[j] = dp[j] || dp[j - num]  (iterate j from target down to num)
+=======
+ 
  */
 
 function PartitionEqualSubsetSum1D(am, w, h) {
@@ -233,6 +235,7 @@ PartitionEqualSubsetSum1D.prototype.createDPArray = function (target) {
     this.cmd("CreateRectangle", id, "F", RECT_W, RECT_H, x, y);
     this.cmd("SetBackgroundColor", id, "#eeeeee");
     this.cmd("SetForegroundColor", id, "#000000");
+
   }
 
   const capLabelY = dpStartY + RECT_H / 2 + RECT_SP + 10;
