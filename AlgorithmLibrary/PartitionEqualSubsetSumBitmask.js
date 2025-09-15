@@ -220,6 +220,9 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
   const RECT_SP = this.RECT_SP;
   const startX = this.startX;
   const bitStartY = this.infoY + 100;
+  const step = RECT_W + RECT_SP;
+  const shiftYOffset = RECT_H + 40;
+  this.shiftYOffset = shiftYOffset;
 
   for (const id of this.bitIDs) this.cmd("Delete", id);
   for (const id of this.capacityLabelIDs) this.cmd("Delete", id);
@@ -235,7 +238,7 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
 
   for (let j = 0; j <= target; j++) {
     const id = this.nextIndex++;
-    const x = startX + j * (RECT_W + RECT_SP);
+    const x = startX + (target - j) * step;
     const y = bitStartY;
     this.bitIDs.push(id);
     this.bitX.push(x);
@@ -245,10 +248,10 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
     this.cmd("SetForegroundColor", id, "#000000");
   }
 
-  const capLabelY = bitStartY + RECT_H / 2 + RECT_SP + 10;
+  const capLabelY = bitStartY + shiftYOffset + RECT_H / 2 + 20;
   for (let j = 0; j <= target; j++) {
     const lid = this.nextIndex++;
-    const x = startX + j * (RECT_W + RECT_SP);
+    const x = startX + (target - j) * step;
     this.cmd("CreateLabel", lid, String(j), x, capLabelY, 0);
     this.cmd("SetForegroundColor", lid, "#000000");
     this.cmd("SetTextStyle", lid, "12");
@@ -257,13 +260,13 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
 
   this.resultLabelID = this.nextIndex++;
   this.resultValueID = this.nextIndex++;
-  const resY = capLabelY + 40;
+  const resY = capLabelY + 50;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
   this.cmd("SetTextStyle", this.resultLabelID, "bold 14");
 
   const CODE_LINE_H = 22;
-  const codeY = resY + 40;
+  const codeY = resY + 50;
   const canvas = document.getElementById("canvas");
   const canvasW = canvas ? canvas.width : 540;
   const maxCodeLen = Math.max(...PartitionEqualSubsetSumBitmask.CODE.map((s) => s.length));
@@ -286,12 +289,16 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
     this.cmd("SetForegroundColor", id, "#000000");
   }
 
-  const neededH = codeY + PartitionEqualSubsetSumBitmask.CODE.length * CODE_LINE_H + 80;
+  const neededH =
+    codeY + PartitionEqualSubsetSumBitmask.CODE.length * CODE_LINE_H + 80;
   const canvasElem = document.getElementById("canvas");
   if (canvasElem) {
     if (canvasElem.height < neededH) {
       canvasElem.height = neededH;
-      if (typeof animationManager !== "undefined" && animationManager.animatedObjects) {
+      if (
+        typeof animationManager !== "undefined" &&
+        animationManager.animatedObjects
+      ) {
         animationManager.animatedObjects.height = neededH;
       }
     }
@@ -385,7 +392,15 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
     const shiftIDs = [];
     for (let j = 0; j <= target; j++) {
       const id = this.nextIndex++;
-      this.cmd("CreateRectangle", id, bits[j] ? "1" : "0", this.RECT_W, this.RECT_H, this.bitX[j], this.bitY[j] + this.RECT_H + 20);
+      this.cmd(
+        "CreateRectangle",
+        id,
+        bits[j] ? "1" : "0",
+        this.RECT_W,
+        this.RECT_H,
+        this.bitX[j],
+        this.bitY[j] + this.shiftYOffset
+      );
       this.cmd("SetBackgroundColor", id, bits[j] ? "#dff7df" : "#eeeeee");
       this.cmd("SetForegroundColor", id, "#000000");
       shiftIDs.push(id);
@@ -394,7 +409,12 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
 
     const deltaX = this.arr[i] * (this.RECT_W + this.RECT_SP);
     for (let j = 0; j <= target; j++) {
-      this.cmd("Move", shiftIDs[j], this.bitX[j] + deltaX, this.bitY[j] + this.RECT_H + 20);
+      this.cmd(
+        "Move",
+        shiftIDs[j],
+        this.bitX[j] - deltaX,
+        this.bitY[j] + this.shiftYOffset
+      );
     }
     this.cmd("Step");
 
@@ -479,3 +499,4 @@ function init() {
     canvas.height
   );
 }
+
