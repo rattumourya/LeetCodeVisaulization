@@ -131,8 +131,16 @@ PartitionEqualSubsetSumBitmask.prototype.setup = function () {
     }
   }
 
-  const SHIFT_X = 40;
-  const startX = Math.max(20, Math.floor((canvasW - maxWidth) / 2) - SHIFT_X);
+  const SHIFT_OFFSET = 60;
+  const baseStartX = Math.floor((canvasW - maxWidth) / 2);
+  const minStartX = 20;
+  const maxStartX = canvasW - maxWidth - 20;
+  let startX = baseStartX + SHIFT_OFFSET;
+  if (maxStartX < minStartX) {
+    startX = minStartX;
+  } else {
+    startX = Math.min(Math.max(startX, minStartX), maxStartX);
+  }
   const startY = 80;
 
   this.RECT_W = RECT_W;
@@ -140,7 +148,7 @@ PartitionEqualSubsetSumBitmask.prototype.setup = function () {
   this.RECT_SP = RECT_SP;
   this.startX = startX;
   this.startY = startY;
-  this.shiftX = SHIFT_X;
+  this.shiftX = SHIFT_OFFSET;
 
   this.commands = [];
   this.arrIDs = [];
@@ -221,7 +229,8 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
   const startX = this.startX;
   const bitStartY = this.infoY + 100;
   const step = RECT_W + RECT_SP;
-  const shiftYOffset = RECT_H + 40;
+  const indexLabelGap = Math.round(RECT_H / 2 + 24);
+  const shiftYOffset = indexLabelGap + RECT_H + 40;
   this.shiftYOffset = shiftYOffset;
 
   for (const id of this.bitIDs) this.cmd("Delete", id);
@@ -248,7 +257,7 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
     this.cmd("SetForegroundColor", id, "#000000");
   }
 
-  const capLabelY = bitStartY + shiftYOffset + RECT_H / 2 + 20;
+  const capLabelY = bitStartY + indexLabelGap;
   for (let j = 0; j <= target; j++) {
     const lid = this.nextIndex++;
     const x = startX + (target - j) * step;
@@ -260,7 +269,7 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
 
   this.resultLabelID = this.nextIndex++;
   this.resultValueID = this.nextIndex++;
-  const resY = capLabelY + 50;
+  const resY = bitStartY + shiftYOffset + RECT_H / 2 + 60;
   this.cmd("CreateLabel", this.resultLabelID, "Can Partition:", startX, resY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", startX + 140, resY, 0);
   this.cmd("SetTextStyle", this.resultLabelID, "bold 14");
@@ -271,10 +280,17 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
   const canvasW = canvas ? canvas.width : 540;
   const maxCodeLen = Math.max(...PartitionEqualSubsetSumBitmask.CODE.map((s) => s.length));
   const CODE_CHAR_W = 7;
-  const codeStartX = Math.max(
-    20,
-    Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2) - this.shiftX
-  );
+  const codeWidth = maxCodeLen * CODE_CHAR_W;
+  const baseCodeStart = Math.floor((canvasW - codeWidth) / 2);
+  let codeStartX = baseCodeStart + this.shiftX;
+  const minCodeStart = 20;
+  const maxCodeStart = canvasW - codeWidth - 20;
+  if (maxCodeStart < minCodeStart) {
+    codeStartX = minCodeStart;
+  } else {
+    codeStartX = Math.min(Math.max(codeStartX, minCodeStart), maxCodeStart);
+  }
+
   for (let i = 0; i < PartitionEqualSubsetSumBitmask.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
