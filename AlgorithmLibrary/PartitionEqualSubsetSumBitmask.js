@@ -479,4 +479,3 @@ function init() {
     canvas.height
   );
 }
-
