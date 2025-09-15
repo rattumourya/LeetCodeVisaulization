@@ -423,4 +423,35 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
   this.showOutroSlide("Thanks for watching! Subscribe and comment!");
   return this.commands;
 };
+PartitionEqualSubsetSumBitmask.prototype.reset = function () {
+  this.nextIndex = 0;
+  if (
+    typeof animationManager !== "undefined" &&
+    animationManager.animatedObjects
+  ) {
+    animationManager.animatedObjects.clearAllObjects();
+  }
+  this.setup();
+};
 
+PartitionEqualSubsetSumBitmask.prototype.disableUI = function () {
+  for (let i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = true;
+  }
+};
+
+PartitionEqualSubsetSumBitmask.prototype.enableUI = function () {
+  for (let i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = false;
+  }
+};
+
+var currentAlg;
+function init() {
+  var animManag = initCanvas();
+  currentAlg = new PartitionEqualSubsetSumBitmask(
+    animManag,
+    canvas.width,
+    canvas.height
+  );
+}
