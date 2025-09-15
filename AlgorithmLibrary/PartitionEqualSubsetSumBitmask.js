@@ -474,4 +474,3 @@ function init() {
     canvas.height
   );
 }
-

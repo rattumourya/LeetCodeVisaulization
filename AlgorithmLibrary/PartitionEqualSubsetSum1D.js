@@ -144,7 +144,7 @@ PartitionEqualSubsetSum1D.prototype.setup = function () {
   this.cmd(
     "CreateLabel",
     this.titleID,
-    "Space Optimized DP (0/1 Knapsack)",
+    "Space Optimized 1D DP (0/1 Knapsack)",
     canvasW / 2,
     TITLE_Y,
     1
@@ -190,7 +190,7 @@ PartitionEqualSubsetSum1D.prototype.setup = function () {
   this.cmd("SetTextStyle", this.targetLabelID, "bold 14");
 
   // Message label placed beside target value
-  const messageX = this.targetValueX + 200;
+  const messageX = this.targetValueX + 160;
   const messageY = this.targetValueY;
   this.messageID = this.nextIndex++;
   this.cmd("CreateLabel", this.messageID, "", messageX, messageY, 0);
