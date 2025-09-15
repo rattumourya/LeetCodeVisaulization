@@ -131,7 +131,8 @@ PartitionEqualSubsetSumBitmask.prototype.setup = function () {
     }
   }
 
-  const startX = Math.floor((canvasW - maxWidth) / 2);
+  const SHIFT_X = 40;
+  const startX = Math.max(20, Math.floor((canvasW - maxWidth) / 2) - SHIFT_X);
   const startY = 80;
 
   this.RECT_W = RECT_W;
@@ -139,6 +140,7 @@ PartitionEqualSubsetSumBitmask.prototype.setup = function () {
   this.RECT_SP = RECT_SP;
   this.startX = startX;
   this.startY = startY;
+  this.shiftX = SHIFT_X;
 
   this.commands = [];
   this.arrIDs = [];
@@ -266,7 +268,10 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
   const canvasW = canvas ? canvas.width : 540;
   const maxCodeLen = Math.max(...PartitionEqualSubsetSumBitmask.CODE.map((s) => s.length));
   const CODE_CHAR_W = 7;
-  const codeStartX = Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2);
+  const codeStartX = Math.max(
+    20,
+    Math.floor((canvasW - maxCodeLen * CODE_CHAR_W) / 2) - this.shiftX
+  );
   for (let i = 0; i < PartitionEqualSubsetSumBitmask.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
