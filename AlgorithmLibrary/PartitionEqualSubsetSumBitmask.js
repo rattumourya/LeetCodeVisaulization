@@ -290,6 +290,7 @@ PartitionEqualSubsetSumBitmask.prototype.createBitArray = function (target) {
   } else {
     codeStartX = Math.min(Math.max(codeStartX, minCodeStart), maxCodeStart);
   }
+
   for (let i = 0; i < PartitionEqualSubsetSumBitmask.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
