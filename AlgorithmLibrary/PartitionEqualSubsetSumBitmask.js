@@ -423,7 +423,6 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
   this.showOutroSlide("Thanks for watching! Subscribe and comment!");
   return this.commands;
 };
-
 PartitionEqualSubsetSumBitmask.prototype.reset = function () {
   this.nextIndex = 0;
   if (
@@ -456,4 +455,3 @@ function init() {
     canvas.height
   );
 }
-
