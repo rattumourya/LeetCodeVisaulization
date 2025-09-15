@@ -101,7 +101,8 @@ PartitionEqualSubsetSumBitmask.prototype.setup = function () {
   this.n = this.arr.length;
 
   const canvas = document.getElementById("canvas");
-  const canvasW = canvas ? canvas.width : 540;
+  let canvasW = canvas ? canvas.width : 540;
+  let canvasH = canvas ? canvas.height : 960;
 
   const TITLE_Y = 30;
   const RECT_W = 25;
@@ -113,6 +114,23 @@ PartitionEqualSubsetSumBitmask.prototype.setup = function () {
   const arrWidth = this.n * (RECT_W + RECT_SP) - RECT_SP;
   const bitWidth = (target + 1) * (RECT_W + RECT_SP) - RECT_SP;
   const maxWidth = Math.max(arrWidth, bitWidth);
+  const neededWidth = maxWidth + 40;
+  if (canvasW < neededWidth) {
+    canvasW = neededWidth;
+    canvasH = Math.round(canvasW * (16 / 9));
+    if (canvas) {
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+    }
+    if (
+      typeof animationManager !== "undefined" &&
+      animationManager.animatedObjects
+    ) {
+      animationManager.animatedObjects.width = canvasW;
+      animationManager.animatedObjects.height = canvasH;
+    }
+  }
+
   const startX = Math.floor((canvasW - maxWidth) / 2);
   const startY = 80;
 
@@ -423,6 +441,7 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
   this.showOutroSlide("Thanks for watching! Subscribe and comment!");
   return this.commands;
 };
+
 PartitionEqualSubsetSumBitmask.prototype.reset = function () {
   this.nextIndex = 0;
   if (
