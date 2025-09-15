@@ -404,6 +404,9 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
     this.cmd("SetText", this.messageID, "Considering number " + this.arr[i]);
     this.cmd("Step");
 
+    // snapshot current bits for animation and updates
+    const prevBits = bits.slice();
+
     // create shifted row
     const shiftIDs = [];
     for (let j = 0; j <= target; j++) {
@@ -411,13 +414,17 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
       this.cmd(
         "CreateRectangle",
         id,
-        bits[j] ? "1" : "0",
+        prevBits[j] ? "1" : "0",
         this.RECT_W,
         this.RECT_H,
         this.bitX[j],
         this.bitY[j] + this.shiftYOffset
       );
-      this.cmd("SetBackgroundColor", id, bits[j] ? "#dff7df" : "#eeeeee");
+      this.cmd(
+        "SetBackgroundColor",
+        id,
+        prevBits[j] ? "#dff7df" : "#eeeeee"
+      );
       this.cmd("SetForegroundColor", id, "#000000");
       shiftIDs.push(id);
     }
@@ -435,23 +442,34 @@ PartitionEqualSubsetSumBitmask.prototype.runAlgorithm = function () {
     this.cmd("Step");
 
     this.highlightCode(7);
-    for (let j = target; j >= 0; j--) {
+    for (let j = 0; j <= target; j++) {
       this.cmd("SetBackgroundColor", this.bitIDs[j], "#ffd4d4");
       if (j >= this.arr[i]) {
-        this.cmd("SetBackgroundColor", shiftIDs[j - this.arr[i]], "#ffd4d4");
+        this.cmd(
+          "SetBackgroundColor",
+          shiftIDs[j - this.arr[i]],
+          "#ffd4d4"
+        );
       }
       this.cmd("SetText", this.messageID, "Updating bit " + j);
       this.cmd("Step");
-      const newVal = bits[j] || (j >= this.arr[i] ? bits[j - this.arr[i]] : false);
+      const newVal =
+        prevBits[j] ||
+        (j >= this.arr[i] ? prevBits[j - this.arr[i]] : false);
       bits[j] = newVal;
       this.cmd("SetText", this.bitIDs[j], newVal ? "1" : "0");
-      this.cmd("SetBackgroundColor", this.bitIDs[j], newVal ? "#dff7df" : "#eeeeee");
+      this.cmd(
+        "SetBackgroundColor",
+        this.bitIDs[j],
+        newVal ? "#dff7df" : "#eeeeee"
+      );
       if (j >= this.arr[i]) {
-        this.cmd("SetBackgroundColor", shiftIDs[j - this.arr[i]], bits[j - this.arr[i]] ? "#dff7df" : "#eeeeee");
+        this.cmd(
+          "SetBackgroundColor",
+          shiftIDs[j - this.arr[i]],
+          prevBits[j - this.arr[i]] ? "#dff7df" : "#eeeeee"
+        );
       }
-    }
-    for (let j = 0; j <= target; j++) {
-      this.cmd("SetBackgroundColor", this.bitIDs[j], bits[j] ? "#dff7df" : "#eeeeee");
     }
     this.cmd("Step");
 
