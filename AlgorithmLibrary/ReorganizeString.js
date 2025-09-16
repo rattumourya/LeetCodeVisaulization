@@ -21,12 +21,14 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.freqGapY = 12;
   this.freqStartY = 250;
 
-  this.heapBoxW = 110;
-  this.heapBoxH = 54;
-  this.heapCols = 6;
-  this.heapGapX = 16;
-  this.heapGapY = 18;
-  this.heapStartY = 610;
+  this.heapNodeRadius = 18;
+  this.heapInitialOffset = 150;
+  this.heapLevelGap = 110;
+  this.heapRootY = 620;
+  this.heapCountOffset = this.heapNodeRadius + 26;
+  this.heapConnectorColor = "#94a3b8";
+  this.heapSlotW = 120;
+  this.heapSlotH = 110;
 
   this.currSlotPos = { x: 220, y: 560 };
   this.prevSlotPos = { x: 500, y: 560 };
@@ -92,6 +94,7 @@ ReorganizeString.prototype.reset = function () {
   this.freqObjects = {};
   this.freqOrder = [];
   this.heapEntries = [];
+  this.heapConnections = [];
   this.prevEntry = null;
   this.inputCharIDs = [];
   this.outputBoxes = [];
@@ -156,7 +159,15 @@ ReorganizeString.prototype.setupLayout = function () {
   this.cmd("SetTextStyle", this.currSlotLabelID, "16");
 
   this.currSlotRectID = this.nextIndex++;
-  this.cmd("CreateRectangle", this.currSlotRectID, "", this.heapBoxW, this.heapBoxH, this.currSlotPos.x, this.currSlotPos.y);
+  this.cmd(
+    "CreateRectangle",
+    this.currSlotRectID,
+    "",
+    this.heapSlotW,
+    this.heapSlotH,
+    this.currSlotPos.x,
+    this.currSlotPos.y
+  );
   this.cmd("SetForegroundColor", this.currSlotRectID, "#94a3b8");
   this.cmd("SetBackgroundColor", this.currSlotRectID, "#f8fafc");
 
@@ -165,7 +176,15 @@ ReorganizeString.prototype.setupLayout = function () {
   this.cmd("SetTextStyle", this.prevSlotLabelID, "16");
 
   this.prevSlotRectID = this.nextIndex++;
-  this.cmd("CreateRectangle", this.prevSlotRectID, "", this.heapBoxW, this.heapBoxH, this.prevSlotPos.x, this.prevSlotPos.y);
+  this.cmd(
+    "CreateRectangle",
+    this.prevSlotRectID,
+    "",
+    this.heapSlotW,
+    this.heapSlotH,
+    this.prevSlotPos.x,
+    this.prevSlotPos.y
+  );
   this.cmd("SetForegroundColor", this.prevSlotRectID, "#94a3b8");
   this.cmd("SetBackgroundColor", this.prevSlotRectID, "#f8fafc");
 
@@ -175,7 +194,7 @@ ReorganizeString.prototype.setupLayout = function () {
     this.prevStatusID,
     "empty",
     this.prevSlotPos.x,
-    this.prevSlotPos.y + this.heapBoxH / 2 + 18,
+    this.prevSlotPos.y + this.heapSlotH / 2 + 24,
     1
   );
   this.cmd("SetTextStyle", this.prevStatusID, "italic 14");
@@ -297,12 +316,23 @@ ReorganizeString.prototype.getFreqPosition = function (index) {
 };
 
 ReorganizeString.prototype.getHeapPosition = function (index) {
-  const col = index % this.heapCols;
-  const row = Math.floor(index / this.heapCols);
-  const areaW = this.heapCols * this.heapBoxW + (this.heapCols - 1) * this.heapGapX;
-  const startX = (this.canvasW - areaW) / 2 + this.heapBoxW / 2;
-  const x = startX + col * (this.heapBoxW + this.heapGapX);
-  const y = this.heapStartY + row * (this.heapBoxH + this.heapGapY);
+  if (index < 0) {
+    return { x: this.canvasW / 2, y: this.heapRootY };
+  }
+  const level = Math.floor(Math.log2(index + 1));
+  let pathIndex = index + 1;
+  const directions = [];
+  while (pathIndex > 1) {
+    directions.push(pathIndex % 2 === 0 ? -1 : 1);
+    pathIndex = Math.floor(pathIndex / 2);
+  }
+  let x = this.canvasW / 2;
+  let offset = this.heapInitialOffset;
+  for (let i = directions.length - 1; i >= 0; i--) {
+    x += directions[i] * offset;
+    offset /= 2;
+  }
+  const y = this.heapRootY + level * this.heapLevelGap;
   return { x, y };
 };
 
@@ -316,6 +346,10 @@ ReorganizeString.prototype.getOutputPosition = function (index) {
   return { x, y };
 };
 
+ReorganizeString.prototype.formatCountText = function (count) {
+  return "count " + count;
+};
+
 ReorganizeString.prototype.sortHeapEntries = function () {
   this.heapEntries.sort((a, b) => {
     if (b.count !== a.count) return b.count - a.count;
@@ -324,10 +358,55 @@ ReorganizeString.prototype.sortHeapEntries = function () {
 };
 
 ReorganizeString.prototype.reflowHeapPositions = function () {
+  this.clearHeapConnections();
   for (let i = 0; i < this.heapEntries.length; i++) {
+    const entry = this.heapEntries[i];
     const pos = this.getHeapPosition(i);
-    this.cmd("Move", this.heapEntries[i].rectID, pos.x, pos.y);
+    this.cmd("Move", entry.nodeID, pos.x, pos.y);
+    this.cmd("Move", entry.countID, pos.x, pos.y + this.heapCountOffset);
   }
+  for (let i = 0; i < this.heapEntries.length; i++) {
+    const leftIndex = 2 * i + 1;
+    const rightIndex = 2 * i + 2;
+    if (leftIndex < this.heapEntries.length) {
+      this.cmd(
+        "Connect",
+        this.heapEntries[i].nodeID,
+        this.heapEntries[leftIndex].nodeID,
+        this.heapConnectorColor,
+        0,
+        0,
+        ""
+      );
+      this.heapConnections.push({
+        parentID: this.heapEntries[i].nodeID,
+        childID: this.heapEntries[leftIndex].nodeID,
+      });
+    }
+    if (rightIndex < this.heapEntries.length) {
+      this.cmd(
+        "Connect",
+        this.heapEntries[i].nodeID,
+        this.heapEntries[rightIndex].nodeID,
+        this.heapConnectorColor,
+        0,
+        0,
+        ""
+      );
+      this.heapConnections.push({
+        parentID: this.heapEntries[i].nodeID,
+        childID: this.heapEntries[rightIndex].nodeID,
+      });
+    }
+  }
+};
+
+ReorganizeString.prototype.clearHeapConnections = function () {
+  if (!this.heapConnections || this.heapConnections.length === 0) return;
+  for (const conn of this.heapConnections) {
+    this.cmd("Disconnect", conn.parentID, conn.childID);
+  }
+  this.heapConnections = [];
 };
 
 ReorganizeString.prototype.updateHoldStatus = function () {
@@ -454,15 +533,28 @@ ReorganizeString.prototype.runAnimation = function () {
     const info = entries[i];
     const freqObj = this.freqObjects[info.char];
     const startPos = this.getFreqPosition(freqObj.index);
-    const rectID = this.nextIndex++;
-    this.cmd("CreateRectangle", rectID, info.char + ":" + info.count, this.heapBoxW, this.heapBoxH, startPos.x, startPos.y);
-    this.cmd("SetBackgroundColor", rectID, "#fde68a");
-    this.cmd("SetForegroundColor", rectID, "#1f2937");
+    const nodeID = this.nextIndex++;
+    this.cmd("CreateCircle", nodeID, info.char, startPos.x, startPos.y);
+    this.cmd("SetBackgroundColor", nodeID, "#fde68a");
+    this.cmd("SetForegroundColor", nodeID, "#1f2937");
+    this.cmd("SetWidth", nodeID, this.heapNodeRadius * 2);
+    const countID = this.nextIndex++;
+    this.cmd(
+      "CreateLabel",
+      countID,
+      this.formatCountText(info.count),
+      startPos.x,
+      startPos.y + this.heapCountOffset,
+      1
+    );
+    this.cmd("SetTextStyle", countID, "12");
+    this.cmd("SetForegroundColor", countID, "#0f172a");
     const heapPos = this.getHeapPosition(i);
-    this.cmd("Move", rectID, heapPos.x, heapPos.y);
-    this.cmd("SetBackgroundColor", rectID, "#ffffff");
+    this.cmd("Move", nodeID, heapPos.x, heapPos.y);
+    this.cmd("Move", countID, heapPos.x, heapPos.y + this.heapCountOffset);
+    this.cmd("SetBackgroundColor", nodeID, "#ffffff");
     this.cmd("Step");
-    this.heapEntries.push({ char: info.char, count: info.count, rectID });
+    this.heapEntries.push({ char: info.char, count: info.count, nodeID, countID });
   }
   this.sortHeapEntries();
   this.reflowHeapPositions();
@@ -485,10 +577,20 @@ ReorganizeString.prototype.runAnimation = function () {
 
     this.highlightCode(12);
     const curr = this.heapEntries.shift();
-    this.cmd("SetBackgroundColor", curr.rectID, "#bfdbfe");
-    this.cmd("Move", curr.rectID, this.currSlotPos.x, this.currSlotPos.y);
+
+    this.clearHeapConnections();
+    this.cmd("SetBackgroundColor", curr.nodeID, "#bfdbfe");
+    this.cmd("SetForegroundColor", curr.countID, "#1d4ed8");
+    this.cmd("Move", curr.nodeID, this.currSlotPos.x, this.currSlotPos.y);
+    this.cmd(
+      "Move",
+      curr.countID,
+      this.currSlotPos.x,
+      this.currSlotPos.y + this.heapCountOffset
+    );
     this.cmd("Step");
-    this.cmd("SetBackgroundColor", curr.rectID, "#ffffff");
+    this.cmd("SetBackgroundColor", curr.nodeID, "#ffffff");
+    this.cmd("SetForegroundColor", curr.countID, "#0f172a");
     this.reflowHeapPositions();
 
     this.highlightCode(13);
@@ -498,7 +600,7 @@ ReorganizeString.prototype.runAnimation = function () {
 
     this.highlightCode(14);
     curr.count -= 1;
-    this.cmd("SetText", curr.rectID, curr.char + ":" + curr.count);
+    this.cmd("SetText", curr.countID, this.formatCountText(curr.count));
     this.setExplanation("Decrease remaining count of '" + curr.char + "' to " + curr.count + ".");
     this.cmd("Step");
 
@@ -507,6 +609,7 @@ ReorganizeString.prototype.runAnimation = function () {
       if (this.prevEntry.count > 0) {
         this.highlightCode(16);
         this.setExplanation("Reinsert held entry '" + this.prevEntry.char + "' with count " + this.prevEntry.count + ".");
+        this.cmd("SetForegroundColor", this.prevEntry.countID, "#0f172a");
         this.heapEntries.push(this.prevEntry);
         this.sortHeapEntries();
         this.reflowHeapPositions();
@@ -515,7 +618,8 @@ ReorganizeString.prototype.runAnimation = function () {
         this.updateHoldStatus();
       } else {
         this.setExplanation("Held entry '" + this.prevEntry.char + "' is exhausted and removed.");
-        this.cmd("Delete", this.prevEntry.rectID);
+        this.cmd("Delete", this.prevEntry.nodeID);
+        this.cmd("Delete", this.prevEntry.countID);
         this.prevEntry = null;
         this.updateHoldStatus();
         this.cmd("Step");
@@ -530,16 +634,31 @@ ReorganizeString.prototype.runAnimation = function () {
     this.updateHoldStatus();
     if (curr.count > 0) {
       this.setExplanation("Hold '" + curr.char + "' for the next iteration.");
-      this.cmd("Move", curr.rectID, this.prevSlotPos.x, this.prevSlotPos.y);
+      this.cmd("Move", curr.nodeID, this.prevSlotPos.x, this.prevSlotPos.y);
+      this.cmd(
+        "Move",
+        curr.countID,
+        this.prevSlotPos.x,
+        this.prevSlotPos.y + this.heapCountOffset
+      );
+      this.cmd("SetForegroundColor", curr.countID, "#2563eb");
     } else {
       this.setExplanation("'" + curr.char + "' is depleted; it will not return to the heap.");
-      this.cmd("Move", curr.rectID, this.prevSlotPos.x, this.prevSlotPos.y);
+      this.cmd("Move", curr.nodeID, this.prevSlotPos.x, this.prevSlotPos.y);
+      this.cmd(
+        "Move",
+        curr.countID,
+        this.prevSlotPos.x,
+        this.prevSlotPos.y + this.heapCountOffset
+      );
+      this.cmd("SetForegroundColor", curr.countID, "#dc2626");
     }
     this.cmd("Step");
   }
 
   if (this.prevEntry && this.prevEntry.count <= 0) {
-    this.cmd("Delete", this.prevEntry.rectID);
+    this.cmd("Delete", this.prevEntry.nodeID);
+    this.cmd("Delete", this.prevEntry.countID);
     this.prevEntry = null;
     this.updateHoldStatus();
   }
