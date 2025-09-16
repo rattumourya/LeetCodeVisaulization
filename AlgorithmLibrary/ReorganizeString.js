@@ -74,7 +74,6 @@ ReorganizeString.prototype.init = function (am, w, h) {
   ];
 
   this.addControls();
-
   this.reset();
   this.setupLayout();
   if (this.animationManager) {
@@ -276,7 +275,6 @@ ReorganizeString.prototype.setExplanation = function (text) {
     this.cmd("SetText", this.explanationID, text);
   }
 };
-
 ReorganizeString.prototype.updateFrequencyLabel = function () {
   if (this.freqMapID === -1) {
     return;
