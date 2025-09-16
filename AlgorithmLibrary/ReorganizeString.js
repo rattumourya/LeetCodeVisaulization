@@ -577,6 +577,7 @@ ReorganizeString.prototype.runAnimation = function () {
 
     this.highlightCode(12);
     const curr = this.heapEntries.shift();
+
     this.clearHeapConnections();
     this.cmd("SetBackgroundColor", curr.nodeID, "#bfdbfe");
     this.cmd("SetForegroundColor", curr.countID, "#1d4ed8");
