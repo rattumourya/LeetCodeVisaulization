@@ -18,22 +18,22 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.inputLabelY = 120;
   this.inputBoxY = 174;
 
-  this.charBoxW = 64;
-  this.charBoxH = 64;
+  this.charBoxW = 32;
+  this.charBoxH = 32;
   this.charBoxGap = 18;
 
   this.freqLabelY = 244;
   this.freqMapY = 288;
 
   this.heapLabelY = 380;
-  this.heapNodeRadius = 30;
+  this.heapNodeRadius = 20;
   this.heapLevelGap = 140;
   this.heapRootY = 540;
   this.heapRootX = 470;
   this.heapInitialOffset = 120;
 
-  this.currAnchor = { x: 170, y: this.heapRootY - 40 };
-  this.prevAnchor = { x: 170, y: this.heapRootY + 120 };
+  this.currAnchor = { x: 170, y: this.heapLabelY + 60 };
+  this.prevAnchor = { x: 170, y: this.heapLabelY + 115 };
 
   this.outputTitleX = 120;
   this.outputLabelY = this.heapRootY + 260;
@@ -211,9 +211,9 @@ ReorganizeString.prototype.setupLayout = function () {
 
   this.currLabelID = this.nextIndex++;
   const currLabelX = this.currAnchor.x - (this.heapNodeRadius + 120);
-  this.cmd("CreateLabel", this.currLabelID, "curr: null", currLabelX, this.currAnchor.y, 0);
+  this.cmd("CreateLabel", this.currLabelID, "curr (null)", currLabelX, this.currAnchor.y, 0);
   this.cmd("SetTextStyle", this.currLabelID, "bold 18");
-  this.cmd("SetForegroundColor", this.currLabelID, "#475569");
+  this.cmd("SetForegroundColor", this.currLabelID, "#111827");
 
   this.prevSlotID = this.nextIndex++;
   this.cmd("CreateCircle", this.prevSlotID, "", this.prevAnchor.x, this.prevAnchor.y);
@@ -224,15 +224,15 @@ ReorganizeString.prototype.setupLayout = function () {
 
   this.prevLabelID = this.nextIndex++;
   const prevLabelX = this.prevAnchor.x - (this.heapNodeRadius + 120);
-  this.cmd("CreateLabel", this.prevLabelID, "prev: null", prevLabelX, this.prevAnchor.y, 0);
+  this.cmd("CreateLabel", this.prevLabelID, "prev (null)", prevLabelX, this.prevAnchor.y, 0);
   this.cmd("SetTextStyle", this.prevLabelID, "bold 18");
-  this.cmd("SetForegroundColor", this.prevLabelID, "#475569");
+  this.cmd("SetForegroundColor", this.prevLabelID, "#111827");
 
   this.outputTitleID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.outputTitleID,
-    "Reorganized string :",
+    "Reorganized string",
     this.outputTitleX,
     this.outputLabelY,
     0
@@ -403,28 +403,25 @@ ReorganizeString.prototype.updateCurrDisplay = function (entry) {
   if (this.currLabelID === -1) {
     return;
   }
-  let text = "curr: null";
-  let color = "#475569";
+  let text = "curr (null)";
   if (entry) {
-    text = "curr: " + this.formatNodeText(entry);
-    color = "#dc2626";
+    text = "curr " + this.formatNodeText(entry);
   }
   this.cmd("SetText", this.currLabelID, text);
-  this.cmd("SetForegroundColor", this.currLabelID, color);
+  this.cmd("SetForegroundColor", this.currLabelID, "#111827");
+
 };
 
 ReorganizeString.prototype.updatePrevDisplay = function (entry) {
   if (this.prevLabelID === -1) {
     return;
   }
-  let text = "prev: null";
-  let color = "#475569";
+  let text = "prev (null)";
   if (entry) {
-    text = "prev: " + this.formatNodeText(entry);
-    color = "#2563eb";
+    text = "prev " + this.formatNodeText(entry);
   }
   this.cmd("SetText", this.prevLabelID, text);
-  this.cmd("SetForegroundColor", this.prevLabelID, color);
+  this.cmd("SetForegroundColor", this.prevLabelID, "#111827");
 };
 
 ReorganizeString.prototype.moveEntryToCurrAnchor = function (entry) {
@@ -455,14 +452,7 @@ ReorganizeString.prototype.animateAppendChar = function (entry) {
   this.cmd("Step");
   this.cmd("Delete", tempID);
   this.resultString += entry.char;
-  if (this.outputStringID !== -1) {
-    this.cmd("SetText", this.outputStringID, this.resultString);
-    this.cmd("SetForegroundColor", this.outputStringID, "#16a34a");
-  }
   this.cmd("Step");
-  if (this.outputStringID !== -1) {
-    this.cmd("SetForegroundColor", this.outputStringID, "#111827");
-  }
 };
 
 ReorganizeString.prototype.updateNodeText = function (entry) {
@@ -693,6 +683,7 @@ ReorganizeString.prototype.runAnimation = function () {
     this.cmd("SetForegroundColor", this.outputTitleID, "#16a34a");
   }
   if (this.outputStringID !== -1) {
+    this.cmd("SetText", this.outputStringID, this.resultString);
     this.cmd("SetForegroundColor", this.outputStringID, "#16a34a");
   }
   this.cmd("Step");
