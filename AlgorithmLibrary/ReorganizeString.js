@@ -27,26 +27,26 @@ ReorganizeString.prototype.init = function (am, w, h) {
 
   this.heapLabelY = 380;
   this.heapNodeRadius = 20;
-  this.heapLevelGap = 140;
+  this.heapLevelGap = 110;
   this.heapRootY = 480;
   this.heapRootX = 470;
-  this.heapInitialOffset = 120;
+  this.heapInitialOffset = 90;
 
   this.currAnchor = { x: 170, y: this.heapRootY };
   this.prevAnchor = { x: 170, y: this.heapRootY + 80 };
 
-  this.outputTitleX = 90;
+  this.outputTitleX = 200;
   this.outputLabelY = this.heapRootY + 260;
   this.outputStringY = this.outputLabelY;
-  this.outputStringStartX = this.outputTitleX + 260;
-  this.outputCharSpacing = 34;
+  this.outputStringStartX = this.outputTitleX + 220;
+  this.outputCharSpacing = 26;
 
-  this.explanationX = this.outputStringStartX + 110;
-  this.explanationY = this.outputLabelY;
+  this.explanationX = this.outputTitleX;
+  this.explanationY = this.outputLabelY + 48;
 
   this.codeStartY = this.outputLabelY + 80;
   this.codeLineHeight = 18;
-  this.codeLeftX = this.outputTitleX;
+  this.codeLeftX = 90;
 
   this.inputString = "vvloo";
 
@@ -446,11 +446,21 @@ ReorganizeString.prototype.animateAppendChar = function (entry) {
   this.cmd("CreateLabel", tempID, entry.char, this.currAnchor.x, this.currAnchor.y, 1);
   this.cmd("SetTextStyle", tempID, "bold 26");
   this.cmd("SetForegroundColor", tempID, "#111827");
-  const targetX = this.outputStringStartX + this.resultString.length * this.outputCharSpacing;
+  const maxChars = Math.max(1, this.inputString.length);
+  const availableWidth = Math.max(0, this.canvasW - this.outputStringStartX - 40);
+  const step = Math.min(this.outputCharSpacing, availableWidth / maxChars);
+  const targetX = this.outputStringStartX + this.resultString.length * step;
   this.cmd("Move", tempID, targetX, this.outputStringY);
   this.cmd("Step");
-  this.cmd("Delete", tempID);
   this.resultString += entry.char;
+  if (this.outputStringID !== -1) {
+    this.cmd("SetText", this.outputStringID, this.resultString);
+    this.cmd("SetForegroundColor", this.outputStringID, "#111827");
+  }
+  if (this.outputTitleID !== -1) {
+    this.cmd("SetForegroundColor", this.outputTitleID, "#111827");
+  }
+  this.cmd("Delete", tempID);
   this.cmd("Step");
 };
 
@@ -628,52 +638,49 @@ ReorganizeString.prototype.runAnimation = function () {
     this.cmd("Step");
 
     this.highlightCode(15);
-    if (this.prevEntry) {
-      if (this.prevEntry.count > 0) {
-        this.highlightCode(16);
-        const returning = this.prevEntry;
-        this.prevEntry = null;
+    const heldPrev = this.prevEntry;
+    let exhaustedPrev = null;
+    if (heldPrev) {
+      if (heldPrev.count > 0) {
         this.setExplanation(
-          "Reinsert held entry '" + returning.char + "' with count " + returning.count + " into the heap."
+          "prev holds '" + heldPrev.char + "' with count " + heldPrev.count + ", so offer it back to the heap."
         );
-        this.cmd("SetBackgroundColor", returning.nodeID, "#ffffff");
         this.cmd("Step");
-        this.heapEntries.push(returning);
+        this.highlightCode(16);
+        this.prevEntry = null;
+        this.cmd("SetBackgroundColor", heldPrev.nodeID, "#ffffff");
+        this.cmd("Step");
+        this.heapEntries.push(heldPrev);
         this.sortHeapEntries();
         this.reflowHeapPositions();
-        this.setExplanation("Heap rebuilt after reinserting '" + returning.char + "'.");
+        this.setExplanation("Heap rebuilt after reinserting '" + heldPrev.char + "'.");
         this.cmd("Step");
       } else {
         this.setExplanation(
-          "Held entry '" + this.prevEntry.char + "' is exhausted and removed from play."
+          "prev holds '" + heldPrev.char + "' but its count is 0, so it remains until the next character replaces it."
         );
-        this.updatePrevDisplay(null);
-        this.cmd("Delete", this.prevEntry.nodeID);
-        this.prevEntry = null;
         this.cmd("Step");
+        exhaustedPrev = heldPrev;
+        this.prevEntry = null;
       }
     } else {
-      this.setExplanation("No held entry to consider this round.");
+      this.setExplanation("prev is null, so there's nothing to return to the heap.");
       this.cmd("Step");
     }
 
     this.highlightCode(17);
-    this.prevEntry = curr;
-    if (curr.count > 0) {
-      this.setExplanation("Hold '" + curr.char + "' so it cannot be reused immediately.");
+    if (exhaustedPrev) {
+      this.cmd("Delete", exhaustedPrev.nodeID);
+    }
+    const prevReplacement = curr;
+    this.prevEntry = prevReplacement;
+    if (prevReplacement.count > 0) {
+      this.setExplanation("Hold '" + prevReplacement.char + "' so it cannot be reused immediately.");
     } else {
-      this.setExplanation("'" + curr.char + "' is depleted; it will not return to the heap.");
+      this.setExplanation("'" + prevReplacement.char + "' is depleted and will stay here until the next poll.");
     }
-    this.moveEntryToPrevAnchor(curr);
+    this.moveEntryToPrevAnchor(prevReplacement);
     this.cmd("Step");
-
-    if (curr.count <= 0) {
-      this.setExplanation("'" + curr.char + "' has no remaining count and is discarded.");
-      this.updatePrevDisplay(null);
-      this.cmd("Delete", curr.nodeID);
-      this.prevEntry = null;
-      this.cmd("Step");
-    }
   }
 
   this.highlightCode(19);
