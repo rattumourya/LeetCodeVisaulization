@@ -28,23 +28,23 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.heapLabelY = 380;
   this.heapNodeRadius = 20;
   this.heapLevelGap = 140;
-  this.heapRootY = 540;
+  this.heapRootY = 480;
   this.heapRootX = 470;
   this.heapInitialOffset = 120;
 
-  this.currAnchor = { x: 170, y: this.heapLabelY + 60 };
-  this.prevAnchor = { x: 170, y: this.heapLabelY + 115 };
+  this.currAnchor = { x: 170, y: this.heapRootY };
+  this.prevAnchor = { x: 170, y: this.heapRootY + 80 };
 
-  this.outputTitleX = 120;
+  this.outputTitleX = 90;
   this.outputLabelY = this.heapRootY + 260;
-  this.outputStringY = this.outputLabelY + 44;
-  this.outputStringStartX = this.outputTitleX + 220;
+  this.outputStringY = this.outputLabelY;
+  this.outputStringStartX = this.outputTitleX + 260;
   this.outputCharSpacing = 34;
 
-  this.explanationX = this.outputStringStartX + 180;
-  this.explanationY = this.outputStringY;
+  this.explanationX = this.outputStringStartX + 110;
+  this.explanationY = this.outputLabelY;
 
-  this.codeStartY = this.outputStringY + 70;
+  this.codeStartY = this.outputLabelY + 80;
   this.codeLineHeight = 18;
   this.codeLeftX = this.outputTitleX;
 
@@ -409,7 +409,6 @@ ReorganizeString.prototype.updateCurrDisplay = function (entry) {
   }
   this.cmd("SetText", this.currLabelID, text);
   this.cmd("SetForegroundColor", this.currLabelID, "#111827");
-
 };
 
 ReorganizeString.prototype.updatePrevDisplay = function (entry) {
@@ -425,14 +424,14 @@ ReorganizeString.prototype.updatePrevDisplay = function (entry) {
 };
 
 ReorganizeString.prototype.moveEntryToCurrAnchor = function (entry) {
-  this.cmd("SetBackgroundColor", entry.nodeID, "#fee2e2");
+  this.cmd("SetBackgroundColor", entry.nodeID, "#f1f5f9");
   this.cmd("Move", entry.nodeID, this.currAnchor.x, this.currAnchor.y);
   this.currEntry = entry;
   this.updateCurrDisplay(entry);
 };
 
 ReorganizeString.prototype.moveEntryToPrevAnchor = function (entry) {
-  const color = entry.count > 0 ? "#e0f2fe" : "#fecaca";
+  const color = entry.count > 0 ? "#e0f2fe" : "#f1f5f9";
   this.cmd("Move", entry.nodeID, this.prevAnchor.x, this.prevAnchor.y);
   this.cmd("SetBackgroundColor", entry.nodeID, color);
   this.updatePrevDisplay(entry);
@@ -446,7 +445,7 @@ ReorganizeString.prototype.animateAppendChar = function (entry) {
   const tempID = this.nextIndex++;
   this.cmd("CreateLabel", tempID, entry.char, this.currAnchor.x, this.currAnchor.y, 1);
   this.cmd("SetTextStyle", tempID, "bold 26");
-  this.cmd("SetForegroundColor", tempID, "#dc2626");
+  this.cmd("SetForegroundColor", tempID, "#111827");
   const targetX = this.outputStringStartX + this.resultString.length * this.outputCharSpacing;
   this.cmd("Move", tempID, targetX, this.outputStringY);
   this.cmd("Step");
@@ -679,11 +678,20 @@ ReorganizeString.prototype.runAnimation = function () {
 
   this.highlightCode(19);
   this.setExplanation("Return the built string: " + this.resultString + ".");
+  if (this.outputStringID !== -1) {
+    this.cmd("SetText", this.outputStringID, this.resultString);
+    this.cmd("SetForegroundColor", this.outputStringID, "#111827");
+  }
+  if (this.outputTitleID !== -1) {
+    this.cmd("SetForegroundColor", this.outputTitleID, "#111827");
+  }
+  this.cmd("Step");
+
+  this.setExplanation("Highlight the returned string to show completion.");
   if (this.outputTitleID !== -1) {
     this.cmd("SetForegroundColor", this.outputTitleID, "#16a34a");
   }
   if (this.outputStringID !== -1) {
-    this.cmd("SetText", this.outputStringID, this.resultString);
     this.cmd("SetForegroundColor", this.outputStringID, "#16a34a");
   }
   this.cmd("Step");
