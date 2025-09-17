@@ -27,26 +27,29 @@ ReorganizeString.prototype.init = function (am, w, h) {
 
   this.heapLabelY = 380;
   this.heapNodeRadius = 20;
-  this.heapLevelGap = 140;
+  this.heapLevelGap = 110;
   this.heapRootY = 480;
   this.heapRootX = 470;
-  this.heapInitialOffset = 120;
+  this.heapInitialOffset = 90;
 
   this.currAnchor = { x: 170, y: this.heapRootY };
   this.prevAnchor = { x: 170, y: this.heapRootY + 80 };
 
-  this.outputTitleX = 90;
+  this.outputTitleX = this.heapRootX - 100;
   this.outputLabelY = this.heapRootY + 260;
   this.outputStringY = this.outputLabelY;
-  this.outputStringStartX = this.outputTitleX + 260;
-  this.outputCharSpacing = 34;
+  this.outputStringStartX = this.outputTitleX + 160;
+  this.outputCharSpacing = 26;
 
-  this.explanationX = this.outputStringStartX + 110;
+  const desiredExplanationX = this.outputStringStartX + 180;
+  const maxExplanationX = this.canvasW - 120;
+  const minExplanationX = this.outputStringStartX + 20;
+  this.explanationX = Math.max(minExplanationX, Math.min(desiredExplanationX, maxExplanationX));
   this.explanationY = this.outputLabelY;
 
   this.codeStartY = this.outputLabelY + 80;
   this.codeLineHeight = 18;
-  this.codeLeftX = this.outputTitleX;
+  this.codeLeftX = 90;
 
   this.inputString = "vvloo";
 
@@ -446,11 +449,21 @@ ReorganizeString.prototype.animateAppendChar = function (entry) {
   this.cmd("CreateLabel", tempID, entry.char, this.currAnchor.x, this.currAnchor.y, 1);
   this.cmd("SetTextStyle", tempID, "bold 26");
   this.cmd("SetForegroundColor", tempID, "#111827");
-  const targetX = this.outputStringStartX + this.resultString.length * this.outputCharSpacing;
+  const maxChars = Math.max(1, this.inputString.length);
+  const availableWidth = Math.max(0, this.canvasW - this.outputStringStartX - 40);
+  const step = Math.min(this.outputCharSpacing, availableWidth / maxChars);
+  const targetX = this.outputStringStartX + this.resultString.length * step;
   this.cmd("Move", tempID, targetX, this.outputStringY);
   this.cmd("Step");
-  this.cmd("Delete", tempID);
   this.resultString += entry.char;
+  if (this.outputStringID !== -1) {
+    this.cmd("SetText", this.outputStringID, this.resultString);
+    this.cmd("SetForegroundColor", this.outputStringID, "#111827");
+  }
+  if (this.outputTitleID !== -1) {
+    this.cmd("SetForegroundColor", this.outputTitleID, "#111827");
+  }
+  this.cmd("Delete", tempID);
   this.cmd("Step");
 };
 
