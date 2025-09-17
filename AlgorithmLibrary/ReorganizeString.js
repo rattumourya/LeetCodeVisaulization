@@ -247,6 +247,7 @@ ReorganizeString.prototype.setupLayout = function () {
   this.cmd("SetTextStyle", this.outputStringID, "24");
   this.cmd("SetForegroundColor", this.outputStringID, "#111827");
 
+
   this.setupCodePanel();
 };
 
@@ -323,6 +324,7 @@ ReorganizeString.prototype.createHeapEntry = function (char, count, index, total
   const gap = this.heapNodeRadius * 2 + 24;
   const startX = this.canvasW / 2 - ((span - 1) * gap) / 2 + (index || 0) * gap;
   const startY = this.freqMapY + 90;
+
   const nodeID = this.nextIndex++;
   const entry = { char, count, nodeID };
   this.cmd("CreateCircle", nodeID, this.formatNodeText(entry), startX, startY);
