@@ -25,18 +25,18 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.freqLabelY = 244;
   this.freqMapY = 288;
 
-  this.heapLabelY = 380;
+  this.heapLabelY = 244;
   this.heapNodeRadius = 20;
   this.heapLevelGap = 110;
-  this.heapRootY = 480;
+  this.heapRootY = 350;
   this.heapRootX = 470;
   this.heapInitialOffset = 90;
 
   this.currAnchor = { x: 170, y: this.heapRootY };
   this.prevAnchor = { x: 170, y: this.heapRootY + 80 };
 
-  this.outputTitleX = 200;
-  this.outputLabelY = this.heapRootY + 260;
+  this.outputTitleX = 30;
+  this.outputLabelY = this.heapRootY + 200;
   this.outputStringY = this.outputLabelY;
   this.outputStringStartX = this.outputTitleX + 220;
   this.outputCharSpacing = 26;
@@ -44,9 +44,9 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.explanationX = this.outputTitleX;
   this.explanationY = this.outputLabelY + 48;
 
-  this.codeStartY = this.outputLabelY + 80;
+  this.codeStartY = this.outputLabelY + 120;
   this.codeLineHeight = 18;
-  this.codeLeftX = 90;
+  this.codeLeftX = 40;
 
   this.inputString = "vvloo";
 
@@ -178,11 +178,11 @@ ReorganizeString.prototype.setupLayout = function () {
   this.createInputBoxes();
 
   const freqLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", freqLabelID, "Frequency Map", this.canvasW / 2, this.freqLabelY, 1);
+  this.cmd("CreateLabel", freqLabelID, "Frequency Map", 100 , this.freqLabelY, 1);
   this.cmd("SetTextStyle", freqLabelID, "bold 20");
 
   this.freqMapID = this.nextIndex++;
-  this.cmd("CreateLabel", this.freqMapID, "{}", this.canvasW / 2, this.freqMapY, 1);
+  this.cmd("CreateLabel", this.freqMapID, "{}", 100, this.freqMapY, 1);
   this.cmd("SetTextStyle", this.freqMapID, "18");
   this.cmd("SetForegroundColor", this.freqMapID, "#111827");
 
@@ -326,8 +326,8 @@ ReorganizeString.prototype.formatNodeText = function (entry) {
 ReorganizeString.prototype.createHeapEntry = function (char, count, index, total) {
   const span = Math.max(1, total || 1);
   const gap = this.heapNodeRadius * 2 + 20;
-  const startX = this.heapRootX - ((span - 1) * gap) / 2 + (index || 0) * gap;
-  const startY = this.freqMapY + 90;
+  const startX = this.heapRootX - ((span - 1) * gap) / 2
+  const startY = this.freqMapY;
   const nodeID = this.nextIndex++;
   const entry = { char, count, nodeID };
   this.cmd("CreateCircle", nodeID, this.formatNodeText(entry), startX, startY);
