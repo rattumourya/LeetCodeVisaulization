@@ -32,19 +32,19 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.heapRootX = 470;
   this.heapInitialOffset = 120;
 
-  this.currAnchor = { x: 170, y: this.heapRootY };
-  this.prevAnchor = { x: 170, y: this.heapRootY + 80 };
+  this.currAnchor = { x: this.heapRootX - 150, y: this.heapRootY };
+  this.prevAnchor = { x: this.currAnchor.x, y: this.currAnchor.y + 80 };
 
   this.outputTitleX = 90;
-  this.outputLabelY = this.heapRootY + 260;
+  this.outputLabelY = this.heapRootY + this.heapLevelGap * 2 - 40;
   this.outputStringY = this.outputLabelY;
-  this.outputStringStartX = this.outputTitleX + 260;
+  this.outputStringStartX = this.outputTitleX + 220;
   this.outputCharSpacing = 34;
 
-  this.explanationX = this.outputStringStartX + 110;
+  this.explanationX = this.outputStringStartX + 190;
   this.explanationY = this.outputLabelY;
 
-  this.codeStartY = this.outputLabelY + 80;
+  this.codeStartY = this.outputLabelY + 110;
   this.codeLineHeight = 18;
   this.codeLeftX = this.outputTitleX;
 
@@ -156,6 +156,13 @@ ReorganizeString.prototype.reset = function () {
   }
 };
 
+ReorganizeString.prototype.getSlotValueText = function (entry) {
+  if (!entry) {
+    return "null";
+  }
+  return entry.char + ", " + entry.count;
+};
+
 ReorganizeString.prototype.setupLayout = function () {
   const canvasElem = document.getElementById("canvas");
   if (canvasElem) {
@@ -210,8 +217,15 @@ ReorganizeString.prototype.setupLayout = function () {
   this.cmd("SetLayer", this.currSlotID, 0);
 
   this.currLabelID = this.nextIndex++;
-  const currLabelX = this.currAnchor.x - (this.heapNodeRadius + 120);
-  this.cmd("CreateLabel", this.currLabelID, "curr (null)", currLabelX, this.currAnchor.y, 0);
+  const currLabelX = this.currAnchor.x - (this.heapNodeRadius + 70);
+  this.cmd(
+    "CreateLabel",
+    this.currLabelID,
+    "curr " + this.getSlotValueText(null),
+    currLabelX,
+    this.currAnchor.y,
+    0
+  );
   this.cmd("SetTextStyle", this.currLabelID, "bold 18");
   this.cmd("SetForegroundColor", this.currLabelID, "#111827");
 
@@ -223,8 +237,15 @@ ReorganizeString.prototype.setupLayout = function () {
   this.cmd("SetLayer", this.prevSlotID, 0);
 
   this.prevLabelID = this.nextIndex++;
-  const prevLabelX = this.prevAnchor.x - (this.heapNodeRadius + 120);
-  this.cmd("CreateLabel", this.prevLabelID, "prev (null)", prevLabelX, this.prevAnchor.y, 0);
+  const prevLabelX = this.prevAnchor.x - (this.heapNodeRadius + 70);
+  this.cmd(
+    "CreateLabel",
+    this.prevLabelID,
+    "prev " + this.getSlotValueText(null),
+    prevLabelX,
+    this.prevAnchor.y,
+    0
+  );
   this.cmd("SetTextStyle", this.prevLabelID, "bold 18");
   this.cmd("SetForegroundColor", this.prevLabelID, "#111827");
 
@@ -403,11 +424,7 @@ ReorganizeString.prototype.updateCurrDisplay = function (entry) {
   if (this.currLabelID === -1) {
     return;
   }
-  let text = "curr (null)";
-  if (entry) {
-    text = "curr " + this.formatNodeText(entry);
-  }
-  this.cmd("SetText", this.currLabelID, text);
+  this.cmd("SetText", this.currLabelID, "curr " + this.getSlotValueText(entry));
   this.cmd("SetForegroundColor", this.currLabelID, "#111827");
 };
 
@@ -415,11 +432,7 @@ ReorganizeString.prototype.updatePrevDisplay = function (entry) {
   if (this.prevLabelID === -1) {
     return;
   }
-  let text = "prev (null)";
-  if (entry) {
-    text = "prev " + this.formatNodeText(entry);
-  }
-  this.cmd("SetText", this.prevLabelID, text);
+  this.cmd("SetText", this.prevLabelID, "prev " + this.getSlotValueText(entry));
   this.cmd("SetForegroundColor", this.prevLabelID, "#111827");
 };
 
@@ -451,6 +464,10 @@ ReorganizeString.prototype.animateAppendChar = function (entry) {
   this.cmd("Step");
   this.cmd("Delete", tempID);
   this.resultString += entry.char;
+  if (this.outputStringID !== -1) {
+    this.cmd("SetText", this.outputStringID, this.resultString);
+    this.cmd("SetForegroundColor", this.outputStringID, "#111827");
+  }
   this.cmd("Step");
 };
 
@@ -647,7 +664,6 @@ ReorganizeString.prototype.runAnimation = function () {
         this.setExplanation(
           "Held entry '" + this.prevEntry.char + "' is exhausted and removed from play."
         );
-        this.updatePrevDisplay(null);
         this.cmd("Delete", this.prevEntry.nodeID);
         this.prevEntry = null;
         this.cmd("Step");
@@ -669,7 +685,6 @@ ReorganizeString.prototype.runAnimation = function () {
 
     if (curr.count <= 0) {
       this.setExplanation("'" + curr.char + "' has no remaining count and is discarded.");
-      this.updatePrevDisplay(null);
       this.cmd("Delete", curr.nodeID);
       this.prevEntry = null;
       this.cmd("Step");
