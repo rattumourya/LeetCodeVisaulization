@@ -45,7 +45,7 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.explanationY = this.outputLabelY + 48;
 
   this.codeStartY = this.outputLabelY + 120;
-  this.codeLineHeight = 18;
+  this.codeLineHeight = 26;
   this.codeLeftX = 40;
 
   this.inputString = "vvloo";
@@ -58,7 +58,8 @@ ReorganizeString.prototype.init = function (am, w, h) {
     "    int n = s.length();",
     "    int maxFreq = Collections.max(freq.values());",
     "    if (maxFreq > (n + 1) / 2) return \"\";",
-    "    PriorityQueue<Map.Entry<Character, Integer>> maxHeap = new PriorityQueue<>((a, b) -> b.getValue() - a.getValue());",
+    "    PriorityQueue<Map.Entry<Character, Integer>> maxHeap = new PriorityQueue<>(",
+    "        (a, b) -> b.getValue() - a.getValue());",
     "    maxHeap.addAll(freq.entrySet());",
     "    StringBuilder sb = new StringBuilder();",
     "    Map.Entry<Character, Integer> prev = null;",
@@ -73,6 +74,8 @@ ReorganizeString.prototype.init = function (am, w, h) {
     "    return sb.toString();",
     "}",
   ];
+
+  this.multiHighlightMap = { 7: [8] };
 
   this.addControls();
 
@@ -190,13 +193,13 @@ ReorganizeString.prototype.setupLayout = function () {
   this.cmd(
     "CreateLabel",
     this.explanationID,
-    "Click Reorganize to animate the steps.",
+    "",
     this.explanationX,
     this.explanationY,
     0
   );
-  this.cmd("SetTextStyle", this.explanationID, "italic 18");
-  this.cmd("SetForegroundColor", this.explanationID, "#0f172a");
+  this.cmd("SetTextStyle", this.explanationID, "bold 22");
+  this.cmd("SetForegroundColor", this.explanationID, "#4b0082");
 
   const heapLabelID = this.nextIndex++;
   this.cmd("CreateLabel", heapLabelID, "Max Heap", this.heapRootX, this.heapLabelY, 1);
@@ -281,15 +284,17 @@ ReorganizeString.prototype.setupCodePanel = function () {
     const id = this.nextIndex++;
     const y = this.codeStartY + i * this.codeLineHeight;
     this.cmd("CreateLabel", id, this.codeLines[i], this.codeLeftX, y, 0);
-    this.cmd("SetTextStyle", id, "16px monospace");
+    this.cmd("SetTextStyle", id, "18px monospace");
     this.cmd("SetForegroundColor", id, "#111827");
     this.codeIDs.push(id);
   }
 };
 
 ReorganizeString.prototype.highlightCode = function (line) {
+  const extras = (this.multiHighlightMap && this.multiHighlightMap[line]) || [];
   for (let i = 0; i < this.codeIDs.length; i++) {
-    this.cmd("SetHighlight", this.codeIDs[i], i === line ? 1 : 0);
+    const shouldHighlight = i === line || extras.indexOf(i) !== -1;
+    this.cmd("SetHighlight", this.codeIDs[i], shouldHighlight ? 1 : 0);
   }
 };
 
@@ -478,7 +483,7 @@ ReorganizeString.prototype.runAnimation = function () {
     this.highlightCode(1);
     this.setExplanation("Empty input string; nothing to reorganize.");
     this.cmd("Step");
-    this.highlightCode(19);
+    this.highlightCode(20);
     this.setExplanation("Return \"\".");
     this.cmd("Step");
     return this.commands;
@@ -547,7 +552,7 @@ ReorganizeString.prototype.runAnimation = function () {
       "maxFreq > (n + 1) / 2, so two identical letters must touch. Return empty string."
     );
     this.cmd("Step");
-    this.highlightCode(19);
+    this.highlightCode(20);
     this.currEntry = null;
     this.prevEntry = null;
     this.updateCurrDisplay(null);
@@ -574,7 +579,7 @@ ReorganizeString.prototype.runAnimation = function () {
   this.setExplanation("Create a max heap ordered by remaining counts.");
   this.cmd("Step");
 
-  this.highlightCode(8);
+  this.highlightCode(9);
   for (let i = 0; i < entries.length; i++) {
     const info = entries[i];
     const entry = this.createHeapEntry(info.char, info.count, i, entries.length);
@@ -597,23 +602,23 @@ ReorganizeString.prototype.runAnimation = function () {
     this.cmd("Step");
   }
 
-  this.highlightCode(9);
+  this.highlightCode(10);
   this.resultString = "";
   this.setExplanation("Start building the answer in a StringBuilder.");
   this.cmd("Step");
 
-  this.highlightCode(10);
+  this.highlightCode(11);
   this.prevEntry = null;
   this.updatePrevDisplay(null);
   this.setExplanation("prev is null; nothing held from a previous step.");
   this.cmd("Step");
 
   while (this.heapEntries.length > 0) {
-    this.highlightCode(11);
+    this.highlightCode(12);
     this.setExplanation("Heap still has entries; continue reorganizing.");
     this.cmd("Step");
 
-    this.highlightCode(12);
+    this.highlightCode(13);
     const curr = this.heapEntries.shift();
     this.clearHeapConnections();
     this.moveEntryToCurrAnchor(curr);
@@ -626,18 +631,18 @@ ReorganizeString.prototype.runAnimation = function () {
     }
     this.cmd("SetBackgroundColor", curr.nodeID, "#ffffff");
 
-    this.highlightCode(13);
+    this.highlightCode(14);
     this.setExplanation("Append '" + curr.char + "' to the reorganized string.");
     this.animateAppendChar(curr);
 
-    this.highlightCode(14);
+    this.highlightCode(15);
     curr.count -= 1;
     this.updateNodeText(curr);
     this.setExplanation("Decrease the remaining count of '" + curr.char + "' to " + curr.count + ".");
     this.updateCurrDisplay(curr);
     this.cmd("Step");
 
-    this.highlightCode(15);
+    this.highlightCode(16);
     const heldPrev = this.prevEntry;
     let exhaustedPrev = null;
     if (heldPrev) {
@@ -646,7 +651,7 @@ ReorganizeString.prototype.runAnimation = function () {
           "prev holds '" + heldPrev.char + "' with count " + heldPrev.count + ", so offer it back to the heap."
         );
         this.cmd("Step");
-        this.highlightCode(16);
+        this.highlightCode(17);
         this.prevEntry = null;
         this.cmd("SetBackgroundColor", heldPrev.nodeID, "#ffffff");
         this.cmd("Step");
@@ -668,7 +673,7 @@ ReorganizeString.prototype.runAnimation = function () {
       this.cmd("Step");
     }
 
-    this.highlightCode(17);
+    this.highlightCode(18);
     if (exhaustedPrev) {
       this.cmd("Delete", exhaustedPrev.nodeID);
     }
@@ -683,7 +688,7 @@ ReorganizeString.prototype.runAnimation = function () {
     this.cmd("Step");
   }
 
-  this.highlightCode(19);
+  this.highlightCode(20);
   this.setExplanation("Return the built string: " + this.resultString + ".");
   if (this.outputStringID !== -1) {
     this.cmd("SetText", this.outputStringID, this.resultString);
