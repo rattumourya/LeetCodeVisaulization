@@ -27,10 +27,10 @@ ReorganizeString.prototype.init = function (am, w, h) {
 
   this.heapLabelY = 380;
   this.heapNodeRadius = 20;
-  this.heapLevelGap = 140;
+  this.heapLevelGap = 110;
   this.heapRootY = 480;
   this.heapRootX = 470;
-  this.heapInitialOffset = 120;
+  this.heapInitialOffset = 90;
 
   this.currAnchor = { x: this.heapRootX - 150, y: this.heapRootY };
   this.prevAnchor = { x: this.currAnchor.x, y: this.currAnchor.y + 80 };
