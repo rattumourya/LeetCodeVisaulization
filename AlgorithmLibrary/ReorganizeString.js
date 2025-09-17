@@ -32,7 +32,7 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.heapRootX = 470;
   this.heapInitialOffset = 90;
 
-  this.currAnchor = { x: 170, y: this.heapRootY };
+  this.currAnchor = { x: 170, y: this.heapRootY  };
   this.prevAnchor = { x: 170, y: this.heapRootY + 80 };
 
   this.outputTitleX = 30;
@@ -48,7 +48,7 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.codeLineHeight = 26;
   this.codeLeftX = 40;
 
-  this.inputString = "vvloo";
+  this.inputString = "aaabbccdd";
 
   this.codeLines = [
     "public String reorganizeString(String s) {",
@@ -254,7 +254,7 @@ ReorganizeString.prototype.setupLayout = function () {
   );
   this.cmd("SetTextStyle", this.outputStringID, "24");
   this.cmd("SetForegroundColor", this.outputStringID, "#111827");
-
+  
   this.setupCodePanel();
 };
 
@@ -360,7 +360,7 @@ ReorganizeString.prototype.getHeapPosition = function (index) {
     x += path[i] * offset;
     offset /= 2;
   }
-  const y = this.heapRootY + level * this.heapLevelGap;
+  const y = this.heapRootY + level * this.heapLevelGap - 50;
   return { x, y };
 };
 
