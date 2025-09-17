@@ -427,6 +427,7 @@ ReorganizeString.prototype.updatePrevDisplay = function (entry) {
   this.cmd("SetForegroundColor", this.prevLabelID, color);
 };
 
+
 ReorganizeString.prototype.moveEntryToCurrAnchor = function (entry) {
   this.cmd("SetBackgroundColor", entry.nodeID, "#fee2e2");
   this.cmd("Move", entry.nodeID, this.currAnchor.x, this.currAnchor.y);
