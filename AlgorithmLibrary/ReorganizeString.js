@@ -26,22 +26,23 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.freqMapY = 288;
 
   this.heapLabelY = 380;
-  this.heapNodeRadius = 46;
-  this.heapInitialOffset = 180;
+  this.heapNodeRadius = 34;
   this.heapLevelGap = 140;
   this.heapRootY = 540;
-  this.heapBuildAnchor = { x: this.canvasW / 2, y: this.heapRootY - this.heapLevelGap + 60 };
+  this.heapRootX = 470;
+  this.heapInitialOffset = 120;
+  this.heapBuildAnchor = { x: this.heapRootX, y: this.heapRootY - this.heapLevelGap + 60 };
 
-  this.currAnchor = { x: this.canvasW / 2 - 220, y: this.heapRootY - 40 };
-  this.prevAnchor = { x: this.canvasW / 2 - 220, y: this.heapRootY + 120 };
+  this.currAnchor = { x: 170, y: this.heapRootY - 40 };
+  this.prevAnchor = { x: 170, y: this.heapRootY + 120 };
 
-  this.outputTitleX = this.canvasW / 2 - 220;
+  this.outputTitleX = 120;
   this.outputLabelY = this.heapRootY + 260;
   this.outputStringY = this.outputLabelY + 44;
   this.outputStringStartX = this.outputTitleX + 220;
   this.outputCharSpacing = 34;
 
-  this.explanationX = this.outputStringStartX + 240;
+  this.explanationX = this.outputStringStartX + 180;
   this.explanationY = this.outputStringY;
 
   this.codeStartY = this.outputStringY + 70;
@@ -138,7 +139,10 @@ ReorganizeString.prototype.reset = function () {
   this.freqOrder = [];
   this.heapEntries = [];
   this.heapConnections = [];
+  this.currEntry = null;
   this.prevEntry = null;
+  this.currSlotID = -1;
+  this.prevSlotID = -1;
   this.outputString = "";
   this.resultString = "";
   this.freqMapID = -1;
@@ -196,32 +200,46 @@ ReorganizeString.prototype.setupLayout = function () {
   this.cmd("SetForegroundColor", this.explanationID, "#0f172a");
 
   const heapLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", heapLabelID, "Max Heap", this.canvasW / 2, this.heapLabelY, 1);
+  this.cmd("CreateLabel", heapLabelID, "Max Heap", this.heapRootX, this.heapLabelY, 1);
   this.cmd("SetTextStyle", heapLabelID, "bold 20");
+
+  this.currSlotID = this.nextIndex++;
+  this.cmd("CreateCircle", this.currSlotID, "", this.currAnchor.x, this.currAnchor.y);
+  this.cmd("SetWidth", this.currSlotID, this.heapNodeRadius * 2 + 8);
+  this.cmd("SetBackgroundColor", this.currSlotID, "#f8fafc");
+  this.cmd("SetForegroundColor", this.currSlotID, "#cbd5f5");
+  this.cmd("SetLayer", this.currSlotID, 0);
 
   this.currLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.currLabelID,
-    "",
-    this.currAnchor.x - this.heapNodeRadius - 60,
-    this.currAnchor.y,
-    0
+    "curr: null",
+    this.currAnchor.x,
+    this.currAnchor.y - this.heapNodeRadius - 48,
+    1
   );
   this.cmd("SetTextStyle", this.currLabelID, "bold 18");
-  this.cmd("SetForegroundColor", this.currLabelID, "#dc2626");
+  this.cmd("SetForegroundColor", this.currLabelID, "#475569");
+
+  this.prevSlotID = this.nextIndex++;
+  this.cmd("CreateCircle", this.prevSlotID, "", this.prevAnchor.x, this.prevAnchor.y);
+  this.cmd("SetWidth", this.prevSlotID, this.heapNodeRadius * 2 + 8);
+  this.cmd("SetBackgroundColor", this.prevSlotID, "#f8fafc");
+  this.cmd("SetForegroundColor", this.prevSlotID, "#cbd5f5");
+  this.cmd("SetLayer", this.prevSlotID, 0);
 
   this.prevLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.prevLabelID,
-    "",
-    this.prevAnchor.x - this.heapNodeRadius - 60,
-    this.prevAnchor.y,
-    0
+    "prev: null",
+    this.prevAnchor.x,
+    this.prevAnchor.y - this.heapNodeRadius - 48,
+    1
   );
   this.cmd("SetTextStyle", this.prevLabelID, "bold 18");
-  this.cmd("SetForegroundColor", this.prevLabelID, "#dc2626");
+  this.cmd("SetForegroundColor", this.prevLabelID, "#475569");
 
   this.outputTitleID = this.nextIndex++;
   this.cmd(
@@ -246,7 +264,6 @@ ReorganizeString.prototype.setupLayout = function () {
   );
   this.cmd("SetTextStyle", this.outputStringID, "24");
   this.cmd("SetForegroundColor", this.outputStringID, "#111827");
-
 
   this.setupCodePanel();
 };
@@ -321,10 +338,9 @@ ReorganizeString.prototype.formatNodeText = function (entry) {
 
 ReorganizeString.prototype.createHeapEntry = function (char, count, index, total) {
   const span = Math.max(1, total || 1);
-  const gap = this.heapNodeRadius * 2 + 24;
-  const startX = this.canvasW / 2 - ((span - 1) * gap) / 2 + (index || 0) * gap;
+  const gap = this.heapNodeRadius * 2 + 20;
+  const startX = this.heapRootX - ((span - 1) * gap) / 2 + (index || 0) * gap;
   const startY = this.freqMapY + 90;
-
   const nodeID = this.nextIndex++;
   const entry = { char, count, nodeID };
   this.cmd("CreateCircle", nodeID, this.formatNodeText(entry), startX, startY);
@@ -336,10 +352,10 @@ ReorganizeString.prototype.createHeapEntry = function (char, count, index, total
 
 ReorganizeString.prototype.getHeapPosition = function (index) {
   if (index < 0) {
-    return { x: this.canvasW / 2, y: this.heapRootY };
+    return { x: this.heapRootX, y: this.heapRootY };
   }
   const level = Math.floor(Math.log2(index + 1));
-  let x = this.canvasW / 2;
+  let x = this.heapRootX;
   let offset = this.heapInitialOffset;
   let nodeIndex = index + 1;
   const path = [];
@@ -395,45 +411,65 @@ ReorganizeString.prototype.sortHeapEntries = function () {
   });
 };
 
-ReorganizeString.prototype.showCurrLabel = function (x, y) {
+ReorganizeString.prototype.updateCurrDisplay = function (entry) {
   if (this.currLabelID === -1) {
     return;
   }
-  this.cmd("SetText", this.currLabelID, "curr");
-  this.cmd("Move", this.currLabelID, x - this.heapNodeRadius - 60, y);
-};
-
-ReorganizeString.prototype.hideCurrLabel = function () {
-  if (this.currLabelID !== -1) {
-    this.cmd("SetText", this.currLabelID, "");
+  let text = "curr: null";
+  let color = "#475569";
+  if (entry) {
+    text = "curr: " + this.formatNodeText(entry);
+    color = "#dc2626";
   }
+  this.cmd("SetText", this.currLabelID, text);
+  this.cmd("SetForegroundColor", this.currLabelID, color);
 };
 
-ReorganizeString.prototype.showPrevLabel = function (x, y, text) {
+ReorganizeString.prototype.updatePrevDisplay = function (entry) {
   if (this.prevLabelID === -1) {
     return;
   }
-  this.cmd("SetText", this.prevLabelID, text || "prev");
-  this.cmd("Move", this.prevLabelID, x - this.heapNodeRadius - 60, y);
+  let text = "prev: null";
+  let color = "#475569";
+  if (entry) {
+    text = "prev: " + this.formatNodeText(entry);
+    color = "#2563eb";
+  }
+  this.cmd("SetText", this.prevLabelID, text);
+  this.cmd("SetForegroundColor", this.prevLabelID, color);
+};
+
+ReorganizeString.prototype.showCurrLabel = function (entry) {
+  this.updateCurrDisplay(entry);
+};
+
+ReorganizeString.prototype.hideCurrLabel = function () {
+  this.currEntry = null;
+  this.updateCurrDisplay(null);
+};
+
+ReorganizeString.prototype.showPrevLabel = function (entry) {
+  this.updatePrevDisplay(entry);
 };
 
 ReorganizeString.prototype.hidePrevLabel = function () {
-  if (this.prevLabelID !== -1) {
-    this.cmd("SetText", this.prevLabelID, "");
-  }
+  this.updatePrevDisplay(null);
 };
 
 ReorganizeString.prototype.moveEntryToCurrAnchor = function (entry) {
+  this.currEntry = entry;
   this.cmd("SetBackgroundColor", entry.nodeID, "#fee2e2");
   this.cmd("Move", entry.nodeID, this.currAnchor.x, this.currAnchor.y);
-  this.showCurrLabel(this.currAnchor.x, this.currAnchor.y);
+  this.updateCurrDisplay(entry);
 };
 
 ReorganizeString.prototype.moveEntryToPrevAnchor = function (entry) {
   const color = entry.count > 0 ? "#e0f2fe" : "#fecaca";
   this.cmd("Move", entry.nodeID, this.prevAnchor.x, this.prevAnchor.y);
   this.cmd("SetBackgroundColor", entry.nodeID, color);
-  this.showPrevLabel(this.prevAnchor.x, this.prevAnchor.y, "prev");
+  this.updatePrevDisplay(entry);
+  this.currEntry = null;
+  this.updateCurrDisplay(null);
 };
 
 ReorganizeString.prototype.animateAppendChar = function (entry) {
@@ -627,6 +663,7 @@ ReorganizeString.prototype.runAnimation = function () {
     curr.count -= 1;
     this.updateNodeText(curr);
     this.setExplanation("Decrease the remaining count of '" + curr.char + "' to " + curr.count + ".");
+    this.updateCurrDisplay(curr);
     this.cmd("Step");
 
     this.highlightCode(15);
