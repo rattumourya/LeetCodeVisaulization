@@ -409,6 +409,7 @@ ReorganizeString.prototype.updateCurrDisplay = function (entry) {
   }
   this.cmd("SetText", this.currLabelID, text);
   this.cmd("SetForegroundColor", this.currLabelID, "#111827");
+
 };
 
 ReorganizeString.prototype.updatePrevDisplay = function (entry) {
