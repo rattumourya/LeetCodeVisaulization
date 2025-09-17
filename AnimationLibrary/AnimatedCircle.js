@@ -36,6 +36,7 @@ var AnimatedCircle = function(objectID, objectLabel)
 	this.alpha = 1.0;
 	this.addedToScene = true;
         this.highlightIndex = -1;
+        this.font = '16px sans-serif';
 /*	this.foregroundColor  = '#007700';
 	this.backgroundColor  = '#EEFFEE';
  */
@@ -107,7 +108,7 @@ AnimatedCircle.prototype.draw = function(ctx)
 	ctx.fill();
 	ctx.stroke();
 	ctx.textAlign = 'center';
-	ctx.font         = '16px sans-serif';
+        ctx.font         = this.font;
 	ctx.textBaseline   = 'middle'; 
 	ctx.lineWidth = 1;
 	ctx.fillStyle = this.foregroundColor;
@@ -169,14 +170,19 @@ AnimatedCircle.prototype.draw = function(ctx)
 			ctx.fillText(strList[mid + (i + 1)], this.x, this.y + (i + 1) * 12);			
 		}
 		
-	}
+}
 
+}
+
+AnimatedCircle.prototype.setTextStyle = function(newStyle)
+{
+        this.font = newStyle;
 }
 
 
 AnimatedCircle.prototype.createUndoDelete = function()
 {
-	return new UndoDeleteCircle(this.objectID, this.label, this.x, this.y, this.foregroundColor, this.backgroundColor, this.layer, this.radius);
+        return new UndoDeleteCircle(this.objectID, this.label, this.x, this.y, this.foregroundColor, this.backgroundColor, this.layer, this.radius);
 }
 
 		
