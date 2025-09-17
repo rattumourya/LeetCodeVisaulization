@@ -43,6 +43,17 @@ ReorganizeString.prototype.init = function (am, w, h) {
 
   this.explanationX = this.outputTitleX;
   this.explanationY = this.outputLabelY + 48;
+  this.explanationFontStyle = "bold 22";
+  this.explanationRightMargin = 40;
+  this.explanationWrapWidth = Math.max(
+    0,
+    this.canvasW - this.explanationX - this.explanationRightMargin
+  );
+  this.explanationMeasureCtx = null;
+  this.explanationColor = "#4b0082";
+  this.explanationLineSpacing = 0;
+  this.explanationExtraLineIDs = [];
+  this.computeExplanationLineSpacing();
 
   this.codeStartY = this.outputLabelY + 120;
   this.codeLineHeight = 26;
@@ -149,6 +160,7 @@ ReorganizeString.prototype.reset = function () {
   this.resultString = "";
   this.freqMapID = -1;
   this.explanationID = -1;
+  this.explanationExtraLineIDs = [];
   this.outputTitleID = -1;
   this.outputStringID = -1;
   this.currLabelID = -1;
@@ -169,6 +181,8 @@ ReorganizeString.prototype.setupLayout = function () {
     this.animationManager.animatedObjects.width = this.canvasW;
     this.animationManager.animatedObjects.height = this.canvasH;
   }
+
+  this.computeExplanationWrapWidth();
 
   const titleID = this.nextIndex++;
   this.cmd("CreateLabel", titleID, "Reorganize String (LeetCode 767)", this.canvasW / 2, this.titleY, 1);
@@ -198,8 +212,9 @@ ReorganizeString.prototype.setupLayout = function () {
     this.explanationY,
     0
   );
-  this.cmd("SetTextStyle", this.explanationID, "bold 22");
-  this.cmd("SetForegroundColor", this.explanationID, "#4b0082");
+  this.cmd("SetTextStyle", this.explanationID, this.explanationFontStyle);
+  this.cmd("SetForegroundColor", this.explanationID, this.explanationColor);
+  this.explanationExtraLineIDs = [];
 
   const heapLabelID = this.nextIndex++;
   this.cmd("CreateLabel", heapLabelID, "Max Heap", this.heapRootX, this.heapLabelY, 1);
@@ -299,9 +314,203 @@ ReorganizeString.prototype.highlightCode = function (line) {
 };
 
 ReorganizeString.prototype.setExplanation = function (text) {
-  if (this.explanationID !== -1) {
-    this.cmd("SetText", this.explanationID, text);
+  if (this.explanationID === -1) {
+    return;
   }
+  const formatted = this.formatExplanationText(text);
+  const lines = formatted.length > 0 ? formatted.split("\n") : [""];
+  const firstLine = lines.length > 0 ? lines[0] : "";
+  this.cmd("SetText", this.explanationID, firstLine);
+  this.updateExplanationExtraLines(lines.slice(1));
+};
+
+ReorganizeString.prototype.formatExplanationText = function (text) {
+  if (text === undefined || text === null) {
+    return "";
+  }
+  const normalized = String(text);
+  this.computeExplanationWrapWidth();
+  if (!this.explanationWrapWidth || this.explanationWrapWidth <= 0) {
+    return normalized;
+  }
+  const ctx = this.ensureExplanationMeasureContext();
+  if (!ctx) {
+    return normalized;
+  }
+
+  const resultLines = [];
+  const paragraphs = normalized.split("\n");
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i];
+    if (paragraph.trim().length === 0) {
+      resultLines.push("");
+      continue;
+    }
+    const wrapped = this.wrapParagraphForWidth(paragraph, ctx, this.explanationWrapWidth);
+    for (let j = 0; j < wrapped.length; j++) {
+      resultLines.push(wrapped[j]);
+    }
+  }
+  return resultLines.join("\n");
+};
+
+ReorganizeString.prototype.wrapParagraphForWidth = function (paragraph, ctx, maxWidth) {
+  const words = paragraph.split(/\s+/).filter((word) => word.length > 0);
+  if (words.length === 0) {
+    return [""];
+  }
+  const lines = [];
+  let currentLine = "";
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const testLine = currentLine ? currentLine + " " + word : word;
+    if (ctx.measureText(testLine).width <= maxWidth) {
+      currentLine = testLine;
+      continue;
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+      currentLine = "";
+    }
+    if (ctx.measureText(word).width <= maxWidth) {
+      currentLine = word;
+      continue;
+    }
+    const segments = this.breakWordForWidth(word, ctx, maxWidth);
+    for (let j = 0; j < segments.length; j++) {
+      const segment = segments[j];
+      if (!segment) {
+        continue;
+      }
+      if (j === segments.length - 1) {
+        currentLine = segment;
+      } else {
+        lines.push(segment);
+      }
+    }
+  }
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  return lines;
+};
+
+ReorganizeString.prototype.breakWordForWidth = function (word, ctx, maxWidth) {
+  const segments = [];
+  let remaining = word;
+  while (remaining.length > 0) {
+    let low = 1;
+    let high = remaining.length;
+    let best = 0;
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const piece = remaining.slice(0, mid);
+      if (ctx.measureText(piece).width <= maxWidth) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    if (best === 0) {
+      best = 1;
+    }
+    const segment = remaining.slice(0, best);
+    segments.push(segment);
+    remaining = remaining.slice(best);
+  }
+  return segments;
+};
+
+ReorganizeString.prototype.ensureExplanationMeasureContext = function () {
+  if (!this.explanationMeasureCtx) {
+    if (typeof document === "undefined") {
+      return null;
+    }
+    const measureCanvas = document.createElement("canvas");
+    if (!measureCanvas || !measureCanvas.getContext) {
+      return null;
+    }
+    this.explanationMeasureCtx = measureCanvas.getContext("2d");
+  }
+  const ctx = this.explanationMeasureCtx;
+  if (ctx) {
+    ctx.font = this.normalizeFontStyle(this.explanationFontStyle);
+  }
+  return ctx;
+};
+
+ReorganizeString.prototype.normalizeFontStyle = function (fontStyle) {
+  if (typeof fontStyle === "number") {
+    return fontStyle + "px Arial";
+  }
+  if (typeof fontStyle === "string") {
+    if (fontStyle.indexOf("px") !== -1) {
+      return fontStyle;
+    }
+    return fontStyle + "px Arial";
+  }
+  return "22px Arial";
+};
+
+ReorganizeString.prototype.extractFontSize = function (fontStyle) {
+  if (typeof fontStyle === "number") {
+    return fontStyle;
+  }
+  if (typeof fontStyle === "string") {
+    const pxMatch = fontStyle.match(/([0-9]+(?:\.[0-9]+)?)\s*px/);
+    if (pxMatch && pxMatch[1]) {
+      return parseFloat(pxMatch[1]);
+    }
+    const numMatch = fontStyle.match(/([0-9]+(?:\.[0-9]+)?)/);
+    if (numMatch && numMatch[1]) {
+      return parseFloat(numMatch[1]);
+    }
+  }
+  return null;
+};
+
+ReorganizeString.prototype.computeExplanationLineSpacing = function () {
+  const fallbackSize = 22;
+  const size = this.extractFontSize(this.explanationFontStyle);
+  const base = !Number.isNaN(size) && size ? size : fallbackSize;
+  const spacing = Math.ceil(base * 1.3);
+  this.explanationLineSpacing = spacing > 0 ? spacing : Math.ceil(fallbackSize * 1.3);
+  return this.explanationLineSpacing;
+};
+
+ReorganizeString.prototype.computeExplanationWrapWidth = function () {
+  const margin = this.explanationRightMargin !== undefined ? this.explanationRightMargin : 40;
+  this.explanationWrapWidth = Math.max(0, this.canvasW - this.explanationX - margin);
+};
+
+ReorganizeString.prototype.updateExplanationExtraLines = function (extraLines) {
+  if (!Array.isArray(extraLines)) {
+    this.clearExplanationExtraLines();
+    return;
+  }
+  this.clearExplanationExtraLines();
+  this.computeExplanationLineSpacing();
+  for (let i = 0; i < extraLines.length; i++) {
+    const lineText = extraLines[i];
+    const id = this.nextIndex++;
+    const y = this.explanationY + (i + 1) * this.explanationLineSpacing;
+    this.cmd("CreateLabel", id, lineText, this.explanationX, y, 0);
+    this.cmd("SetTextStyle", id, this.explanationFontStyle);
+    this.cmd("SetForegroundColor", id, this.explanationColor);
+    this.explanationExtraLineIDs.push(id);
+  }
+};
+
+ReorganizeString.prototype.clearExplanationExtraLines = function () {
+  if (!this.explanationExtraLineIDs || this.explanationExtraLineIDs.length === 0) {
+    this.explanationExtraLineIDs = [];
+    return;
+  }
+  for (let i = 0; i < this.explanationExtraLineIDs.length; i++) {
+    this.cmd("Delete", this.explanationExtraLineIDs[i]);
+  }
+  this.explanationExtraLineIDs = [];
 };
 
 ReorganizeString.prototype.updateFrequencyLabel = function () {
