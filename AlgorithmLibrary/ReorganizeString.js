@@ -14,38 +14,39 @@ ReorganizeString.prototype.init = function (am, w, h) {
   this.canvasW = 720;
   this.canvasH = 1280;
 
-  this.titleY = 40;
-  this.inputLabelY = 110;
-  this.inputBoxY = 160;
+  this.titleY = 48;
+  this.inputLabelY = 120;
+  this.inputBoxY = 174;
 
   this.charBoxW = 64;
   this.charBoxH = 64;
   this.charBoxGap = 18;
 
-  this.freqLabelY = 220;
-  this.freqMapY = 260;
-
-  this.explanationY = 330;
+  this.freqLabelY = 244;
+  this.freqMapY = 288;
 
   this.heapLabelY = 380;
   this.heapNodeRadius = 46;
   this.heapInitialOffset = 180;
   this.heapLevelGap = 140;
-  this.heapRootY = 520;
+  this.heapRootY = 540;
+  this.heapBuildAnchor = { x: this.canvasW / 2, y: this.heapRootY - this.heapLevelGap + 60 };
 
-  this.currAnchor = { x: this.canvasW / 2, y: 420 };
-  this.prevAnchor = { x: this.canvasW / 2 - 220, y: 560 };
-  this.labelOffsetY = this.heapNodeRadius + 42;
+  this.currAnchor = { x: this.canvasW / 2 - 220, y: this.heapRootY - 40 };
+  this.prevAnchor = { x: this.canvasW / 2 - 220, y: this.heapRootY + 120 };
 
-  this.outputLabelY = 800;
-  this.outputStringY = 840;
+  this.outputTitleX = this.canvasW / 2 - 220;
+  this.outputLabelY = this.heapRootY + 260;
+  this.outputStringY = this.outputLabelY + 44;
+  this.outputStringStartX = this.outputTitleX + 220;
+  this.outputCharSpacing = 34;
 
-  this.codeRectW = 640;
-  this.codeRectH = 360;
-  this.codeRectCenterY = 1100;
-  this.codeStartY = this.codeRectCenterY - this.codeRectH / 2 + 36;
+  this.explanationX = this.outputStringStartX + 240;
+  this.explanationY = this.outputStringY;
+
+  this.codeStartY = this.outputStringY + 70;
   this.codeLineHeight = 18;
-  this.codeLeftX = this.canvasW / 2 - this.codeRectW / 2 + 32;
+  this.codeLeftX = this.outputTitleX;
 
   this.inputString = "vvloo";
 
@@ -74,6 +75,7 @@ ReorganizeString.prototype.init = function (am, w, h) {
   ];
 
   this.addControls();
+
   this.reset();
   this.setupLayout();
   if (this.animationManager) {
@@ -141,10 +143,10 @@ ReorganizeString.prototype.reset = function () {
   this.resultString = "";
   this.freqMapID = -1;
   this.explanationID = -1;
+  this.outputTitleID = -1;
   this.outputStringID = -1;
   this.currLabelID = -1;
   this.prevLabelID = -1;
-  this.codeRectID = -1;
   this.codeIDs = [];
   if (this.animationManager && this.animationManager.animatedObjects) {
     this.animationManager.animatedObjects.clearAllObjects();
@@ -186,48 +188,65 @@ ReorganizeString.prototype.setupLayout = function () {
     "CreateLabel",
     this.explanationID,
     "Click Reorganize to animate the steps.",
-    this.canvasW / 2,
+    this.explanationX,
     this.explanationY,
-    1
+    0
   );
   this.cmd("SetTextStyle", this.explanationID, "italic 18");
-  this.cmd("SetForegroundColor", this.explanationID, "#6b7280");
+  this.cmd("SetForegroundColor", this.explanationID, "#0f172a");
 
   const heapLabelID = this.nextIndex++;
   this.cmd("CreateLabel", heapLabelID, "Max Heap", this.canvasW / 2, this.heapLabelY, 1);
   this.cmd("SetTextStyle", heapLabelID, "bold 20");
 
   this.currLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.currLabelID, "", this.currAnchor.x, this.currAnchor.y + this.labelOffsetY, 1);
+  this.cmd(
+    "CreateLabel",
+    this.currLabelID,
+    "",
+    this.currAnchor.x - this.heapNodeRadius - 60,
+    this.currAnchor.y,
+    0
+  );
   this.cmd("SetTextStyle", this.currLabelID, "bold 18");
   this.cmd("SetForegroundColor", this.currLabelID, "#dc2626");
 
   this.prevLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.prevLabelID, "", this.prevAnchor.x, this.prevAnchor.y + this.labelOffsetY, 1);
+  this.cmd(
+    "CreateLabel",
+    this.prevLabelID,
+    "",
+    this.prevAnchor.x - this.heapNodeRadius - 60,
+    this.prevAnchor.y,
+    0
+  );
   this.cmd("SetTextStyle", this.prevLabelID, "bold 18");
   this.cmd("SetForegroundColor", this.prevLabelID, "#dc2626");
 
-  const outputLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", outputLabelID, "Reorganized string", this.canvasW / 2, this.outputLabelY, 1);
-  this.cmd("SetTextStyle", outputLabelID, "bold 20");
+  this.outputTitleID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.outputTitleID,
+    "Reorganized string :",
+    this.outputTitleX,
+    this.outputLabelY,
+    0
+  );
+  this.cmd("SetTextStyle", this.outputTitleID, "bold 20");
+  this.cmd("SetForegroundColor", this.outputTitleID, "#111827");
 
   this.outputStringID = this.nextIndex++;
-  this.cmd("CreateLabel", this.outputStringID, "", this.canvasW / 2, this.outputStringY, 1);
+  this.cmd(
+    "CreateLabel",
+    this.outputStringID,
+    "",
+    this.outputStringStartX,
+    this.outputStringY,
+    0
+  );
   this.cmd("SetTextStyle", this.outputStringID, "24");
   this.cmd("SetForegroundColor", this.outputStringID, "#111827");
 
-  this.codeRectID = this.nextIndex++;
-  this.cmd(
-    "CreateRectangle",
-    this.codeRectID,
-    "",
-    this.codeRectW,
-    this.codeRectH,
-    this.canvasW / 2,
-    this.codeRectCenterY
-  );
-  this.cmd("SetForegroundColor", this.codeRectID, "#0f172a");
-  this.cmd("SetBackgroundColor", this.codeRectID, "#ffffff");
 
   this.setupCodePanel();
 };
@@ -275,6 +294,7 @@ ReorganizeString.prototype.setExplanation = function (text) {
     this.cmd("SetText", this.explanationID, text);
   }
 };
+
 ReorganizeString.prototype.updateFrequencyLabel = function () {
   if (this.freqMapID === -1) {
     return;
@@ -299,9 +319,12 @@ ReorganizeString.prototype.formatNodeText = function (entry) {
   return "(" + entry.char + "," + entry.count + ")";
 };
 
-ReorganizeString.prototype.createHeapEntry = function (char, count) {
-  const startX = this.canvasW / 2;
-  const startY = this.freqMapY + 80;
+ReorganizeString.prototype.createHeapEntry = function (char, count, index, total) {
+  const span = Math.max(1, total || 1);
+  const gap = this.heapNodeRadius * 2 + 24;
+  const startX = this.canvasW / 2 - ((span - 1) * gap) / 2 + (index || 0) * gap;
+  const startY = this.freqMapY + 90;
+
   const nodeID = this.nextIndex++;
   const entry = { char, count, nodeID };
   this.cmd("CreateCircle", nodeID, this.formatNodeText(entry), startX, startY);
@@ -377,7 +400,7 @@ ReorganizeString.prototype.showCurrLabel = function (x, y) {
     return;
   }
   this.cmd("SetText", this.currLabelID, "curr");
-  this.cmd("Move", this.currLabelID, x, y + this.labelOffsetY);
+  this.cmd("Move", this.currLabelID, x - this.heapNodeRadius - 60, y);
 };
 
 ReorganizeString.prototype.hideCurrLabel = function () {
@@ -391,7 +414,7 @@ ReorganizeString.prototype.showPrevLabel = function (x, y, text) {
     return;
   }
   this.cmd("SetText", this.prevLabelID, text || "prev");
-  this.cmd("Move", this.prevLabelID, x, y + this.labelOffsetY);
+  this.cmd("Move", this.prevLabelID, x - this.heapNodeRadius - 60, y);
 };
 
 ReorganizeString.prototype.hidePrevLabel = function () {
@@ -413,10 +436,26 @@ ReorganizeString.prototype.moveEntryToPrevAnchor = function (entry) {
   this.showPrevLabel(this.prevAnchor.x, this.prevAnchor.y, "prev");
 };
 
-ReorganizeString.prototype.addOutputChar = function (ch) {
-  this.resultString += ch;
+ReorganizeString.prototype.animateAppendChar = function (entry) {
+  if (!entry) {
+    return;
+  }
+  const tempID = this.nextIndex++;
+  this.cmd("CreateLabel", tempID, entry.char, this.currAnchor.x, this.currAnchor.y, 1);
+  this.cmd("SetTextStyle", tempID, "bold 26");
+  this.cmd("SetForegroundColor", tempID, "#dc2626");
+  const targetX = this.outputStringStartX + this.resultString.length * this.outputCharSpacing;
+  this.cmd("Move", tempID, targetX, this.outputStringY);
+  this.cmd("Step");
+  this.cmd("Delete", tempID);
+  this.resultString += entry.char;
   if (this.outputStringID !== -1) {
     this.cmd("SetText", this.outputStringID, this.resultString);
+    this.cmd("SetForegroundColor", this.outputStringID, "#16a34a");
+  }
+  this.cmd("Step");
+  if (this.outputStringID !== -1) {
+    this.cmd("SetForegroundColor", this.outputStringID, "#111827");
   }
 };
 
@@ -531,15 +570,25 @@ ReorganizeString.prototype.runAnimation = function () {
   this.highlightCode(8);
   for (let i = 0; i < entries.length; i++) {
     const info = entries[i];
-    const entry = this.createHeapEntry(info.char, info.count);
-    const pos = this.getHeapPosition(this.heapEntries.length);
-    this.cmd("Move", entry.nodeID, pos.x, pos.y);
+    const entry = this.createHeapEntry(info.char, info.count, i, entries.length);
+    this.setExplanation(
+      "Place ('" +
+        info.char +
+        "', " +
+        info.count +
+        ") from the frequency map into the max heap."
+    );
     this.cmd("Step");
     this.heapEntries.push(entry);
+    this.reflowHeapPositions();
+    this.cmd("Step");
   }
   this.sortHeapEntries();
   this.reflowHeapPositions();
-  this.cmd("Step");
+  if (this.heapEntries.length > 0) {
+    this.setExplanation("Max heap arranged with the largest count at the root.");
+    this.cmd("Step");
+  }
 
   this.highlightCode(9);
   this.resultString = "";
@@ -561,17 +610,18 @@ ReorganizeString.prototype.runAnimation = function () {
     const curr = this.heapEntries.shift();
     this.clearHeapConnections();
     this.moveEntryToCurrAnchor(curr);
-    this.reflowHeapPositions();
     this.setExplanation("Poll the highest count entry '" + curr.char + "'.");
     this.cmd("Step");
+    this.reflowHeapPositions();
+    if (this.heapEntries.length > 0) {
+      this.setExplanation("Rebuild the heap with the remaining entries.");
+      this.cmd("Step");
+    }
     this.cmd("SetBackgroundColor", curr.nodeID, "#ffffff");
 
     this.highlightCode(13);
-    this.addOutputChar(curr.char);
-    this.cmd("SetForegroundColor", this.outputStringID, "#16a34a");
     this.setExplanation("Append '" + curr.char + "' to the reorganized string.");
-    this.cmd("Step");
-    this.cmd("SetForegroundColor", this.outputStringID, "#111827");
+    this.animateAppendChar(curr);
 
     this.highlightCode(14);
     curr.count -= 1;
@@ -583,15 +633,19 @@ ReorganizeString.prototype.runAnimation = function () {
     if (this.prevEntry) {
       if (this.prevEntry.count > 0) {
         this.highlightCode(16);
+        const returning = this.prevEntry;
+        this.prevEntry = null;
         this.setExplanation(
-          "Reinsert held entry '" + this.prevEntry.char + "' with count " + this.prevEntry.count + "."
+          "Reinsert held entry '" + returning.char + "' with count " + returning.count + " into the heap."
         );
         this.hidePrevLabel();
-        this.cmd("SetBackgroundColor", this.prevEntry.nodeID, "#ffffff");
-        this.heapEntries.push(this.prevEntry);
+        this.cmd("SetBackgroundColor", returning.nodeID, "#ffffff");
+        this.cmd("Move", returning.nodeID, this.heapBuildAnchor.x, this.heapBuildAnchor.y);
+        this.cmd("Step");
+        this.heapEntries.push(returning);
         this.sortHeapEntries();
         this.reflowHeapPositions();
-        this.prevEntry = null;
+        this.setExplanation("Heap rebuilt after reinserting '" + returning.char + "'.");
         this.cmd("Step");
       } else {
         this.setExplanation(
@@ -619,6 +673,7 @@ ReorganizeString.prototype.runAnimation = function () {
     this.cmd("Step");
 
     if (curr.count <= 0) {
+      this.setExplanation("'" + curr.char + "' has no remaining count and is discarded.");
       this.hidePrevLabel();
       this.cmd("Delete", curr.nodeID);
       this.prevEntry = null;
@@ -630,6 +685,12 @@ ReorganizeString.prototype.runAnimation = function () {
   this.hideCurrLabel();
   this.hidePrevLabel();
   this.setExplanation("Return the built string: " + this.resultString + ".");
+  if (this.outputTitleID !== -1) {
+    this.cmd("SetForegroundColor", this.outputTitleID, "#16a34a");
+  }
+  if (this.outputStringID !== -1) {
+    this.cmd("SetForegroundColor", this.outputStringID, "#16a34a");
+  }
   this.cmd("Step");
 
   return this.commands;
