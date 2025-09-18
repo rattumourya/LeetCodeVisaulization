@@ -648,7 +648,7 @@ CoinChange2D.prototype.runCoinChange = function () {
               this.messageID,
               `Keep excluding coin -> dp[${i}][${a}] stays ${
                 this.dpValues[i][a] >= this.currentINF ? "INF" : this.dpValues[i][a]
-              }."
+              }.`
             );
           }
           this.cmd("Step");
