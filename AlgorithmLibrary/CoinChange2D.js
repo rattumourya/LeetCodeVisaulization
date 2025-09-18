@@ -595,6 +595,7 @@ CoinChange2D.prototype.cleanupComparisonLabels = function (labelIDs) {
   }
 };
 
+
 CoinChange2D.prototype.highlightRow = function (i) {
   if (this.rowHighlight === i) {
     return;
