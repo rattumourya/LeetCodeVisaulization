@@ -42,9 +42,11 @@ CoinChange2D.prototype.init = function (am, w, h) {
   this.dpIDs = [];
   this.dpValues = [];
   this.dpColors = [];
+  this.dpCellCenters = [];
   this.rowLabelIDs = [];
   this.colLabelIDs = [];
   this.coinIDs = [];
+  this.coinPositions = [];
   this.coinLabelID = -1;
   this.titleID = -1;
   this.messageID = -1;
@@ -66,6 +68,11 @@ CoinChange2D.prototype.init = function (am, w, h) {
   this.colHighlight = -1;
   this.coinHighlight = -1;
 
+  this.cellWidth = 0;
+  this.cellHeight = 0;
+  this.canvasWidth = w || 720;
+  this.canvasHeight = h || 1280;
+
   this.untouchedColor = "#f5f7fb";
   this.reachableColor = "#dff7df";
   this.infColor = "#ffe0e0";
@@ -76,6 +83,10 @@ CoinChange2D.prototype.init = function (am, w, h) {
   this.colLabelHighlightColor = "#1b5fcc";
   this.coinColor = "#f0f7ff";
   this.coinHighlightColor = "#ffef9c";
+  this.excludeTextColor = "#d45c16";
+  this.includeTextColor = "#1b5f3b";
+  this.compareLabelStyle = "bold 16";
+  this.compareMargin = 70;
 
   this.setup();
 };
@@ -171,6 +182,9 @@ CoinChange2D.prototype.setup = function () {
   const canvasW = canvasElem ? canvasElem.width : 720;
   const canvasH = canvasElem ? canvasElem.height : 1280;
 
+  this.canvasWidth = canvasW;
+  this.canvasHeight = canvasH;
+
   const TITLE_Y = 60;
   const CODE_START_X = 80;
   const CODE_LINE_H = 22;
@@ -187,6 +201,8 @@ CoinChange2D.prototype.setup = function () {
   this.rowLabelIDs = [];
   this.colLabelIDs = [];
   this.coinIDs = [];
+  this.coinPositions = [];
+  this.dpCellCenters = [];
 
   this.titleID = this.nextIndex++;
   this.cmd(
@@ -313,10 +329,12 @@ CoinChange2D.prototype.buildCoinsRow = function (canvasW, coinsY) {
   const rowWidth = coinCount * COIN_W + (coinCount - 1) * COIN_SP;
   const startX = Math.floor((canvasW - rowWidth) / 2) + COIN_W / 2;
 
+  this.coinPositions = [];
   for (let i = 0; i < coinCount; i++) {
     const id = this.nextIndex++;
     const x = startX + i * (COIN_W + COIN_SP);
     this.coinIDs.push(id);
+    this.coinPositions.push({ x, y: coinsY });
     this.cmd("CreateRectangle", id, String(this.coinValues[i]), COIN_W, COIN_H, x, coinsY);
     this.cmd("SetBackgroundColor", id, this.coinColor);
     this.cmd("SetForegroundColor", id, "#000000");
@@ -337,6 +355,10 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
   );
   cellWidth = Math.max(34, Math.min(72, cellWidth));
   const cellHeight = Math.max(34, Math.min(50, cellWidth + 6));
+
+  this.cellWidth = cellWidth;
+  this.cellHeight = cellHeight;
+  this.dpCellCenters = [];
 
   const gridWidth = cols * cellWidth + (cols - 1) * gap;
   const areaWidth = rowLabelWidth + gridWidth;
@@ -363,6 +385,7 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
     const rowIDs = [];
     const rowValues = [];
     const rowColors = [];
+    const rowCenters = [];
     const y = gridTop + i * (cellHeight + gap);
     for (let a = 0; a < cols; a++) {
       const x = firstColX + a * (cellWidth + gap);
@@ -370,6 +393,7 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
       rowIDs.push(id);
       rowValues.push(null);
       rowColors.push(this.untouchedColor);
+      rowCenters.push({ x, y });
       this.cmd("CreateRectangle", id, "", cellWidth, cellHeight, x, y);
       this.cmd("SetBackgroundColor", id, this.untouchedColor);
       this.cmd("SetForegroundColor", id, "#000000");
@@ -377,6 +401,7 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
     this.dpIDs.push(rowIDs);
     this.dpValues.push(rowValues);
     this.dpColors.push(rowColors);
+    this.dpCellCenters.push(rowCenters);
 
     const rowLabel = this.nextIndex++;
     const labelText =
@@ -443,6 +468,133 @@ CoinChange2D.prototype.flashCell = function (i, a, color) {
   this.cmd("Step");
   this.cmd("SetBackgroundColor", this.dpIDs[i][a], base);
 };
+
+CoinChange2D.prototype.clampToCanvas = function (x) {
+  const margin = 40;
+  return Math.max(margin, Math.min(this.canvasWidth - margin, x));
+};
+
+CoinChange2D.prototype.setCellHighlight = function (i, a, enabled) {
+  if (this.dpIDs[i] && this.dpIDs[i][a]) {
+    this.cmd("SetHighlight", this.dpIDs[i][a], enabled ? 1 : 0);
+  }
+};
+
+CoinChange2D.prototype.formatValue = function (value) {
+  if (this.currentINF === undefined || this.currentINF === null) {
+    return String(value);
+  }
+  return value >= this.currentINF ? "INF" : String(value);
+};
+
+CoinChange2D.prototype.createComparisonLabel = function (text, x, y, color) {
+  const id = this.nextIndex++;
+  this.cmd("CreateLabel", id, text, x, y, 1);
+  this.cmd("SetForegroundColor", id, color);
+  this.cmd("SetTextStyle", id, this.compareLabelStyle);
+  this.cmd("SetLayer", id, 1);
+  return id;
+};
+
+CoinChange2D.prototype.animateExcludeComparison = function (i, a, value) {
+  if (
+    !this.dpCellCenters[i - 1] ||
+    !this.dpCellCenters[i - 1][a] ||
+    !this.dpCellCenters[i] ||
+    !this.dpCellCenters[i][a]
+  ) {
+    this.updateDPCell(i, a, value);
+    return -1;
+  }
+
+  const sourcePos = this.dpCellCenters[i - 1][a];
+  const targetPos = this.dpCellCenters[i][a];
+  this.setCellHighlight(i - 1, a, true);
+  const labelID = this.createComparisonLabel(
+    `exclude: ${this.formatValue(value)}`,
+    sourcePos.x,
+    sourcePos.y - this.cellHeight / 2 - 26,
+    this.excludeTextColor
+  );
+  this.cmd("Step");
+  const destX = this.clampToCanvas(
+    targetPos.x - this.cellWidth / 2 - this.compareMargin
+  );
+  this.cmd("Move", labelID, destX, targetPos.y);
+  this.cmd("Step");
+  this.setCellHighlight(i - 1, a, false);
+  this.updateDPCell(i, a, value);
+  return labelID;
+};
+
+CoinChange2D.prototype.animateIncludeComparison = function (i, a, coin, prevVal) {
+  const result = {
+    labelID: -1,
+    candidate: this.currentINF,
+    valid: false,
+  };
+
+  const includeIndex = a - coin;
+  if (
+    includeIndex < 0 ||
+    !this.dpCellCenters[i] ||
+    !this.dpCellCenters[i][includeIndex] ||
+    !this.dpCellCenters[i][a]
+  ) {
+    return result;
+  }
+
+  const sourcePos = this.dpCellCenters[i][includeIndex];
+  const targetPos = this.dpCellCenters[i][a];
+  this.setCellHighlight(i, includeIndex, true);
+  const labelID = this.createComparisonLabel(
+    `include: ${this.formatValue(
+      prevVal < this.currentINF ? prevVal + 1 : this.currentINF
+    )}`,
+    sourcePos.x,
+    sourcePos.y + this.cellHeight / 2 + 26,
+    this.includeTextColor
+  );
+  this.cmd("Step");
+  const destX = this.clampToCanvas(
+    targetPos.x + this.cellWidth / 2 + this.compareMargin
+  );
+  this.cmd("Move", labelID, destX, targetPos.y);
+  this.cmd("Step");
+  this.setCellHighlight(i, includeIndex, false);
+
+  result.labelID = labelID;
+  if (prevVal < this.currentINF) {
+    result.candidate = prevVal + 1;
+    result.valid = true;
+    const coinPos = this.coinPositions[i - 1];
+    if (coinPos) {
+      const tokenID = this.nextIndex++;
+      this.cmd("CreateLabel", tokenID, `+${coin}`, coinPos.x, coinPos.y, 1);
+      this.cmd("SetTextStyle", tokenID, this.compareLabelStyle);
+      this.cmd("SetForegroundColor", tokenID, this.includeTextColor);
+      this.cmd("SetLayer", tokenID, 2);
+      this.cmd("Move", tokenID, targetPos.x, targetPos.y);
+      this.cmd("Step");
+      this.cmd("Delete", tokenID);
+    }
+  }
+
+  return result;
+};
+
+CoinChange2D.prototype.cleanupComparisonLabels = function (labelIDs) {
+  if (!labelIDs) {
+    return;
+  }
+  for (let i = 0; i < labelIDs.length; i++) {
+    const id = labelIDs[i];
+    if (typeof id === "number" && id >= 0) {
+      this.cmd("Delete", id);
+    }
+  }
+};
+
 
 CoinChange2D.prototype.highlightRow = function (i) {
   if (this.rowHighlight === i) {
@@ -623,7 +775,9 @@ CoinChange2D.prototype.runCoinChange = function () {
 
     for (let a = 1; a <= amount; a++) {
       this.highlightColumn(a);
+      this.setCellHighlight(i, a, true);
       this.cmd("SetText", this.currentAmountValueID, String(a));
+
       this.highlightCode(8);
       this.cmd(
         "SetText",
@@ -633,56 +787,42 @@ CoinChange2D.prototype.runCoinChange = function () {
       this.cmd("Step");
 
       this.highlightCode(9);
-      this.flashCell(i - 1, a, this.inspectColor);
       const excludeVal = this.dpValues[i - 1][a] ?? this.currentINF;
-      this.updateDPCell(i, a, excludeVal);
-      this.flashCell(i, a, this.inspectColor);
+      const excludeLabel = this.animateExcludeComparison(i, a, excludeVal);
       this.cmd(
         "SetText",
         this.messageID,
-        `Exclude coin: dp[${i}][${a}] = ${excludeVal >= this.currentINF ? "INF" : excludeVal}.`
+        `Exclude coin -> dp[${i - 1}][${a}] = ${this.formatValue(excludeVal)}.`
       );
       this.cmd("Step");
 
       this.highlightCode(10);
+      let includeLabel = -1;
+      let includeCandidate = this.currentINF;
       if (a >= coins[i - 1]) {
-        this.flashCell(i, a - coins[i - 1], this.inspectColor);
         const prev = this.dpValues[i][a - coins[i - 1]] ?? this.currentINF;
-        if (prev < this.currentINF) {
+        const includeResult = this.animateIncludeComparison(
+          i,
+          a,
+          coins[i - 1],
+          prev
+        );
+        includeLabel = includeResult.labelID;
+        includeCandidate = includeResult.candidate;
+        if (includeResult.valid) {
           this.cmd(
             "SetText",
             this.messageID,
-            `Include coin: dp[${i}][${a - coins[i - 1]}] = ${prev}, candidate = ${prev + 1}.`
+            `Include coin -> candidate ${this.formatValue(includeCandidate)} from dp[${i}][${a - coins[i - 1]}] + 1.`
           );
-          this.cmd("Step");
-
-          this.highlightCode(11);
-          const candidate = prev + 1;
-          if (candidate < this.dpValues[i][a]) {
-            this.updateDPCell(i, a, candidate);
-            this.cmd(
-              "SetText",
-              this.messageID,
-              `Take coin -> dp[${i}][${a}] becomes ${candidate}.`
-            );
-          } else {
-            this.cmd(
-              "SetText",
-              this.messageID,
-              `Keep excluding coin -> dp[${i}][${a}] stays ${
-                this.dpValues[i][a] >= this.currentINF ? "INF" : this.dpValues[i][a]
-              }.`
-            );
-          }
-          this.cmd("Step");
         } else {
           this.cmd(
             "SetText",
             this.messageID,
             `Including coin impossible because dp[${i}][${a - coins[i - 1]}] is INF.`
           );
-          this.cmd("Step");
         }
+        this.cmd("Step");
       } else {
         this.cmd(
           "SetText",
@@ -692,7 +832,28 @@ CoinChange2D.prototype.runCoinChange = function () {
         this.cmd("Step");
       }
 
+      this.highlightCode(11);
+      let finalVal = this.dpValues[i][a] ?? this.currentINF;
+      if (includeCandidate < finalVal) {
+        this.updateDPCell(i, a, includeCandidate);
+        finalVal = includeCandidate;
+        this.cmd(
+          "SetText",
+          this.messageID,
+          `Choose include -> dp[${i}][${a}] becomes ${this.formatValue(finalVal)}.`
+        );
+      } else {
+        this.cmd(
+          "SetText",
+          this.messageID,
+          `Keep exclude -> dp[${i}][${a}] stays ${this.formatValue(finalVal)}.`
+        );
+      }
       this.flashCell(i, a, this.inspectColor);
+      this.cmd("Step");
+
+      this.cleanupComparisonLabels([excludeLabel, includeLabel]);
+      this.setCellHighlight(i, a, false);
       this.unhighlightColumn();
     }
     this.unhighlightCoin();
