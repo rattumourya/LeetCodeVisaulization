@@ -607,7 +607,6 @@ CoinChange2D.prototype.cleanupComparisonLabels = function (labelIDs) {
   }
 };
 
-
 CoinChange2D.prototype.highlightRow = function (i) {
   if (this.rowHighlight === i) {
     return;
@@ -811,6 +810,7 @@ CoinChange2D.prototype.runCoinChange = function () {
       this.highlightCode(10);
       let includeLabel = -1;
       let includeCandidate = this.currentINF;
+      let includeWasValid = false;
       if (a >= coins[i - 1]) {
         const prev = this.dpValues[i][a - coins[i - 1]] ?? this.currentINF;
         const includeResult = this.animateIncludeComparison(
@@ -821,6 +821,7 @@ CoinChange2D.prototype.runCoinChange = function () {
         );
         includeLabel = includeResult.labelID;
         includeCandidate = includeResult.candidate;
+        includeWasValid = includeResult.valid;
         if (includeResult.valid) {
           this.cmd(
             "SetText",
@@ -844,16 +845,25 @@ CoinChange2D.prototype.runCoinChange = function () {
         this.cmd("Step");
       }
 
-      this.highlightCode(11);
       let finalVal = this.dpValues[i][a] ?? this.currentINF;
-      if (includeCandidate < finalVal) {
-        this.updateDPCell(i, a, includeCandidate);
-        finalVal = includeCandidate;
-        this.cmd(
-          "SetText",
-          this.messageID,
-          `Choose include -> dp[${i}][${a}] becomes ${this.formatValue(finalVal)}.`
-        );
+      if (includeWasValid) {
+        this.highlightCode(11);
+        if (includeCandidate < finalVal) {
+          this.updateDPCell(i, a, includeCandidate);
+          finalVal = includeCandidate;
+          this.cmd(
+            "SetText",
+            this.messageID,
+            `Choose include -> dp[${i}][${a}] becomes ${this.formatValue(finalVal)}.`
+          );
+        } else {
+          this.cmd(
+            "SetText",
+            this.messageID,
+            `Keep exclude -> dp[${i}][${a}] stays ${this.formatValue(finalVal)}.`
+          );
+        }
+
       } else {
         this.cmd(
           "SetText",
