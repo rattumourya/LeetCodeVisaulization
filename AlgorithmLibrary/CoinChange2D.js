@@ -169,11 +169,13 @@ CoinChange2D.prototype.setup = function () {
 
   const canvasElem = document.getElementById("canvas");
   const canvasW = canvasElem ? canvasElem.width : 720;
+  const canvasH = canvasElem ? canvasElem.height : 1280;
 
   const TITLE_Y = 60;
   const CODE_START_X = 80;
-  const CODE_START_Y = TITLE_Y + 50;
-  const CODE_LINE_H = 28;
+  const CODE_LINE_H = 22;
+  const INFO_START_Y = TITLE_Y + 55;
+  const INFO_SPACING = 32;
 
   this.commands = [];
   this.codeIDs = [];
@@ -196,25 +198,9 @@ CoinChange2D.prototype.setup = function () {
   this.cmd("SetTextStyle", this.titleID, "bold 26");
   this.cmd("SetForegroundColor", this.titleID, "#1b1b1b");
 
-  for (let i = 0; i < CoinChange2D.CODE.length; i++) {
-    const id = this.nextIndex++;
-    this.codeIDs.push(id);
-    this.cmd(
-      "CreateLabel",
-      id,
-      CoinChange2D.CODE[i],
-      CODE_START_X,
-      CODE_START_Y + i * CODE_LINE_H,
-      0
-    );
-    this.cmd("SetForegroundColor", id, "#000000");
-    this.cmd("SetTextStyle", id, "16");
-  }
-
-  const codeBottom = CODE_START_Y + (CoinChange2D.CODE.length - 1) * CODE_LINE_H;
-  const infoStartY = codeBottom + 40;
+  const infoStartY = INFO_START_Y;
   const infoX = CODE_START_X;
-  const infoSpacing = 34;
+
 
   this.nLabelID = this.nextIndex++;
   this.nValueID = this.nextIndex++;
@@ -235,13 +221,13 @@ CoinChange2D.prototype.setup = function () {
 
   this.infLabelID = this.nextIndex++;
   this.infValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.infLabelID, "INF:", infoX, infoStartY + infoSpacing, 0);
+  this.cmd("CreateLabel", this.infLabelID, "INF:", infoX, infoStartY + INFO_SPACING, 0);
   this.cmd(
     "CreateLabel",
     this.infValueID,
     String(this.amount + 1),
     infoX + 220,
-    infoStartY + infoSpacing,
+    infoStartY + INFO_SPACING,
     0
   );
 
@@ -252,10 +238,17 @@ CoinChange2D.prototype.setup = function () {
     this.currentCoinLabelID,
     "current coin:",
     infoX + 320,
-    infoStartY + infoSpacing,
+    infoStartY + INFO_SPACING,
     0
   );
-  this.cmd("CreateLabel", this.currentCoinValueID, "-", infoX + 420, infoStartY + infoSpacing, 0);
+  this.cmd(
+    "CreateLabel",
+    this.currentCoinValueID,
+    "-",
+    infoX + 420,
+    infoStartY + INFO_SPACING,
+    0
+  );
 
   this.currentAmountLabelID = this.nextIndex++;
   this.currentAmountValueID = this.nextIndex++;
@@ -264,24 +257,48 @@ CoinChange2D.prototype.setup = function () {
     this.currentAmountLabelID,
     "current amount:",
     infoX,
-    infoStartY + 2 * infoSpacing,
+    infoStartY + 2 * INFO_SPACING,
     0
   );
-  this.cmd("CreateLabel", this.currentAmountValueID, "-", infoX + 220, infoStartY + 2 * infoSpacing, 0);
+  this.cmd(
+    "CreateLabel",
+    this.currentAmountValueID,
+    "-",
+    infoX + 220,
+    infoStartY + 2 * INFO_SPACING,
+    0
+  );
 
-  const coinHeaderY = infoStartY + 2 * infoSpacing + 60;
+  const coinHeaderY = infoStartY + 2 * INFO_SPACING + 48;
   this.coinLabelID = this.nextIndex++;
   this.cmd("CreateLabel", this.coinLabelID, "coins array:", canvasW / 2, coinHeaderY, 1);
   this.cmd("SetTextStyle", this.coinLabelID, "bold 18");
 
   this.buildCoinsRow(canvasW, coinHeaderY + 45);
 
-  const gridTop = coinHeaderY + 140;
-  this.buildDPGrid(canvasW, gridTop);
+  const gridTop = coinHeaderY + 80;
+  const layout = this.buildDPGrid(canvasW, gridTop);
+
+  const codeStartPreferred = layout.resultY + 50;
+  const totalCodeHeight = (CoinChange2D.CODE.length - 1) * CODE_LINE_H;
+  const maxStartY = canvasH - totalCodeHeight - 40;
+  const codeStartY = Math.max(codeStartPreferred, infoStartY + 2 * INFO_SPACING + 120);
+  const clampedStartY = Math.min(codeStartY, maxStartY);
+  this.buildCodeDisplay(CODE_START_X, clampedStartY, CODE_LINE_H);
 
   animationManager.StartNewAnimation(this.commands);
   animationManager.skipForward();
   animationManager.clearHistory();
+};
+
+CoinChange2D.prototype.buildCodeDisplay = function (startX, startY, lineHeight) {
+  for (let i = 0; i < CoinChange2D.CODE.length; i++) {
+    const id = this.nextIndex++;
+    this.codeIDs.push(id);
+    this.cmd("CreateLabel", id, CoinChange2D.CODE[i], startX, startY + i * lineHeight, 0);
+    this.cmd("SetForegroundColor", id, "#000000");
+    this.cmd("SetTextStyle", id, "14");
+  }
 };
 
 CoinChange2D.prototype.buildCoinsRow = function (canvasW, coinsY) {
@@ -319,15 +336,15 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
   let cellWidth = Math.floor(
     (canvasW - 2 * margin - rowLabelWidth - (cols - 1) * gap) / Math.max(1, cols)
   );
-  cellWidth = Math.max(38, Math.min(72, cellWidth));
-  const cellHeight = Math.max(38, Math.min(60, cellWidth + 4));
+  cellWidth = Math.max(34, Math.min(72, cellWidth));
+  const cellHeight = Math.max(34, Math.min(50, cellWidth + 6));
 
   const gridWidth = cols * cellWidth + (cols - 1) * gap;
   const areaWidth = rowLabelWidth + gridWidth;
-  const areaLeft = Math.max(margin, Math.floor((canvasW - areaWidth) / 2));
+  const areaLeft = margin;
   const firstColX = areaLeft + rowLabelWidth + cellWidth / 2;
 
-  const headerY = gridTop - cellHeight / 2 - 28;
+  const headerY = gridTop - cellHeight / 2 - 26;
 
   this.colLabelIDs = [];
   for (let a = 0; a < cols; a++) {
@@ -373,7 +390,7 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
   }
 
   const gridBottom = gridTop + (rows - 1) * (cellHeight + gap) + cellHeight / 2;
-  const resultY = gridBottom + 60;
+  const resultY = gridBottom + 50;
 
   this.resultLabelID = this.nextIndex++;
   this.resultValueID = this.nextIndex++;
@@ -382,11 +399,18 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
   this.cmd("SetTextStyle", this.resultLabelID, "bold 18");
   this.cmd("SetTextStyle", this.resultValueID, "bold 18");
 
-  const messageY = headerY - 40;
+  const messageY = headerY - 32;
   this.messageID = this.nextIndex++;
   this.cmd("CreateLabel", this.messageID, this.messageText, canvasW / 2, messageY, 1);
   this.cmd("SetForegroundColor", this.messageID, "#003366");
   this.cmd("SetTextStyle", this.messageID, "bold 18");
+  return {
+    resultY,
+    gridBottom,
+    headerY,
+    areaLeft,
+    rowLabelWidth,
+  };
 };
 
 CoinChange2D.prototype.highlightCode = function (lineIdx) {
