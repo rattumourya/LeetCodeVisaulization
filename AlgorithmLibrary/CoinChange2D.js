@@ -189,9 +189,13 @@ CoinChange2D.prototype.setup = function () {
   const CODE_START_X = 80;
   const CODE_LINE_H = 22;
   const INFO_SPACING = 32;
+  const GRID_GAP = 160;
+  const MESSAGE_TOP_MARGIN = 54;
+  const MESSAGE_BOTTOM_MARGIN = 54;
   const coinHeaderY = TITLE_Y + 60;
   const coinsRowY = coinHeaderY + 50;
   const infoStartY = coinsRowY + 70;
+  const infoBottomY = infoStartY + 2 * INFO_SPACING;
 
   this.commands = [];
   this.codeIDs = [];
@@ -291,13 +295,26 @@ CoinChange2D.prototype.setup = function () {
     0
   );
 
-  const gridTop = infoStartY + 2 * INFO_SPACING + 120;
+  const gridTop = infoBottomY + GRID_GAP;
   const layout = this.buildDPGrid(canvasW, gridTop);
+
+  const messagePreferredY = infoBottomY + MESSAGE_TOP_MARGIN;
+  const messageLowerBound = infoBottomY + 30;
+  const messageMaxY = layout.headerY - MESSAGE_BOTTOM_MARGIN;
+  let messageY = messagePreferredY;
+  if (messageY > messageMaxY) {
+    messageY = Math.max(messageLowerBound, messageMaxY);
+  }
+
+  this.messageID = this.nextIndex++;
+  this.cmd("CreateLabel", this.messageID, this.messageText, canvasW / 2, messageY, 1);
+  this.cmd("SetForegroundColor", this.messageID, "#003366");
+  this.cmd("SetTextStyle", this.messageID, "bold 18");
 
   const codeStartPreferred = layout.resultY + 50;
   const totalCodeHeight = (CoinChange2D.CODE.length - 1) * CODE_LINE_H;
   const maxStartY = canvasH - totalCodeHeight - 40;
-  const codeStartY = Math.max(codeStartPreferred, infoStartY + 2 * INFO_SPACING + 120);
+  const codeStartY = Math.max(codeStartPreferred, infoBottomY + 120);
   const clampedStartY = Math.min(codeStartY, maxStartY);
   this.buildCodeDisplay(CODE_START_X, clampedStartY, CODE_LINE_H);
 
@@ -423,11 +440,6 @@ CoinChange2D.prototype.buildDPGrid = function (canvasW, gridTop) {
   this.cmd("SetTextStyle", this.resultLabelID, "bold 18");
   this.cmd("SetTextStyle", this.resultValueID, "bold 18");
 
-  const messageY = headerY - 32;
-  this.messageID = this.nextIndex++;
-  this.cmd("CreateLabel", this.messageID, this.messageText, canvasW / 2, messageY, 1);
-  this.cmd("SetForegroundColor", this.messageID, "#003366");
-  this.cmd("SetTextStyle", this.messageID, "bold 18");
   return {
     resultY,
     gridBottom,
