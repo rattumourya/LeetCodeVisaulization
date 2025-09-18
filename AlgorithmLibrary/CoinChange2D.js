@@ -174,8 +174,10 @@ CoinChange2D.prototype.setup = function () {
   const TITLE_Y = 60;
   const CODE_START_X = 80;
   const CODE_LINE_H = 22;
-  const INFO_START_Y = TITLE_Y + 55;
   const INFO_SPACING = 32;
+  const coinHeaderY = TITLE_Y + 60;
+  const coinsRowY = coinHeaderY + 50;
+  const infoStartY = coinsRowY + 70;
 
   this.commands = [];
   this.codeIDs = [];
@@ -198,9 +200,13 @@ CoinChange2D.prototype.setup = function () {
   this.cmd("SetTextStyle", this.titleID, "bold 26");
   this.cmd("SetForegroundColor", this.titleID, "#1b1b1b");
 
-  const infoStartY = INFO_START_Y;
-  const infoX = CODE_START_X;
+  this.coinLabelID = this.nextIndex++;
+  this.cmd("CreateLabel", this.coinLabelID, "coins array:", canvasW / 2, coinHeaderY, 1);
+  this.cmd("SetTextStyle", this.coinLabelID, "bold 18");
 
+  this.buildCoinsRow(canvasW, coinsRowY);
+
+  const infoX = CODE_START_X;
 
   this.nLabelID = this.nextIndex++;
   this.nValueID = this.nextIndex++;
@@ -269,14 +275,7 @@ CoinChange2D.prototype.setup = function () {
     0
   );
 
-  const coinHeaderY = infoStartY + 2 * INFO_SPACING + 48;
-  this.coinLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.coinLabelID, "coins array:", canvasW / 2, coinHeaderY, 1);
-  this.cmd("SetTextStyle", this.coinLabelID, "bold 18");
-
-  this.buildCoinsRow(canvasW, coinHeaderY + 45);
-
-  const gridTop = coinHeaderY + 80;
+  const gridTop = infoStartY + 2 * INFO_SPACING + 120;
   const layout = this.buildDPGrid(canvasW, gridTop);
 
   const codeStartPreferred = layout.resultY + 50;
