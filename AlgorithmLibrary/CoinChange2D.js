@@ -863,6 +863,7 @@ CoinChange2D.prototype.runCoinChange = function () {
             `Keep exclude -> dp[${i}][${a}] stays ${this.formatValue(finalVal)}.`
           );
         }
+
       } else {
         this.cmd(
           "SetText",
