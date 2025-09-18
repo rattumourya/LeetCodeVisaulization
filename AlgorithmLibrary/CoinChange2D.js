@@ -201,6 +201,7 @@ CoinChange2D.prototype.setup = function () {
   const infoStartY = INFO_START_Y;
   const infoX = CODE_START_X;
 
+
   this.nLabelID = this.nextIndex++;
   this.nValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.nLabelID, "n (coins length):", infoX, infoStartY, 0);
