@@ -432,6 +432,7 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
     bottom: topY + areaHeight,
   };
 
+
   this.visitedPanelWidth = panelWidth;
   this.visitedPanelGap = panelGap;
   const visitedLeft = this.treeArea.right + panelGap;
