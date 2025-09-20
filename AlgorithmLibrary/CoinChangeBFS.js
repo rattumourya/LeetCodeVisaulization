@@ -892,6 +892,7 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
           Math.max(parentAmounts.length + 1, 2)
     );
   });
+
   const parentCenterLookup = new Map();
   for (let i = 0; i < parentAmounts.length; i++) {
     parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
@@ -1101,6 +1102,7 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
   for (const info of orderedGroups) {
     const start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
     const end = start + info.width;
+
     const desiredCenter = parentCenterLookup.has(info.parent)
       ? parentCenterLookup.get(info.parent)
       : info.desiredCenter;
