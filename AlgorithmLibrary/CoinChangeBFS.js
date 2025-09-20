@@ -899,11 +899,11 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
   });
 
   const parentBoundaries = new Map();
-  const siblingSpacing = Math.max(this.treeNodeRadius * 2.8, 72);
+  const siblingSpacing = Math.max(this.treeNodeRadius * 2.9, 76);
   const minGroupWidth = Math.max(
-    this.treeNodeRadius * 4.8,
-    siblingSpacing * 1.75,
-    120
+    this.treeNodeRadius * 5.4,
+    siblingSpacing * 2.1,
+    140
   );
 
   for (let i = 0; i < parentAmounts.length; i++) {
@@ -946,39 +946,110 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
   }
 
   const assignedPositions = new Map();
-  const minSpacing = siblingSpacing;
 
   for (const [parent, children] of groups.entries()) {
-    const boundary = parentBoundaries.get(parent) || fallbackBoundary;
-    const center = clamp(boundary.center);
-    let start = boundary.start;
-    let end = boundary.end;
-
-    if (end - start < minSpacing) {
-      const span = Math.max(minSpacing * (children.length - 1), minGroupWidth);
-      start = center - span / 2;
-      end = center + span / 2;
+    if (!children || children.length === 0) {
+      continue;
     }
 
-    start = clamp(start);
-    end = clamp(end);
+    const boundary = parentBoundaries.get(parent) || fallbackBoundary;
+    const center = clamp(boundary.center);
+    const childCount = children.length;
 
-    if (children.length === 1) {
-      assignedPositions.set(children[0], { x: center, y });
-    } else if (end - start < minSpacing) {
-      for (let i = 0; i < children.length; i++) {
-        const offset = (i - (children.length - 1) / 2) * minSpacing;
-        assignedPositions.set(children[i], {
-          x: clamp(center + offset),
-          y,
-        });
+    const boundarySpan = Math.max(boundary.end - boundary.start, minGroupWidth);
+    const targetSpan =
+      childCount > 1
+        ? Math.max(siblingSpacing * (childCount - 1), boundarySpan)
+        : Math.max(this.treeNodeRadius * 2.8, minGroupWidth * 0.6);
+    const maxSpan = Math.max(baseRight - baseLeft, 0);
+    let span = Math.min(targetSpan, maxSpan);
+
+    let left = center - span / 2;
+    let right = center + span / 2;
+
+    if (left < baseLeft) {
+      right += baseLeft - left;
+      left = baseLeft;
+    }
+    if (right > baseRight) {
+      left -= right - baseRight;
+      right = baseRight;
+    }
+
+    if (childCount === 1) {
+      const x = clamp(Math.max(left, Math.min(center, right)));
+      assignedPositions.set(children[0], { x, y });
+      continue;
+    }
+
+    let usableLeft = left;
+    let usableRight = right;
+    const padding = Math.min(
+      Math.max(this.treeNodeRadius * 0.45, 12),
+      (usableRight - usableLeft) / (childCount + 1)
+    );
+
+    usableLeft += padding;
+    usableRight -= padding;
+
+    if (usableRight <= usableLeft) {
+      usableLeft = left;
+      usableRight = right;
+    }
+
+    let spanForChildren = usableRight - usableLeft;
+    const minChildSpan = siblingSpacing * (childCount - 1);
+
+    if (spanForChildren < minChildSpan) {
+      spanForChildren = Math.min(minChildSpan, Math.max(right - left, 0));
+      const midpoint = (left + right) / 2;
+      usableLeft = midpoint - spanForChildren / 2;
+      usableRight = midpoint + spanForChildren / 2;
+
+      if (usableLeft < left) {
+        usableRight += left - usableLeft;
+        usableLeft = left;
       }
-    } else {
-      for (let i = 0; i < children.length; i++) {
-        const ratio = (i + 1) / (children.length + 1);
-        const x = start + ratio * (end - start);
-        assignedPositions.set(children[i], { x: clamp(x), y });
+      if (usableRight > right) {
+        usableLeft -= usableRight - right;
+        usableRight = right;
       }
+    }
+
+    const effectiveSpan = usableRight - usableLeft;
+    if (childCount > 1 && effectiveSpan <= 0) {
+      const availableSpan = Math.min(
+        baseRight - baseLeft,
+        Math.max(right - left, 0)
+      );
+      const fallbackStep =
+        childCount > 1 && availableSpan > 0
+          ? availableSpan / (childCount - 1)
+          : siblingSpacing;
+      const totalSpan = fallbackStep * (childCount - 1);
+      const minStart = baseLeft;
+      const maxStart = baseRight - totalSpan;
+      let startX = center - totalSpan / 2;
+      if (maxStart < minStart) {
+        startX = minStart;
+      } else {
+        startX = Math.min(Math.max(startX, minStart), maxStart);
+      }
+      for (let i = 0; i < childCount; i++) {
+        const x = clamp(startX + fallbackStep * i);
+        assignedPositions.set(children[i], { x, y });
+      }
+      continue;
+    }
+
+    const step =
+      childCount > 1 && effectiveSpan > 0
+        ? effectiveSpan / (childCount - 1)
+        : siblingSpacing;
+
+    for (let i = 0; i < childCount; i++) {
+      const x = usableLeft + step * i;
+      assignedPositions.set(children[i], { x: clamp(x), y });
     }
   }
 
