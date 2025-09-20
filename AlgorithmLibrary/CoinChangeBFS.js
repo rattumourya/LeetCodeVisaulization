@@ -607,7 +607,7 @@ CoinChangeBFS.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
   const slotX = panelRight - slotWidth / 2 - 8;
 
   this.visitedIndexHeaderID = this.nextIndex++;
-  this.cmd("CreateLabel", this.visitedIndexHeaderID, "amount", indexX, headerY, 0);
+  this.cmd("CreateLabel", this.visitedIndexHeaderID, "amount", indexX, headerY, 1);
   this.cmd("SetTextStyle", this.visitedIndexHeaderID, "bold 12");
 
   this.visitedValueHeaderID = this.nextIndex++;
@@ -622,7 +622,7 @@ CoinChangeBFS.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
   for (let i = 0; i < slotCount; i++) {
     const centerY = startY + i * (slotHeight + spacing) + slotHeight / 2;
     const indexId = this.nextIndex++;
-    this.cmd("CreateLabel", indexId, String(i), indexX, centerY, 0);
+    this.cmd("CreateLabel", indexId, String(i), indexX, centerY, 1);
     this.cmd("SetTextStyle", indexId, "14");
     this.visitedIndexIDs.push(indexId);
 
@@ -1244,7 +1244,7 @@ CoinChangeBFS.prototype.computeEdgeLabelPosition = function (parentNode, childNo
   if (distance > 0.0001) {
     const perpX = dy / distance;
     const perpY = -dx / distance;
-    const baseOffset = Math.max(20, this.treeNodeRadius * 0.85);
+    const baseOffset = Math.max(10, this.treeNodeRadius * 0.4);
     const maxOffset = distance / 2 - 6;
     const offset = maxOffset > 0 ? Math.min(baseOffset, maxOffset) : baseOffset;
     labelX += perpX * offset;
@@ -1271,7 +1271,6 @@ CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
   if (!parent) {
     return;
   }
-
   const pos = this.computeEdgeLabelPosition(parent, node);
   this.cmd("Move", node.edgeLabelID, pos.x, pos.y);
 };
