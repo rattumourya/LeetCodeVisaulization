@@ -852,8 +852,8 @@ CoinChangeBFS.prototype.insertIntoTreeLevel = function (level, amount, parent) {
 };
 
 CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
-  const levelAmounts = this.treeLevels[level] || [];
   const positions = [];
+  const levelAmounts = this.treeLevels[level] || [];
   if (!this.treeArea || levelAmounts.length === 0) {
     return positions;
   }
@@ -898,358 +898,280 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
     parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
   }
 
-  const groups = new Map();
+  const groupSequence = [];
+  const groupLookup = new Map();
   for (const amount of levelAmounts) {
     const parent = this.getNodeParent(amount);
-    if (!groups.has(parent)) {
-      groups.set(parent, []);
+    if (!groupLookup.has(parent)) {
+      const desiredCenter = parentCenterLookup.has(parent)
+        ? parentCenterLookup.get(parent)
+        : fallbackCenter;
+      const entry = {
+        parent,
+        children: [],
+        desiredCenter,
+      };
+      groupLookup.set(parent, entry);
+      groupSequence.push(entry);
     }
-    groups.get(parent).push(amount);
+    groupLookup.get(parent).children.push(amount);
   }
 
-  const siblingSpacing = Math.max(this.treeNodeRadius * 3, 84);
-  const minGroupWidth = Math.max(
-    this.treeNodeRadius * 5.8,
-    siblingSpacing * 1.7,
-    150
-  );
-  const innerPadding = Math.max(this.treeNodeRadius * 0.7, 14);
-  const availableWidth = Math.max(0, baseRight - baseLeft);
-
-  const groupInfos = [];
-  for (const [parent, children] of groups.entries()) {
-    if (!children || children.length === 0) {
-      continue;
-    }
-
-    const childCount = children.length;
-    const desiredCenter = parentCenterLookup.has(parent)
-      ? parentCenterLookup.get(parent)
-      : fallbackCenter;
-    const center = clamp(desiredCenter);
-
-    const rawWidth =
-      childCount > 1
-        ? Math.max(
-            siblingSpacing * (childCount - 1) + this.treeNodeRadius * 2.4,
-            minGroupWidth
-          )
-        : Math.max(this.treeNodeRadius * 3.2, minGroupWidth * 0.55);
-    const limitedWidth =
-      availableWidth > 0 ? Math.min(rawWidth, availableWidth) : rawWidth;
-    const width = Math.max(this.treeNodeRadius * 2.6, limitedWidth);
-
-    let start = center - width / 2;
-    let end = center + width / 2;
-    if (width >= availableWidth && availableWidth > 0) {
-      start = baseLeft;
-      end = baseRight;
-    } else {
-      if (start < baseLeft) {
-        end += baseLeft - start;
-        start = baseLeft;
-      }
-      if (end > baseRight) {
-        start -= end - baseRight;
-        end = baseRight;
-      }
-      if (start < baseLeft) {
-        start = baseLeft;
-        end = Math.min(baseRight, start + width);
-      }
-      if (end > baseRight) {
-        end = baseRight;
-        start = Math.max(baseLeft, end - width);
-      }
-    }
-
-    groupInfos.push({
-      parent,
-      children: children.slice(),
-      desiredCenter: center,
-      width: Math.max(end - start, this.treeNodeRadius * 2.6),
-      start: Math.max(baseLeft, start),
-      end: Math.min(baseRight, end),
-    });
-  }
-
-  if (groupInfos.length === 0) {
+  if (groupSequence.length === 0) {
     return positions;
   }
 
-  let totalWidth = 0;
-  for (const info of groupInfos) {
-    info.width = Math.max(info.width, this.treeNodeRadius * 2.6);
-    if (!Number.isFinite(info.width) || info.width <= 0) {
-      info.width = Math.max(this.treeNodeRadius * 2.6, availableWidth);
-    }
-    info.start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
-    info.end = info.start + info.width;
-    totalWidth += info.width;
-  }
+  const availableWidth = Math.max(0, baseRight - baseLeft);
+  const baseSpacing = Math.max(this.treeNodeRadius * 3.1, 96);
+  const minSpacing = Math.max(this.treeNodeRadius * 2.4, 74);
 
-  let groupSpacing = Math.max(this.treeNodeRadius * 1.8, 36);
-  const minSpacing = Math.max(this.treeNodeRadius * 0.9, 18);
-  if (groupInfos.length > 1 && availableWidth > 0) {
-    const neededWidth = totalWidth + groupSpacing * (groupInfos.length - 1);
-    if (neededWidth > availableWidth) {
-      const spacingRoom = Math.max(groupSpacing - minSpacing, 0) *
-        (groupInfos.length - 1);
-      let remainingOverflow = neededWidth - availableWidth;
-      if (spacingRoom >= remainingOverflow) {
-        groupSpacing = Math.max(
-          minSpacing,
-          groupSpacing - remainingOverflow / (groupInfos.length - 1)
-        );
-        remainingOverflow = 0;
-      } else {
-        groupSpacing = minSpacing;
-        remainingOverflow -= spacingRoom;
-      }
+  const computeLayout = (spacing) => {
+    const margin = Math.max(spacing * 0.5, this.treeNodeRadius * 1.3, 36);
+    const padding = Math.max(spacing * 0.28, this.treeNodeRadius * 0.9, 18);
+    const groups = [];
 
-      if (remainingOverflow > 0) {
-        const widthCapacity =
-          availableWidth - groupSpacing * (groupInfos.length - 1);
-        const scale = widthCapacity > 0 ? Math.min(1, widthCapacity / totalWidth) : 0;
-        if (scale > 0 && scale < 1) {
-          totalWidth = 0;
-          for (const info of groupInfos) {
-            const scaledWidth = Math.max(
-              this.treeNodeRadius * 2.6,
-              info.width * scale
-            );
-            info.width =
-              availableWidth > 0 ? Math.min(scaledWidth, availableWidth) : scaledWidth;
-            info.start = Math.max(
-              baseLeft,
-              Math.min(info.desiredCenter - info.width / 2, baseRight - info.width)
-            );
-            info.end = info.start + info.width;
-            totalWidth += info.width;
-          }
-        }
-      }
-    }
-  }
-
-  const orderedGroups = groupInfos
-    .slice()
-    .sort((a, b) => a.desiredCenter - b.desiredCenter);
-
-  for (const info of orderedGroups) {
-    info.start = Math.max(
-      baseLeft,
-      Math.min(info.desiredCenter - info.width / 2, baseRight - info.width)
-    );
-    info.end = info.start + info.width;
-  }
-
-  for (let iter = 0; iter < 4; iter++) {
-    let adjusted = false;
-    for (let i = 0; i < orderedGroups.length; i++) {
-      const info = orderedGroups[i];
-      if (i === 0) {
-        const start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
-        if (start !== info.start) {
-          info.start = start;
-          info.end = start + info.width;
-          adjusted = true;
-        }
+    for (const entry of groupSequence) {
+      const { parent, children, desiredCenter } = entry;
+      if (!children || children.length === 0) {
         continue;
       }
-      const prev = orderedGroups[i - 1];
-      const minStart = prev.end + groupSpacing;
-      let start = info.start;
-      if (start < minStart) {
-        start = minStart;
+
+      let parentCenter = parentCenterLookup.has(parent)
+        ? parentCenterLookup.get(parent)
+        : desiredCenter;
+      if (!Number.isFinite(parentCenter)) {
+        parentCenter = fallbackCenter;
       }
-      const maxStart = baseRight - info.width;
-      if (start > maxStart) {
-        start = maxStart;
-      }
-      if (start !== info.start) {
-        info.start = start;
-        info.end = start + info.width;
-        adjusted = true;
-      }
-    }
+      parentCenter = clamp(parentCenter);
 
-    for (let i = orderedGroups.length - 2; i >= 0; i--) {
-      const info = orderedGroups[i];
-      const next = orderedGroups[i + 1];
-      const maxStart = next.start - groupSpacing - info.width;
-      let start = info.start;
-      if (start > maxStart) {
-        start = maxStart;
-      }
-      if (start < baseLeft) {
-        start = baseLeft;
-      }
-      const clampStart = Math.min(start, baseRight - info.width);
-      if (clampStart !== info.start) {
-        info.start = clampStart;
-        info.end = clampStart + info.width;
-        adjusted = true;
-      }
-    }
+      const info = {
+        parent,
+        children: children.slice(),
+        parentCenter,
+        center: parentCenter,
+        positions: [],
+        padding,
+      };
 
-    if (!adjusted) {
-      break;
-    }
-  }
+      if (children.length === 1) {
+        const x = clamp(parentCenter);
+        info.positions.push(x);
+        info.minX = x;
+        info.maxX = x;
+      } else {
+        const offsets = [];
+        if (children.length % 2 === 0) {
+          const base = children.length / 2 - 0.5;
+          for (let i = 0; i < children.length; i++) {
+            offsets.push(i - base);
+          }
+        } else {
+          const mid = Math.floor(children.length / 2);
+          for (let i = 0; i < children.length; i++) {
+            offsets.push(i - mid);
+          }
+        }
 
-  const groupPlacement = new Map();
-  for (const info of orderedGroups) {
-    const start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
-    const end = start + info.width;
+        const rawPositions = [];
+        let minX = Infinity;
+        let maxX = -Infinity;
+        for (let i = 0; i < children.length; i++) {
+          const x = parentCenter + offsets[i] * spacing;
+          rawPositions.push(x);
+          if (x < minX) {
+            minX = x;
+          }
+          if (x > maxX) {
+            maxX = x;
+          }
+        }
 
-    const desiredCenter = parentCenterLookup.has(info.parent)
-      ? parentCenterLookup.get(info.parent)
-      : info.desiredCenter;
-    const center = clamp(desiredCenter);
-    groupPlacement.set(info.parent, {
-      start,
-      end,
-      center,
-      desiredCenter,
-      children: info.children,
-    });
-  }
-
-  const assignedPositions = new Map();
-  const minChildSpacing = Math.max(this.treeNodeRadius * 2.8, 90);
-  const minVisualSpacing = Math.max(this.treeNodeRadius * 2.4, 70);
-  const minCompressionSpacing = Math.max(this.treeNodeRadius * 2.2, 56);
-
-  for (const [parent, placement] of groupPlacement.entries()) {
-    const children = placement.children;
-    if (!children || children.length === 0) {
-      continue;
-    }
-    const childCount = children.length;
-    const parentNode =
-      parent !== null && parent !== undefined ? this.treeNodes[parent] : null;
-    const parentCenter = parentNode && Number.isFinite(parentNode.x)
-      ? clamp(parentNode.x)
-      : clamp(placement.center);
-
-    const leftBound = placement.start + innerPadding;
-    const rightBound = placement.end - innerPadding;
-    let usableLeft = leftBound;
-    let usableRight = rightBound;
-    if (usableLeft > usableRight) {
-      const midpoint = placement.start + (placement.end - placement.start) / 2;
-      usableLeft = midpoint;
-      usableRight = midpoint;
-    }
-
-    if (childCount === 1) {
-      assignedPositions.set(children[0], { x: parentCenter, y });
-      continue;
-    }
-
-    const containerSpan = Math.max(placement.end - placement.start, 0);
-    const interiorSpan = Math.max(usableRight - usableLeft, 0);
-    const baseSpan = interiorSpan > 0 ? interiorSpan : containerSpan;
-    let spacing =
-      childCount > 1 && baseSpan > 0
-        ? baseSpan / (childCount - 1)
-        : minChildSpacing;
-    if (!Number.isFinite(spacing) || spacing <= 0) {
-      spacing = minChildSpacing;
-    }
-    spacing = Math.max(spacing, minChildSpacing, minVisualSpacing);
-
-    if (childCount > 1) {
-      const maxSpan = Math.max(interiorSpan, containerSpan);
-      if (maxSpan > 0 && Number.isFinite(maxSpan)) {
-        const maxSpacing = maxSpan / (childCount - 1);
-        if (
-          Number.isFinite(maxSpacing) &&
-          maxSpacing > 0 &&
-          spacing * (childCount - 1) > maxSpan
-        ) {
-          spacing = Math.max(
-            minCompressionSpacing,
-            Math.min(spacing, maxSpacing)
-          );
+        if (!Number.isFinite(minX) || !Number.isFinite(maxX)) {
+          const x = clamp(parentCenter);
+          info.positions = children.map(() => x);
+          info.minX = x;
+          info.maxX = x;
+          info.center = x;
+        } else {
+          let shift = 0;
+          if (minX < baseLeft) {
+            shift += baseLeft - minX;
+          }
+          if (maxX + shift > baseRight) {
+            shift -= maxX + shift - baseRight;
+            const minShift = baseLeft - minX;
+            const maxShift = baseRight - maxX;
+            if (shift < minShift) {
+              shift = minShift;
+            } else if (shift > maxShift) {
+              shift = maxShift;
+            }
+          }
+          const adjusted = rawPositions.map((value) => value + shift);
+          info.positions = adjusted;
+          info.minX = Math.min(...adjusted);
+          info.maxX = Math.max(...adjusted);
+          info.center = parentCenter + shift;
         }
       }
 
-      const largestOffset =
-        childCount % 2 === 0
-          ? childCount / 2 - 0.5
-          : Math.floor(childCount / 2);
-      if (largestOffset > 0) {
-        const leftSpace = Math.max(parentCenter - usableLeft, 0);
-        const rightSpace = Math.max(usableRight - parentCenter, 0);
-        const boundSpacing = Math.min(
-          leftSpace / largestOffset,
-          rightSpace / largestOffset
-        );
-        if (
-          Number.isFinite(boundSpacing) &&
-          boundSpacing > 0 &&
-          spacing > boundSpacing
-        ) {
-          spacing = Math.max(minCompressionSpacing, boundSpacing);
-        }
+      if (info.minX === undefined || info.maxX === undefined) {
+        const x = clamp(info.center);
+        info.positions = info.children.map(() => x);
+        info.minX = x;
+        info.maxX = x;
+        info.center = x;
       }
+
+      info.width = Math.max(info.maxX - info.minX, 0);
+      info.start = Math.max(baseLeft, info.minX - padding);
+      info.end = Math.min(baseRight, info.maxX + padding);
+      info.blockWidth = Math.max(
+        info.end - info.start,
+        this.treeNodeRadius * 2.6,
+        spacing * 0.4
+      );
+      groups.push(info);
     }
 
-    const totalSpan = spacing * (childCount - 1);
+    let totalWidth = 0;
+    if (groups.length > 0) {
+      totalWidth = (
+        groups.reduce((sum, info) => sum + info.blockWidth, 0) +
+        margin * (groups.length - 1)
+      );
+    }
 
-    let targetCenter = parentCenter;
-    if (childCount % 2 === 0) {
-      if (
-        Number.isFinite(usableLeft) &&
-        Number.isFinite(usableRight) &&
-        Number.isFinite(totalSpan)
-      ) {
-        const minCenter = usableLeft + totalSpan / 2;
-        const maxCenter = usableRight - totalSpan / 2;
-        if (minCenter <= maxCenter) {
-          if (targetCenter < minCenter) {
-            targetCenter = minCenter;
-          } else if (targetCenter > maxCenter) {
-            targetCenter = maxCenter;
+    return { groups, margin, totalWidth };
+  };
+
+  let siblingSpacing = baseSpacing;
+  let layout = computeLayout(siblingSpacing);
+  if (availableWidth > 0 && layout.groups.length > 0) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (layout.totalWidth <= availableWidth + 1) {
+        break;
+      }
+      const scale = availableWidth / Math.max(layout.totalWidth, 1);
+      const nextSpacing = Math.max(minSpacing, siblingSpacing * scale);
+      if (Math.abs(nextSpacing - siblingSpacing) < 0.5) {
+        siblingSpacing = nextSpacing;
+        layout = computeLayout(siblingSpacing);
+        break;
+      }
+      siblingSpacing = nextSpacing;
+      layout = computeLayout(siblingSpacing);
+    }
+  }
+
+  const finalGroups = layout.groups;
+  const margin = layout.margin;
+
+  const adjustGroup = (info, delta) => {
+    if (!info || !Number.isFinite(delta) || delta === 0) {
+      return 0;
+    }
+    const minDelta = baseLeft - info.minX;
+    const maxDelta = baseRight - info.maxX;
+    let applied = Math.max(minDelta, Math.min(maxDelta, delta));
+    if (!Number.isFinite(applied) || Math.abs(applied) < 0.01) {
+      return 0;
+    }
+    for (let i = 0; i < info.positions.length; i++) {
+      info.positions[i] += applied;
+    }
+    info.minX += applied;
+    info.maxX += applied;
+    info.center += applied;
+    info.start = Math.max(baseLeft, info.minX - info.padding);
+    info.end = Math.min(baseRight, info.maxX + info.padding);
+    info.blockWidth = Math.max(
+      info.end - info.start,
+      this.treeNodeRadius * 2.6,
+      siblingSpacing * 0.4
+    );
+    return applied;
+  };
+
+  if (finalGroups.length > 1 && availableWidth > 0) {
+    const sorted = finalGroups.slice().sort((a, b) => a.center - b.center);
+    const maxIterations = 6;
+    for (let iter = 0; iter < maxIterations; iter++) {
+      let changed = false;
+
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = sorted[i - 1];
+        const curr = sorted[i];
+        const desiredStart = prev.end + margin;
+        if (curr.start < desiredStart) {
+          const shift = adjustGroup(curr, desiredStart - curr.start);
+          if (Math.abs(shift) > 0.01) {
+            changed = true;
           }
         }
       }
-    }
 
-    if (!Number.isFinite(targetCenter)) {
-      targetCenter = parentCenter;
-    }
-
-    const offsets = [];
-    if (childCount % 2 === 0) {
-      const base = childCount / 2 - 0.5;
-      for (let i = 0; i < childCount; i++) {
-        offsets.push(i - base);
+      for (let i = sorted.length - 2; i >= 0; i--) {
+        const curr = sorted[i];
+        const next = sorted[i + 1];
+        const desiredEnd = next.start - margin;
+        if (curr.end > desiredEnd) {
+          const shift = adjustGroup(curr, desiredEnd - curr.end);
+          if (Math.abs(shift) > 0.01) {
+            changed = true;
+          }
+        }
       }
-    } else {
-      const mid = Math.floor(childCount / 2);
-      for (let i = 0; i < childCount; i++) {
-        offsets.push(i - mid);
+
+      const first = sorted[0];
+      if (first.start < baseLeft) {
+        const shift = adjustGroup(first, baseLeft - first.start);
+        if (Math.abs(shift) > 0.01) {
+          changed = true;
+        }
+      }
+      const last = sorted[sorted.length - 1];
+      if (last.end > baseRight) {
+        const shift = adjustGroup(last, baseRight - last.end);
+        if (Math.abs(shift) > 0.01) {
+          changed = true;
+        }
+      }
+
+      if (!changed) {
+        break;
       }
     }
+  } else if (finalGroups.length === 1) {
+    const singleGroup = finalGroups[0];
+    if (singleGroup.start < baseLeft) {
+      adjustGroup(singleGroup, baseLeft - singleGroup.start);
+    } else if (singleGroup.end > baseRight) {
+      adjustGroup(singleGroup, baseRight - singleGroup.end);
+    }
+  }
 
-    for (let i = 0; i < childCount; i++) {
-      const x = clamp(targetCenter + offsets[i] * spacing);
-      assignedPositions.set(children[i], { x, y });
+  const positionLookup = new Map();
+  for (const info of finalGroups) {
+    for (let i = 0; i < info.children.length; i++) {
+      const amount = info.children[i];
+      const x = clamp(info.positions[i]);
+      positionLookup.set(amount, { x, y });
+
     }
   }
 
   for (let i = 0; i < levelAmounts.length; i++) {
     const amount = levelAmounts[i];
-    let pos = assignedPositions.get(amount);
+    let pos = positionLookup.get(amount);
     if (!pos) {
-      const fallbackX =
+      const fallbackX = clamp(
         baseLeft +
-        ((i + 1) * (baseRight - baseLeft)) /
-          Math.max(levelAmounts.length + 1, 2);
-      pos = { x: clamp(fallbackX), y };
+          ((i + 1) * (baseRight - baseLeft)) /
+            Math.max(levelAmounts.length + 1, 2)
+      );
+      pos = { x: fallbackX, y };
+      positionLookup.set(amount, pos);
     }
     positions.push(pos);
     const node = this.treeNodes[amount];
