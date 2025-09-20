@@ -351,7 +351,7 @@ CoinChangeBFS.prototype.setup = function () {
     220,
     maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf
   );
-  const treeHeight = Math.max(260, Math.min(baseTreeHeight, maxTreeHeight));
+  const treeHeight = Math.max(320, Math.min(baseTreeHeight, maxTreeHeight));
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
 
   const queueY = treeLayout.bottomY + queueGapFromTree;
@@ -526,7 +526,7 @@ CoinChangeBFS.prototype.computeTreeDepthCapacity = function () {
     0,
     this.treeArea.height - this.treeNodeRadius * 2
   );
-  const minSpacing = Math.max(56, this.treeNodeRadius * 2.2);
+  const minSpacing = Math.max(70, this.treeNodeRadius * 2.6);
   const capacity = Math.floor(usableHeight / Math.max(minSpacing, 1));
   return Math.max(2, capacity > 0 ? capacity : 2);
 };
@@ -880,12 +880,7 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
   }
 
   const parentAmounts = this.treeLevels[level - 1] || [];
-  const fallbackBoundary = {
-    start: baseLeft,
-    end: baseRight,
-    center: clamp((baseLeft + baseRight) / 2),
-  };
-
+  const fallbackCenter = clamp((baseLeft + baseRight) / 2);
   const parentCenters = parentAmounts.map((amount, index) => {
     const parentNode = this.treeNodes[amount];
     if (parentNode && parentNode.x !== undefined && parentNode.x !== null) {
@@ -898,42 +893,9 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
     );
   });
 
-  const parentBoundaries = new Map();
-  const siblingSpacing = Math.max(this.treeNodeRadius * 2.9, 76);
-  const minGroupWidth = Math.max(
-    this.treeNodeRadius * 5.4,
-    siblingSpacing * 2.1,
-    140
-  );
-
+  const parentCenterLookup = new Map();
   for (let i = 0; i < parentAmounts.length; i++) {
-    const center = parentCenters[i];
-    const prevCenter = i > 0 ? parentCenters[i - 1] : baseLeft - minGroupWidth;
-    const nextCenter =
-      i < parentCenters.length - 1
-        ? parentCenters[i + 1]
-        : baseRight + minGroupWidth;
-
-    let start = i === 0 ? baseLeft : (prevCenter + center) / 2;
-    let end = i === parentCenters.length - 1 ? baseRight : (center + nextCenter) / 2;
-
-    if (end - start < minGroupWidth) {
-      start = center - minGroupWidth / 2;
-      end = center + minGroupWidth / 2;
-    }
-
-    start = clamp(start);
-    end = clamp(end);
-    if (end <= start) {
-      start = clamp(center - minGroupWidth / 2);
-      end = clamp(center + minGroupWidth / 2);
-    }
-
-    parentBoundaries.set(parentAmounts[i], {
-      start,
-      end,
-      center,
-    });
+    parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
   }
 
   const groups = new Map();
@@ -945,111 +907,262 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
     groups.get(parent).push(amount);
   }
 
-  const assignedPositions = new Map();
+  const siblingSpacing = Math.max(this.treeNodeRadius * 3, 84);
+  const minGroupWidth = Math.max(
+    this.treeNodeRadius * 5.8,
+    siblingSpacing * 1.7,
+    150
+  );
+  const innerPadding = Math.max(this.treeNodeRadius * 0.7, 14);
+  const availableWidth = Math.max(0, baseRight - baseLeft);
 
+  const groupInfos = [];
   for (const [parent, children] of groups.entries()) {
     if (!children || children.length === 0) {
       continue;
     }
 
-    const boundary = parentBoundaries.get(parent) || fallbackBoundary;
-    const center = clamp(boundary.center);
     const childCount = children.length;
+    const desiredCenter = parentCenterLookup.has(parent)
+      ? parentCenterLookup.get(parent)
+      : fallbackCenter;
+    const center = clamp(desiredCenter);
 
-    const boundarySpan = Math.max(boundary.end - boundary.start, minGroupWidth);
-    const targetSpan =
+    const rawWidth =
       childCount > 1
-        ? Math.max(siblingSpacing * (childCount - 1), boundarySpan)
-        : Math.max(this.treeNodeRadius * 2.8, minGroupWidth * 0.6);
-    const maxSpan = Math.max(baseRight - baseLeft, 0);
-    let span = Math.min(targetSpan, maxSpan);
+        ? Math.max(
+            siblingSpacing * (childCount - 1) + this.treeNodeRadius * 2.4,
+            minGroupWidth
+          )
+        : Math.max(this.treeNodeRadius * 3.2, minGroupWidth * 0.55);
+    const limitedWidth =
+      availableWidth > 0 ? Math.min(rawWidth, availableWidth) : rawWidth;
+    const width = Math.max(this.treeNodeRadius * 2.6, limitedWidth);
 
-    let left = center - span / 2;
-    let right = center + span / 2;
+    let start = center - width / 2;
+    let end = center + width / 2;
+    if (width >= availableWidth && availableWidth > 0) {
+      start = baseLeft;
+      end = baseRight;
+    } else {
+      if (start < baseLeft) {
+        end += baseLeft - start;
+        start = baseLeft;
+      }
+      if (end > baseRight) {
+        start -= end - baseRight;
+        end = baseRight;
+      }
+      if (start < baseLeft) {
+        start = baseLeft;
+        end = Math.min(baseRight, start + width);
+      }
+      if (end > baseRight) {
+        end = baseRight;
+        start = Math.max(baseLeft, end - width);
+      }
+    }
 
-    if (left < baseLeft) {
-      right += baseLeft - left;
-      left = baseLeft;
+    groupInfos.push({
+      parent,
+      children: children.slice(),
+      desiredCenter: center,
+      width: Math.max(end - start, this.treeNodeRadius * 2.6),
+      start: Math.max(baseLeft, start),
+      end: Math.min(baseRight, end),
+    });
+  }
+
+  if (groupInfos.length === 0) {
+    return positions;
+  }
+
+  let totalWidth = 0;
+  for (const info of groupInfos) {
+    info.width = Math.max(info.width, this.treeNodeRadius * 2.6);
+    if (!Number.isFinite(info.width) || info.width <= 0) {
+      info.width = Math.max(this.treeNodeRadius * 2.6, availableWidth);
     }
-    if (right > baseRight) {
-      left -= right - baseRight;
-      right = baseRight;
+    info.start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
+    info.end = info.start + info.width;
+    totalWidth += info.width;
+  }
+
+  let groupSpacing = Math.max(this.treeNodeRadius * 1.8, 36);
+  const minSpacing = Math.max(this.treeNodeRadius * 0.9, 18);
+  if (groupInfos.length > 1 && availableWidth > 0) {
+    const neededWidth = totalWidth + groupSpacing * (groupInfos.length - 1);
+    if (neededWidth > availableWidth) {
+      const spacingRoom = Math.max(groupSpacing - minSpacing, 0) *
+        (groupInfos.length - 1);
+      let remainingOverflow = neededWidth - availableWidth;
+      if (spacingRoom >= remainingOverflow) {
+        groupSpacing = Math.max(
+          minSpacing,
+          groupSpacing - remainingOverflow / (groupInfos.length - 1)
+        );
+        remainingOverflow = 0;
+      } else {
+        groupSpacing = minSpacing;
+        remainingOverflow -= spacingRoom;
+      }
+
+      if (remainingOverflow > 0) {
+        const widthCapacity =
+          availableWidth - groupSpacing * (groupInfos.length - 1);
+        const scale = widthCapacity > 0 ? Math.min(1, widthCapacity / totalWidth) : 0;
+        if (scale > 0 && scale < 1) {
+          totalWidth = 0;
+          for (const info of groupInfos) {
+            const scaledWidth = Math.max(
+              this.treeNodeRadius * 2.6,
+              info.width * scale
+            );
+            info.width =
+              availableWidth > 0 ? Math.min(scaledWidth, availableWidth) : scaledWidth;
+            info.start = Math.max(
+              baseLeft,
+              Math.min(info.desiredCenter - info.width / 2, baseRight - info.width)
+            );
+            info.end = info.start + info.width;
+            totalWidth += info.width;
+          }
+        }
+      }
     }
+  }
+
+  const orderedGroups = groupInfos
+    .slice()
+    .sort((a, b) => a.desiredCenter - b.desiredCenter);
+
+  for (const info of orderedGroups) {
+    info.start = Math.max(
+      baseLeft,
+      Math.min(info.desiredCenter - info.width / 2, baseRight - info.width)
+    );
+    info.end = info.start + info.width;
+  }
+
+  for (let iter = 0; iter < 4; iter++) {
+    let adjusted = false;
+    for (let i = 0; i < orderedGroups.length; i++) {
+      const info = orderedGroups[i];
+      if (i === 0) {
+        const start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
+        if (start !== info.start) {
+          info.start = start;
+          info.end = start + info.width;
+          adjusted = true;
+        }
+        continue;
+      }
+      const prev = orderedGroups[i - 1];
+      const minStart = prev.end + groupSpacing;
+      let start = info.start;
+      if (start < minStart) {
+        start = minStart;
+      }
+      const maxStart = baseRight - info.width;
+      if (start > maxStart) {
+        start = maxStart;
+      }
+      if (start !== info.start) {
+        info.start = start;
+        info.end = start + info.width;
+        adjusted = true;
+      }
+    }
+
+    for (let i = orderedGroups.length - 2; i >= 0; i--) {
+      const info = orderedGroups[i];
+      const next = orderedGroups[i + 1];
+      const maxStart = next.start - groupSpacing - info.width;
+      let start = info.start;
+      if (start > maxStart) {
+        start = maxStart;
+      }
+      if (start < baseLeft) {
+        start = baseLeft;
+      }
+      const clampStart = Math.min(start, baseRight - info.width);
+      if (clampStart !== info.start) {
+        info.start = clampStart;
+        info.end = clampStart + info.width;
+        adjusted = true;
+      }
+    }
+
+    if (!adjusted) {
+      break;
+    }
+  }
+
+  const groupPlacement = new Map();
+  for (const info of orderedGroups) {
+    const start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
+    const end = start + info.width;
+    groupPlacement.set(info.parent, {
+      start,
+      end,
+      center: start + info.width / 2,
+      children: info.children,
+    });
+  }
+
+  const assignedPositions = new Map();
+  const minChildSpacing = Math.max(this.treeNodeRadius * 2.7, 88);
+
+  for (const [parent, placement] of groupPlacement.entries()) {
+    const children = placement.children;
+    if (!children || children.length === 0) {
+      continue;
+    }
+    const childCount = children.length;
+    const leftBound = placement.start + innerPadding;
+    const rightBound = placement.end - innerPadding;
 
     if (childCount === 1) {
-      const x = clamp(Math.max(left, Math.min(center, right)));
-      assignedPositions.set(children[0], { x, y });
-      continue;
-    }
-
-    let usableLeft = left;
-    let usableRight = right;
-    const padding = Math.min(
-      Math.max(this.treeNodeRadius * 0.45, 12),
-      (usableRight - usableLeft) / (childCount + 1)
-    );
-
-    usableLeft += padding;
-    usableRight -= padding;
-
-    if (usableRight <= usableLeft) {
-      usableLeft = left;
-      usableRight = right;
-    }
-
-    let spanForChildren = usableRight - usableLeft;
-    const minChildSpan = siblingSpacing * (childCount - 1);
-
-    if (spanForChildren < minChildSpan) {
-      spanForChildren = Math.min(minChildSpan, Math.max(right - left, 0));
-      const midpoint = (left + right) / 2;
-      usableLeft = midpoint - spanForChildren / 2;
-      usableRight = midpoint + spanForChildren / 2;
-
-      if (usableLeft < left) {
-        usableRight += left - usableLeft;
-        usableLeft = left;
-      }
-      if (usableRight > right) {
-        usableLeft -= usableRight - right;
-        usableRight = right;
-      }
-    }
-
-    const effectiveSpan = usableRight - usableLeft;
-    if (childCount > 1 && effectiveSpan <= 0) {
-      const availableSpan = Math.min(
-        baseRight - baseLeft,
-        Math.max(right - left, 0)
+      const center = parentCenterLookup.has(parent)
+        ? parentCenterLookup.get(parent)
+        : placement.center;
+      const targetX = clamp(
+        Math.max(Math.min(center, rightBound), leftBound <= rightBound ? leftBound : placement.start)
       );
-      const fallbackStep =
-        childCount > 1 && availableSpan > 0
-          ? availableSpan / (childCount - 1)
-          : siblingSpacing;
-      const totalSpan = fallbackStep * (childCount - 1);
-      const minStart = baseLeft;
-      const maxStart = baseRight - totalSpan;
-      let startX = center - totalSpan / 2;
-      if (maxStart < minStart) {
-        startX = minStart;
-      } else {
-        startX = Math.min(Math.max(startX, minStart), maxStart);
-      }
-      for (let i = 0; i < childCount; i++) {
-        const x = clamp(startX + fallbackStep * i);
-        assignedPositions.set(children[i], { x, y });
-      }
+      assignedPositions.set(children[0], { x: targetX, y });
       continue;
     }
 
-    const step =
-      childCount > 1 && effectiveSpan > 0
-        ? effectiveSpan / (childCount - 1)
-        : siblingSpacing;
+    let span = rightBound - leftBound;
+    if (span <= 0) {
+      span = placement.end - placement.start;
+    }
+    let step = span / (childCount - 1);
+    if (!Number.isFinite(step) || step <= 0) {
+      step = minChildSpacing;
+    }
+    if (step < minChildSpacing) {
+      step = minChildSpacing;
+    }
+    let totalSpan = step * (childCount - 1);
+    let startX = (parentCenterLookup.has(parent)
+      ? parentCenterLookup.get(parent)
+      : placement.center) - totalSpan / 2;
+
+    const minStart = placement.start + innerPadding;
+    const maxStart = placement.end - innerPadding - totalSpan;
+    if (maxStart >= minStart) {
+      startX = Math.min(Math.max(startX, minStart), maxStart);
+    } else {
+      const centered = placement.center - totalSpan / 2;
+      const limitLeft = placement.start;
+      const limitRight = placement.end - totalSpan;
+      startX = Math.max(limitLeft, Math.min(centered, limitRight));
+    }
 
     for (let i = 0; i < childCount; i++) {
-      const x = usableLeft + step * i;
-      assignedPositions.set(children[i], { x: clamp(x), y });
+      const x = clamp(startX + step * i);
+      assignedPositions.set(children[i], { x, y });
     }
   }
 
@@ -1311,7 +1424,56 @@ CoinChangeBFS.prototype.computeEdgeLabelPosition = function (parentNode, childNo
   }
   const midX = (parentNode.x + childNode.x) / 2;
   const midY = (parentNode.y + childNode.y) / 2;
-  return { x: midX, y: midY };
+
+  const dx = childNode.x - parentNode.x;
+  const dy = childNode.y - parentNode.y;
+  const length = Math.sqrt(dx * dx + dy * dy);
+
+  if (!length || !Number.isFinite(length)) {
+    return { x: midX, y: midY };
+  }
+
+  const perpA = { x: -dy / length, y: dx / length };
+  const perpB = { x: dy / length, y: -dx / length };
+
+  const pickVector = (vec1, vec2) => {
+    const vec1Score = Number.isFinite(vec1.y) ? vec1.y : 0;
+    const vec2Score = Number.isFinite(vec2.y) ? vec2.y : 0;
+    if (vec1Score < 0 && vec2Score >= 0) {
+      return vec1;
+    }
+    if (vec2Score < 0 && vec1Score >= 0) {
+      return vec2;
+    }
+    return Math.abs(vec1Score) <= Math.abs(vec2Score) ? vec1 : vec2;
+  };
+
+  let offsetVec = pickVector(perpA, perpB);
+  if (!Number.isFinite(offsetVec.x) || !Number.isFinite(offsetVec.y)) {
+    offsetVec = { x: 0, y: -1 };
+  }
+
+  if (Math.abs(offsetVec.y) < 0.05) {
+    offsetVec = Math.abs(perpA.y) > Math.abs(perpB.y) ? perpA : perpB;
+    if (Math.abs(offsetVec.y) < 0.05) {
+      offsetVec = { x: 0, y: dy >= 0 ? -1 : 1 };
+    }
+  }
+
+  const offsetMagnitude = Math.max(
+    8,
+    Math.min(18, Math.max(this.treeNodeRadius * 0.6, length * 0.18))
+  );
+  let labelX = midX + offsetVec.x * offsetMagnitude;
+  let labelY = midY + offsetVec.y * offsetMagnitude;
+
+  if (this.treeArea) {
+    const margin = Math.max(12, this.treeNodeRadius * 0.75);
+    labelX = Math.max(this.treeArea.left + margin, Math.min(this.treeArea.right - margin, labelX));
+    labelY = Math.max(this.treeArea.top + margin, Math.min(this.treeArea.bottom - margin, labelY));
+  }
+
+  return { x: labelX, y: labelY };
 };
 
 CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
