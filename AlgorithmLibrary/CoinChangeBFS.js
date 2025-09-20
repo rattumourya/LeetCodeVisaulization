@@ -11,11 +11,9 @@ CoinChangeBFS.CODE = [
   "        if (amount == 0) return 0;",
   "        boolean[] visited = new boolean[amount + 1];",
   "        Queue<Integer> q = new LinkedList<>();",
-  "        ",
   "        q.offer(0);",
   "        visited[0] = true;",
   "        int steps = 0;",
-  "",
   "        while (!q.isEmpty()) {",
   "            int size = q.size();",
   "            steps++;",
@@ -232,9 +230,21 @@ CoinChangeBFS.prototype.setup = function () {
   this.canvasWidth = canvasW;
   this.canvasHeight = canvasH;
 
+  if (
+    typeof objectManager !== "undefined" &&
+    objectManager &&
+    objectManager.statusReport
+  ) {
+    objectManager.statusReport.setText("");
+    objectManager.statusReport.addedToScene = false;
+  }
+
   const TITLE_Y = 48;
   const CODE_START_X = 80;
-  const CODE_LINE_H = 16;
+  const CODE_LINE_H = 17;
+  const CODE_FONT_SIZE = 15;
+  const VARIABLE_FONT_STYLE = "bold 17";
+  const RESULT_FONT_STYLE = "bold 21";
   const INFO_SPACING = 30;
   const coinHeaderY = TITLE_Y + 48;
   const coinsRowY = coinHeaderY + 44;
@@ -270,45 +280,59 @@ CoinChangeBFS.prototype.setup = function () {
   this.amountValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.amountLabelID, "amount:", infoX, infoStartY, 0);
   this.cmd("CreateLabel", this.amountValueID, String(this.amount), infoX + 120, infoStartY, 0);
+  this.cmd("SetTextStyle", this.amountLabelID, VARIABLE_FONT_STYLE);
+  this.cmd("SetTextStyle", this.amountValueID, VARIABLE_FONT_STYLE);
 
   this.stepsLabelID = this.nextIndex++;
   this.stepsValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.stepsLabelID, "steps:", infoX + 220, infoStartY, 0);
   this.cmd("CreateLabel", this.stepsValueID, "0", infoX + 320, infoStartY, 0);
+  this.cmd("SetTextStyle", this.stepsLabelID, VARIABLE_FONT_STYLE);
+  this.cmd("SetTextStyle", this.stepsValueID, VARIABLE_FONT_STYLE);
 
   this.queueSizeLabelID = this.nextIndex++;
   this.queueSizeValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.queueSizeLabelID, "queue size:", infoX + 420, infoStartY, 0);
   this.cmd("CreateLabel", this.queueSizeValueID, "0", infoX + 540, infoStartY, 0);
+  this.cmd("SetTextStyle", this.queueSizeLabelID, VARIABLE_FONT_STYLE);
+  this.cmd("SetTextStyle", this.queueSizeValueID, VARIABLE_FONT_STYLE);
 
   const secondRowY = infoStartY + INFO_SPACING;
   this.levelSizeLabelID = this.nextIndex++;
   this.levelSizeValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.levelSizeLabelID, "level size:", infoX, secondRowY, 0);
   this.cmd("CreateLabel", this.levelSizeValueID, "0", infoX + 120, secondRowY, 0);
+  this.cmd("SetTextStyle", this.levelSizeLabelID, VARIABLE_FONT_STYLE);
+  this.cmd("SetTextStyle", this.levelSizeValueID, VARIABLE_FONT_STYLE);
 
   this.currentLabelID = this.nextIndex++;
   this.currentValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.currentLabelID, "current amount:", infoX + 220, secondRowY, 0);
   this.cmd("CreateLabel", this.currentValueID, "-", infoX + 380, secondRowY, 0);
+  this.cmd("SetTextStyle", this.currentLabelID, VARIABLE_FONT_STYLE);
+  this.cmd("SetTextStyle", this.currentValueID, VARIABLE_FONT_STYLE);
 
   this.coinValueLabelID = this.nextIndex++;
   this.coinValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.coinValueLabelID, "coin:", infoX + 420, secondRowY, 0);
   this.cmd("CreateLabel", this.coinValueID, "-", infoX + 520, secondRowY, 0);
+  this.cmd("SetTextStyle", this.coinValueLabelID, VARIABLE_FONT_STYLE);
+  this.cmd("SetTextStyle", this.coinValueID, VARIABLE_FONT_STYLE);
 
   const thirdRowY = infoStartY + 2 * INFO_SPACING;
   this.nextLabelID = this.nextIndex++;
   this.nextValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.nextLabelID, "next amount:", infoX, thirdRowY, 0);
   this.cmd("CreateLabel", this.nextValueID, "-", infoX + 160, thirdRowY, 0);
+  this.cmd("SetTextStyle", this.nextLabelID, VARIABLE_FONT_STYLE);
+  this.cmd("SetTextStyle", this.nextValueID, VARIABLE_FONT_STYLE);
 
   this.resultLabelID = this.nextIndex++;
   this.resultValueID = this.nextIndex++;
   this.cmd("CreateLabel", this.resultLabelID, "result:", infoX + 220, thirdRowY, 0);
   this.cmd("CreateLabel", this.resultValueID, "?", infoX + 320, thirdRowY, 0);
-  this.cmd("SetTextStyle", this.resultLabelID, "bold 18");
-  this.cmd("SetTextStyle", this.resultValueID, "bold 18");
+  this.cmd("SetTextStyle", this.resultLabelID, RESULT_FONT_STYLE);
+  this.cmd("SetTextStyle", this.resultValueID, RESULT_FONT_STYLE);
 
   const messageY = thirdRowY + 48;
   this.messageID = this.nextIndex++;
@@ -341,7 +365,7 @@ CoinChangeBFS.prototype.setup = function () {
 
   const codeStartPreferred = queueLayout.bottomY + 64;
   const codeStartY = Math.min(Math.max(codeStartPreferred, thirdRowY + 120), maxCodeStartY);
-  this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H);
+  this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H, CODE_FONT_SIZE);
 
   this.resetTreeDisplay();
   this.resetQueueDisplay();
@@ -353,13 +377,20 @@ CoinChangeBFS.prototype.setup = function () {
   animationManager.clearHistory();
 };
 
-CoinChangeBFS.prototype.buildCodeDisplay = function (startX, startY, lineHeight) {
+
+CoinChangeBFS.prototype.buildCodeDisplay = function (
+  startX,
+  startY,
+  lineHeight,
+  fontSize
+) {
+  const textStyle = fontSize ? String(fontSize) : "12";
   for (let i = 0; i < CoinChangeBFS.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
     this.cmd("CreateLabel", id, CoinChangeBFS.CODE[i], startX, startY + i * lineHeight, 0);
     this.cmd("SetForegroundColor", id, "#000000");
-    this.cmd("SetTextStyle", id, "12");
+    this.cmd("SetTextStyle", id, textStyle);
   }
 };
 
@@ -1199,6 +1230,29 @@ CoinChangeBFS.prototype.setTreeNodeColor = function (amount, color) {
   node.color = fill;
 };
 
+CoinChangeBFS.prototype.computeEdgeLabelPosition = function (parentNode, childNode) {
+  if (!parentNode || !childNode) {
+    return { x: 0, y: 0 };
+  }
+  const midX = (parentNode.x + childNode.x) / 2;
+  const midY = (parentNode.y + childNode.y) / 2;
+  let labelX = midX;
+  let labelY = midY;
+  const dx = childNode.x - parentNode.x;
+  const dy = childNode.y - parentNode.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance > 0.0001) {
+    const perpX = dy / distance;
+    const perpY = -dx / distance;
+    const baseOffset = Math.max(20, this.treeNodeRadius * 0.85);
+    const maxOffset = distance / 2 - 6;
+    const offset = maxOffset > 0 ? Math.min(baseOffset, maxOffset) : baseOffset;
+    labelX += perpX * offset;
+    labelY += perpY * offset;
+  }
+  return { x: labelX, y: labelY };
+};
+
 CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
   const node = this.treeNodes[amount];
   if (
@@ -1217,10 +1271,9 @@ CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
   if (!parent) {
     return;
   }
-  const midX = (parent.x + node.x) / 2;
-  const midY = (parent.y + node.y) / 2;
-  const labelOffset = Math.max(18, this.treeNodeRadius * 0.85);
-  this.cmd("Move", node.edgeLabelID, midX, midY - labelOffset);
+
+  const pos = this.computeEdgeLabelPosition(parent, node);
+  this.cmd("Move", node.edgeLabelID, pos.x, pos.y);
 };
 
 CoinChangeBFS.prototype.setEdgeLabel = function (amount, coin) {
@@ -1240,16 +1293,14 @@ CoinChangeBFS.prototype.setEdgeLabel = function (amount, coin) {
     return;
   }
   const labelText = `+${coin}`;
+  const pos = this.computeEdgeLabelPosition(parent, node);
   if (
     node.edgeLabelID === undefined ||
     node.edgeLabelID === null ||
     node.edgeLabelID < 0
   ) {
-    const midX = (parent.x + node.x) / 2;
-    const midY = (parent.y + node.y) / 2;
-    const labelOffset = Math.max(18, this.treeNodeRadius * 0.85);
     const labelID = this.nextIndex++;
-    this.cmd("CreateLabel", labelID, labelText, midX, midY - labelOffset, 0);
+    this.cmd("CreateLabel", labelID, labelText, pos.x, pos.y, 0);
     this.cmd("SetTextStyle", labelID, "bold 16");
     this.cmd("SetForegroundColor", labelID, this.treeEdgeLabelColor);
     node.edgeLabelID = labelID;
@@ -1257,7 +1308,7 @@ CoinChangeBFS.prototype.setEdgeLabel = function (amount, coin) {
     this.cmd("SetText", node.edgeLabelID, labelText);
     this.cmd("SetTextStyle", node.edgeLabelID, "bold 16");
     this.cmd("SetForegroundColor", node.edgeLabelID, this.treeEdgeLabelColor);
-    this.updateEdgeLabelPosition(amount);
+    this.cmd("Move", node.edgeLabelID, pos.x, pos.y);
   }
 };
 
@@ -1468,7 +1519,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.cmd("SetText", this.messageID, "Initialize BFS queue.");
   this.cmd("Step");
 
-  this.highlightCode(5);
+  this.highlightCode(4);
   const queue = [0];
   this.refreshQueue(queue);
   this.cmd("SetText", this.queueSizeValueID, String(queue.length));
@@ -1477,7 +1528,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
   const visited = new Array(amount + 1).fill(false);
 
-  this.highlightCode(6);
+  this.highlightCode(5);
   visited[0] = true;
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
@@ -1490,18 +1541,18 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.cmd("Step");
   this.highlightVisitedEntry(0, false);
 
-  this.highlightCode(7);
+  this.highlightCode(6);
   let steps = 0;
   this.cmd("SetText", this.stepsValueID, String(steps));
   this.cmd("SetText", this.messageID, "Initialize step counter to 0.");
   this.cmd("Step");
 
   while (queue.length > 0) {
-    this.highlightCode(9);
+    this.highlightCode(7);
     this.cmd("SetText", this.messageID, "Queue not empty, process next BFS level.");
     this.cmd("Step");
 
-    this.highlightCode(10);
+    this.highlightCode(8);
     const size = queue.length;
     this.cmd("SetText", this.levelSizeValueID, String(size));
     this.cmd(
@@ -1511,18 +1562,18 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     );
     this.cmd("Step");
 
-    this.highlightCode(11);
+    this.highlightCode(9);
     steps += 1;
     this.cmd("SetText", this.stepsValueID, String(steps));
     this.cmd("SetText", this.messageID, `Increase steps to ${steps}.`);
     this.cmd("Step");
 
-    this.highlightCode(12);
+    this.highlightCode(10);
     this.cmd("SetText", this.messageID, "Process each amount in this level.");
     this.cmd("Step");
 
     for (let i = 0; i < size; i++) {
-      this.highlightCode(13);
+      this.highlightCode(11);
       const curr = queue[0];
       if (curr === undefined) {
         break;
@@ -1541,13 +1592,13 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
       for (let cIndex = 0; cIndex < coins.length; cIndex++) {
         const coin = coins[cIndex];
-        this.highlightCode(14);
+        this.highlightCode(12);
         this.highlightCoin(cIndex);
         this.cmd("SetText", this.coinValueID, String(coin));
         this.cmd("SetText", this.messageID, `Try coin ${coin}.`);
         this.cmd("Step");
 
-        this.highlightCode(15);
+        this.highlightCode(13);
         const next = curr + coin;
         this.cmd("SetText", this.nextValueID, String(next));
         let previewNode = null;
@@ -1568,7 +1619,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
         }
 
         if (next === amount) {
-          this.highlightCode(16);
+          this.highlightCode(14);
           this.ensureTreeNode(next, steps, curr, steps, coin);
           this.updateTreeNodeLabel(next, steps, coin);
           this.setTreeNodeColor(next, this.treeFoundColor);
@@ -1593,7 +1644,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           return this.commands;
         }
 
-        this.highlightCode(17);
+        this.highlightCode(15);
         if (next < amount) {
           this.highlightVisitedEntry(next, true);
           this.cmd(
@@ -1604,7 +1655,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           this.cmd("Step");
 
           if (!visited[next]) {
-            this.highlightCode(18);
+            this.highlightCode(16);
             visited[next] = true;
             this.setVisitedValue(next, true);
             this.markTreeNodeVisited(
@@ -1622,7 +1673,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
             this.pulseTreeEdge(curr, next);
             this.highlightVisitedEntry(next, false);
 
-            this.highlightCode(19);
+            this.highlightCode(17);
             queue.push(next);
             this.refreshQueue(queue);
             this.cmd("SetText", this.queueSizeValueID, String(queue.length));
@@ -1662,11 +1713,11 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.cmd("Step");
   }
 
-  this.highlightCode(9);
+  this.highlightCode(7);
   this.cmd("SetText", this.messageID, "Queue empty, exit loop.");
   this.cmd("Step");
 
-  this.highlightCode(24);
+  this.highlightCode(22);
   this.cmd("SetText", this.resultValueID, "-1");
   this.cmd("SetText", this.messageID, "Return -1 because amount is unreachable.");
   this.cmd("Step");
