@@ -1157,7 +1157,6 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
       const amount = info.children[i];
       const x = clamp(info.positions[i]);
       positionLookup.set(amount, { x, y });
-
     }
   }
 
@@ -1685,6 +1684,17 @@ CoinChangeBFS.prototype.unhighlightCoin = function () {
   }
   this.coinHighlight = -1;
 };
+
+CoinChangeBFS.prototype.narrate = function (text, waitSteps) {
+  const wait = Math.max(1, waitSteps || 1);
+  this.cmd("SetText", this.messageID, text);
+  this.cmd("SetHighlight", this.messageID, 1);
+  for (let i = 0; i < wait; i++) {
+    this.cmd("Step");
+  }
+  this.cmd("SetHighlight", this.messageID, 0);
+};
+
 CoinChangeBFS.prototype.runCoinChange = function () {
   this.commands = [];
   this.highlightCode(-1);
@@ -1707,88 +1717,75 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.cmd("SetText", this.resultValueID, "?");
 
   this.highlightCode(0);
-  this.cmd("SetText", this.messageID, `Use BFS to solve coin change for amount ${amount}.`);
-  this.cmd("Step");
+
+  this.narrate(`We'll use BFS to find the fewest coins to make amount ${amount}.`, 2);
 
   this.highlightCode(1);
   if (amount === 0) {
-    this.setVisitedValue(0, true);
+    this.narrate("The goal is 0, so we already have the answer with no coins.");
     this.markTreeNodeVisited(0, 0, this.treeFoundColor, null, null);
+    this.setVisitedValue(0, true);
     this.highlightVisitedEntry(0, true);
-    this.cmd("SetText", this.messageID, "Amount is zero so answer is zero.");
+
     this.cmd("SetText", this.resultValueID, "0");
     this.cmd("Step");
     this.highlightVisitedEntry(0, false);
     this.highlightCode(-1);
     return this.commands;
   }
-  this.cmd("SetText", this.messageID, "Amount is not zero, continue BFS.");
-  this.cmd("Step");
+  this.narrate("Because the goal isn't zero, we'll explore amounts with BFS.");
 
   this.highlightCode(2);
-  this.cmd(
-    "SetText",
-    this.messageID,
-    "Create visited array of size amount + 1 (all entries start at 0)."
+  this.narrate(
+    `Build a visited list with ${amount + 1} slot${amount + 1 === 1 ? "" : "s"} so we can mark amounts we've seen.`
   );
-  this.cmd("Step");
+  const visited = new Array(amount + 1).fill(false);
 
   this.highlightCode(3);
-  this.cmd("SetText", this.messageID, "Initialize BFS queue.");
-  this.cmd("Step");
+  this.narrate("Set up an empty queue to hold the frontier amounts.");
 
   this.highlightCode(4);
+  this.narrate("Place amount 0 into the queue to start the search.");
   const queue = [0];
   this.refreshQueue(queue);
   this.cmd("SetText", this.queueSizeValueID, String(queue.length));
-  this.cmd("SetText", this.messageID, "Enqueue starting amount 0.");
   this.cmd("Step");
 
-  const visited = new Array(amount + 1).fill(false);
-
   this.highlightCode(5);
+  this.narrate("Mark amount 0 as visited so we don't add it again.");
+
   visited[0] = true;
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
   this.markTreeNodeVisited(0, 0, this.treeVisitedColor, null, null);
-  this.cmd(
-    "SetText",
-    this.messageID,
-    "Set visited[0] = 1 for the starting amount."
-  );
+
   this.cmd("Step");
   this.highlightVisitedEntry(0, false);
 
   this.highlightCode(6);
   let steps = 0;
+  this.narrate("Keep a step counter for how many coins we've used so far. Start at 0.");
   this.cmd("SetText", this.stepsValueID, String(steps));
-  this.cmd("SetText", this.messageID, "Initialize step counter to 0.");
   this.cmd("Step");
 
   while (queue.length > 0) {
     this.highlightCode(7);
-    this.cmd("SetText", this.messageID, "Queue not empty, process next BFS level.");
-    this.cmd("Step");
+    this.narrate("The queue still has amounts, so let's explore the next wave.");
 
     this.highlightCode(8);
     const size = queue.length;
+    this.narrate(`This wave has ${size} amount${size === 1 ? "" : "s"} to expand.`);
     this.cmd("SetText", this.levelSizeValueID, String(size));
-    this.cmd(
-      "SetText",
-      this.messageID,
-      `Current level has ${size} amount${size === 1 ? "" : "s"}.`
-    );
     this.cmd("Step");
 
     this.highlightCode(9);
     steps += 1;
+    this.narrate(`Now we explore combinations that use ${steps} coin${steps === 1 ? "" : "s"}.`);
     this.cmd("SetText", this.stepsValueID, String(steps));
-    this.cmd("SetText", this.messageID, `Increase steps to ${steps}.`);
     this.cmd("Step");
 
     this.highlightCode(10);
-    this.cmd("SetText", this.messageID, "Process each amount in this level.");
-    this.cmd("Step");
+    this.narrate("We'll handle each amount in this wave one after another.");
 
     for (let i = 0; i < size; i++) {
       this.highlightCode(11);
@@ -1796,28 +1793,33 @@ CoinChangeBFS.prototype.runCoinChange = function () {
       if (curr === undefined) {
         break;
       }
+
+      this.narrate(`Take ${curr} from the front of the queue so we can branch from it.`);
       this.highlightQueueSlot(0, true);
+      this.highlightTreeNode(curr);
       this.cmd("SetText", this.currentValueID, String(curr));
-      this.cmd("SetText", this.messageID, `Dequeue amount ${curr}.`);
       this.cmd("Step");
+
+      this.narrate(`Remove ${curr} from the queue because we're exploring it now.`);
+
       queue.shift();
       this.refreshQueue(queue);
       this.cmd("SetText", this.queueSizeValueID, String(queue.length));
       this.highlightQueueSlot(0, false);
-
-      this.highlightTreeNode(curr);
       this.cmd("Step");
 
       for (let cIndex = 0; cIndex < coins.length; cIndex++) {
         const coin = coins[cIndex];
         this.highlightCode(12);
+        this.narrate(`Try adding coin value ${coin}.`);
         this.highlightCoin(cIndex);
         this.cmd("SetText", this.coinValueID, String(coin));
-        this.cmd("SetText", this.messageID, `Try coin ${coin}.`);
         this.cmd("Step");
 
         this.highlightCode(13);
         const next = curr + coin;
+        this.narrate(`That makes ${curr} + ${coin} = ${next}.`);
+
         this.cmd("SetText", this.nextValueID, String(next));
         let previewNode = null;
         let previewColor = null;
@@ -1826,11 +1828,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           previewColor = previewNode.color || this.treeDefaultColor;
           this.cmd("SetBackgroundColor", previewNode.id, this.inspectColor);
         }
-        this.cmd(
-          "SetText",
-          this.messageID,
-          `Compute next amount = ${curr} + ${coin} = ${next}.`
-        );
+
         this.cmd("Step");
         if (previewNode) {
           this.cmd("SetBackgroundColor", previewNode.id, previewColor);
@@ -1838,6 +1836,9 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
         if (next === amount) {
           this.highlightCode(14);
+          this.narrate(
+            `Great! ${next} matches the target. We found a solution using ${steps} coin${steps === 1 ? "" : "s"}.`
+          );
           this.ensureTreeNode(next, steps, curr, steps, coin);
           this.updateTreeNodeLabel(next, steps, coin);
           this.setTreeNodeColor(next, this.treeFoundColor);
@@ -1847,11 +1848,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
             this.setVisitedValue(amount, true);
             this.highlightVisitedEntry(amount, true);
           }
-          this.cmd(
-            "SetText",
-            this.messageID,
-            `Reached target ${amount} in ${steps} step${steps === 1 ? "" : "s"}.`
-          );
+
           this.cmd("SetText", this.resultValueID, String(steps));
           this.pulseTreeEdge(curr, next);
           if (amount < this.visitedSlotIDs.length) {
@@ -1864,80 +1861,58 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
         this.highlightCode(15);
         if (next < amount) {
+          this.narrate(`Check if we've already seen amount ${next}.`);
           this.highlightVisitedEntry(next, true);
-          this.cmd(
-            "SetText",
-            this.messageID,
-            `Check visited[${next}] = ${visited[next] ? "1" : "0"} before enqueueing.`
-          );
           this.cmd("Step");
 
           if (!visited[next]) {
             this.highlightCode(16);
+            this.narrate(`Mark ${next} as new and remember it came from ${curr}.`);
             visited[next] = true;
             this.setVisitedValue(next, true);
-            this.markTreeNodeVisited(
-              next,
-              steps,
-              this.treeVisitedColor,
-              coin,
-              curr
-            );
-            this.cmd(
-              "SetText",
-              this.messageID,
-              `Add amount ${next} from ${curr} at depth ${steps}.`
-            );
+            this.markTreeNodeVisited(next, steps, this.treeVisitedColor, coin, curr);
             this.pulseTreeEdge(curr, next);
             this.highlightVisitedEntry(next, false);
 
             this.highlightCode(17);
+            this.narrate(`Add ${next} to the queue for the next wave.`);
             queue.push(next);
             this.refreshQueue(queue);
             this.cmd("SetText", this.queueSizeValueID, String(queue.length));
-            this.cmd("SetText", this.messageID, `Enqueue ${next} for next level.`);
             this.cmd("Step");
           } else {
-            this.cmd(
-              "SetText",
-              this.messageID,
-              `Skip amount ${next} because visited[${next}] = 1.`
-            );
-            this.cmd("Step");
+            this.narrate(`${next} was already visited, so we skip adding it again.`);
             this.highlightVisitedEntry(next, false);
+            this.cmd("Step");
           }
         } else {
-          this.cmd(
-            "SetText",
-            this.messageID,
-            `Amount ${next} exceeds target ${amount}.`
-          );
-          this.cmd("Step");
+          this.narrate(`${next} goes past the target ${amount}, so we ignore it.`);
         }
 
         this.unhighlightCoin();
       }
 
+      this.narrate(`We're done exploring from amount ${curr}.`);
       this.cmd("SetText", this.coinValueID, "-");
       this.cmd("SetText", this.nextValueID, "-");
       this.clearTreeHighlight();
-      this.cmd("SetText", this.messageID, `Finished exploring amount ${curr}.`);
-      this.cmd("Step");
       this.cmd("SetText", this.currentValueID, "-");
+      this.cmd("Step");
     }
 
+    this.narrate("That finishes this wave of BFS.");
     this.cmd("SetText", this.levelSizeValueID, "0");
-    this.cmd("SetText", this.messageID, "Level completed.");
     this.cmd("Step");
   }
 
   this.highlightCode(7);
-  this.cmd("SetText", this.messageID, "Queue empty, exit loop.");
-  this.cmd("Step");
+
+  this.narrate("The queue is empty, so there are no more amounts to explore.");
 
   this.highlightCode(22);
+  this.narrate("We couldn't make the target amount, so we return -1.");
   this.cmd("SetText", this.resultValueID, "-1");
-  this.cmd("SetText", this.messageID, "Return -1 because amount is unreachable.");
+
   this.cmd("Step");
 
   this.highlightCode(-1);
