@@ -663,7 +663,6 @@ CoinChangeBFS.prototype.resetTreeDisplay = function () {
   });
 
   this.clearTreeEdgeHighlight();
-
   for (const amount of amounts) {
     const node = this.treeNodes[amount];
     if (!node) {
