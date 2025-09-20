@@ -232,13 +232,13 @@ CoinChangeBFS.prototype.setup = function () {
   this.canvasWidth = canvasW;
   this.canvasHeight = canvasH;
 
-  const TITLE_Y = 60;
+  const TITLE_Y = 48;
   const CODE_START_X = 80;
   const CODE_LINE_H = 16;
-  const INFO_SPACING = 34;
-  const coinHeaderY = TITLE_Y + 60;
-  const coinsRowY = coinHeaderY + 50;
-  const infoStartY = coinsRowY + 70;
+  const INFO_SPACING = 30;
+  const coinHeaderY = TITLE_Y + 48;
+  const coinsRowY = coinHeaderY + 44;
+  const infoStartY = coinsRowY + 56;
   const infoBottomY = infoStartY + 2 * INFO_SPACING;
 
   this.commands = [];
@@ -310,24 +310,24 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetTextStyle", this.resultLabelID, "bold 18");
   this.cmd("SetTextStyle", this.resultValueID, "bold 18");
 
-  const messageY = thirdRowY + 60;
+  const messageY = thirdRowY + 48;
   this.messageID = this.nextIndex++;
   this.cmd("CreateLabel", this.messageID, this.messageText || "", canvasW / 2, messageY, 1);
   this.cmd("SetForegroundColor", this.messageID, "#003366");
   this.cmd("SetTextStyle", this.messageID, "bold 18");
 
-  const treeTopY = messageY + 80;
+  const treeTopY = messageY + 60;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
-  const maxCodeStartY = canvasH - totalCodeHeight - 40;
-  const maxQueueBottom = maxCodeStartY - 60;
-  const queueGapFromTree = 50;
-  const estimatedQueueHalf = 30;
-  const baseTreeHeight = Math.floor(canvasH * 0.36);
+  const maxCodeStartY = canvasH - totalCodeHeight - 32;
+  const maxQueueBottom = maxCodeStartY - 40;
+  const queueGapFromTree = Math.max(32, Math.floor(canvasH * 0.025));
+  const estimatedQueueHalf = Math.max(24, Math.floor(canvasH * 0.018));
+  const baseTreeHeight = Math.floor(canvasH * 0.42);
   const maxTreeHeight = Math.max(
     220,
     maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf
   );
-  const treeHeight = Math.max(220, Math.min(baseTreeHeight, maxTreeHeight));
+  const treeHeight = Math.max(260, Math.min(baseTreeHeight, maxTreeHeight));
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
 
   const queueY = treeLayout.bottomY + queueGapFromTree;
@@ -339,7 +339,7 @@ CoinChangeBFS.prototype.setup = function () {
   );
   this.buildVisitedDisplay(treeTopY, visitedBottom, this.amount);
 
-  const codeStartPreferred = queueLayout.bottomY + 60;
+  const codeStartPreferred = queueLayout.bottomY + 64;
   const codeStartY = Math.min(Math.max(codeStartPreferred, thirdRowY + 120), maxCodeStartY);
   this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H);
 
@@ -432,7 +432,6 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
     bottom: topY + areaHeight,
   };
 
-
   this.visitedPanelWidth = panelWidth;
   this.visitedPanelGap = panelGap;
   const visitedLeft = this.treeArea.right + panelGap;
@@ -454,14 +453,14 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   const dynamicRadius =
     Math.floor(this.treeArea.width / Math.max(6, this.amount + 2)) + 6;
   this.treeNodeRadius = Math.max(22, Math.min(32, dynamicRadius));
-  this.treeNodeLabelOffset = this.treeNodeRadius + 24;
+  this.treeNodeLabelOffset = this.treeNodeRadius + 16;
 
   const coinValuesForDepth =
     this.coinValues && this.coinValues.length > 0 ? this.coinValues : [1];
   const largestCoin = coinValuesForDepth[coinValuesForDepth.length - 1] || 1;
   const estimatedDepth =
     this.amount > 0 ? Math.ceil(this.amount / Math.max(largestCoin, 1)) : 0;
-  this.treeDepthBaseEstimate = Math.max(2, Math.min(estimatedDepth, 5));
+  this.treeDepthBaseEstimate = Math.max(2, Math.min(estimatedDepth, 6));
   this.treeDepthCapacity = Math.max(2, this.computeTreeDepthCapacity());
   this.treeDepthDenominator = Math.max(
     2,
@@ -677,7 +676,14 @@ CoinChangeBFS.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellW
   const slotHeight = Math.max(26, Math.min(60, slotWidth + 6));
 
   this.queueLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.queueLabelID, "BFS queue", canvasW / 2, queueY - slotHeight / 2 - 30, 1);
+  this.cmd(
+    "CreateLabel",
+    this.queueLabelID,
+    "BFS queue",
+    canvasW / 2,
+    queueY - slotHeight / 2 - 24,
+    1
+  );
   this.cmd("SetTextStyle", this.queueLabelID, "bold 18");
 
   this.queueSlotIDs = [];
@@ -738,22 +744,22 @@ CoinChangeBFS.prototype.ensureTreeDepthCapacity = function (level) {
   const requiredDepth = Math.max(1, level);
   const maxDepth = Math.max(2, this.computeTreeDepthCapacity());
   this.treeDepthCapacity = maxDepth;
+  if (requiredDepth > this.treeDepthBaseEstimate) {
+    this.treeDepthBaseEstimate = requiredDepth;
+  }
+
+  let targetDenominator = this.treeDepthDenominator;
   if (requiredDepth > maxDepth) {
-    if (this.treeDepthDenominator !== maxDepth) {
-      this.treeDepthDenominator = maxDepth;
-      this.reflowTreeLayout();
-    }
-    return;
+    targetDenominator = Math.max(targetDenominator, requiredDepth);
+  } else if (requiredDepth > targetDenominator) {
+    targetDenominator = Math.max(
+      targetDenominator,
+      Math.min(requiredDepth, maxDepth)
+    );
   }
-  if (requiredDepth <= this.treeDepthDenominator) {
-    return;
-  }
-  const newDenominator = Math.min(
-    maxDepth,
-    Math.max(this.treeDepthDenominator, requiredDepth)
-  );
-  if (newDenominator !== this.treeDepthDenominator) {
-    this.treeDepthDenominator = newDenominator;
+
+  if (targetDenominator !== this.treeDepthDenominator) {
+    this.treeDepthDenominator = targetDenominator;
     this.reflowTreeLayout();
   }
 };
@@ -1070,14 +1076,8 @@ CoinChangeBFS.prototype.createTreeRoot = function () {
   };
 };
 
-CoinChangeBFS.prototype.formatTreeNodeLabel = function (step, coin) {
-  if (step === null || step === undefined) {
-    return "";
-  }
-  if (coin === null || coin === undefined) {
-    return `d=${step}`;
-  }
-  return `d=${step} (+${coin})`;
+CoinChangeBFS.prototype.formatTreeNodeLabel = function () {
+  return "";
 };
 
 CoinChangeBFS.prototype.updateTreeNodeLabel = function (amount, step, coin) {
@@ -1218,9 +1218,9 @@ CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
     return;
   }
   const midX = (parent.x + node.x) / 2;
-  const offset = Math.max(12, this.treeNodeRadius * 0.7);
-  const midY = (parent.y + node.y) / 2 - offset;
-  this.cmd("Move", node.edgeLabelID, midX, midY);
+  const midY = (parent.y + node.y) / 2;
+  const labelOffset = Math.max(18, this.treeNodeRadius * 0.85);
+  this.cmd("Move", node.edgeLabelID, midX, midY - labelOffset);
 };
 
 CoinChangeBFS.prototype.setEdgeLabel = function (amount, coin) {
@@ -1246,15 +1246,16 @@ CoinChangeBFS.prototype.setEdgeLabel = function (amount, coin) {
     node.edgeLabelID < 0
   ) {
     const midX = (parent.x + node.x) / 2;
-    const offset = Math.max(12, this.treeNodeRadius * 0.7);
-    const midY = (parent.y + node.y) / 2 - offset;
+    const midY = (parent.y + node.y) / 2;
+    const labelOffset = Math.max(18, this.treeNodeRadius * 0.85);
     const labelID = this.nextIndex++;
-    this.cmd("CreateLabel", labelID, labelText, midX, midY, 0);
-    this.cmd("SetTextStyle", labelID, "bold 12");
+    this.cmd("CreateLabel", labelID, labelText, midX, midY - labelOffset, 0);
+    this.cmd("SetTextStyle", labelID, "bold 16");
     this.cmd("SetForegroundColor", labelID, this.treeEdgeLabelColor);
     node.edgeLabelID = labelID;
   } else {
     this.cmd("SetText", node.edgeLabelID, labelText);
+    this.cmd("SetTextStyle", node.edgeLabelID, "bold 16");
     this.cmd("SetForegroundColor", node.edgeLabelID, this.treeEdgeLabelColor);
     this.updateEdgeLabelPosition(amount);
   }
