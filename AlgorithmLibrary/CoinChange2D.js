@@ -212,7 +212,7 @@ CoinChange2D.prototype.setup = function () {
   this.cmd(
     "CreateLabel",
     this.titleID,
-    "bottom - up 2D tabulation",
+    "Bottom - Up 2D DP (Unbounded Knapsack)",
     canvasW / 2,
     TITLE_Y,
     1

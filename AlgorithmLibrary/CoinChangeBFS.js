@@ -377,6 +377,7 @@ CoinChangeBFS.prototype.setup = function () {
   animationManager.clearHistory();
 };
 
+
 CoinChangeBFS.prototype.buildCodeDisplay = function (
   startX,
   startY,
