@@ -377,7 +377,6 @@ CoinChangeBFS.prototype.setup = function () {
   animationManager.clearHistory();
 };
 
-
 CoinChangeBFS.prototype.buildCodeDisplay = function (
   startX,
   startY,
@@ -900,7 +899,12 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
   });
 
   const parentBoundaries = new Map();
-  const minGroupWidth = Math.max(this.treeNodeRadius * 4, 90);
+  const siblingSpacing = Math.max(this.treeNodeRadius * 2.8, 72);
+  const minGroupWidth = Math.max(
+    this.treeNodeRadius * 4.8,
+    siblingSpacing * 1.75,
+    120
+  );
 
   for (let i = 0; i < parentAmounts.length; i++) {
     const center = parentCenters[i];
@@ -942,7 +946,7 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
   }
 
   const assignedPositions = new Map();
-  const minSpacing = Math.max(this.treeNodeRadius * 2.4, 52);
+  const minSpacing = siblingSpacing;
 
   for (const [parent, children] of groups.entries()) {
     const boundary = parentBoundaries.get(parent) || fallbackBoundary;
@@ -1236,21 +1240,7 @@ CoinChangeBFS.prototype.computeEdgeLabelPosition = function (parentNode, childNo
   }
   const midX = (parentNode.x + childNode.x) / 2;
   const midY = (parentNode.y + childNode.y) / 2;
-  let labelX = midX;
-  let labelY = midY;
-  const dx = childNode.x - parentNode.x;
-  const dy = childNode.y - parentNode.y;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  if (distance > 0.0001) {
-    const perpX = dy / distance;
-    const perpY = -dx / distance;
-    const baseOffset = Math.max(10, this.treeNodeRadius * 0.4);
-    const maxOffset = distance / 2 - 6;
-    const offset = maxOffset > 0 ? Math.min(baseOffset, maxOffset) : baseOffset;
-    labelX += perpX * offset;
-    labelY += perpY * offset;
-  }
-  return { x: labelX, y: labelY };
+  return { x: midX, y: midY };
 };
 
 CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
