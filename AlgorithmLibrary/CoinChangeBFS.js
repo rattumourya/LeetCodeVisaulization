@@ -892,6 +892,7 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
           Math.max(parentAmounts.length + 1, 2)
     );
   });
+
   const parentCenterLookup = new Map();
   for (let i = 0; i < parentAmounts.length; i++) {
     parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
@@ -1693,6 +1694,7 @@ CoinChangeBFS.prototype.narrate = function (text, waitSteps) {
   }
   this.cmd("SetHighlight", this.messageID, 0);
 };
+
 CoinChangeBFS.prototype.runCoinChange = function () {
   this.commands = [];
   this.highlightCode(-1);
@@ -1715,6 +1717,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.cmd("SetText", this.resultValueID, "?");
 
   this.highlightCode(0);
+
   this.narrate(`We'll use BFS to find the fewest coins to make amount ${amount}.`, 2);
 
   this.highlightCode(1);
@@ -1723,6 +1726,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.markTreeNodeVisited(0, 0, this.treeFoundColor, null, null);
     this.setVisitedValue(0, true);
     this.highlightVisitedEntry(0, true);
+
     this.cmd("SetText", this.resultValueID, "0");
     this.cmd("Step");
     this.highlightVisitedEntry(0, false);
@@ -1749,10 +1753,12 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
   this.highlightCode(5);
   this.narrate("Mark amount 0 as visited so we don't add it again.");
+
   visited[0] = true;
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
   this.markTreeNodeVisited(0, 0, this.treeVisitedColor, null, null);
+
   this.cmd("Step");
   this.highlightVisitedEntry(0, false);
 
@@ -1795,6 +1801,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
       this.cmd("Step");
 
       this.narrate(`Remove ${curr} from the queue because we're exploring it now.`);
+
       queue.shift();
       this.refreshQueue(queue);
       this.cmd("SetText", this.queueSizeValueID, String(queue.length));
@@ -1812,6 +1819,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
         this.highlightCode(13);
         const next = curr + coin;
         this.narrate(`That makes ${curr} + ${coin} = ${next}.`);
+
         this.cmd("SetText", this.nextValueID, String(next));
         let previewNode = null;
         let previewColor = null;
@@ -1820,6 +1828,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           previewColor = previewNode.color || this.treeDefaultColor;
           this.cmd("SetBackgroundColor", previewNode.id, this.inspectColor);
         }
+
         this.cmd("Step");
         if (previewNode) {
           this.cmd("SetBackgroundColor", previewNode.id, previewColor);
@@ -1839,6 +1848,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
             this.setVisitedValue(amount, true);
             this.highlightVisitedEntry(amount, true);
           }
+
           this.cmd("SetText", this.resultValueID, String(steps));
           this.pulseTreeEdge(curr, next);
           if (amount < this.visitedSlotIDs.length) {
@@ -1896,11 +1906,13 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   }
 
   this.highlightCode(7);
+
   this.narrate("The queue is empty, so there are no more amounts to explore.");
 
   this.highlightCode(22);
   this.narrate("We couldn't make the target amount, so we return -1.");
   this.cmd("SetText", this.resultValueID, "-1");
+
   this.cmd("Step");
 
   this.highlightCode(-1);
