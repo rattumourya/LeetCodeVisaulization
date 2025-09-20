@@ -892,6 +892,7 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
           Math.max(parentAmounts.length + 1, 2)
     );
   });
+
   const parentCenterLookup = new Map();
   for (let i = 0; i < parentAmounts.length; i++) {
     parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
@@ -1423,6 +1424,7 @@ CoinChangeBFS.prototype.computeEdgeLabelPosition = function (parentNode, childNo
   }
   const midX = (parentNode.x + childNode.x) / 2;
   const midY = (parentNode.y + childNode.y) / 2;
+
   const dx = childNode.x - parentNode.x;
   const dy = childNode.y - parentNode.y;
   const length = Math.sqrt(dx * dx + dy * dy);
