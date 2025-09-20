@@ -377,6 +377,7 @@ CoinChangeBFS.prototype.setup = function () {
   animationManager.clearHistory();
 };
 
+
 CoinChangeBFS.prototype.buildCodeDisplay = function (
   startX,
   startY,
@@ -1270,6 +1271,7 @@ CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
   if (!parent) {
     return;
   }
+
   const pos = this.computeEdgeLabelPosition(parent, node);
   this.cmd("Move", node.edgeLabelID, pos.x, pos.y);
 };
