@@ -51,6 +51,7 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.coinPositions = [];
   this.coinHighlight = -1;
 
+
   this.treeLabelID = -1;
   this.treeArea = null;
   this.treeLevels = [];
@@ -300,6 +301,7 @@ CoinChangeBFS.prototype.setup = function () {
   this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H);
 
   this.resetTreeDisplay();
+
   this.resetQueueDisplay();
   this.cmd("SetText", this.amountValueID, String(this.amount));
 
@@ -730,6 +732,7 @@ CoinChangeBFS.prototype.highlightCode = function (lineIdx) {
     this.cmd("SetHighlight", this.codeIDs[i], i === lineIdx ? 1 : 0);
   }
 };
+
 
 CoinChangeBFS.prototype.highlightCoin = function (idx) {
   if (this.coinHighlight === idx) {
