@@ -69,7 +69,6 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.queueValues = [];
   this.queueLabelID = -1;
   this.queueHighlightIndex = -1;
-
   this.visitedLabelID = -1;
   this.visitedIndexHeaderID = -1;
   this.visitedValueHeaderID = -1;
@@ -426,11 +425,13 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   this.treeArea = {
     left: marginLeft,
     right: marginLeft + areaWidth,
+
     width: areaWidth,
     top: topY,
     height: areaHeight,
     bottom: topY + areaHeight,
   };
+
 
   this.visitedPanelWidth = panelWidth;
   this.visitedPanelGap = panelGap;
@@ -1016,6 +1017,7 @@ CoinChangeBFS.prototype.resetTreeDisplay = function () {
     ) {
       this.cmd("Delete", node.edgeLabelID);
     }
+
     this.cmd("Delete", node.id);
   }
 
