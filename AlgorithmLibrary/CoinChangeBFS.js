@@ -61,11 +61,24 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.treeDepthDenominator = 1;
   this.treeNodeRadius = 28;
   this.treeNodeLabelOffset = 44;
+  this.treeDepthCapacity = 0;
+  this.treeDepthBaseEstimate = 0;
+  this.treeEdgeLabelColor = "#1d3f72";
 
   this.queueSlotIDs = [];
   this.queueValues = [];
   this.queueLabelID = -1;
   this.queueHighlightIndex = -1;
+  this.visitedLabelID = -1;
+  this.visitedIndexHeaderID = -1;
+  this.visitedValueHeaderID = -1;
+  this.visitedSlotIDs = [];
+  this.visitedIndexIDs = [];
+  this.visitedStates = [];
+  this.visitedHighlightIndex = -1;
+  this.visitedArea = null;
+  this.visitedPanelWidth = 0;
+  this.visitedPanelGap = 0;
 
   this.titleID = -1;
   this.coinLabelID = -1;
@@ -99,6 +112,9 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
 
   this.queueColor = "#edf3ff";
   this.queueHighlightColor = "#ffd27f";
+
+  this.visitedFalseColor = "#f5f7fb";
+  this.visitedTrueColor = "#dff7df";
 
   this.canvasWidth = w || 720;
   this.canvasHeight = h || 1280;
@@ -147,22 +163,37 @@ CoinChangeBFS.prototype.setInputCallback = function () {
         .filter((v) => !Number.isNaN(v) && v > 0)
     : [];
 
+  let trimmedMessage = "";
   if (parsedCoins.length > 0) {
     parsedCoins.sort((a, b) => a - b);
     if (parsedCoins.length > 8) {
       parsedCoins.length = 8;
     }
     this.coinValues = parsedCoins;
+  }
+
+  if (!this.coinValues || this.coinValues.length === 0) {
+    this.coinValues = [1, 2, 5];
+  }
+
+  if (this.coinValues.length > 0) {
     this.coinsField.value = this.coinValues.join(", ");
   }
 
+  const coinForLimit = this.coinValues[this.coinValues.length - 1] || 1;
+
   const amountValue = parseInt(this.amountField.value, 10);
   if (!Number.isNaN(amountValue)) {
-    this.amount = Math.max(0, Math.min(20, amountValue));
+    const layoutBound = Math.max(coinForLimit * 5, coinForLimit);
+    const clampedAmount = Math.max(0, Math.min(12, layoutBound, amountValue));
+    if (clampedAmount !== amountValue) {
+      trimmedMessage = `Amount limited to ${clampedAmount} to keep the BFS tree readable.`;
+    }
+    this.amount = clampedAmount;
     this.amountField.value = String(this.amount);
   }
 
-  this.messageText = "";
+  this.messageText = trimmedMessage;
   this.reset();
 };
 
@@ -216,6 +247,10 @@ CoinChangeBFS.prototype.setup = function () {
   this.queueHighlightIndex = -1;
   this.coinIDs = [];
   this.coinPositions = [];
+  this.visitedSlotIDs = [];
+  this.visitedIndexIDs = [];
+  this.visitedStates = [];
+  this.visitedHighlightIndex = -1;
 
   this.titleID = this.nextIndex++;
   this.cmd("CreateLabel", this.titleID, "coin change BFS", canvasW / 2, TITLE_Y, 1);
@@ -296,6 +331,12 @@ CoinChangeBFS.prototype.setup = function () {
 
   const queueY = treeLayout.bottomY + queueGapFromTree;
   const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
+  const queueTop = queueY - queueLayout.slotHeight / 2;
+  const visitedBottom = Math.max(
+    treeLayout.bottomY,
+    queueTop - Math.max(16, Math.floor(queueLayout.slotHeight * 0.4))
+  );
+  this.buildVisitedDisplay(treeTopY, visitedBottom, this.amount);
 
   const codeStartPreferred = queueLayout.bottomY + 60;
   const codeStartY = Math.min(Math.max(codeStartPreferred, thirdRowY + 120), maxCodeStartY);
@@ -303,6 +344,7 @@ CoinChangeBFS.prototype.setup = function () {
 
   this.resetTreeDisplay();
   this.resetQueueDisplay();
+  this.resetVisitedDisplay();
   this.cmd("SetText", this.amountValueID, String(this.amount));
 
   animationManager.StartNewAnimation(this.commands);
@@ -346,30 +388,93 @@ CoinChangeBFS.prototype.buildCoinsRow = function (canvasW, coinsY) {
 };
 
 CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
-  const margin = Math.max(60, Math.floor(canvasW * 0.12));
-  const areaHeight = Math.max(160, height || 260);
-  const areaWidth = Math.max(260, canvasW - 2 * margin);
+  const marginLeft = Math.max(60, Math.floor(canvasW * 0.08));
+  let marginRight = Math.max(60, Math.floor(canvasW * 0.08));
+  let panelGap = Math.max(30, Math.floor(canvasW * 0.045));
+  let panelWidth = Math.max(160, Math.floor(canvasW * 0.22));
+
+  let treeRight = canvasW - marginRight - panelGap - panelWidth;
+  let areaWidth = treeRight - marginLeft;
+
+  if (areaWidth < 320) {
+    const deficit = 320 - areaWidth;
+    const reduciblePanel = Math.max(0, panelWidth - 140);
+    const reducePanel = Math.min(deficit, reduciblePanel);
+    panelWidth -= reducePanel;
+    const remaining = deficit - reducePanel;
+    if (remaining > 0) {
+      const reducibleMargin = Math.max(0, marginRight - 40);
+      const reduceMargin = Math.min(remaining, reducibleMargin);
+      marginRight -= reduceMargin;
+    }
+    treeRight = canvasW - marginRight - panelGap - panelWidth;
+    areaWidth = treeRight - marginLeft;
+  }
+
+  if (areaWidth < 260) {
+    areaWidth = 260;
+    treeRight = marginLeft + areaWidth;
+    marginRight = Math.max(30, canvasW - treeRight - panelGap - panelWidth);
+    if (marginRight < 30) {
+      marginRight = 30;
+    }
+  }
+
+  const areaHeight = Math.max(240, height || 260);
 
   this.treeArea = {
-    left: margin,
-    right: canvasW - margin,
+    left: marginLeft,
+    right: marginLeft + areaWidth,
+
     width: areaWidth,
     top: topY,
     height: areaHeight,
     bottom: topY + areaHeight,
   };
 
-  this.treeDepthDenominator = Math.max(1, this.amount || 1);
-  const dynamicRadius = Math.floor(this.treeArea.width / Math.max(6, this.amount + 2)) + 6;
+
+  this.visitedPanelWidth = panelWidth;
+  this.visitedPanelGap = panelGap;
+  const visitedLeft = this.treeArea.right + panelGap;
+  const visitedRight = Math.min(
+    canvasW - marginRight,
+    visitedLeft + this.visitedPanelWidth
+  );
+  this.visitedArea = {
+    left: visitedLeft,
+    right: visitedRight,
+    width: visitedRight - visitedLeft,
+    top: topY,
+    bottom: topY + areaHeight,
+    height: areaHeight,
+  };
+  this.visitedPanelWidth = this.visitedArea.width;
+
+  this.treeDepthDenominator = 1;
+  const dynamicRadius =
+    Math.floor(this.treeArea.width / Math.max(6, this.amount + 2)) + 6;
   this.treeNodeRadius = Math.max(22, Math.min(32, dynamicRadius));
   this.treeNodeLabelOffset = this.treeNodeRadius + 24;
 
+  const coinValuesForDepth =
+    this.coinValues && this.coinValues.length > 0 ? this.coinValues : [1];
+  const largestCoin = coinValuesForDepth[coinValuesForDepth.length - 1] || 1;
+  const estimatedDepth =
+    this.amount > 0 ? Math.ceil(this.amount / Math.max(largestCoin, 1)) : 0;
+  this.treeDepthBaseEstimate = Math.max(2, Math.min(estimatedDepth, 5));
+  this.treeDepthCapacity = Math.max(2, this.computeTreeDepthCapacity());
+  this.treeDepthDenominator = Math.max(
+    2,
+    Math.min(this.treeDepthCapacity, this.treeDepthBaseEstimate)
+  );
+
+  const treeCenterX = this.treeArea.left + this.treeArea.width / 2;
   this.treeLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.treeLabelID,
     "BFS exploration tree",
-    canvasW / 2,
+    treeCenterX,
     topY - 40,
     1
   );
@@ -382,6 +487,175 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   return {
     bottomY: this.treeArea.bottom,
   };
+};
+
+CoinChangeBFS.prototype.computeTreeDepthCapacity = function () {
+  if (!this.treeArea) {
+    return 2;
+  }
+  const usableHeight = Math.max(
+    0,
+    this.treeArea.height - this.treeNodeRadius * 2
+  );
+  const minSpacing = Math.max(56, this.treeNodeRadius * 2.2);
+  const capacity = Math.floor(usableHeight / Math.max(minSpacing, 1));
+  return Math.max(2, capacity > 0 ? capacity : 2);
+};
+
+CoinChangeBFS.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
+  if (!this.visitedArea) {
+    this.visitedArea = {
+      left: this.treeArea ? this.treeArea.right + 30 : 520,
+      right: this.treeArea ? this.treeArea.right + 190 : 680,
+      width: 160,
+      top: topY,
+      bottom: bottomY,
+      height: bottomY - topY,
+    };
+    this.visitedPanelWidth = this.visitedArea.width;
+    this.visitedPanelGap = 30;
+  }
+
+  this.visitedArea.top = topY;
+  this.visitedArea.bottom = bottomY;
+  this.visitedArea.height = Math.max(40, bottomY - topY);
+
+  const panelLeft = this.visitedArea.left;
+  const panelRight = this.visitedArea.right;
+  const centerX = panelLeft + this.visitedArea.width / 2;
+
+  this.visitedLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.visitedLabelID,
+    "visited array",
+    centerX,
+    topY - 40,
+    1
+  );
+  this.cmd("SetTextStyle", this.visitedLabelID, "bold 18");
+
+  const slotCount = Math.max(1, (amount || 0) + 1);
+  const availableHeight = this.visitedArea.height;
+  const minSlotHeight = 18;
+  const maxSlotHeight = 34;
+
+  let spacing = Math.max(3, Math.floor(availableHeight * 0.02));
+  let slotHeight = Math.floor((availableHeight - (slotCount - 1) * spacing) / slotCount);
+  if (slotHeight > maxSlotHeight) {
+    slotHeight = maxSlotHeight;
+  }
+  if (slotHeight < minSlotHeight) {
+    slotHeight = minSlotHeight;
+    spacing = Math.max(
+      2,
+      Math.floor(
+        (availableHeight - slotCount * slotHeight) / Math.max(slotCount - 1, 1)
+      )
+    );
+  }
+
+  let totalHeight = slotCount * slotHeight + (slotCount - 1) * spacing;
+  if (totalHeight > availableHeight) {
+    const extra = totalHeight - availableHeight;
+    const reducePerGap = Math.ceil(extra / Math.max(slotCount - 1, 1));
+    spacing = Math.max(2, spacing - reducePerGap);
+    totalHeight = slotCount * slotHeight + (slotCount - 1) * spacing;
+  }
+
+  let startY = topY;
+  if (totalHeight < availableHeight) {
+    startY = topY + (availableHeight - totalHeight) / 2;
+  }
+
+  const headerY = Math.max(topY - 12, startY - Math.max(18, spacing));
+  const indexX = panelLeft + 18;
+  const slotWidth = Math.min(
+    92,
+    Math.max(58, Math.floor(this.visitedPanelWidth * 0.6))
+  );
+  const slotX = panelRight - slotWidth / 2 - 8;
+
+  this.visitedIndexHeaderID = this.nextIndex++;
+  this.cmd("CreateLabel", this.visitedIndexHeaderID, "amount", indexX, headerY, 0);
+  this.cmd("SetTextStyle", this.visitedIndexHeaderID, "bold 12");
+
+  this.visitedValueHeaderID = this.nextIndex++;
+  this.cmd("CreateLabel", this.visitedValueHeaderID, "visited", slotX, headerY, 1);
+  this.cmd("SetTextStyle", this.visitedValueHeaderID, "bold 12");
+
+  this.visitedSlotIDs = [];
+  this.visitedIndexIDs = [];
+  this.visitedStates = [];
+  this.visitedHighlightIndex = -1;
+
+  for (let i = 0; i < slotCount; i++) {
+    const centerY = startY + i * (slotHeight + spacing) + slotHeight / 2;
+    const indexId = this.nextIndex++;
+    this.cmd("CreateLabel", indexId, String(i), indexX, centerY, 0);
+    this.cmd("SetTextStyle", indexId, "14");
+    this.visitedIndexIDs.push(indexId);
+
+    const slotId = this.nextIndex++;
+    this.cmd("CreateRectangle", slotId, "0", slotWidth, slotHeight, slotX, centerY);
+    this.cmd("SetBackgroundColor", slotId, this.visitedFalseColor);
+    this.cmd("SetForegroundColor", slotId, "#000000");
+    this.visitedSlotIDs.push(slotId);
+  }
+};
+
+CoinChangeBFS.prototype.resetVisitedDisplay = function () {
+  if (!this.visitedSlotIDs) {
+    this.visitedSlotIDs = [];
+  }
+  this.visitedStates = new Array(this.visitedSlotIDs.length).fill(false);
+  for (let i = 0; i < this.visitedSlotIDs.length; i++) {
+    const id = this.visitedSlotIDs[i];
+    this.cmd("SetText", id, "0");
+    this.cmd("SetBackgroundColor", id, this.visitedFalseColor);
+    this.cmd("SetHighlight", id, 0);
+  }
+  this.visitedHighlightIndex = -1;
+};
+
+CoinChangeBFS.prototype.setVisitedValue = function (index, state) {
+  if (index < 0 || index >= this.visitedSlotIDs.length) {
+    return;
+  }
+  const id = this.visitedSlotIDs[index];
+  this.visitedStates[index] = !!state;
+  this.cmd("SetText", id, state ? "1" : "0");
+  this.cmd(
+    "SetBackgroundColor",
+    id,
+    state ? this.visitedTrueColor : this.visitedFalseColor
+  );
+};
+
+CoinChangeBFS.prototype.highlightVisitedEntry = function (index, highlight) {
+  if (index < 0 || index >= this.visitedSlotIDs.length) {
+    return;
+  }
+  if (highlight) {
+    if (
+      this.visitedHighlightIndex !== -1 &&
+      this.visitedHighlightIndex !== index &&
+      this.visitedSlotIDs[this.visitedHighlightIndex]
+    ) {
+      this.cmd(
+        "SetHighlight",
+        this.visitedSlotIDs[this.visitedHighlightIndex],
+        0
+      );
+    }
+    this.cmd("SetHighlight", this.visitedSlotIDs[index], 1);
+    this.visitedHighlightIndex = index;
+  } else {
+    this.cmd("SetHighlight", this.visitedSlotIDs[index], 0);
+    if (this.visitedHighlightIndex === index) {
+      this.visitedHighlightIndex = -1;
+    }
+  }
 };
 
 CoinChangeBFS.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellWidth, baseGap) {
@@ -429,8 +703,15 @@ CoinChangeBFS.prototype.getTreeLevelY = function (level) {
   if (!this.treeArea) {
     return 0;
   }
-  const ratio = Math.min(level / this.treeDepthDenominator, 1);
-  return this.treeArea.top + ratio * this.treeArea.height;
+  const steps = Math.max(1, this.treeDepthDenominator);
+  const limitedLevel = Math.min(Math.max(level, 0), steps);
+  const usableHeight = Math.max(0, this.treeArea.height - this.treeNodeRadius * 2);
+  const baseY = this.treeArea.top + this.treeNodeRadius;
+  if (steps <= 0) {
+    return baseY;
+  }
+  const spacing = usableHeight / steps;
+  return baseY + limitedLevel * spacing;
 };
 
 CoinChangeBFS.prototype.getNodeParent = function (amount) {
@@ -448,6 +729,42 @@ CoinChangeBFS.prototype.getNodeParent = function (amount) {
     return this.treePendingParents[amount];
   }
   return null;
+};
+
+CoinChangeBFS.prototype.ensureTreeDepthCapacity = function (level) {
+  if (!this.treeArea) {
+    return;
+  }
+  const requiredDepth = Math.max(1, level);
+  const maxDepth = Math.max(2, this.computeTreeDepthCapacity());
+  this.treeDepthCapacity = maxDepth;
+  if (requiredDepth > maxDepth) {
+    if (this.treeDepthDenominator !== maxDepth) {
+      this.treeDepthDenominator = maxDepth;
+      this.reflowTreeLayout();
+    }
+    return;
+  }
+  if (requiredDepth <= this.treeDepthDenominator) {
+    return;
+  }
+  const newDenominator = Math.min(
+    maxDepth,
+    Math.max(this.treeDepthDenominator, requiredDepth)
+  );
+  if (newDenominator !== this.treeDepthDenominator) {
+    this.treeDepthDenominator = newDenominator;
+    this.reflowTreeLayout();
+  }
+};
+
+CoinChangeBFS.prototype.reflowTreeLayout = function () {
+  if (!this.treeLevels) {
+    return;
+  }
+  for (let level = 0; level < this.treeLevels.length; level++) {
+    this.updateTreeLevelPositions(level);
+  }
 };
 
 CoinChangeBFS.prototype.insertIntoTreeLevel = function (level, amount, parent) {
@@ -643,6 +960,13 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
       }
       node.x = pos.x;
       node.y = pos.y;
+      if (
+        node.edgeLabelID !== undefined &&
+        node.edgeLabelID !== null &&
+        node.edgeLabelID >= 0
+      ) {
+        this.updateEdgeLabelPosition(amount);
+      }
     }
   }
 
@@ -663,6 +987,18 @@ CoinChangeBFS.prototype.resetTreeDisplay = function () {
   });
 
   this.clearTreeEdgeHighlight();
+
+  this.treeDepthCapacity = Math.max(2, this.computeTreeDepthCapacity());
+
+  const baseDepth = Math.max(
+    2,
+    Math.min(
+      this.treeDepthCapacity || 2,
+      this.treeDepthBaseEstimate || this.treeDepthDenominator || 2
+    )
+  );
+  this.treeDepthDenominator = baseDepth;
+
   for (const amount of amounts) {
     const node = this.treeNodes[amount];
     if (!node) {
@@ -674,6 +1010,14 @@ CoinChangeBFS.prototype.resetTreeDisplay = function () {
     if (node.labelID >= 0) {
       this.cmd("Delete", node.labelID);
     }
+    if (
+      node.edgeLabelID !== undefined &&
+      node.edgeLabelID !== null &&
+      node.edgeLabelID >= 0
+    ) {
+      this.cmd("Delete", node.edgeLabelID);
+    }
+
     this.cmd("Delete", node.id);
   }
 
@@ -723,6 +1067,7 @@ CoinChangeBFS.prototype.createTreeRoot = function () {
     coin: null,
     parent: null,
     color: this.treeDefaultColor,
+    edgeLabelID: -1,
   };
 };
 
@@ -764,28 +1109,40 @@ CoinChangeBFS.prototype.ensureTreeNode = function (
   coin
 ) {
   const parent = parentAmount === undefined ? null : parentAmount;
+  const hasLevel = level !== undefined && level !== null;
+  let normalizedLevel = hasLevel ? level : 0;
+
   if (this.treeNodes[amount]) {
-    this.updateTreeNodeLabel(amount, step, coin);
     const node = this.treeNodes[amount];
-    if (level !== undefined && level !== null) {
-      node.level = level;
+    const levelForLayout = hasLevel ? normalizedLevel : node.level || 0;
+    this.ensureTreeDepthCapacity(levelForLayout);
+    this.updateTreeNodeLabel(amount, step, coin);
+    if (hasLevel) {
+      node.level = normalizedLevel;
     }
     if (parent !== undefined) {
       node.parent = parent;
     }
+    if (coin !== undefined && coin !== null) {
+      this.setEdgeLabel(amount, coin);
+    } else if (
+      node.edgeLabelID !== undefined &&
+      node.edgeLabelID !== null &&
+      node.edgeLabelID >= 0
+    ) {
+      this.updateEdgeLabelPosition(amount);
+    }
     return node;
   }
 
-  if (level === undefined || level === null) {
-    level = 0;
-  }
+  this.ensureTreeDepthCapacity(normalizedLevel);
 
   this.treePendingParents[amount] = parent;
-  const index = this.insertIntoTreeLevel(level, amount, parent);
-  const positions = this.updateTreeLevelPositions(level);
+  const index = this.insertIntoTreeLevel(normalizedLevel, amount, parent);
+  const positions = this.updateTreeLevelPositions(normalizedLevel);
   const pos = positions[index] || {
     x: this.treeArea.left + this.treeArea.width / 2,
-    y: this.getTreeLevelY(level),
+    y: this.getTreeLevelY(normalizedLevel),
   };
 
   const nodeID = this.nextIndex++;
@@ -807,13 +1164,14 @@ CoinChangeBFS.prototype.ensureTreeNode = function (
   const nodeInfo = {
     id: nodeID,
     labelID,
-    level,
+    level: normalizedLevel,
     x: pos.x,
     y: pos.y,
     step: step === undefined ? null : step,
     coin: coin === undefined ? null : coin,
     parent,
     color: this.treeDefaultColor,
+    edgeLabelID: -1,
   };
   this.treeNodes[amount] = nodeInfo;
   delete this.treePendingParents[amount];
@@ -824,6 +1182,9 @@ CoinChangeBFS.prototype.ensureTreeNode = function (
     this.treeNodes[parent]
   ) {
     this.cmd("Connect", this.treeNodes[parent].id, nodeID);
+    if (coin !== undefined && coin !== null) {
+      this.setEdgeLabel(amount, coin);
+    }
   }
 
   return nodeInfo;
@@ -837,6 +1198,67 @@ CoinChangeBFS.prototype.setTreeNodeColor = function (amount, color) {
   const fill = color || this.treeDefaultColor;
   this.cmd("SetBackgroundColor", node.id, fill);
   node.color = fill;
+};
+
+CoinChangeBFS.prototype.updateEdgeLabelPosition = function (amount) {
+  const node = this.treeNodes[amount];
+  if (
+    !node ||
+    node.edgeLabelID === undefined ||
+    node.edgeLabelID === null ||
+    node.edgeLabelID < 0
+  ) {
+    return;
+  }
+  const parentAmount = node.parent;
+  if (parentAmount === undefined || parentAmount === null) {
+    return;
+  }
+  const parent = this.treeNodes[parentAmount];
+  if (!parent) {
+    return;
+  }
+  const midX = (parent.x + node.x) / 2;
+  const offset = Math.max(12, this.treeNodeRadius * 0.7);
+  const midY = (parent.y + node.y) / 2 - offset;
+  this.cmd("Move", node.edgeLabelID, midX, midY);
+};
+
+CoinChangeBFS.prototype.setEdgeLabel = function (amount, coin) {
+  if (coin === undefined || coin === null) {
+    return;
+  }
+  const node = this.treeNodes[amount];
+  if (!node) {
+    return;
+  }
+  const parentAmount = node.parent;
+  if (parentAmount === undefined || parentAmount === null) {
+    return;
+  }
+  const parent = this.treeNodes[parentAmount];
+  if (!parent) {
+    return;
+  }
+  const labelText = `+${coin}`;
+  if (
+    node.edgeLabelID === undefined ||
+    node.edgeLabelID === null ||
+    node.edgeLabelID < 0
+  ) {
+    const midX = (parent.x + node.x) / 2;
+    const offset = Math.max(12, this.treeNodeRadius * 0.7);
+    const midY = (parent.y + node.y) / 2 - offset;
+    const labelID = this.nextIndex++;
+    this.cmd("CreateLabel", labelID, labelText, midX, midY, 0);
+    this.cmd("SetTextStyle", labelID, "bold 12");
+    this.cmd("SetForegroundColor", labelID, this.treeEdgeLabelColor);
+    node.edgeLabelID = labelID;
+  } else {
+    this.cmd("SetText", node.edgeLabelID, labelText);
+    this.cmd("SetForegroundColor", node.edgeLabelID, this.treeEdgeLabelColor);
+    this.updateEdgeLabelPosition(amount);
+  }
 };
 
 CoinChangeBFS.prototype.markTreeNodeVisited = function (
@@ -922,8 +1344,20 @@ CoinChangeBFS.prototype.pulseTreeEdge = function (fromAmount, toAmount) {
   }
   this.clearTreeEdgeHighlight();
   this.setTreeEdgeHighlight(fromAmount, toAmount, true);
+  let labelID = -1;
+  if (
+    toNode.edgeLabelID !== undefined &&
+    toNode.edgeLabelID !== null &&
+    toNode.edgeLabelID >= 0
+  ) {
+    labelID = toNode.edgeLabelID;
+    this.cmd("SetForegroundColor", labelID, "#d47f00");
+  }
   this.cmd("Step");
   this.setTreeEdgeHighlight(fromAmount, toAmount, false);
+  if (labelID >= 0) {
+    this.cmd("SetForegroundColor", labelID, this.treeEdgeLabelColor);
+  }
 };
 
 CoinChangeBFS.prototype.resetQueueDisplay = function () {
@@ -989,6 +1423,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.unhighlightCoin();
   this.resetTreeDisplay();
   this.resetQueueDisplay();
+  this.resetVisitedDisplay();
 
   const coins = this.coinValues.slice();
   const amount = this.amount;
@@ -1008,10 +1443,13 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
   this.highlightCode(1);
   if (amount === 0) {
+    this.setVisitedValue(0, true);
     this.markTreeNodeVisited(0, 0, this.treeFoundColor, null, null);
+    this.highlightVisitedEntry(0, true);
     this.cmd("SetText", this.messageID, "Amount is zero so answer is zero.");
     this.cmd("SetText", this.resultValueID, "0");
     this.cmd("Step");
+    this.highlightVisitedEntry(0, false);
     this.highlightCode(-1);
     return this.commands;
   }
@@ -1019,7 +1457,11 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.cmd("Step");
 
   this.highlightCode(2);
-  this.cmd("SetText", this.messageID, "Create visited array of size amount + 1.");
+  this.cmd(
+    "SetText",
+    this.messageID,
+    "Create visited array of size amount + 1 (all entries start at 0)."
+  );
   this.cmd("Step");
 
   this.highlightCode(3);
@@ -1037,9 +1479,16 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
   this.highlightCode(6);
   visited[0] = true;
+  this.highlightVisitedEntry(0, true);
+  this.setVisitedValue(0, true);
   this.markTreeNodeVisited(0, 0, this.treeVisitedColor, null, null);
-  this.cmd("SetText", this.messageID, "Mark amount 0 as visited in the tree.");
+  this.cmd(
+    "SetText",
+    this.messageID,
+    "Set visited[0] = 1 for the starting amount."
+  );
   this.cmd("Step");
+  this.highlightVisitedEntry(0, false);
 
   this.highlightCode(7);
   let steps = 0;
@@ -1124,6 +1573,11 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           this.updateTreeNodeLabel(next, steps, coin);
           this.setTreeNodeColor(next, this.treeFoundColor);
           this.highlightTreeNode(next);
+          visited[amount] = true;
+          if (amount < this.visitedSlotIDs.length) {
+            this.setVisitedValue(amount, true);
+            this.highlightVisitedEntry(amount, true);
+          }
           this.cmd(
             "SetText",
             this.messageID,
@@ -1131,46 +1585,64 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           );
           this.cmd("SetText", this.resultValueID, String(steps));
           this.pulseTreeEdge(curr, next);
+          if (amount < this.visitedSlotIDs.length) {
+            this.highlightVisitedEntry(amount, false);
+          }
           this.unhighlightCoin();
           this.highlightCode(-1);
           return this.commands;
         }
 
         this.highlightCode(17);
-        if (next < amount && !visited[next]) {
+        if (next < amount) {
+          this.highlightVisitedEntry(next, true);
           this.cmd(
             "SetText",
             this.messageID,
-            `Amount ${next} not visited and less than ${amount}.`
+            `Check visited[${next}] = ${visited[next] ? "1" : "0"} before enqueueing."
           );
           this.cmd("Step");
 
-          this.highlightCode(18);
-          visited[next] = true;
-          this.markTreeNodeVisited(next, steps, this.treeVisitedColor, coin, curr);
-          this.cmd(
-            "SetText",
-            this.messageID,
-            `Add amount ${next} to the tree from ${curr} at step ${steps}.`
-          );
-          this.pulseTreeEdge(curr, next);
+          if (!visited[next]) {
+            this.highlightCode(18);
+            visited[next] = true;
+            this.setVisitedValue(next, true);
+            this.markTreeNodeVisited(
+              next,
+              steps,
+              this.treeVisitedColor,
+              coin,
+              curr
+            );
+            this.cmd(
+              "SetText",
+              this.messageID,
+              `Add amount ${next} from ${curr} at depth ${steps}.`
+            );
+            this.pulseTreeEdge(curr, next);
+            this.highlightVisitedEntry(next, false);
 
-          this.highlightCode(19);
-          queue.push(next);
-          this.refreshQueue(queue);
-          this.cmd("SetText", this.queueSizeValueID, String(queue.length));
-          this.cmd("SetText", this.messageID, `Enqueue ${next} for next level.`);
-          this.cmd("Step");
-        } else {
-          let reason;
-          if (next > amount) {
-            reason = `Amount ${next} exceeds target ${amount}.`;
-          } else if (next === amount) {
-            reason = `Amount ${amount} already handled.`;
+            this.highlightCode(19);
+            queue.push(next);
+            this.refreshQueue(queue);
+            this.cmd("SetText", this.queueSizeValueID, String(queue.length));
+            this.cmd("SetText", this.messageID, `Enqueue ${next} for next level.`);
+            this.cmd("Step");
           } else {
-            reason = `Amount ${next} already visited.`;
+            this.cmd(
+              "SetText",
+              this.messageID,
+              `Skip amount ${next} because visited[${next}] = 1.`
+            );
+            this.cmd("Step");
+            this.highlightVisitedEntry(next, false);
           }
-          this.cmd("SetText", this.messageID, reason);
+        } else {
+          this.cmd(
+            "SetText",
+            this.messageID,
+            `Amount ${next} exceeds target ${amount}.`
+          );
           this.cmd("Step");
         }
 
