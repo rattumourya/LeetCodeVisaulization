@@ -1102,16 +1102,24 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
   for (const info of orderedGroups) {
     const start = Math.max(baseLeft, Math.min(info.start, baseRight - info.width));
     const end = start + info.width;
+
+    const desiredCenter = parentCenterLookup.has(info.parent)
+      ? parentCenterLookup.get(info.parent)
+      : info.desiredCenter;
+    const center = clamp(desiredCenter);
     groupPlacement.set(info.parent, {
       start,
       end,
-      center: start + info.width / 2,
+      center,
+      desiredCenter,
       children: info.children,
     });
   }
 
   const assignedPositions = new Map();
-  const minChildSpacing = Math.max(this.treeNodeRadius * 2.7, 88);
+  const minChildSpacing = Math.max(this.treeNodeRadius * 2.8, 90);
+  const minVisualSpacing = Math.max(this.treeNodeRadius * 2.4, 70);
+  const minCompressionSpacing = Math.max(this.treeNodeRadius * 2.2, 56);
 
   for (const [parent, placement] of groupPlacement.entries()) {
     const children = placement.children;
@@ -1119,49 +1127,116 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
       continue;
     }
     const childCount = children.length;
+    const parentNode =
+      parent !== null && parent !== undefined ? this.treeNodes[parent] : null;
+    const parentCenter = parentNode && Number.isFinite(parentNode.x)
+      ? clamp(parentNode.x)
+      : clamp(placement.center);
+
     const leftBound = placement.start + innerPadding;
     const rightBound = placement.end - innerPadding;
+    let usableLeft = leftBound;
+    let usableRight = rightBound;
+    if (usableLeft > usableRight) {
+      const midpoint = placement.start + (placement.end - placement.start) / 2;
+      usableLeft = midpoint;
+      usableRight = midpoint;
+    }
 
     if (childCount === 1) {
-      const center = parentCenterLookup.has(parent)
-        ? parentCenterLookup.get(parent)
-        : placement.center;
-      const targetX = clamp(
-        Math.max(Math.min(center, rightBound), leftBound <= rightBound ? leftBound : placement.start)
-      );
-      assignedPositions.set(children[0], { x: targetX, y });
+      assignedPositions.set(children[0], { x: parentCenter, y });
       continue;
     }
 
-    let span = rightBound - leftBound;
-    if (span <= 0) {
-      span = placement.end - placement.start;
+    const containerSpan = Math.max(placement.end - placement.start, 0);
+    const interiorSpan = Math.max(usableRight - usableLeft, 0);
+    const baseSpan = interiorSpan > 0 ? interiorSpan : containerSpan;
+    let spacing =
+      childCount > 1 && baseSpan > 0
+        ? baseSpan / (childCount - 1)
+        : minChildSpacing;
+    if (!Number.isFinite(spacing) || spacing <= 0) {
+      spacing = minChildSpacing;
     }
-    let step = span / (childCount - 1);
-    if (!Number.isFinite(step) || step <= 0) {
-      step = minChildSpacing;
-    }
-    if (step < minChildSpacing) {
-      step = minChildSpacing;
-    }
-    let totalSpan = step * (childCount - 1);
-    let startX = (parentCenterLookup.has(parent)
-      ? parentCenterLookup.get(parent)
-      : placement.center) - totalSpan / 2;
+    spacing = Math.max(spacing, minChildSpacing, minVisualSpacing);
 
-    const minStart = placement.start + innerPadding;
-    const maxStart = placement.end - innerPadding - totalSpan;
-    if (maxStart >= minStart) {
-      startX = Math.min(Math.max(startX, minStart), maxStart);
+    if (childCount > 1) {
+      const maxSpan = Math.max(interiorSpan, containerSpan);
+      if (maxSpan > 0 && Number.isFinite(maxSpan)) {
+        const maxSpacing = maxSpan / (childCount - 1);
+        if (
+          Number.isFinite(maxSpacing) &&
+          maxSpacing > 0 &&
+          spacing * (childCount - 1) > maxSpan
+        ) {
+          spacing = Math.max(
+            minCompressionSpacing,
+            Math.min(spacing, maxSpacing)
+          );
+        }
+      }
+
+      const largestOffset =
+        childCount % 2 === 0
+          ? childCount / 2 - 0.5
+          : Math.floor(childCount / 2);
+      if (largestOffset > 0) {
+        const leftSpace = Math.max(parentCenter - usableLeft, 0);
+        const rightSpace = Math.max(usableRight - parentCenter, 0);
+        const boundSpacing = Math.min(
+          leftSpace / largestOffset,
+          rightSpace / largestOffset
+        );
+        if (
+          Number.isFinite(boundSpacing) &&
+          boundSpacing > 0 &&
+          spacing > boundSpacing
+        ) {
+          spacing = Math.max(minCompressionSpacing, boundSpacing);
+        }
+      }
+    }
+
+    const totalSpan = spacing * (childCount - 1);
+
+    let targetCenter = parentCenter;
+    if (childCount % 2 === 0) {
+      if (
+        Number.isFinite(usableLeft) &&
+        Number.isFinite(usableRight) &&
+        Number.isFinite(totalSpan)
+      ) {
+        const minCenter = usableLeft + totalSpan / 2;
+        const maxCenter = usableRight - totalSpan / 2;
+        if (minCenter <= maxCenter) {
+          if (targetCenter < minCenter) {
+            targetCenter = minCenter;
+          } else if (targetCenter > maxCenter) {
+            targetCenter = maxCenter;
+          }
+        }
+      }
+    }
+
+    if (!Number.isFinite(targetCenter)) {
+      targetCenter = parentCenter;
+    }
+
+    const offsets = [];
+    if (childCount % 2 === 0) {
+      const base = childCount / 2 - 0.5;
+      for (let i = 0; i < childCount; i++) {
+        offsets.push(i - base);
+      }
     } else {
-      const centered = placement.center - totalSpan / 2;
-      const limitLeft = placement.start;
-      const limitRight = placement.end - totalSpan;
-      startX = Math.max(limitLeft, Math.min(centered, limitRight));
+      const mid = Math.floor(childCount / 2);
+      for (let i = 0; i < childCount; i++) {
+        offsets.push(i - mid);
+      }
     }
 
     for (let i = 0; i < childCount; i++) {
-      const x = clamp(startX + step * i);
+      const x = clamp(targetCenter + offsets[i] * spacing);
       assignedPositions.set(children[i], { x, y });
     }
   }
@@ -1424,7 +1499,6 @@ CoinChangeBFS.prototype.computeEdgeLabelPosition = function (parentNode, childNo
   }
   const midX = (parentNode.x + childNode.x) / 2;
   const midY = (parentNode.y + childNode.y) / 2;
-
   const dx = childNode.x - parentNode.x;
   const dy = childNode.y - parentNode.y;
   const length = Math.sqrt(dx * dx + dy * dy);
