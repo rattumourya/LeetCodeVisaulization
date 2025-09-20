@@ -51,12 +51,13 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.coinPositions = [];
   this.coinHighlight = -1;
 
-
   this.treeLabelID = -1;
   this.treeArea = null;
   this.treeLevels = [];
   this.treeNodes = {};
+  this.treePendingParents = {};
   this.treeHighlightAmount = null;
+  this.treeActiveEdge = null;
   this.treeDepthDenominator = 1;
   this.treeNodeRadius = 28;
   this.treeNodeLabelOffset = 44;
@@ -301,7 +302,6 @@ CoinChangeBFS.prototype.setup = function () {
   this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H);
 
   this.resetTreeDisplay();
-
   this.resetQueueDisplay();
   this.cmd("SetText", this.amountValueID, String(this.amount));
 
@@ -433,34 +433,216 @@ CoinChangeBFS.prototype.getTreeLevelY = function (level) {
   return this.treeArea.top + ratio * this.treeArea.height;
 };
 
+CoinChangeBFS.prototype.getNodeParent = function (amount) {
+  if (
+    this.treeNodes[amount] !== undefined &&
+    this.treeNodes[amount] !== null &&
+    this.treeNodes[amount].parent !== undefined
+  ) {
+    return this.treeNodes[amount].parent;
+  }
+  if (
+    this.treePendingParents &&
+    Object.prototype.hasOwnProperty.call(this.treePendingParents, amount)
+  ) {
+    return this.treePendingParents[amount];
+  }
+  return null;
+};
+
+CoinChangeBFS.prototype.insertIntoTreeLevel = function (level, amount, parent) {
+  if (!this.treeLevels[level]) {
+    this.treeLevels[level] = [];
+  }
+
+  const existingIndex = this.treeLevels[level].indexOf(amount);
+  if (existingIndex !== -1) {
+    return existingIndex;
+  }
+
+  if (level === 0) {
+    this.treeLevels[level].push(amount);
+    return this.treeLevels[level].length - 1;
+  }
+
+  const previousLevel = this.treeLevels[level - 1] || [];
+  const parentOrder = new Map();
+  for (let i = 0; i < previousLevel.length; i++) {
+    parentOrder.set(previousLevel[i], i);
+  }
+
+  const normalizedParent = parent === undefined ? null : parent;
+  const parentRank = parentOrder.has(normalizedParent)
+    ? parentOrder.get(normalizedParent)
+    : Number.MAX_SAFE_INTEGER;
+
+  let insertIndex = this.treeLevels[level].length;
+  for (let i = 0; i < this.treeLevels[level].length; i++) {
+    const currentAmount = this.treeLevels[level][i];
+    const currentParent = this.getNodeParent(currentAmount);
+    const currentRank = parentOrder.has(currentParent)
+      ? parentOrder.get(currentParent)
+      : Number.MAX_SAFE_INTEGER;
+
+    if (currentRank > parentRank) {
+      insertIndex = i;
+      break;
+    }
+
+    if (currentRank === parentRank && currentParent === normalizedParent) {
+      insertIndex = i + 1;
+    }
+  }
+
+  this.treeLevels[level].splice(insertIndex, 0, amount);
+  return insertIndex;
+};
+
 CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
-  const levelNodes = this.treeLevels[level] || [];
+  const levelAmounts = this.treeLevels[level] || [];
   const positions = [];
-  if (!this.treeArea || levelNodes.length === 0) {
+  if (!this.treeArea || levelAmounts.length === 0) {
     return positions;
   }
-  const width = this.treeArea.width;
-  const left = this.treeArea.left;
-  const total = levelNodes.length;
-  const y = this.getTreeLevelY(level);
 
-  for (let i = 0; i < total; i++) {
-    let x;
-    if (total === 1) {
-      x = left + width / 2;
-    } else {
-      x = left + ((i + 1) * width) / (total + 1);
+  const y = this.getTreeLevelY(level);
+  const baseLeft = this.treeArea.left + this.treeNodeRadius;
+  const baseRight = this.treeArea.right - this.treeNodeRadius;
+  const clamp = (value) => Math.max(baseLeft, Math.min(baseRight, value));
+
+  if (level === 0) {
+    const centerX = clamp((baseLeft + baseRight) / 2);
+    const rootAmount = levelAmounts[0];
+    positions.push({ x: centerX, y });
+    const rootNode = this.treeNodes[rootAmount];
+    if (rootNode) {
+      this.cmd("Move", rootNode.id, centerX, y);
+      if (rootNode.labelID >= 0) {
+        this.cmd("Move", rootNode.labelID, centerX, y + this.treeNodeLabelOffset);
+      }
+      rootNode.x = centerX;
+      rootNode.y = y;
     }
-    positions.push({ x, y });
-    const amount = levelNodes[i];
+    return positions;
+  }
+
+  const parentAmounts = this.treeLevels[level - 1] || [];
+  const fallbackBoundary = {
+    start: baseLeft,
+    end: baseRight,
+    center: clamp((baseLeft + baseRight) / 2),
+  };
+
+  const parentCenters = parentAmounts.map((amount, index) => {
+    const parentNode = this.treeNodes[amount];
+    if (parentNode && parentNode.x !== undefined && parentNode.x !== null) {
+      return clamp(parentNode.x);
+    }
+    return clamp(
+      baseLeft +
+        ((index + 1) * (baseRight - baseLeft)) /
+          Math.max(parentAmounts.length + 1, 2)
+    );
+  });
+
+  const parentBoundaries = new Map();
+  const minGroupWidth = Math.max(this.treeNodeRadius * 4, 90);
+
+  for (let i = 0; i < parentAmounts.length; i++) {
+    const center = parentCenters[i];
+    const prevCenter = i > 0 ? parentCenters[i - 1] : baseLeft - minGroupWidth;
+    const nextCenter =
+      i < parentCenters.length - 1
+        ? parentCenters[i + 1]
+        : baseRight + minGroupWidth;
+
+    let start = i === 0 ? baseLeft : (prevCenter + center) / 2;
+    let end = i === parentCenters.length - 1 ? baseRight : (center + nextCenter) / 2;
+
+    if (end - start < minGroupWidth) {
+      start = center - minGroupWidth / 2;
+      end = center + minGroupWidth / 2;
+    }
+
+    start = clamp(start);
+    end = clamp(end);
+    if (end <= start) {
+      start = clamp(center - minGroupWidth / 2);
+      end = clamp(center + minGroupWidth / 2);
+    }
+
+    parentBoundaries.set(parentAmounts[i], {
+      start,
+      end,
+      center,
+    });
+  }
+
+  const groups = new Map();
+  for (const amount of levelAmounts) {
+    const parent = this.getNodeParent(amount);
+    if (!groups.has(parent)) {
+      groups.set(parent, []);
+    }
+    groups.get(parent).push(amount);
+  }
+
+  const assignedPositions = new Map();
+  const minSpacing = Math.max(this.treeNodeRadius * 2.4, 52);
+
+  for (const [parent, children] of groups.entries()) {
+    const boundary = parentBoundaries.get(parent) || fallbackBoundary;
+    const center = clamp(boundary.center);
+    let start = boundary.start;
+    let end = boundary.end;
+
+    if (end - start < minSpacing) {
+      const span = Math.max(minSpacing * (children.length - 1), minGroupWidth);
+      start = center - span / 2;
+      end = center + span / 2;
+    }
+
+    start = clamp(start);
+    end = clamp(end);
+
+    if (children.length === 1) {
+      assignedPositions.set(children[0], { x: center, y });
+    } else if (end - start < minSpacing) {
+      for (let i = 0; i < children.length; i++) {
+        const offset = (i - (children.length - 1) / 2) * minSpacing;
+        assignedPositions.set(children[i], {
+          x: clamp(center + offset),
+          y,
+        });
+      }
+    } else {
+      for (let i = 0; i < children.length; i++) {
+        const ratio = (i + 1) / (children.length + 1);
+        const x = start + ratio * (end - start);
+        assignedPositions.set(children[i], { x: clamp(x), y });
+      }
+    }
+  }
+
+  for (let i = 0; i < levelAmounts.length; i++) {
+    const amount = levelAmounts[i];
+    let pos = assignedPositions.get(amount);
+    if (!pos) {
+      const fallbackX =
+        baseLeft +
+        ((i + 1) * (baseRight - baseLeft)) /
+          Math.max(levelAmounts.length + 1, 2);
+      pos = { x: clamp(fallbackX), y };
+    }
+    positions.push(pos);
     const node = this.treeNodes[amount];
     if (node) {
-      this.cmd("Move", node.id, x, y);
+      this.cmd("Move", node.id, pos.x, pos.y);
       if (node.labelID >= 0) {
-        this.cmd("Move", node.labelID, x, y + this.treeNodeLabelOffset);
+        this.cmd("Move", node.labelID, pos.x, pos.y + this.treeNodeLabelOffset);
       }
-      node.x = x;
-      node.y = y;
+      node.x = pos.x;
+      node.y = pos.y;
     }
   }
 
@@ -480,6 +662,7 @@ CoinChangeBFS.prototype.resetTreeDisplay = function () {
     return b - a;
   });
 
+  this.clearTreeEdgeHighlight();
   for (const amount of amounts) {
     const node = this.treeNodes[amount];
     if (!node) {
@@ -497,6 +680,8 @@ CoinChangeBFS.prototype.resetTreeDisplay = function () {
   this.treeLevels = [];
   this.treeNodes = {};
   this.treeHighlightAmount = null;
+  this.treePendingParents = {};
+  this.treeActiveEdge = null;
 
   this.createTreeRoot();
 };
@@ -578,25 +763,26 @@ CoinChangeBFS.prototype.ensureTreeNode = function (
   step,
   coin
 ) {
+  const parent = parentAmount === undefined ? null : parentAmount;
   if (this.treeNodes[amount]) {
     this.updateTreeNodeLabel(amount, step, coin);
     const node = this.treeNodes[amount];
     if (level !== undefined && level !== null) {
       node.level = level;
     }
-    if (parentAmount !== undefined && parentAmount !== null) {
-      node.parent = parentAmount;
+    if (parent !== undefined) {
+      node.parent = parent;
     }
     return node;
   }
 
-  if (!this.treeLevels[level]) {
-    this.treeLevels[level] = [];
+  if (level === undefined || level === null) {
+    level = 0;
   }
-  this.treeLevels[level].push(amount);
-  this.treeLevels[level].sort((a, b) => a - b);
+
+  this.treePendingParents[amount] = parent;
+  const index = this.insertIntoTreeLevel(level, amount, parent);
   const positions = this.updateTreeLevelPositions(level);
-  const index = this.treeLevels[level].indexOf(amount);
   const pos = positions[index] || {
     x: this.treeArea.left + this.treeArea.width / 2,
     y: this.getTreeLevelY(level),
@@ -626,17 +812,18 @@ CoinChangeBFS.prototype.ensureTreeNode = function (
     y: pos.y,
     step: step === undefined ? null : step,
     coin: coin === undefined ? null : coin,
-    parent: parentAmount === undefined ? null : parentAmount,
+    parent,
     color: this.treeDefaultColor,
   };
   this.treeNodes[amount] = nodeInfo;
+  delete this.treePendingParents[amount];
 
   if (
-    parentAmount !== undefined &&
-    parentAmount !== null &&
-    this.treeNodes[parentAmount]
+    parent !== undefined &&
+    parent !== null &&
+    this.treeNodes[parent]
   ) {
-    this.cmd("Connect", this.treeNodes[parentAmount].id, nodeID);
+    this.cmd("Connect", this.treeNodes[parent].id, nodeID);
   }
 
   return nodeInfo;
@@ -696,6 +883,49 @@ CoinChangeBFS.prototype.clearTreeHighlight = function () {
   this.treeHighlightAmount = null;
 };
 
+CoinChangeBFS.prototype.setTreeEdgeHighlight = function (fromAmount, toAmount, highlight) {
+  const fromNode = this.treeNodes[fromAmount];
+  const toNode = this.treeNodes[toAmount];
+  if (!fromNode || !toNode) {
+    return;
+  }
+  this.cmd("SetEdgeHighlight", fromNode.id, toNode.id, highlight ? 1 : 0);
+  if (highlight) {
+    this.treeActiveEdge = { from: fromAmount, to: toAmount };
+  } else if (
+    this.treeActiveEdge &&
+    this.treeActiveEdge.from === fromAmount &&
+    this.treeActiveEdge.to === toAmount
+  ) {
+    this.treeActiveEdge = null;
+  }
+};
+
+CoinChangeBFS.prototype.clearTreeEdgeHighlight = function () {
+  if (!this.treeActiveEdge) {
+    return;
+  }
+  const { from, to } = this.treeActiveEdge;
+  const fromNode = this.treeNodes[from];
+  const toNode = this.treeNodes[to];
+  if (fromNode && toNode) {
+    this.cmd("SetEdgeHighlight", fromNode.id, toNode.id, 0);
+  }
+  this.treeActiveEdge = null;
+};
+
+CoinChangeBFS.prototype.pulseTreeEdge = function (fromAmount, toAmount) {
+  const fromNode = this.treeNodes[fromAmount];
+  const toNode = this.treeNodes[toAmount];
+  if (!fromNode || !toNode) {
+    return;
+  }
+  this.clearTreeEdgeHighlight();
+  this.setTreeEdgeHighlight(fromAmount, toAmount, true);
+  this.cmd("Step");
+  this.setTreeEdgeHighlight(fromAmount, toAmount, false);
+};
+
 CoinChangeBFS.prototype.resetQueueDisplay = function () {
   this.queueValues = [];
   this.queueHighlightIndex = -1;
@@ -732,7 +962,6 @@ CoinChangeBFS.prototype.highlightCode = function (lineIdx) {
     this.cmd("SetHighlight", this.codeIDs[i], i === lineIdx ? 1 : 0);
   }
 };
-
 
 CoinChangeBFS.prototype.highlightCoin = function (idx) {
   if (this.coinHighlight === idx) {
@@ -901,7 +1130,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
             `Reached target ${amount} in ${steps} step${steps === 1 ? "" : "s"}.`
           );
           this.cmd("SetText", this.resultValueID, String(steps));
-          this.cmd("Step");
+          this.pulseTreeEdge(curr, next);
           this.unhighlightCoin();
           this.highlightCode(-1);
           return this.commands;
@@ -922,9 +1151,9 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           this.cmd(
             "SetText",
             this.messageID,
-            `Add amount ${next} to the tree at step ${steps}.`
+            `Add amount ${next} to the tree from ${curr} at step ${steps}.`
           );
-          this.cmd("Step");
+          this.pulseTreeEdge(curr, next);
 
           this.highlightCode(19);
           queue.push(next);
