@@ -99,6 +99,280 @@ var heightEntry;
 var sizeButton;
 
 
+var narrationOverlayElements = null;
+var narrationOverlayState = {
+        visible: false,
+        lines: [],
+        highlights: [],
+        total: 0,
+        remaining: 0
+};
+
+function ensureNarrationOverlayElements()
+{
+        if (narrationOverlayElements)
+        {
+                return narrationOverlayElements;
+        }
+        if (typeof document === "undefined")
+        {
+                return null;
+        }
+        var overlay = document.getElementById("narration-overlay");
+        if (!overlay)
+        {
+                return null;
+        }
+        var content = overlay.querySelector(".narration-content");
+        var timer = overlay.querySelector(".narration-timer");
+        var progress = overlay.querySelector(".narration-progress");
+        narrationOverlayElements = {
+                overlay: overlay,
+                content: content,
+                timer: timer,
+                progress: progress
+        };
+        return narrationOverlayElements;
+}
+
+function cloneNarrationArray(arr)
+{
+        if (!Array.isArray(arr))
+        {
+                return [];
+        }
+        return arr.slice(0);
+}
+
+function escapeNarrationHTML(text)
+{
+        if (text === undefined || text === null)
+        {
+                return "";
+        }
+        return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+}
+
+function escapeNarrationRegExp(text)
+{
+        return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function highlightNarrationLine(line, highlights)
+{
+        var safe = escapeNarrationHTML(line);
+        if (!highlights || highlights.length === 0)
+        {
+                return safe;
+        }
+        var result = safe;
+        for (var i = 0; i < highlights.length; i++)
+        {
+                var word = highlights[i];
+                if (!word)
+                {
+                        continue;
+                }
+                var safeWord = escapeNarrationHTML(word);
+                if (!safeWord)
+                {
+                        continue;
+                }
+                var pattern = new RegExp("(" + escapeNarrationRegExp(safeWord) + ")", "gi");
+                result = result.replace(pattern, '<span class="narration-highlight">$1</span>');
+        }
+        return result;
+}
+
+function renderNarrationLines(lines, highlights)
+{
+        if (!lines || lines.length === 0)
+        {
+                return "";
+        }
+        var html = "";
+        for (var i = 0; i < lines.length; i++)
+        {
+                var line = lines[i];
+                if (line === undefined || line === null)
+                {
+                        continue;
+                }
+                var trimmed = String(line);
+                var formatted = highlightNarrationLine(trimmed, highlights);
+                html += "<p>" + formatted + "</p>";
+        }
+        return html;
+}
+
+function applyNarrationOverlayState(state)
+{
+        if (!state)
+        {
+                state = { visible: false, lines: [], highlights: [], total: 0, remaining: 0 };
+        }
+        narrationOverlayState = {
+                visible: !!state.visible,
+                lines: cloneNarrationArray(state.lines),
+                highlights: cloneNarrationArray(state.highlights),
+                total: Number(state.total) > 0 ? Number(state.total) : 0,
+                remaining: Number(state.remaining) >= 0 ? Number(state.remaining) : 0
+        };
+
+        var elements = ensureNarrationOverlayElements();
+        if (!elements)
+        {
+                return;
+        }
+
+        if (narrationOverlayState.visible)
+        {
+                elements.overlay.classList.add("active");
+                var canvasElement = document.getElementById("canvas");
+                if (canvasElement)
+                {
+                        canvasElement.classList.add("narration-blur");
+                }
+        }
+        else
+        {
+                elements.overlay.classList.remove("active");
+                var canvasNode = document.getElementById("canvas");
+                if (canvasNode)
+                {
+                        canvasNode.classList.remove("narration-blur");
+                }
+        }
+
+        if (elements.content)
+        {
+                elements.content.innerHTML = renderNarrationLines(narrationOverlayState.lines, narrationOverlayState.highlights);
+        }
+
+        if (elements.timer)
+        {
+                if (narrationOverlayState.visible && narrationOverlayState.total > 0)
+                {
+                        var remaining = Math.max(0, Math.ceil(narrationOverlayState.remaining));
+                        elements.timer.textContent = remaining > 0 ? "Next in " + remaining + "s" : "Next step ready";
+                }
+                else
+                {
+                        elements.timer.textContent = "";
+                }
+        }
+
+        if (elements.progress)
+        {
+                if (narrationOverlayState.visible && narrationOverlayState.total > 0)
+                {
+                        var total = Math.max(1, narrationOverlayState.total);
+                        var remainingTime = Math.max(0, narrationOverlayState.remaining);
+                        var ratio = Math.max(0, Math.min(1, (total - remainingTime) / total));
+                        elements.progress.style.width = String(Math.round(ratio * 100)) + "%";
+                }
+                else
+                {
+                        elements.progress.style.width = "0%";
+                }
+        }
+}
+
+function getNarrationOverlayState()
+{
+        return {
+                visible: narrationOverlayState.visible,
+                lines: cloneNarrationArray(narrationOverlayState.lines),
+                highlights: cloneNarrationArray(narrationOverlayState.highlights),
+                total: narrationOverlayState.total,
+                remaining: narrationOverlayState.remaining
+        };
+}
+
+function showNarrationOverlayFromPayload(payload)
+{
+        if (payload === undefined || payload === null)
+        {
+                return;
+        }
+        var decoded = payload;
+        try
+        {
+                decoded = decodeURIComponent(payload);
+        }
+        catch (err)
+        {
+        }
+        var data = {};
+        try
+        {
+                data = JSON.parse(decoded);
+        }
+        catch (err2)
+        {
+                data = { lines: [decoded] };
+        }
+        var lines = cloneNarrationArray(data.lines);
+        if ((!lines || lines.length === 0) && data.text)
+        {
+                lines = [data.text];
+        }
+        var highlights = cloneNarrationArray(data.highlights);
+        var total = parseInt(data.total, 10);
+        if (!isFinite(total) || total < 1)
+        {
+                total = 1;
+        }
+        applyNarrationOverlayState({
+                visible: true,
+                lines: lines,
+                highlights: highlights,
+                total: total,
+                remaining: total
+        });
+}
+
+function updateNarrationOverlayTimer(remaining, total)
+{
+        var nextRemaining = parseInt(remaining, 10);
+        if (!isFinite(nextRemaining) || nextRemaining < 0)
+        {
+                nextRemaining = 0;
+        }
+        var nextTotal = parseInt(total, 10);
+        if (!isFinite(nextTotal) || nextTotal < 1)
+        {
+                nextTotal = narrationOverlayState.total > 0 ? narrationOverlayState.total : 1;
+        }
+        applyNarrationOverlayState({
+                visible: narrationOverlayState.visible,
+                lines: narrationOverlayState.lines,
+                highlights: narrationOverlayState.highlights,
+                total: nextTotal,
+                remaining: nextRemaining
+        });
+}
+
+function hideNarrationOverlay()
+{
+        applyNarrationOverlayState({ visible: false, lines: [], highlights: [], total: 0, remaining: 0 });
+}
+
+if (typeof window !== "undefined")
+{
+        window.applyNarrationOverlayState = applyNarrationOverlayState;
+        window.getNarrationOverlayState = getNarrationOverlayState;
+        window.showNarrationOverlayFromPayload = showNarrationOverlayFromPayload;
+        window.updateNarrationOverlayTimer = updateNarrationOverlayTimer;
+        window.hideNarrationOverlay = hideNarrationOverlay;
+}
+
+
 
 function returnSubmit(field, funct, maxsize, intOnly)
 {
@@ -758,30 +1032,63 @@ function AnimationManager(objectManager)
 				this.animatedObjects.setAlpha(parseInt(nextCommand[1]), parseFloat(nextCommand[2]));
 				undoBlock.push(new UndoSetAlpha(parseInt(nextCommand[1]), oldAlpha));					
 			}
-			else if (nextCommand[0].toUpperCase() == "SETTEXT")
-			{
-				if (nextCommand.length > 3)
-				{
-					var oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), parseInt(nextCommand[3]));
-					this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], parseInt(nextCommand[3]));
-					if (oldText != undefined)
-					{
-						undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, parseInt(nextCommand[3]) ));			
-					}	
-				}
-				else
-				{
-					oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), 0);
-					this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], 0);
-					if (oldText != undefined)
-					{
-						undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, 0));	
-					}
-				}
-			}
-			else if (nextCommand[0].toUpperCase() == "DELETE")
-			{
-				var objectID  = parseInt(nextCommand[1]);
+                        else if (nextCommand[0].toUpperCase() == "SETTEXT")
+                        {
+                                if (nextCommand.length > 3)
+                                {
+                                        var oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), parseInt(nextCommand[3]));
+                                        this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], parseInt(nextCommand[3]));
+                                        if (oldText != undefined)
+                                        {
+                                                undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, parseInt(nextCommand[3]) ));
+                                        }
+                                }
+                                else
+                                {
+                                        oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), 0);
+                                        this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], 0);
+                                        if (oldText != undefined)
+                                        {
+                                                undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, 0));
+                                        }
+                                }
+                        }
+                        else if (nextCommand[0].toUpperCase() == "SHOWNARRATIONBOARD")
+                        {
+                                if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
+                                {
+                                        undoBlock.push(new UndoNarrationOverlay(getNarrationOverlayState()));
+                                }
+                                if (typeof showNarrationOverlayFromPayload === "function")
+                                {
+                                        showNarrationOverlayFromPayload(nextCommand[1]);
+                                }
+                        }
+                        else if (nextCommand[0].toUpperCase() == "UPDATENARRATIONTIMER")
+                        {
+                                if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
+                                {
+                                        undoBlock.push(new UndoNarrationOverlay(getNarrationOverlayState()));
+                                }
+                                if (typeof updateNarrationOverlayTimer === "function")
+                                {
+                                        updateNarrationOverlayTimer(nextCommand[1], nextCommand[2]);
+                                }
+                        }
+                        else if (nextCommand[0].toUpperCase() == "HIDENARRATIONBOARD")
+                        {
+                                if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
+                                {
+                                        undoBlock.push(new UndoNarrationOverlay(getNarrationOverlayState()));
+                                }
+                                if (typeof hideNarrationOverlay === "function")
+                                {
+                                        hideNarrationOverlay();
+                                }
+                        }
+                        else if (nextCommand[0].toUpperCase() == "DELETE")
+                        {
+                                var objectID  = parseInt(nextCommand[1]);
 				
 				var i;
 				var removedEdges = this.animatedObjects.deleteIncident(objectID);
