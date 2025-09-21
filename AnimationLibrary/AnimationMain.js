@@ -99,6 +99,514 @@ var heightEntry;
 var sizeButton;
 
 
+var narrationOverlayElements = null;
+var narrationOverlayState = {
+        visible: false,
+        lines: [],
+        highlights: [],
+        total: 0,
+        remaining: 0
+};
+
+var narrationSpeechState = {
+        utterance: null,
+        lastText: ""
+};
+
+var narrationOverlayAdvanceTimer = null;
+
+function clearNarrationAdvanceTimer()
+{
+        if (narrationOverlayAdvanceTimer)
+        {
+                try
+                {
+                        clearTimeout(narrationOverlayAdvanceTimer);
+                }
+                catch (err)
+                {
+                }
+                narrationOverlayAdvanceTimer = null;
+        }
+}
+
+function scheduleNarrationAdvance(milliseconds)
+{
+        clearNarrationAdvanceTimer();
+        var delay = parseInt(milliseconds, 10);
+        if (!isFinite(delay) || delay <= 0)
+        {
+                return;
+        }
+        narrationOverlayAdvanceTimer = setTimeout(function ()
+        {
+                narrationOverlayAdvanceTimer = null;
+                handleNarrationSpeechFinished();
+        }, delay);
+}
+
+function handleNarrationSpeechFinished()
+{
+        clearNarrationAdvanceTimer();
+        if (typeof animationManager !== "undefined" && animationManager && typeof animationManager.onNarrationSpeechFinished === "function")
+        {
+                try
+                {
+                        animationManager.onNarrationSpeechFinished();
+                }
+                catch (err)
+                {
+                }
+        }
+}
+
+function getNarrationSpeechSynth()
+{
+        if (typeof window === "undefined" || typeof window.speechSynthesis === "undefined")
+        {
+                return null;
+        }
+        try
+        {
+                return window.speechSynthesis;
+        }
+        catch (err)
+        {
+                return null;
+        }
+}
+
+function createNarrationSpeechUtterance(text)
+{
+        if (typeof SpeechSynthesisUtterance === "undefined")
+        {
+                return null;
+        }
+        try
+        {
+                return new SpeechSynthesisUtterance(text);
+        }
+        catch (err)
+        {
+                return null;
+        }
+}
+
+function resetNarrationSpeechState()
+{
+        narrationSpeechState.utterance = null;
+}
+
+function cancelNarrationSpeech()
+{
+        var synth = getNarrationSpeechSynth();
+        if (synth && typeof synth.cancel === "function")
+        {
+                try
+                {
+                        synth.cancel();
+                }
+                catch (err)
+                {
+                }
+        }
+        resetNarrationSpeechState();
+        clearNarrationAdvanceTimer();
+}
+
+function buildNarrationSpeechText(lines)
+{
+        if (!lines || lines.length === 0)
+        {
+                return "";
+        }
+        var segments = [];
+        for (var i = 0; i < lines.length; i++)
+        {
+                var entry = lines[i];
+                if (entry === undefined || entry === null)
+                {
+                        continue;
+                }
+                var trimmed = String(entry).trim();
+                if (!trimmed)
+                {
+                        continue;
+                }
+                if (!/[.!?]$/.test(trimmed))
+                {
+                        trimmed += ".";
+                }
+                segments.push(trimmed);
+        }
+        return segments.join(" ");
+}
+
+function speakNarrationLines(lines)
+{
+        var synth = getNarrationSpeechSynth();
+        if (!synth)
+        {
+                return false;
+        }
+        var text = buildNarrationSpeechText(lines);
+        if (!text)
+        {
+                cancelNarrationSpeech();
+                return false;
+        }
+        var stillSpeaking = false;
+        try
+        {
+                stillSpeaking = !!synth.speaking;
+        }
+        catch (err)
+        {
+                stillSpeaking = false;
+        }
+        if (stillSpeaking && narrationSpeechState.utterance && narrationSpeechState.lastText === text)
+        {
+                return true;
+        }
+        cancelNarrationSpeech();
+        var utterance = createNarrationSpeechUtterance(text);
+        if (!utterance)
+        {
+                return false;
+        }
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        if (typeof navigator !== "undefined" && navigator.language)
+        {
+                utterance.lang = navigator.language;
+        }
+        else
+        {
+                utterance.lang = "en-US";
+        }
+        utterance.onend = function()
+        {
+                if (narrationSpeechState.utterance === utterance)
+                {
+                        resetNarrationSpeechState();
+                        handleNarrationSpeechFinished();
+                }
+        };
+        utterance.onerror = function()
+        {
+                if (narrationSpeechState.utterance === utterance)
+                {
+                        resetNarrationSpeechState();
+                        handleNarrationSpeechFinished();
+                }
+        };
+        try
+        {
+                synth.speak(utterance);
+                narrationSpeechState.utterance = utterance;
+                narrationSpeechState.lastText = text;
+                return true;
+        }
+        catch (err)
+        {
+                resetNarrationSpeechState();
+                handleNarrationSpeechFinished();
+        }
+        return false;
+}
+
+function ensureNarrationOverlayElements()
+{
+        if (narrationOverlayElements)
+        {
+                return narrationOverlayElements;
+        }
+        if (typeof document === "undefined")
+        {
+                return null;
+        }
+        var overlay = document.getElementById("narration-overlay");
+        if (!overlay)
+        {
+                return null;
+        }
+        var content = overlay.querySelector(".narration-content");
+        var timer = overlay.querySelector(".narration-timer");
+        var progress = overlay.querySelector(".narration-progress");
+        narrationOverlayElements = {
+                overlay: overlay,
+                content: content,
+                timer: timer,
+                progress: progress
+        };
+        return narrationOverlayElements;
+}
+
+function cloneNarrationArray(arr)
+{
+        if (!Array.isArray(arr))
+        {
+                return [];
+        }
+        return arr.slice(0);
+}
+
+function escapeNarrationHTML(text)
+{
+        if (text === undefined || text === null)
+        {
+                return "";
+        }
+        return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+}
+
+function escapeNarrationRegExp(text)
+{
+        return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function highlightNarrationLine(line, highlights)
+{
+        var safe = escapeNarrationHTML(line);
+        if (!highlights || highlights.length === 0)
+        {
+                return safe;
+        }
+        var result = safe;
+        for (var i = 0; i < highlights.length; i++)
+        {
+                var word = highlights[i];
+                if (!word)
+                {
+                        continue;
+                }
+                var safeWord = escapeNarrationHTML(word);
+                if (!safeWord)
+                {
+                        continue;
+                }
+                var pattern = new RegExp("(" + escapeNarrationRegExp(safeWord) + ")", "gi");
+                result = result.replace(pattern, '<span class="narration-highlight">$1</span>');
+        }
+        return result;
+}
+
+function renderNarrationLines(lines, highlights)
+{
+        if (!lines || lines.length === 0)
+        {
+                return "";
+        }
+        var html = "";
+        for (var i = 0; i < lines.length; i++)
+        {
+                var line = lines[i];
+                if (line === undefined || line === null)
+                {
+                        continue;
+                }
+                var trimmed = String(line);
+                var formatted = highlightNarrationLine(trimmed, highlights);
+                html += "<p>" + formatted + "</p>";
+        }
+        return html;
+}
+
+function applyNarrationOverlayState(state)
+{
+        if (!state)
+        {
+                state = { visible: false, lines: [], highlights: [], total: 0, remaining: 0 };
+        }
+        narrationOverlayState = {
+                visible: !!state.visible,
+                lines: cloneNarrationArray(state.lines),
+                highlights: cloneNarrationArray(state.highlights),
+                total: Number(state.total) > 0 ? Number(state.total) : 0,
+                remaining: Number(state.remaining) >= 0 ? Number(state.remaining) : 0
+        };
+
+        var elements = ensureNarrationOverlayElements();
+        if (!elements)
+        {
+                return;
+        }
+
+        if (narrationOverlayState.visible)
+        {
+                elements.overlay.classList.add("active");
+                var canvasElement = document.getElementById("canvas");
+                if (canvasElement)
+                {
+                        canvasElement.classList.add("narration-blur");
+                }
+        }
+        else
+        {
+                elements.overlay.classList.remove("active");
+                var canvasNode = document.getElementById("canvas");
+                if (canvasNode)
+                {
+                        canvasNode.classList.remove("narration-blur");
+                }
+        }
+
+        if (elements.content)
+        {
+                elements.content.innerHTML = renderNarrationLines(narrationOverlayState.lines, narrationOverlayState.highlights);
+        }
+
+        if (elements.timer)
+        {
+                if (narrationOverlayState.visible && narrationOverlayState.total > 0)
+                {
+                        var remaining = Math.max(0, Math.ceil(narrationOverlayState.remaining));
+                        elements.timer.textContent = remaining > 0 ? "Next in " + remaining + "s" : "Next step ready";
+                }
+                else
+                {
+                        elements.timer.textContent = "";
+                }
+        }
+
+        if (elements.progress)
+        {
+                if (narrationOverlayState.visible && narrationOverlayState.total > 0)
+                {
+                        var total = Math.max(1, narrationOverlayState.total);
+                        var remainingTime = Math.max(0, narrationOverlayState.remaining);
+                        var ratio = Math.max(0, Math.min(1, (total - remainingTime) / total));
+                        elements.progress.style.width = String(Math.round(ratio * 100)) + "%";
+                }
+                else
+                {
+                        elements.progress.style.width = "0%";
+                }
+        }
+
+        if (!narrationOverlayState.visible)
+        {
+                cancelNarrationSpeech();
+        }
+}
+
+function getNarrationOverlayState()
+{
+        return {
+                visible: narrationOverlayState.visible,
+                lines: cloneNarrationArray(narrationOverlayState.lines),
+                highlights: cloneNarrationArray(narrationOverlayState.highlights),
+                total: narrationOverlayState.total,
+                remaining: narrationOverlayState.remaining
+        };
+}
+
+function showNarrationOverlayFromPayload(payload)
+{
+        if (payload === undefined || payload === null)
+        {
+                return;
+        }
+        var decoded = payload;
+        try
+        {
+                decoded = decodeURIComponent(payload);
+        }
+        catch (err)
+        {
+        }
+        var data = {};
+        try
+        {
+                data = JSON.parse(decoded);
+        }
+        catch (err2)
+        {
+                data = { lines: [decoded] };
+        }
+        var lines = cloneNarrationArray(data.lines);
+        if ((!lines || lines.length === 0) && data.text)
+        {
+                lines = [data.text];
+        }
+        var highlights = cloneNarrationArray(data.highlights);
+        var total = parseInt(data.total, 10);
+        if (!isFinite(total) || total < 0)
+        {
+                total = 0;
+        }
+        var fallbackMs = 0;
+        if (data.fallbackMs !== undefined && data.fallbackMs !== null)
+        {
+                var parsedFallback = parseInt(data.fallbackMs, 10);
+                if (isFinite(parsedFallback) && parsedFallback > 0)
+                {
+                        fallbackMs = parsedFallback;
+                }
+        }
+        if (!fallbackMs && data.wait !== undefined && data.wait !== null)
+        {
+                var parsedWait = parseFloat(data.wait);
+                if (isFinite(parsedWait) && parsedWait > 0)
+                {
+                        fallbackMs = Math.floor(parsedWait * 1000);
+                }
+        }
+        applyNarrationOverlayState({
+                visible: true,
+                lines: lines,
+                highlights: highlights,
+                total: total,
+                remaining: total
+        });
+        var started = speakNarrationLines(lines);
+        if (!started && fallbackMs > 0)
+        {
+                scheduleNarrationAdvance(fallbackMs);
+        }
+}
+
+function updateNarrationOverlayTimer(remaining, total)
+{
+        var nextRemaining = parseInt(remaining, 10);
+        if (!isFinite(nextRemaining) || nextRemaining < 0)
+        {
+                nextRemaining = 0;
+        }
+        var nextTotal = parseInt(total, 10);
+        if (!isFinite(nextTotal) || nextTotal < 1)
+        {
+                nextTotal = narrationOverlayState.total > 0 ? narrationOverlayState.total : 1;
+        }
+        applyNarrationOverlayState({
+                visible: narrationOverlayState.visible,
+                lines: narrationOverlayState.lines,
+                highlights: narrationOverlayState.highlights,
+                total: nextTotal,
+                remaining: nextRemaining
+        });
+}
+
+function hideNarrationOverlay()
+{
+        applyNarrationOverlayState({ visible: false, lines: [], highlights: [], total: 0, remaining: 0 });
+}
+
+if (typeof window !== "undefined")
+{
+        window.applyNarrationOverlayState = applyNarrationOverlayState;
+        window.getNarrationOverlayState = getNarrationOverlayState;
+        window.showNarrationOverlayFromPayload = showNarrationOverlayFromPayload;
+        window.updateNarrationOverlayTimer = updateNarrationOverlayTimer;
+        window.hideNarrationOverlay = hideNarrationOverlay;
+}
+
+
 
 function returnSubmit(field, funct, maxsize, intOnly)
 {
@@ -450,11 +958,12 @@ function AnimationManager(objectManager)
 
 	// Control variables for stopping / starting animation
 	
-	this.animationPaused = false;
-	this.awaitingStep = false;
-	this.currentlyAnimating = false;
-	
-	// Array holding the code for the animation.  This is 
+        this.animationPaused = false;
+        this.awaitingStep = false;
+        this.currentlyAnimating = false;
+        this.waitingForNarrationSpeech = false;
+
+        // Array holding the code for the animation.  This is
 	// an array of strings, each of which is an animation command
 	// currentAnimation is an index into this array
 	this.AnimationSteps = [];
@@ -530,11 +1039,11 @@ function AnimationManager(objectManager)
 	}
 	
 	
-	this.changeSize = function()
-	{
-		
-		var width = parseInt(widthEntry.value);
-		var height = parseInt(heightEntry.value);
+        this.changeSize = function()
+        {
+
+                var width = parseInt(widthEntry.value);
+                var height = parseInt(heightEntry.value);
 		
 		if (width > 100)
 		{
@@ -552,14 +1061,45 @@ function AnimationManager(objectManager)
 		width.value = canvas.width;
 		heightEntry.value = canvas.height;
 		
-		this.animatedObjects.draw();
-		this.fireEvent("CanvasSizeChanged",{width:canvas.width, height:canvas.height});		
-	}
-	
-	this.startNextBlock = function()
-	{
-		this.awaitingStep = false;
-		this.currentBlock = [];
+                this.animatedObjects.draw();
+                this.fireEvent("CanvasSizeChanged",{width:canvas.width, height:canvas.height});
+        }
+
+        this.onNarrationSpeechFinished = function()
+        {
+                if (!this.waitingForNarrationSpeech)
+                {
+                        return;
+                }
+                this.waitingForNarrationSpeech = false;
+                this.awaitingStep = false;
+                this.startNextBlock();
+                if (this.waitingForNarrationSpeech)
+                {
+                        return;
+                }
+                if (this.AnimationSteps == null || (this.currentAnimation >= this.AnimationSteps.length && (!this.currentBlock || this.currentBlock.length === 0)))
+                {
+                        this.currentlyAnimating = false;
+                        return;
+                }
+                if (this.animationPaused)
+                {
+                        this.awaitingStep = true;
+                        this.currentlyAnimating = false;
+                        this.fireEvent("AnimationWaiting","NoData");
+                        return;
+                }
+                this.fireEvent("AnimationStarted","NoData");
+                this.currentlyAnimating = true;
+                clearTimeout(timer);
+                timer = setTimeout('timeout()', 30);
+        }
+
+        this.startNextBlock = function()
+        {
+                this.awaitingStep = false;
+                this.currentBlock = [];
 		var undoBlock = []
 		if (this.currentAnimation == this.AnimationSteps.length )
 		{
@@ -758,30 +1298,73 @@ function AnimationManager(objectManager)
 				this.animatedObjects.setAlpha(parseInt(nextCommand[1]), parseFloat(nextCommand[2]));
 				undoBlock.push(new UndoSetAlpha(parseInt(nextCommand[1]), oldAlpha));					
 			}
-			else if (nextCommand[0].toUpperCase() == "SETTEXT")
-			{
-				if (nextCommand.length > 3)
-				{
-					var oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), parseInt(nextCommand[3]));
-					this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], parseInt(nextCommand[3]));
-					if (oldText != undefined)
-					{
-						undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, parseInt(nextCommand[3]) ));			
-					}	
-				}
-				else
-				{
-					oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), 0);
-					this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], 0);
-					if (oldText != undefined)
-					{
-						undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, 0));	
-					}
-				}
-			}
-			else if (nextCommand[0].toUpperCase() == "DELETE")
-			{
-				var objectID  = parseInt(nextCommand[1]);
+                        else if (nextCommand[0].toUpperCase() == "SETTEXT")
+                        {
+                                if (nextCommand.length > 3)
+                                {
+                                        var oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), parseInt(nextCommand[3]));
+                                        this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], parseInt(nextCommand[3]));
+                                        if (oldText != undefined)
+                                        {
+                                                undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, parseInt(nextCommand[3]) ));
+                                        }
+                                }
+                                else
+                                {
+                                        oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), 0);
+                                        this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], 0);
+                                        if (oldText != undefined)
+                                        {
+                                                undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, 0));
+                                        }
+                                }
+                        }
+                        else if (nextCommand[0].toUpperCase() == "SHOWNARRATIONBOARD")
+                        {
+                                if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
+                                {
+                                        undoBlock.push(new UndoNarrationOverlay(getNarrationOverlayState()));
+                                }
+                                if (typeof showNarrationOverlayFromPayload === "function")
+                                {
+                                        showNarrationOverlayFromPayload(nextCommand[1]);
+                                }
+                        }
+                        else if (nextCommand[0].toUpperCase() == "UPDATENARRATIONTIMER")
+                        {
+                                if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
+                                {
+                                        undoBlock.push(new UndoNarrationOverlay(getNarrationOverlayState()));
+                                }
+                                if (typeof updateNarrationOverlayTimer === "function")
+                                {
+                                        updateNarrationOverlayTimer(nextCommand[1], nextCommand[2]);
+                                }
+                        }
+                        else if (nextCommand[0].toUpperCase() == "HIDENARRATIONBOARD")
+                        {
+                                if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
+                                {
+                                        undoBlock.push(new UndoNarrationOverlay(getNarrationOverlayState()));
+                                }
+                                if (typeof hideNarrationOverlay === "function")
+                                {
+                                        hideNarrationOverlay();
+                                }
+                                this.waitingForNarrationSpeech = false;
+                        }
+                        else if (nextCommand[0].toUpperCase() == "WAITFORNARRATIONSPEECH")
+                        {
+                                if (!this.animatedObjects.runFast && !this.doingUndo)
+                                {
+                                        this.waitingForNarrationSpeech = true;
+                                        this.currentlyAnimating = false;
+                                }
+                                foundBreak = true;
+                        }
+                        else if (nextCommand[0].toUpperCase() == "DELETE")
+                        {
+                                var objectID  = parseInt(nextCommand[1]);
 				
 				var i;
 				var removedEdges = this.animatedObjects.deleteIncident(objectID);
@@ -1042,18 +1625,25 @@ function AnimationManager(objectManager)
 		{
 			this.AnimationSteps = ["Step"];
 		}
-		else
-		{
-			this.AnimationSteps = commands;
-		}
-		this.undoAnimationStepIndices = new Array();
-		this.currentAnimation = 0;
-		this.startNextBlock();
-		this.currentlyAnimating = true;
-		this.fireEvent("AnimationStarted","NoData");
-		timer = setTimeout('timeout()', 30); 
+                else
+                {
+                        this.AnimationSteps = commands;
+                }
+                this.undoAnimationStepIndices = new Array();
+                this.currentAnimation = 0;
+                this.startNextBlock();
+                if (this.waitingForNarrationSpeech)
+                {
+                        this.currentlyAnimating = false;
+                }
+                else
+                {
+                        this.currentlyAnimating = true;
+                }
+                this.fireEvent("AnimationStarted","NoData");
+                timer = setTimeout('timeout()', 30);
 
-	}
+        }
 	
 	
 	// Step backwards one step.  A no-op if the animation is not currently paused
@@ -1167,13 +1757,18 @@ function AnimationManager(objectManager)
 		clearTimeout(timer);
 	}
 	
-	this.skipForward = function()
-	{
-		if (this.currentlyAnimating)
-		{
-			this.animatedObjects.runFast = true;
-			while (this.AnimationSteps != null && this.currentAnimation < this.AnimationSteps.length)
-			{
+        this.skipForward = function()
+        {
+                if (this.waitingForNarrationSpeech)
+                {
+                        cancelNarrationSpeech();
+                        this.onNarrationSpeechFinished();
+                }
+                if (this.currentlyAnimating)
+                {
+                        this.animatedObjects.runFast = true;
+                        while (this.AnimationSteps != null && this.currentAnimation < this.AnimationSteps.length)
+                        {
 				var i;
 				for (i = 0; this.currentBlock != null && i < this.currentBlock.length; i++)
 				{

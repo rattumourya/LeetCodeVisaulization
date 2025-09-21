@@ -128,3 +128,110 @@ EM {text-decoration: bold;}
    display: block;
    margin: 10px auto;
 }
+
+.canvas-stage {
+  position: relative;
+  display: block;
+  width: 720px;
+  max-width: 100%;
+  margin: 10px auto;
+}
+
+.canvas-stage #canvas {
+  margin: 0;
+}
+
+#canvas.narration-blur {
+  filter: blur(6px);
+  transition: filter 0.25s ease;
+}
+
+.narration-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 40px;
+  background: rgba(11, 24, 46, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 50;
+  pointer-events: none;
+}
+
+.narration-overlay.active {
+  display: flex;
+}
+
+.narration-board {
+  max-width: min(640px, 86vw);
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(5, 24, 48, 0.28);
+  padding: 28px 32px;
+  pointer-events: auto;
+  transform: translateY(-12px);
+  transition: transform 0.25s ease;
+}
+
+.narration-overlay.active .narration-board {
+  transform: translateY(0);
+}
+
+.narration-board-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.narration-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #12345c;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.narration-timer {
+  font-size: 15px;
+  font-weight: 600;
+  color: #51617e;
+}
+
+.narration-content {
+  font-size: 17px;
+  line-height: 1.55;
+  color: #0c1f3d;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.narration-content p {
+  margin: 0 0 10px;
+}
+
+.narration-content p:last-child {
+  margin-bottom: 0;
+}
+
+.narration-highlight {
+  color: #c14a00;
+  font-weight: 700;
+}
+
+.narration-progress-bar {
+  height: 6px;
+  background: rgba(23, 71, 122, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 18px;
+}
+
+.narration-progress {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #2f80ed, #56ccf2);
+  transition: width 0.2s ease;
+}
