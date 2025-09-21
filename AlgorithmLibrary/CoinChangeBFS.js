@@ -86,6 +86,7 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.messagePanelBaseColor = "#f1f4fb";
   this.messagePanelHighlightColor = "#ffe7a3";
   this.messageBorderSegments = null;
+  this.messageBorderSequence = null;
   this.messageBorderColor = "#2f80ed";
   this.messageBorderThickness = 0;
 
@@ -465,6 +466,23 @@ CoinChangeBFS.prototype.setup = function () {
       centerY: messageY,
     },
   };
+  segments.bottom.startX = boardLeft;
+  segments.bottom.startY = bottomBorderY;
+  segments.bottom.endX = boardRight;
+  segments.bottom.endY = bottomBorderY;
+  segments.right.startX = rightBorderX;
+  segments.right.startY = boardBottom;
+  segments.right.endX = rightBorderX;
+  segments.right.endY = boardTop;
+  segments.top.startX = boardRight;
+  segments.top.startY = topBorderY;
+  segments.top.endX = boardLeft;
+  segments.top.endY = topBorderY;
+  segments.left.startX = leftBorderX;
+  segments.left.startY = boardTop;
+  segments.left.endX = leftBorderX;
+  segments.left.endY = boardBottom;
+
   const segmentKeys = Object.keys(segments);
   for (let i = 0; i < segmentKeys.length; i++) {
     const key = segmentKeys[i];
@@ -489,6 +507,13 @@ CoinChangeBFS.prototype.setup = function () {
     this.cmd("SetAlpha", segment.id, 0);
   }
   this.messageBorderSegments = segments;
+  this.messageBorderSequence = [
+    { key: "bottom", start: "left" },
+    { key: "right", start: "bottom" },
+    { key: "top", start: "right" },
+    { key: "left", start: "top" },
+  ];
+
 
   const queueGapFromTree = Math.max(44, Math.floor(canvasH * 0.035));
   const queueY = treeLayout.bottomY + queueGapFromTree;
@@ -585,12 +610,18 @@ CoinChangeBFS.prototype.setup = function () {
       gapBefore: 8,
     }
   );
-  const maxCodeStartY = canvasH - totalCodeHeight - 48;
+  const safeBottomLimit = canvasH - bottomMargin - 20;
+  const maxCodeStartY = safeBottomLimit - totalCodeHeight;
   const minCodeStart = coinsRowY + 24;
-  const codeStartY = Math.max(
-    minCodeStart,
-    Math.min(treeTopY, maxCodeStartY)
-  );
+  const desiredStart = queueLayout.bottomY + 48;
+  let codeStartY = Math.max(minCodeStart, desiredStart);
+  if (!Number.isFinite(codeStartY)) {
+    codeStartY = minCodeStart;
+  }
+  if (Number.isFinite(maxCodeStartY)) {
+    const allowedMax = Math.max(minCodeStart, maxCodeStartY);
+    codeStartY = Math.min(codeStartY, allowedMax);
+  }
   this.buildCodeDisplay(codeStartX, codeStartY, CODE_LINE_H, CODE_FONT_SIZE);
 
   this.resetTreeDisplay();
@@ -2013,18 +2044,116 @@ CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
   }
   const clamped = Math.max(0, Math.min(1, fraction));
   const segments = this.messageBorderSegments;
-  const keys = Object.keys(segments);
-  for (let i = 0; i < keys.length; i++) {
-    const segment = segments[keys[i]];
+  const order =
+    Array.isArray(this.messageBorderSequence) && this.messageBorderSequence.length > 0
+      ? this.messageBorderSequence
+      : [
+          { key: "bottom", start: "left" },
+          { key: "right", start: "bottom" },
+          { key: "top", start: "right" },
+          { key: "left", start: "top" },
+        ];
+
+  let perimeter = 0;
+  for (let i = 0; i < order.length; i++) {
+    const entry = order[i];
+    const segment = segments && entry ? segments[entry.key] : null;
+    if (segment && segment.baseLength) {
+      perimeter += segment.baseLength;
+    }
+  }
+  if (perimeter <= 0) {
+    return;
+  }
+
+  const epsilon = 0.0001;
+  let remaining = clamped >= 1 ? perimeter : perimeter * clamped;
+
+  for (let i = 0; i < order.length; i++) {
+    const entry = order[i];
+    const segment = segments[entry.key];
     if (!segment) {
       continue;
     }
-    if (segment.orientation === "horizontal") {
-      this.cmd("SetWidth", segment.id, segment.baseLength * clamped);
-      this.cmd("SetHeight", segment.id, segment.thickness);
+    const segLength = segment.baseLength || 0;
+    let take = Math.min(segLength, Math.max(0, remaining));
+    if (clamped >= 1 && segLength > 0) {
+      take = segLength;
+    }
+    remaining = Math.max(0, remaining - take);
+
+    if (take > epsilon) {
+      if (segment.orientation === "horizontal") {
+        const width = take >= segLength - epsilon ? segment.baseLength : take;
+        let centerX = segment.centerX;
+        const anchorY =
+          segment.startY !== undefined ? segment.startY : segment.centerY;
+        if (width >= segment.baseLength - epsilon) {
+          centerX = segment.centerX;
+        } else if (entry.start === "left") {
+          const anchorX =
+            segment.startX !== undefined
+              ? segment.startX
+              : segment.centerX - segment.baseLength / 2;
+          centerX = anchorX + width / 2;
+        } else if (entry.start === "right") {
+          const anchorX =
+            segment.startX !== undefined
+              ? segment.startX
+              : segment.centerX + segment.baseLength / 2;
+          centerX = anchorX - width / 2;
+        }
+        this.cmd("SetWidth", segment.id, Math.max(0, width));
+        this.cmd("SetHeight", segment.id, segment.thickness);
+        this.cmd("SetPosition", segment.id, centerX, anchorY);
+      } else {
+        const height = take >= segLength - epsilon ? segment.baseLength : take;
+        const anchorX =
+          segment.startX !== undefined ? segment.startX : segment.centerX;
+        let centerY = segment.centerY;
+        if (height >= segment.baseLength - epsilon) {
+          centerY = segment.centerY;
+        } else if (entry.start === "bottom") {
+          const startY =
+            segment.startY !== undefined
+              ? segment.startY
+              : segment.centerY + segment.baseLength / 2;
+          centerY = startY - height / 2;
+        } else if (entry.start === "top") {
+          const startY =
+            segment.startY !== undefined
+              ? segment.startY
+              : segment.centerY - segment.baseLength / 2;
+          centerY = startY + height / 2;
+        }
+        this.cmd("SetHeight", segment.id, Math.max(0, height));
+        this.cmd("SetWidth", segment.id, segment.thickness);
+        this.cmd("SetPosition", segment.id, anchorX, centerY);
+      }
+      this.cmd("SetAlpha", segment.id, 1);
     } else {
-      this.cmd("SetHeight", segment.id, segment.baseLength * clamped);
-      this.cmd("SetWidth", segment.id, segment.thickness);
+      if (segment.orientation === "horizontal") {
+        const anchorX =
+          segment.startX !== undefined
+            ? segment.startX
+            : segment.centerX - segment.baseLength / 2;
+        const anchorY =
+          segment.startY !== undefined ? segment.startY : segment.centerY;
+        this.cmd("SetWidth", segment.id, 0);
+        this.cmd("SetHeight", segment.id, segment.thickness);
+        this.cmd("SetPosition", segment.id, anchorX, anchorY);
+      } else {
+        const anchorX =
+          segment.startX !== undefined ? segment.startX : segment.centerX;
+        const anchorY =
+          segment.startY !== undefined
+            ? segment.startY
+            : segment.centerY + segment.baseLength / 2;
+        this.cmd("SetHeight", segment.id, 0);
+        this.cmd("SetWidth", segment.id, segment.thickness);
+        this.cmd("SetPosition", segment.id, anchorX, anchorY);
+      }
+      this.cmd("SetAlpha", segment.id, 0);
     }
   }
 };
