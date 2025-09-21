@@ -109,7 +109,7 @@ var narrationOverlayState = {
 };
 
 var narrationSpeechState = {
-        utterance: null,
+        active: false,
         lastText: ""
 };
 
@@ -160,157 +160,29 @@ function handleNarrationSpeechFinished()
         }
 }
 
-function getNarrationSpeechSynth()
-{
-        if (typeof window === "undefined" || typeof window.speechSynthesis === "undefined")
-        {
-                return null;
-        }
-        try
-        {
-                return window.speechSynthesis;
-        }
-        catch (err)
-        {
-                return null;
-        }
-}
-
-function createNarrationSpeechUtterance(text)
-{
-        if (typeof SpeechSynthesisUtterance === "undefined")
-        {
-                return null;
-        }
-        try
-        {
-                return new SpeechSynthesisUtterance(text);
-        }
-        catch (err)
-        {
-                return null;
-        }
-}
-
 function resetNarrationSpeechState()
 {
-        narrationSpeechState.utterance = null;
+        narrationSpeechState.active = false;
+        narrationSpeechState.lastText = "";
 }
 
 function cancelNarrationSpeech()
 {
-        var synth = getNarrationSpeechSynth();
-        if (synth && typeof synth.cancel === "function")
-        {
-                try
-                {
-                        synth.cancel();
-                }
-                catch (err)
-                {
-                }
-        }
         resetNarrationSpeechState();
         clearNarrationAdvanceTimer();
 }
 
-function buildNarrationSpeechText(lines)
-{
-        if (!lines || lines.length === 0)
-        {
-                return "";
-        }
-        var segments = [];
-        for (var i = 0; i < lines.length; i++)
-        {
-                var entry = lines[i];
-                if (entry === undefined || entry === null)
-                {
-                        continue;
-                }
-                var trimmed = String(entry).trim();
-                if (!trimmed)
-                {
-                        continue;
-                }
-                if (!/[.!?]$/.test(trimmed))
-                {
-                        trimmed += ".";
-                }
-                segments.push(trimmed);
-        }
-        return segments.join(" ");
-}
-
 function speakNarrationLines(lines)
 {
-        var synth = getNarrationSpeechSynth();
-        if (!synth)
+        if (Array.isArray(lines) && lines.length > 0)
         {
-                return false;
-        }
-        var text = buildNarrationSpeechText(lines);
-        if (!text)
-        {
-                cancelNarrationSpeech();
-                return false;
-        }
-        var stillSpeaking = false;
-        try
-        {
-                stillSpeaking = !!synth.speaking;
-        }
-        catch (err)
-        {
-                stillSpeaking = false;
-        }
-        if (stillSpeaking && narrationSpeechState.utterance && narrationSpeechState.lastText === text)
-        {
-                return true;
-        }
-        cancelNarrationSpeech();
-        var utterance = createNarrationSpeechUtterance(text);
-        if (!utterance)
-        {
-                return false;
-        }
-        utterance.rate = 0.95;
-        utterance.pitch = 1;
-        if (typeof navigator !== "undefined" && navigator.language)
-        {
-                utterance.lang = navigator.language;
+                narrationSpeechState.lastText = lines.join(" ");
+                narrationSpeechState.active = true;
         }
         else
         {
-                utterance.lang = "en-US";
-        }
-        utterance.onend = function()
-        {
-                if (narrationSpeechState.utterance === utterance)
-                {
-                        resetNarrationSpeechState();
-                        handleNarrationSpeechFinished();
-                }
-        };
-        utterance.onerror = function()
-        {
-                if (narrationSpeechState.utterance === utterance)
-                {
-                        resetNarrationSpeechState();
-                        handleNarrationSpeechFinished();
-                }
-        };
-        try
-        {
-                synth.speak(utterance);
-                narrationSpeechState.utterance = utterance;
-                narrationSpeechState.lastText = text;
-                return true;
-        }
-        catch (err)
-        {
-                resetNarrationSpeechState();
-                handleNarrationSpeechFinished();
+                narrationSpeechState.lastText = "";
+                narrationSpeechState.active = false;
         }
         return false;
 }

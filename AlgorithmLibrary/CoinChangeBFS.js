@@ -85,6 +85,9 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.messageID = -1;
   this.messagePanelBaseColor = "#f1f4fb";
   this.messagePanelHighlightColor = "#ffe7a3";
+  this.messageBorderSegments = null;
+  this.messageBorderColor = "#2f80ed";
+  this.messageBorderThickness = 0;
 
   this.amountLabelID = -1;
   this.amountValueID = -1;
@@ -102,6 +105,11 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.nextValueID = -1;
   this.resultLabelID = -1;
   this.resultValueID = -1;
+  this.statsPanelID = -1;
+  this.statsPanelWidth = 0;
+  this.statsPanelHeight = 0;
+  this.statsPanelLeft = 0;
+  this.statsPanelTop = 0;
 
   this.treeDefaultColor = "#f5f7fb";
   this.treeVisitedColor = "#dff7df";
@@ -244,22 +252,101 @@ CoinChangeBFS.prototype.setup = function () {
   }
 
   const TITLE_Y = 48;
-  const CODE_START_X = 80;
   const CODE_LINE_H = 17;
   const CODE_FONT_SIZE = 15;
   const VARIABLE_FONT_STYLE = "bold 17";
   const RESULT_FONT_STYLE = "bold 21";
-  const coinHeaderY = TITLE_Y + 48;
+  const coinHeaderY = TITLE_Y + 52;
   const coinsRowY = coinHeaderY + 44;
-  const statsStartY = coinsRowY + 56;
-  const statsSpacing = 32;
-  const messagePanelHeight = 104;
-  const codePanelWidth = Math.max(360, Math.floor(canvasW * 0.5));
-  const messagePanelWidth = codePanelWidth;
-  const messageCenterX = CODE_START_X + messagePanelWidth / 2;
-  const statsLabelBaseX = CODE_START_X + messagePanelWidth + 60;
-  const statsLabelX = Math.min(canvasW - 200, statsLabelBaseX);
-  const statsValueX = Math.min(canvasW - 60, statsLabelX + 120);
+  const boardGapAbove = 40;
+  const boardGapBelow = 34;
+  const messagePanelHeight = Math.max(120, Math.floor(canvasH * 0.12));
+
+  const leftMargin = Math.max(42, Math.floor(canvasW * 0.058));
+  const rightMargin = Math.max(38, Math.floor(canvasW * 0.053));
+  let columnGap = Math.max(28, Math.floor(canvasW * 0.045));
+  const minCodeWidth = 190;
+  let codePanelWidth = Math.max(210, Math.floor(canvasW * 0.3));
+  let maxCodeWidth = canvasW - leftMargin - rightMargin - columnGap - 300;
+  if (maxCodeWidth < minCodeWidth) {
+    const reduceGap = Math.min(columnGap - 18, minCodeWidth - maxCodeWidth);
+    if (reduceGap > 0) {
+      columnGap -= reduceGap;
+    }
+    maxCodeWidth = canvasW - leftMargin - rightMargin - columnGap - 300;
+  }
+  if (maxCodeWidth < minCodeWidth) {
+    maxCodeWidth = minCodeWidth;
+  }
+  if (codePanelWidth > maxCodeWidth) {
+    codePanelWidth = Math.max(minCodeWidth, maxCodeWidth);
+  }
+
+  const codeStartX = leftMargin;
+  let codeColumnRight = codeStartX + codePanelWidth;
+  let rightColumnLeft = codeColumnRight + columnGap;
+  let rightColumnWidth = canvasW - rightMargin - rightColumnLeft;
+  if (rightColumnWidth < 300) {
+    const deficit = 300 - rightColumnWidth;
+    const reducibleCode = Math.max(0, codePanelWidth - minCodeWidth);
+    const reduceCode = Math.min(deficit, reducibleCode);
+    if (reduceCode > 0) {
+      codePanelWidth -= reduceCode;
+      codeColumnRight = codeStartX + codePanelWidth;
+    }
+    rightColumnLeft = codeColumnRight + columnGap;
+    rightColumnWidth = canvasW - rightMargin - rightColumnLeft;
+    if (rightColumnWidth < 300) {
+      const reduceGap = Math.min(columnGap - 16, 300 - rightColumnWidth);
+      if (reduceGap > 0) {
+        columnGap -= reduceGap;
+        rightColumnLeft = codeColumnRight + columnGap;
+        rightColumnWidth = canvasW - rightMargin - rightColumnLeft;
+      }
+    }
+  }
+
+  let panelGap = Math.max(24, Math.floor(rightColumnWidth * 0.08));
+  let visitedWidth = Math.max(110, Math.floor(rightColumnWidth * 0.26));
+  let treeLeft = rightColumnLeft;
+  let treeRight = canvasW - rightMargin - visitedWidth;
+  let treeWidth = treeRight - treeLeft;
+  if (treeWidth < 260) {
+    const shortage = 260 - treeWidth;
+    const reducibleVisited = Math.max(0, visitedWidth - 95);
+    const reduceVisited = Math.min(shortage, reducibleVisited);
+    if (reduceVisited > 0) {
+      visitedWidth -= reduceVisited;
+    }
+    treeRight = canvasW - rightMargin - visitedWidth;
+    treeWidth = treeRight - treeLeft;
+    if (treeWidth < 260) {
+      const reducibleGap = Math.max(12, panelGap - 12);
+      const reduceGap = Math.min(260 - treeWidth, panelGap - reducibleGap);
+      if (reduceGap > 0) {
+        panelGap -= reduceGap;
+      }
+      treeRight = canvasW - rightMargin - visitedWidth;
+      treeWidth = treeRight - treeLeft;
+      if (treeWidth < 240) {
+        const reduceCode = Math.min(240 - treeWidth, Math.max(0, codePanelWidth - minCodeWidth));
+        if (reduceCode > 0) {
+          codePanelWidth -= reduceCode;
+          codeColumnRight = codeStartX + codePanelWidth;
+          rightColumnLeft = codeColumnRight + columnGap;
+          treeLeft = rightColumnLeft;
+          treeRight = canvasW - rightMargin - visitedWidth;
+          treeWidth = treeRight - treeLeft;
+        }
+      }
+    }
+  }
+  if (treeWidth < 220) {
+    treeWidth = 220;
+    treeRight = treeLeft + treeWidth;
+  }
+  const boardBottomPadding = boardGapBelow + messagePanelHeight / 2;
+  const boardTopPadding = boardGapAbove + messagePanelHeight / 2;
 
   this.commands = [];
   this.codeIDs = [];
@@ -284,7 +371,34 @@ CoinChangeBFS.prototype.setup = function () {
 
   this.buildCoinsRow(canvasW, coinsRowY);
 
-  const messageY = statsStartY + messagePanelHeight / 2 - 12;
+  const boardCenterY = coinsRowY + boardTopPadding;
+  const treeTopY = boardCenterY + boardBottomPadding;
+  const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
+  const reservedQueue = Math.max(180, Math.floor(canvasH * 0.14));
+  const reservedStats = Math.max(220, Math.floor(canvasH * 0.17));
+  const bottomMargin = Math.max(80, Math.floor(canvasH * 0.06));
+  const baseTreeHeight = Math.floor(canvasH * 0.44);
+  let treeHeight = Math.max(
+    340,
+    Math.min(
+      baseTreeHeight,
+      canvasH - treeTopY - reservedQueue - reservedStats - bottomMargin
+    )
+  );
+  const overrides = {
+    left: treeLeft,
+    width: treeWidth,
+    visitedWidth: visitedWidth,
+    gap: panelGap,
+    rightMargin: rightMargin,
+  };
+  const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight, overrides);
+
+  const messageCenterX = this.treeArea
+    ? this.treeArea.left + this.treeArea.width / 2
+    : treeLeft + treeWidth / 2;
+  const messageY = boardCenterY;
+  const messagePanelWidth = this.treeArea ? this.treeArea.width : treeWidth;
   this.messagePanelID = this.nextIndex++;
   this.cmd(
     "CreateRectangle",
@@ -295,7 +409,7 @@ CoinChangeBFS.prototype.setup = function () {
     messageCenterX,
     messageY
   );
-  this.cmd("SetForegroundColor", this.messagePanelID, "#1f3d66");
+  this.cmd("SetForegroundColor", this.messagePanelID, "#d6def0");
   this.cmd("SetBackgroundColor", this.messagePanelID, this.messagePanelBaseColor);
   this.cmd("SetAlpha", this.messagePanelID, 0);
 
@@ -305,8 +419,126 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetTextStyle", this.messageID, "bold 20");
   this.cmd("SetAlpha", this.messageID, 0);
 
-  let statsY = statsStartY;
-  let statsBottomY = statsStartY - statsSpacing;
+  const borderThickness = Math.max(4, Math.round(messagePanelHeight * 0.08));
+  this.messageBorderThickness = borderThickness;
+  const halfWidth = messagePanelWidth / 2;
+  const halfHeight = messagePanelHeight / 2;
+  const boardTop = messageY - halfHeight;
+  const boardBottom = messageY + halfHeight;
+  const boardLeft = messageCenterX - halfWidth;
+  const boardRight = messageCenterX + halfWidth;
+  const topBorderY = boardTop - borderThickness / 2;
+  const bottomBorderY = boardBottom + borderThickness / 2;
+  const leftBorderX = boardLeft - borderThickness / 2;
+  const rightBorderX = boardRight + borderThickness / 2;
+  const segments = {
+    top: {
+      id: this.nextIndex++,
+      orientation: "horizontal",
+      baseLength: messagePanelWidth,
+      thickness: borderThickness,
+      centerX: messageCenterX,
+      centerY: topBorderY,
+    },
+    bottom: {
+      id: this.nextIndex++,
+      orientation: "horizontal",
+      baseLength: messagePanelWidth,
+      thickness: borderThickness,
+      centerX: messageCenterX,
+      centerY: bottomBorderY,
+    },
+    left: {
+      id: this.nextIndex++,
+      orientation: "vertical",
+      baseLength: messagePanelHeight,
+      thickness: borderThickness,
+      centerX: leftBorderX,
+      centerY: messageY,
+    },
+    right: {
+      id: this.nextIndex++,
+      orientation: "vertical",
+      baseLength: messagePanelHeight,
+      thickness: borderThickness,
+      centerX: rightBorderX,
+      centerY: messageY,
+    },
+  };
+  const segmentKeys = Object.keys(segments);
+  for (let i = 0; i < segmentKeys.length; i++) {
+    const key = segmentKeys[i];
+    const segment = segments[key];
+    const width = segment.orientation === "horizontal"
+      ? segment.baseLength
+      : segment.thickness;
+    const height = segment.orientation === "horizontal"
+      ? segment.thickness
+      : segment.baseLength;
+    this.cmd(
+      "CreateRectangle",
+      segment.id,
+      "",
+      width,
+      height,
+      segment.centerX,
+      segment.centerY
+    );
+    this.cmd("SetBackgroundColor", segment.id, this.messageBorderColor);
+    this.cmd("SetForegroundColor", segment.id, this.messageBorderColor);
+    this.cmd("SetAlpha", segment.id, 0);
+  }
+  this.messageBorderSegments = segments;
+
+  const queueGapFromTree = Math.max(44, Math.floor(canvasH * 0.035));
+  const queueY = treeLayout.bottomY + queueGapFromTree;
+  const queueBounds = {
+    left: this.treeArea ? this.treeArea.left : treeLeft,
+    right: this.treeArea ? this.treeArea.right : treeRight,
+  };
+  const queueLayout = this.buildQueueDisplay(
+    canvasW,
+    queueY,
+    null,
+    null,
+    queueBounds
+  );
+  const visitedBottom = treeLayout.bottomY;
+  this.buildVisitedDisplay(treeTopY, visitedBottom, this.amount);
+
+  const statsRows = 8;
+  const statsRowHeight = 34;
+  const statsPadding = 16;
+  const statsPanelWidth = Math.max(220, Math.min(280, this.visitedPanelWidth + 70));
+  let statsPanelTop = queueLayout.bottomY + 48;
+  const statsPanelHeight = statsPadding * 2 + statsRows * statsRowHeight;
+  if (statsPanelTop + statsPanelHeight > canvasH - 40) {
+    statsPanelTop = canvasH - 40 - statsPanelHeight;
+  }
+  const statsPanelCenterX = this.visitedArea
+    ? this.visitedArea.left + this.visitedArea.width - statsPanelWidth / 2
+    : canvasW - rightMargin - statsPanelWidth / 2;
+  this.statsPanelID = this.nextIndex++;
+  this.statsPanelWidth = statsPanelWidth;
+  this.statsPanelHeight = statsPanelHeight;
+  this.statsPanelLeft = statsPanelCenterX - statsPanelWidth / 2;
+  this.statsPanelTop = statsPanelTop;
+  this.cmd(
+    "CreateRectangle",
+    this.statsPanelID,
+    "",
+    statsPanelWidth,
+    statsPanelHeight,
+    statsPanelCenterX,
+    statsPanelTop + statsPanelHeight / 2
+  );
+  this.cmd("SetForegroundColor", this.statsPanelID, "#c9d7f1");
+  this.cmd("SetBackgroundColor", this.statsPanelID, "#f5f7ff");
+
+  let statsY = statsPanelTop + statsPadding + 4;
+  const statsLabelX = this.statsPanelLeft + 18;
+  const statsValueX = this.statsPanelLeft + statsPanelWidth - 18;
+  const statsSpacing = statsRowHeight;
   const addStatRow = (
     labelProp,
     valueProp,
@@ -329,18 +561,17 @@ CoinChangeBFS.prototype.setup = function () {
     this.cmd("SetTextStyle", valueID, textStyle || VARIABLE_FONT_STYLE);
     this[labelProp] = labelID;
     this[valueProp] = valueID;
-    statsBottomY = y;
     statsY += statsSpacing + (gapAfter > 0 ? gapAfter : 0);
   };
 
   addStatRow("amountLabelID", "amountValueID", "amount:", String(this.amount));
   addStatRow("stepsLabelID", "stepsValueID", "steps:", "0");
   addStatRow("queueSizeLabelID", "queueSizeValueID", "queue size:", "0", null, {
-    gapAfter: 10,
+    gapAfter: 6,
   });
   addStatRow("levelSizeLabelID", "levelSizeValueID", "level size:", "0");
   addStatRow("currentLabelID", "currentValueID", "current amount:", "-", null, {
-    gapAfter: 10,
+    gapAfter: 6,
   });
   addStatRow("coinValueLabelID", "coinValueID", "coin:", "-");
   addStatRow("nextLabelID", "nextValueID", "next amount:", "-");
@@ -351,42 +582,16 @@ CoinChangeBFS.prototype.setup = function () {
     "?",
     RESULT_FONT_STYLE,
     {
-      gapBefore: statsSpacing / 2,
+      gapBefore: 8,
     }
   );
-
-  const statsPanelBottom = statsBottomY + statsSpacing / 2;
-  const messageBottomY = messageY + messagePanelHeight / 2;
-  const infoFloor = Math.max(messageBottomY, statsPanelBottom);
-
-  const treeTopBuffer = 56;
-  const treeTopY = infoFloor + treeTopBuffer;
-  const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
-  const maxCodeStartY = canvasH - totalCodeHeight - 32;
-  const maxQueueBottom = maxCodeStartY - 40;
-  const queueGapFromTree = Math.max(32, Math.floor(canvasH * 0.025));
-  const estimatedQueueHalf = Math.max(24, Math.floor(canvasH * 0.018));
-  const baseTreeHeight = Math.floor(canvasH * 0.42);
-  const maxTreeHeight = Math.max(
-    220,
-    maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf
+  const maxCodeStartY = canvasH - totalCodeHeight - 48;
+  const minCodeStart = coinsRowY + 24;
+  const codeStartY = Math.max(
+    minCodeStart,
+    Math.min(treeTopY, maxCodeStartY)
   );
-  const treeHeight = Math.max(320, Math.min(baseTreeHeight, maxTreeHeight));
-  const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
-
-  const queueY = treeLayout.bottomY + queueGapFromTree;
-  const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
-  const queueTop = queueY - queueLayout.slotHeight / 2;
-  const visitedBottom = Math.max(
-    treeLayout.bottomY,
-    queueTop - Math.max(16, Math.floor(queueLayout.slotHeight * 0.4))
-  );
-  this.buildVisitedDisplay(treeTopY, visitedBottom, this.amount);
-
-  const codeStartPreferred = queueLayout.bottomY + 64;
-  const minCodeStart = infoFloor + 160;
-  const codeStartY = Math.min(Math.max(codeStartPreferred, minCodeStart), maxCodeStartY);
-  this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H, CODE_FONT_SIZE);
+  this.buildCodeDisplay(codeStartX, codeStartY, CODE_LINE_H, CODE_FONT_SIZE);
 
   this.resetTreeDisplay();
   this.resetQueueDisplay();
@@ -439,44 +644,64 @@ CoinChangeBFS.prototype.buildCoinsRow = function (canvasW, coinsY) {
   }
 };
 
-CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
-  const marginLeft = Math.max(60, Math.floor(canvasW * 0.08));
-  let marginRight = Math.max(60, Math.floor(canvasW * 0.08));
-  let panelGap = Math.max(30, Math.floor(canvasW * 0.045));
-  let panelWidth = Math.max(160, Math.floor(canvasW * 0.22));
+CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height, overrides) {
+  let marginLeft =
+    overrides && overrides.left !== undefined
+      ? Number(overrides.left)
+      : Math.max(60, Math.floor(canvasW * 0.08));
+  let marginRight =
+    overrides && overrides.rightMargin !== undefined
+      ? Math.max(20, Number(overrides.rightMargin))
+      : Math.max(60, Math.floor(canvasW * 0.08));
+  let panelGap =
+    overrides && overrides.gap !== undefined
+      ? Math.max(12, Number(overrides.gap))
+      : Math.max(30, Math.floor(canvasW * 0.045));
+  let panelWidth =
+    overrides && overrides.visitedWidth !== undefined
+      ? Math.max(90, Number(overrides.visitedWidth))
+      : Math.max(160, Math.floor(canvasW * 0.22));
 
-  let treeRight = canvasW - marginRight - panelGap - panelWidth;
-  let areaWidth = treeRight - marginLeft;
-
-  if (areaWidth < 320) {
-    const deficit = 320 - areaWidth;
-    const reduciblePanel = Math.max(0, panelWidth - 140);
-    const reducePanel = Math.min(deficit, reduciblePanel);
-    panelWidth -= reducePanel;
-    const remaining = deficit - reducePanel;
-    if (remaining > 0) {
-      const reducibleMargin = Math.max(0, marginRight - 40);
-      const reduceMargin = Math.min(remaining, reducibleMargin);
-      marginRight -= reduceMargin;
-    }
-    treeRight = canvasW - marginRight - panelGap - panelWidth;
-    areaWidth = treeRight - marginLeft;
+  let areaWidth;
+  if (overrides && overrides.width !== undefined) {
+    areaWidth = Math.max(200, Number(overrides.width));
+  } else {
+    const defaultRight = canvasW - marginRight - panelGap - panelWidth;
+    areaWidth = defaultRight - marginLeft;
   }
 
-  if (areaWidth < 260) {
-    areaWidth = 260;
-    treeRight = marginLeft + areaWidth;
-    marginRight = Math.max(30, canvasW - treeRight - panelGap - panelWidth);
-    if (marginRight < 30) {
-      marginRight = 30;
+  if (!overrides || overrides.width === undefined) {
+    if (areaWidth < 320) {
+      const deficit = 320 - areaWidth;
+      const reduciblePanel = Math.max(0, panelWidth - 140);
+      const reducePanel = Math.min(deficit, reduciblePanel);
+      panelWidth -= reducePanel;
+      const remaining = deficit - reducePanel;
+      if (remaining > 0) {
+        const reducibleMargin = Math.max(0, marginRight - 40);
+        const reduceMargin = Math.min(remaining, reducibleMargin);
+        marginRight -= reduceMargin;
+      }
+      const newRight = canvasW - marginRight - panelGap - panelWidth;
+      areaWidth = newRight - marginLeft;
     }
+
+    if (areaWidth < 260) {
+      areaWidth = 260;
+    }
+  }
+
+  if (areaWidth < 220) {
+    areaWidth = 220;
   }
 
   const areaHeight = Math.max(240, height || 260);
+  const treeLeft = marginLeft;
+  const treeRight = treeLeft + areaWidth;
 
   this.treeArea = {
-    left: marginLeft,
-    right: marginLeft + areaWidth,
+    left: treeLeft,
+    right: treeRight,
     width: areaWidth,
     top: topY,
     height: areaHeight,
@@ -485,15 +710,40 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
 
   this.visitedPanelWidth = panelWidth;
   this.visitedPanelGap = panelGap;
-  const visitedLeft = this.treeArea.right + panelGap;
-  const visitedRight = Math.min(
-    canvasW - marginRight,
-    visitedLeft + this.visitedPanelWidth
-  );
+  let visitedLeft = treeRight + panelGap;
+  let visitedRight = visitedLeft + panelWidth;
+  const maxVisitedRight = canvasW - Math.max(24, marginRight);
+  if (visitedRight > maxVisitedRight) {
+    const shift = visitedRight - maxVisitedRight;
+    visitedLeft -= shift;
+    visitedRight -= shift;
+  }
+  const minVisitedLeft = treeRight + Math.max(8, panelGap * 0.25);
+  if (visitedLeft < minVisitedLeft) {
+    visitedLeft = minVisitedLeft;
+    visitedRight = visitedLeft + panelWidth;
+  }
+  if (visitedRight > canvasW - 8) {
+    visitedRight = canvasW - 8;
+  }
+  if (visitedLeft > visitedRight) {
+    visitedLeft = visitedRight - Math.max(90, panelWidth);
+  }
+  panelWidth = Math.max(80, visitedRight - visitedLeft);
+
+  if (visitedLeft < treeRight + 6) {
+    visitedLeft = treeRight + 6;
+    visitedRight = visitedLeft + panelWidth;
+    if (visitedRight > canvasW - 8) {
+      visitedRight = canvasW - 8;
+      panelWidth = Math.max(80, visitedRight - visitedLeft);
+    }
+  }
+
   this.visitedArea = {
     left: visitedLeft,
     right: visitedRight,
-    width: visitedRight - visitedLeft,
+    width: panelWidth,
     top: topY,
     bottom: topY + areaHeight,
     height: areaHeight,
@@ -708,30 +958,58 @@ CoinChangeBFS.prototype.highlightVisitedEntry = function (index, highlight) {
   }
 };
 
-CoinChangeBFS.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellWidth, baseGap) {
+CoinChangeBFS.prototype.buildQueueDisplay = function (
+  canvasW,
+  queueY,
+  baseCellWidth,
+  baseGap,
+  bounds
+) {
   const amount = this.amount;
   const slotCount = Math.max(3, amount + 1);
   const gap = Math.max(6, baseGap || 10);
   const margin = 40;
+  let areaLeft = margin;
+  let areaRight = canvasW - margin;
+  if (bounds) {
+    if (bounds.left !== undefined) {
+      areaLeft = Number(bounds.left);
+    }
+    if (bounds.right !== undefined) {
+      areaRight = Number(bounds.right);
+    }
+  }
+  if (areaRight - areaLeft < 80) {
+    areaLeft = margin;
+    areaRight = canvasW - margin;
+  }
+  let areaWidth = Math.max(80, areaRight - areaLeft);
   let slotWidth = baseCellWidth;
   if (!slotWidth || slotWidth < 28) {
     slotWidth = 40;
   }
   let totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
-  const areaWidth = canvasW - 2 * margin;
   if (totalWidth > areaWidth) {
-    slotWidth = Math.max(22, Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount));
+    slotWidth = Math.max(
+      22,
+      Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount)
+    );
     totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
   }
-  const startX = Math.floor((canvasW - totalWidth) / 2) + slotWidth / 2;
+  if (totalWidth > areaWidth) {
+    areaWidth = totalWidth;
+  }
+  const startX =
+    areaLeft + Math.max(0, (areaWidth - totalWidth) / 2) + slotWidth / 2;
   const slotHeight = Math.max(26, Math.min(60, slotWidth + 6));
+  const labelCenterX = areaLeft + areaWidth / 2;
 
   this.queueLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.queueLabelID,
     "BFS queue",
-    canvasW / 2,
+    labelCenterX,
     queueY - slotHeight / 2 - 24,
     1
   );
@@ -752,6 +1030,7 @@ CoinChangeBFS.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellW
     slotWidth,
     slotHeight,
     gap,
+    centerX: labelCenterX,
     bottomY: queueY + slotHeight / 2,
   };
 };
@@ -1705,6 +1984,74 @@ CoinChangeBFS.prototype.unhighlightCoin = function () {
   this.coinHighlight = -1;
 };
 
+CoinChangeBFS.prototype.showNarrationBorder = function () {
+  if (!this.messageBorderSegments) {
+    return;
+  }
+  const segments = this.messageBorderSegments;
+  const keys = Object.keys(segments);
+  for (let i = 0; i < keys.length; i++) {
+    const segment = segments[keys[i]];
+    if (!segment) {
+      continue;
+    }
+    if (segment.orientation === "horizontal") {
+      this.cmd("SetWidth", segment.id, segment.baseLength);
+      this.cmd("SetHeight", segment.id, segment.thickness);
+    } else {
+      this.cmd("SetHeight", segment.id, segment.baseLength);
+      this.cmd("SetWidth", segment.id, segment.thickness);
+    }
+    this.cmd("SetPosition", segment.id, segment.centerX, segment.centerY);
+    this.cmd("SetAlpha", segment.id, 1);
+  }
+};
+
+CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
+  if (!this.messageBorderSegments) {
+    return;
+  }
+  const clamped = Math.max(0, Math.min(1, fraction));
+  const segments = this.messageBorderSegments;
+  const keys = Object.keys(segments);
+  for (let i = 0; i < keys.length; i++) {
+    const segment = segments[keys[i]];
+    if (!segment) {
+      continue;
+    }
+    if (segment.orientation === "horizontal") {
+      this.cmd("SetWidth", segment.id, segment.baseLength * clamped);
+      this.cmd("SetHeight", segment.id, segment.thickness);
+    } else {
+      this.cmd("SetHeight", segment.id, segment.baseLength * clamped);
+      this.cmd("SetWidth", segment.id, segment.thickness);
+    }
+  }
+};
+
+CoinChangeBFS.prototype.resetNarrationBorder = function () {
+  if (!this.messageBorderSegments) {
+    return;
+  }
+  const segments = this.messageBorderSegments;
+  const keys = Object.keys(segments);
+  for (let i = 0; i < keys.length; i++) {
+    const segment = segments[keys[i]];
+    if (!segment) {
+      continue;
+    }
+    if (segment.orientation === "horizontal") {
+      this.cmd("SetWidth", segment.id, segment.baseLength);
+      this.cmd("SetHeight", segment.id, segment.thickness);
+    } else {
+      this.cmd("SetHeight", segment.id, segment.baseLength);
+      this.cmd("SetWidth", segment.id, segment.thickness);
+    }
+    this.cmd("SetPosition", segment.id, segment.centerX, segment.centerY);
+    this.cmd("SetAlpha", segment.id, 0);
+  }
+};
+
 CoinChangeBFS.prototype.estimateNarrationBeats = function (lines) {
   if (!lines || lines.length === 0) {
     return 1;
@@ -1758,7 +2105,7 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
   }
 
   const fallbackSeconds = Math.max(1, wait);
-  const fallbackMs = Math.max(1500, Math.round(fallbackSeconds * 1000));
+  const fallbackMs = Math.max(3000, Math.round(fallbackSeconds * 1500));
   const payload = {
     lines,
     highlights: highlight,
@@ -1792,7 +2139,9 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     }
     decorated.push(formatted.trim());
   }
-  const captionText = decorated.join("\n\n");
+  const captionText = decorated
+    .map((entry) => entry.replace(/«/g, "⟦").replace(/»/g, "⟧"))
+    .join("\n\n");
 
   if (this.messagePanelID >= 0) {
     const panelColor = highlightTerms.length > 0 ? this.messagePanelHighlightColor : this.messagePanelBaseColor;
@@ -1804,8 +2153,18 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     this.cmd("SetAlpha", this.messageID, 1);
   }
 
+  this.showNarrationBorder();
+  this.setNarrationBorderProgress(1);
   this.cmd("SpeakNarration", encoded);
+  const progressSteps = Math.max(8, Math.round(fallbackMs / 400));
+  for (let i = 0; i < progressSteps; i++) {
+    const fraction =
+      progressSteps <= 1 ? 0 : Math.max(0, (progressSteps - i - 0.5) / progressSteps);
+    this.setNarrationBorderProgress(fraction);
+    this.cmd("Step");
+  }
   this.cmd("WaitForNarrationSpeech", fallbackMs);
+  this.setNarrationBorderProgress(0);
 
   if (this.messagePanelID >= 0) {
     this.cmd("SetBackgroundColor", this.messagePanelID, this.messagePanelBaseColor);
@@ -1815,6 +2174,7 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     this.cmd("SetText", this.messageID, "");
     this.cmd("SetAlpha", this.messageID, 0);
   }
+  this.resetNarrationBorder();
 };
 
 CoinChangeBFS.prototype.describeCoinOutcome = function (
@@ -1828,29 +2188,27 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
   const highlight = [];
   const lines = [];
   if (next === amount) {
+    lines.push(`Coin ${coin} jumps from ${curr} straight to the goal ${amount}.`);
     lines.push(
-      `Using coin ${coin} lifts us from ${curr} straight to the goal ${amount}.`
+      `Since it lands during wave ${steps}, ${steps} coin${steps === 1 ? "" : "s"} is the minimum we can report.`
     );
-    lines.push(
-      `Because this happens in wave ${steps}, ${steps} coin${steps === 1 ? "" : "s"} is the fewest we could use.`
-    );
-    highlight.push(`coin ${coin}`, `goal ${amount}`, `wave ${steps}`, "fewest");
+    highlight.push(`coin ${coin}`, `goal ${amount}`, `wave ${steps}`, "minimum");
   } else if (next < amount && !alreadyVisited) {
-    lines.push(`Using coin ${coin} lands on a brand-new amount ${next}.`);
-    lines.push(`We'll mark ${next} visited and park it in the queue for the next wave so we can explore it later.`);
+    lines.push(`Coin ${coin} grows ${curr} into a fresh amount ${next}.`);
+    lines.push(
+      `We mark ${next} visited and queue it for the next wave so the search meets it in order.`
+    );
     highlight.push(`coin ${coin}`, `${next}`, "visited", "queue");
   } else if (next < amount) {
     lines.push(
-      `Using coin ${coin} lands on ${next}, but we've already stamped it as visited.`
+      `Coin ${coin} would reach ${next} again, but we've already marked that amount as visited.`
     );
-    lines.push(`We'll skip it so the queue stays focused on fresh totals.`);
-    highlight.push(`coin ${coin}`, `${next}`, "visited", "fresh totals");
+    lines.push(`We skip repeats so the queue keeps its focus on new totals.`);
+    highlight.push(`coin ${coin}`, `${next}`, "visited", "queue");
   } else {
-    lines.push(
-      `Using coin ${coin} would overshoot to ${next}, beyond the goal ${amount}.`
-    );
-    lines.push(`We'll ignore overshoots and move on to the next coin.`);
-    highlight.push(`coin ${coin}`, `${next}`, `goal ${amount}`, "overshoots");
+    lines.push(`Coin ${coin} would overshoot to ${next}, beyond the goal ${amount}.`);
+    lines.push(`We ignore that branch and keep testing the next coin.`);
+    highlight.push(`coin ${coin}`, `${next}`, `goal ${amount}`, "overshoot");
   }
   return { lines, highlight };
 };
