@@ -1771,6 +1771,29 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
   const lines = [];
   if (next === amount) {
     lines.push(
+      `Using coin ${coin} lifts us from ${curr} straight to the goal ${amount}.`
+    );
+    lines.push(
+      `Because this happens in wave ${steps}, ${steps} coin${steps === 1 ? "" : "s"} is the fewest we could use.`
+    );
+    highlight.push(`coin ${coin}`, `goal ${amount}`, `wave ${steps}`, "fewest");
+  } else if (next < amount && !alreadyVisited) {
+    lines.push(`Using coin ${coin} lands on a brand-new amount ${next}.`);
+    lines.push(`We'll mark ${next} visited and park it in the queue for the next wave so we can explore it later.`);
+    highlight.push(`coin ${coin}`, `${next}`, "visited", "queue");
+  } else if (next < amount) {
+    lines.push(
+      `Using coin ${coin} lands on ${next}, but we've already stamped it as visited.`
+    );
+    lines.push(`We'll skip it so the queue stays focused on fresh totals.`);
+    highlight.push(`coin ${coin}`, `${next}`, "visited", "fresh totals");
+  } else {
+    lines.push(
+      `Using coin ${coin} would overshoot to ${next}, beyond the goal ${amount}.`
+    );
+    lines.push(`We'll ignore overshoots and move on to the next coin.`);
+    highlight.push(`coin ${coin}`, `${next}`, `goal ${amount}`, "overshoots");
+=======
       `Adding coin ${coin} jumps from ${curr} straight to the target ${amount}.`
     );
     lines.push(
@@ -1820,17 +1843,17 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightCode(0);
   this.narrate(
     [
-      `Breadth-first search lets us add one coin per wave until we reach amount ${amount}.`,
-      "The first time the target appears will be the minimum number of coins.",
+      `We'll solve amount ${amount} by growing totals one coin at a time with breadth-first search.`,
+      "The first time the target shows up tells us we've used the fewest coins possible.",
     ],
-    { highlight: ["breadth-first search", "minimum", `amount ${amount}`] }
+    { highlight: ["breadth-first search", `amount ${amount}`, "fewest coins"] }
   );
 
   this.highlightCode(1);
   if (amount === 0) {
     this.narrate(
-      ["The target is already zero, so no coins are needed.", "Return 0 immediately."],
-      { highlight: ["target", "0"] }
+      ["If the goal is zero, we already have our answer: zero coins.", "We can return 0 right away."],
+      { highlight: ["goal is zero", "return 0"] }
     );
     this.markTreeNodeVisited(0, 0, this.treeFoundColor, null, null);
     this.setVisitedValue(0, true);
@@ -1852,25 +1875,44 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightCode(2);
   this.narrate(
     [
-      `Create a visited array for amounts 0 through ${amount} so we never branch from the same total twice.`,
-      "We'll drive the search with a queue, start from amount 0 marked visited, and track wave depth with a step counter.",
+      `I'll keep a visited checklist for every amount from 0 to ${amount} so we never branch from the same total twice.`,
     ],
-    { highlight: ["visited array", "queue", "amount 0", "step counter"] }
+    { highlight: ["visited checklist", `0 to ${amount}`, "same total twice"] }
   );
   const visited = new Array(amount + 1).fill(false);
 
   this.highlightCode(3);
+  this.narrate(
+    [
+      "A queue will hold the frontier so we handle the amounts level by level, like a waiting line.",
+    ],
+    { highlight: ["queue", "level by level", "waiting line"] }
+  );
   const queue = [];
   this.refreshQueue(queue);
   this.cmd("SetText", this.queueSizeValueID, String(queue.length));
 
   this.highlightCode(4);
+  this.narrate(
+    [
+      "We enqueue amount 0 because that's the total we already know how to make.",
+    ],
+    { highlight: ["enqueue", "amount 0", "already know"] }
+  );
+
   queue.push(0);
   this.refreshQueue(queue);
   this.cmd("SetText", this.queueSizeValueID, String(queue.length));
   this.cmd("Step");
 
   this.highlightCode(5);
+  this.narrate(
+    [
+      "Mark amount 0 as visited so we don't circle back to it later.",
+    ],
+    { highlight: ["amount 0", "visited", "don't circle back"] }
+  );
+
   visited[0] = true;
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
@@ -1879,6 +1921,12 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightVisitedEntry(0, false);
 
   this.highlightCode(6);
+  this.narrate(
+    [
+      "Set the step counter to zero to remember how many coins each wave has used so far.",
+    ],
+    { highlight: ["step counter", "zero", "how many coins"] }
+  );
   let steps = 0;
   this.cmd("SetText", this.stepsValueID, String(steps));
   this.cmd("SetText", this.levelSizeValueID, "0");
@@ -1893,11 +1941,11 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     const nextDepth = steps + 1;
     this.narrate(
       [
-        `Wave ${nextDepth}: ${size} amount${size === 1 ? "" : "s"} are ready to try one more coin.`,
-        "We'll remove each amount, explore every coin choice, and enqueue fresh totals for the next wave.",
+        `Wave ${nextDepth} gathers ${size} amount${size === 1 ? "" : "s"} that are ready to test one more coin.`,
+        "We'll pull each amount from the queue, try every coin, and stash brand-new totals for the next wave so the layers stay in order.",
       ],
       {
-        highlight: [`Wave ${nextDepth}`, `${size} amount${size === 1 ? "" : "s"}`, "coin", "queue"],
+        highlight: [`Wave ${nextDepth}`, `${size} amount${size === 1 ? "" : "s"}`, "queue", "layers stay in order"],
       }
     );
     this.cmd("SetText", this.levelSizeValueID, String(size));
@@ -1915,8 +1963,8 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 
       this.narrate(
         [
-          `Focus on amount ${curr}. Remove it from the queue so we can branch from it.`,
-          `Each child from ${curr} represents using ${steps} coin${steps === 1 ? "" : "s"}.`,
+          `Let's work on amount ${curr}. Taking it out of the queue lets us branch from it right now.`,
+          `Any path we grow from ${curr} will show totals made with ${steps} coin${steps === 1 ? "" : "s"} so far.`,
         ],
         { highlight: [`amount ${curr}`, "queue", `${steps} coin${steps === 1 ? "" : "s"}`] }
       );
@@ -2003,10 +2051,10 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightCode(7);
   this.narrate(
     [
-      "The queue is empty, so BFS has explored every reachable amount.",
-      "Since the target never appeared, we return -1.",
+      "The queue is empty, which means BFS has tried every amount we can reach.",
+      "Because the target never showed up, we return -1 to signal it's impossible with these coins.",
     ],
-    { highlight: ["queue", "return -1"] }
+    { highlight: ["queue", "return -1", "impossible"] }
   );
 
   this.highlightCode(22);
