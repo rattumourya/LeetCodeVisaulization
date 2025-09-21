@@ -893,6 +893,7 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
           Math.max(parentAmounts.length + 1, 2)
     );
   });
+
   const parentCenterLookup = new Map();
   for (let i = 0; i < parentAmounts.length; i++) {
     parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
@@ -1794,6 +1795,7 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
   }
   return { lines, highlight };
 };
+
 CoinChangeBFS.prototype.runCoinChange = function () {
   this.commands = [];
   this.highlightCode(-1);
@@ -1833,6 +1835,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.markTreeNodeVisited(0, 0, this.treeFoundColor, null, null);
     this.setVisitedValue(0, true);
     this.highlightVisitedEntry(0, true);
+
     this.cmd("SetText", this.resultValueID, "0");
     this.cmd("Step");
     this.highlightVisitedEntry(0, false);
@@ -1873,6 +1876,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
   this.markTreeNodeVisited(0, 0, this.treeVisitedColor, null, null);
+
   this.cmd("Step");
   this.highlightVisitedEntry(0, false);
 
@@ -1918,11 +1922,11 @@ CoinChangeBFS.prototype.runCoinChange = function () {
         ],
         { highlight: [`amount ${curr}`, "queue", `${steps} coin${steps === 1 ? "" : "s"}`] }
       );
+
       this.highlightQueueSlot(0, true);
       this.highlightTreeNode(curr);
       this.cmd("SetText", this.currentValueID, String(curr));
       this.cmd("Step");
-
       queue.shift();
       this.refreshQueue(queue);
       this.cmd("SetText", this.queueSizeValueID, String(queue.length));
