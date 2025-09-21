@@ -108,6 +108,160 @@ var narrationOverlayState = {
         remaining: 0
 };
 
+var narrationSpeechState = {
+        utterance: null,
+        lastText: ""
+};
+
+function getNarrationSpeechSynth()
+{
+        if (typeof window === "undefined" || typeof window.speechSynthesis === "undefined")
+        {
+                return null;
+        }
+        try
+        {
+                return window.speechSynthesis;
+        }
+        catch (err)
+        {
+                return null;
+        }
+}
+
+function createNarrationSpeechUtterance(text)
+{
+        if (typeof SpeechSynthesisUtterance === "undefined")
+        {
+                return null;
+        }
+        try
+        {
+                return new SpeechSynthesisUtterance(text);
+        }
+        catch (err)
+        {
+                return null;
+        }
+}
+
+function resetNarrationSpeechState()
+{
+        narrationSpeechState.utterance = null;
+}
+
+function cancelNarrationSpeech()
+{
+        var synth = getNarrationSpeechSynth();
+        if (synth && typeof synth.cancel === "function")
+        {
+                try
+                {
+                        synth.cancel();
+                }
+                catch (err)
+                {
+                }
+        }
+        resetNarrationSpeechState();
+}
+
+function buildNarrationSpeechText(lines)
+{
+        if (!lines || lines.length === 0)
+        {
+                return "";
+        }
+        var segments = [];
+        for (var i = 0; i < lines.length; i++)
+        {
+                var entry = lines[i];
+                if (entry === undefined || entry === null)
+                {
+                        continue;
+                }
+                var trimmed = String(entry).trim();
+                if (!trimmed)
+                {
+                        continue;
+                }
+                if (!/[.!?]$/.test(trimmed))
+                {
+                        trimmed += ".";
+                }
+                segments.push(trimmed);
+        }
+        return segments.join(" ");
+}
+
+function speakNarrationLines(lines)
+{
+        var synth = getNarrationSpeechSynth();
+        if (!synth)
+        {
+                return;
+        }
+        var text = buildNarrationSpeechText(lines);
+        if (!text)
+        {
+                cancelNarrationSpeech();
+                return;
+        }
+        var stillSpeaking = false;
+        try
+        {
+                stillSpeaking = !!synth.speaking;
+        }
+        catch (err)
+        {
+                stillSpeaking = false;
+        }
+        if (stillSpeaking && narrationSpeechState.utterance && narrationSpeechState.lastText === text)
+        {
+                return;
+        }
+        cancelNarrationSpeech();
+        var utterance = createNarrationSpeechUtterance(text);
+        if (!utterance)
+        {
+                return;
+        }
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        if (typeof navigator !== "undefined" && navigator.language)
+        {
+                utterance.lang = navigator.language;
+        }
+        else
+        {
+                utterance.lang = "en-US";
+        }
+        utterance.onend = function()
+        {
+                if (narrationSpeechState.utterance === utterance)
+                {
+                        resetNarrationSpeechState();
+                }
+        };
+        utterance.onerror = function()
+        {
+                if (narrationSpeechState.utterance === utterance)
+                {
+                        resetNarrationSpeechState();
+                }
+        };
+        try
+        {
+                synth.speak(utterance);
+                narrationSpeechState.utterance = utterance;
+                narrationSpeechState.lastText = text;
+        }
+        catch (err)
+        {
+                resetNarrationSpeechState();
+        }
+}
+
 function ensureNarrationOverlayElements()
 {
         if (narrationOverlayElements)
@@ -281,6 +435,10 @@ function applyNarrationOverlayState(state)
                         elements.progress.style.width = "0%";
                 }
         }
+        if (!narrationOverlayState.visible)
+        {
+                cancelNarrationSpeech();
+        }
 }
 
 function getNarrationOverlayState()
@@ -335,6 +493,7 @@ function showNarrationOverlayFromPayload(payload)
                 total: total,
                 remaining: total
         });
+        speakNarrationLines(lines);
 }
 
 function updateNarrationOverlayTimer(remaining, total)

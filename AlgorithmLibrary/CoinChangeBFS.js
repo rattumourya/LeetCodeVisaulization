@@ -1795,7 +1795,6 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
   }
   return { lines, highlight };
 };
-
 CoinChangeBFS.prototype.runCoinChange = function () {
   this.commands = [];
   this.highlightCode(-1);
@@ -1927,6 +1926,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
       this.highlightTreeNode(curr);
       this.cmd("SetText", this.currentValueID, String(curr));
       this.cmd("Step");
+
       queue.shift();
       this.refreshQueue(queue);
       this.cmd("SetText", this.queueSizeValueID, String(queue.length));
