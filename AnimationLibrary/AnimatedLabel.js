@@ -133,14 +133,38 @@ AnimatedLabel.prototype.draw = function(ctx)
                 }
 		//this.textWidth = ctx.measureText(this.label).width;
 	}
-	else
-	{
-		var offset = (this.centering)?  (1.0 - strList.length) / 2.0 : 0;
-		for (var i = 0; i < strList.length; i++)
-		{
-			ctx.fillText(strList[i], this.x, this.y + offset + i * 12);
-		}		
-	}
+        else
+        {
+                var parsedFontSize = parseInt(this.fontStyle, 10);
+                if (isNaN(parsedFontSize))
+                {
+                        if (!isNaN(this.fontStyle))
+                        {
+                                parsedFontSize = Number(this.fontStyle);
+                        }
+                        else
+                        {
+                                parsedFontSize = 12;
+                        }
+                }
+                if (parsedFontSize <= 0)
+                {
+                        parsedFontSize = 12;
+                }
+
+                var lineSpacing = Math.max(12, Math.round(parsedFontSize * 1.2));
+                var baseOffset = 0;
+                if (this.centering)
+                {
+                        var totalSpan = lineSpacing * (strList.length - 1);
+                        baseOffset = -totalSpan / 2;
+                }
+
+                for (var i = 0; i < strList.length; i++)
+                {
+                        ctx.fillText(strList[i], this.x, this.y + baseOffset + i * lineSpacing);
+                }
+        }
 	ctx.closePath();
 }
 
