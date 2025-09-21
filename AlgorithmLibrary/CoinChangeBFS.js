@@ -1793,6 +1793,29 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
     );
     lines.push(`We'll ignore overshoots and move on to the next coin.`);
     highlight.push(`coin ${coin}`, `${next}`, `goal ${amount}`, "overshoots");
+=======
+      `Adding coin ${coin} jumps from ${curr} straight to the target ${amount}.`
+    );
+    lines.push(
+      `Because this is wave ${steps}, we've discovered the minimum number of coins needed.`
+    );
+    highlight.push(`coin ${coin}`, `target ${amount}`, `wave ${steps}`, "minimum");
+  } else if (next < amount && !alreadyVisited) {
+    lines.push(`Coin ${coin} reaches a new amount ${next}.`);
+    lines.push(`Mark ${next} visited and queue it for the following wave.`);
+    highlight.push(`coin ${coin}`, `${next}`, "visited", "queue");
+  } else if (next < amount) {
+    lines.push(
+      `Coin ${coin} would revisit amount ${next}, which is already marked visited.`
+    );
+    lines.push(`Skip it so the queue stays focused on fresh totals.`);
+    highlight.push(`coin ${coin}`, `${next}`, "visited", "skip");
+  } else {
+    lines.push(
+      `Coin ${coin} would overshoot to ${next}, beyond the target ${amount}.`
+    );
+    lines.push(`Ignore it and move on to the next coin.`);
+    highlight.push(`coin ${coin}`, `${next}`, `target ${amount}`, "ignore");
   }
   return { lines, highlight };
 };
@@ -1876,6 +1899,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     ],
     { highlight: ["enqueue", "amount 0", "already know"] }
   );
+
   queue.push(0);
   this.refreshQueue(queue);
   this.cmd("SetText", this.queueSizeValueID, String(queue.length));
@@ -1888,6 +1912,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     ],
     { highlight: ["amount 0", "visited", "don't circle back"] }
   );
+
   visited[0] = true;
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
