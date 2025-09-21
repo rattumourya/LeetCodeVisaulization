@@ -2118,7 +2118,6 @@ CoinChangeBFS.prototype.showNarrationBorder = function () {
       this.cmd("SetAlpha", corner.id, 0);
     }
   }
-
 };
 
 CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
@@ -2564,7 +2563,6 @@ CoinChangeBFS.prototype.resizeNarrationBoardForContent = function (width, lineCo
   this.updateNarrationBorderGeometry(targetWidth, targetHeight, centerX, centerY);
   this.resetNarrationBorder();
 };
-
 
 CoinChangeBFS.prototype.narrate = function (text, options) {
   const lines = Array.isArray(text)

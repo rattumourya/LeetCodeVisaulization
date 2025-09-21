@@ -61,6 +61,11 @@ AnimatedObject.prototype.setWidth = function(newWidth)
 	this.radius = newWidth / 2;
 }
 
+AnimatedObject.prototype.setHeight = function(newHeight)
+{
+	this.radius = newHeight / 2;
+}
+
 
 
 
