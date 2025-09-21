@@ -482,6 +482,7 @@ CoinChangeBFS.prototype.setup = function () {
   segments.left.startY = boardTop;
   segments.left.endX = leftBorderX;
   segments.left.endY = boardBottom;
+
   const segmentKeys = Object.keys(segments);
   for (let i = 0; i < segmentKeys.length; i++) {
     const key = segmentKeys[i];
@@ -512,6 +513,7 @@ CoinChangeBFS.prototype.setup = function () {
     { key: "top", start: "right" },
     { key: "left", start: "top" },
   ];
+
 
   const queueGapFromTree = Math.max(44, Math.floor(canvasH * 0.035));
   const queueY = treeLayout.bottomY + queueGapFromTree;
