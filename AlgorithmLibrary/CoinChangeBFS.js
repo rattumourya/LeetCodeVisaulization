@@ -249,11 +249,17 @@ CoinChangeBFS.prototype.setup = function () {
   const CODE_FONT_SIZE = 15;
   const VARIABLE_FONT_STYLE = "bold 17";
   const RESULT_FONT_STYLE = "bold 21";
-  const INFO_SPACING = 30;
   const coinHeaderY = TITLE_Y + 48;
   const coinsRowY = coinHeaderY + 44;
-  const infoStartY = coinsRowY + 56;
-  const infoBottomY = infoStartY + 2 * INFO_SPACING;
+  const statsStartY = coinsRowY + 56;
+  const statsSpacing = 32;
+  const messagePanelHeight = 104;
+  const codePanelWidth = Math.max(360, Math.floor(canvasW * 0.5));
+  const messagePanelWidth = codePanelWidth;
+  const messageCenterX = CODE_START_X + messagePanelWidth / 2;
+  const statsLabelBaseX = CODE_START_X + messagePanelWidth + 60;
+  const statsLabelX = Math.min(canvasW - 200, statsLabelBaseX);
+  const statsValueX = Math.min(canvasW - 60, statsLabelX + 120);
 
   this.commands = [];
   this.codeIDs = [];
@@ -278,69 +284,7 @@ CoinChangeBFS.prototype.setup = function () {
 
   this.buildCoinsRow(canvasW, coinsRowY);
 
-  const infoX = CODE_START_X;
-
-  this.amountLabelID = this.nextIndex++;
-  this.amountValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.amountLabelID, "amount:", infoX, infoStartY, 0);
-  this.cmd("CreateLabel", this.amountValueID, String(this.amount), infoX + 120, infoStartY, 0);
-  this.cmd("SetTextStyle", this.amountLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.amountValueID, VARIABLE_FONT_STYLE);
-
-  this.stepsLabelID = this.nextIndex++;
-  this.stepsValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.stepsLabelID, "steps:", infoX + 220, infoStartY, 0);
-  this.cmd("CreateLabel", this.stepsValueID, "0", infoX + 320, infoStartY, 0);
-  this.cmd("SetTextStyle", this.stepsLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.stepsValueID, VARIABLE_FONT_STYLE);
-
-  this.queueSizeLabelID = this.nextIndex++;
-  this.queueSizeValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.queueSizeLabelID, "queue size:", infoX + 420, infoStartY, 0);
-  this.cmd("CreateLabel", this.queueSizeValueID, "0", infoX + 540, infoStartY, 0);
-  this.cmd("SetTextStyle", this.queueSizeLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.queueSizeValueID, VARIABLE_FONT_STYLE);
-
-  const secondRowY = infoStartY + INFO_SPACING;
-  this.levelSizeLabelID = this.nextIndex++;
-  this.levelSizeValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.levelSizeLabelID, "level size:", infoX, secondRowY, 0);
-  this.cmd("CreateLabel", this.levelSizeValueID, "0", infoX + 120, secondRowY, 0);
-  this.cmd("SetTextStyle", this.levelSizeLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.levelSizeValueID, VARIABLE_FONT_STYLE);
-
-  this.currentLabelID = this.nextIndex++;
-  this.currentValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.currentLabelID, "current amount:", infoX + 220, secondRowY, 0);
-  this.cmd("CreateLabel", this.currentValueID, "-", infoX + 380, secondRowY, 0);
-  this.cmd("SetTextStyle", this.currentLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.currentValueID, VARIABLE_FONT_STYLE);
-
-  this.coinValueLabelID = this.nextIndex++;
-  this.coinValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.coinValueLabelID, "coin:", infoX + 420, secondRowY, 0);
-  this.cmd("CreateLabel", this.coinValueID, "-", infoX + 520, secondRowY, 0);
-  this.cmd("SetTextStyle", this.coinValueLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.coinValueID, VARIABLE_FONT_STYLE);
-
-  const thirdRowY = infoStartY + 2 * INFO_SPACING;
-  this.nextLabelID = this.nextIndex++;
-  this.nextValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.nextLabelID, "next amount:", infoX, thirdRowY, 0);
-  this.cmd("CreateLabel", this.nextValueID, "-", infoX + 160, thirdRowY, 0);
-  this.cmd("SetTextStyle", this.nextLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.nextValueID, VARIABLE_FONT_STYLE);
-
-  this.resultLabelID = this.nextIndex++;
-  this.resultValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.resultLabelID, "result:", infoX + 220, thirdRowY, 0);
-  this.cmd("CreateLabel", this.resultValueID, "?", infoX + 320, thirdRowY, 0);
-  this.cmd("SetTextStyle", this.resultLabelID, RESULT_FONT_STYLE);
-  this.cmd("SetTextStyle", this.resultValueID, RESULT_FONT_STYLE);
-
-  const messageY = thirdRowY + 48;
-  const messagePanelWidth = Math.max(360, Math.floor(canvasW * 0.7));
-  const messagePanelHeight = 72;
+  const messageY = statsStartY + messagePanelHeight / 2 - 12;
   this.messagePanelID = this.nextIndex++;
   this.cmd(
     "CreateRectangle",
@@ -348,7 +292,7 @@ CoinChangeBFS.prototype.setup = function () {
     "",
     messagePanelWidth,
     messagePanelHeight,
-    canvasW / 2,
+    messageCenterX,
     messageY
   );
   this.cmd("SetForegroundColor", this.messagePanelID, "#1f3d66");
@@ -356,12 +300,67 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetAlpha", this.messagePanelID, 0);
 
   this.messageID = this.nextIndex++;
-  this.cmd("CreateLabel", this.messageID, this.messageText || "", canvasW / 2, messageY, 1);
+  this.cmd("CreateLabel", this.messageID, this.messageText || "", messageCenterX, messageY, 1);
   this.cmd("SetForegroundColor", this.messageID, "#0b2d53");
   this.cmd("SetTextStyle", this.messageID, "bold 20");
   this.cmd("SetAlpha", this.messageID, 0);
 
-  const treeTopY = messageY + 60;
+  let statsY = statsStartY;
+  let statsBottomY = statsStartY - statsSpacing;
+  const addStatRow = (
+    labelProp,
+    valueProp,
+    labelText,
+    defaultValue,
+    textStyle,
+    options
+  ) => {
+    const gapBefore = options && options.gapBefore ? Number(options.gapBefore) : 0;
+    const gapAfter = options && options.gapAfter ? Number(options.gapAfter) : 0;
+    if (gapBefore > 0) {
+      statsY += gapBefore;
+    }
+    const y = statsY;
+    const labelID = this.nextIndex++;
+    const valueID = this.nextIndex++;
+    this.cmd("CreateLabel", labelID, labelText, statsLabelX, y, 0);
+    this.cmd("CreateLabel", valueID, defaultValue, statsValueX, y, 0);
+    this.cmd("SetTextStyle", labelID, textStyle || VARIABLE_FONT_STYLE);
+    this.cmd("SetTextStyle", valueID, textStyle || VARIABLE_FONT_STYLE);
+    this[labelProp] = labelID;
+    this[valueProp] = valueID;
+    statsBottomY = y;
+    statsY += statsSpacing + (gapAfter > 0 ? gapAfter : 0);
+  };
+
+  addStatRow("amountLabelID", "amountValueID", "amount:", String(this.amount));
+  addStatRow("stepsLabelID", "stepsValueID", "steps:", "0");
+  addStatRow("queueSizeLabelID", "queueSizeValueID", "queue size:", "0", null, {
+    gapAfter: 10,
+  });
+  addStatRow("levelSizeLabelID", "levelSizeValueID", "level size:", "0");
+  addStatRow("currentLabelID", "currentValueID", "current amount:", "-", null, {
+    gapAfter: 10,
+  });
+  addStatRow("coinValueLabelID", "coinValueID", "coin:", "-");
+  addStatRow("nextLabelID", "nextValueID", "next amount:", "-");
+  addStatRow(
+    "resultLabelID",
+    "resultValueID",
+    "result:",
+    "?",
+    RESULT_FONT_STYLE,
+    {
+      gapBefore: statsSpacing / 2,
+    }
+  );
+
+  const statsPanelBottom = statsBottomY + statsSpacing / 2;
+  const messageBottomY = messageY + messagePanelHeight / 2;
+  const infoFloor = Math.max(messageBottomY, statsPanelBottom);
+
+  const treeTopBuffer = 56;
+  const treeTopY = infoFloor + treeTopBuffer;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
   const maxQueueBottom = maxCodeStartY - 40;
@@ -385,7 +384,8 @@ CoinChangeBFS.prototype.setup = function () {
   this.buildVisitedDisplay(treeTopY, visitedBottom, this.amount);
 
   const codeStartPreferred = queueLayout.bottomY + 64;
-  const codeStartY = Math.min(Math.max(codeStartPreferred, thirdRowY + 120), maxCodeStartY);
+  const minCodeStart = infoFloor + 160;
+  const codeStartY = Math.min(Math.max(codeStartPreferred, minCodeStart), maxCodeStartY);
   this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H, CODE_FONT_SIZE);
 
   this.resetTreeDisplay();
@@ -1774,69 +1774,47 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     );
   }
 
-  const requestedMode = options && typeof options.mode === "string" ? options.mode.toLowerCase() : null;
-  let mode = requestedMode === "caption" ? "caption" : "board";
-  if (options && options.board === true) {
-    mode = "board";
-  } else if (options && options.board === false) {
-    mode = "caption";
+  const escapeRegExp = (value) =>
+    String(value).replace(/[.*+?^${}()|[\]\\]/g, (match) => `\\${match}`);
+  const highlightTerms = highlight
+    .slice()
+    .filter((term) => term !== undefined && term !== null)
+    .map((term) => String(term).trim())
+    .filter((term) => term.length > 0)
+    .sort((a, b) => b.length - a.length);
+  const decorated = [];
+  for (let i = 0; i < lines.length; i++) {
+    let formatted = String(lines[i]);
+    for (let j = 0; j < highlightTerms.length; j++) {
+      const target = highlightTerms[j];
+      const pattern = new RegExp(escapeRegExp(target), "gi");
+      formatted = formatted.replace(pattern, (match) => `«${match}»`);
+    }
+    decorated.push(formatted.trim());
+  }
+  const captionText = decorated.join("\n\n");
+
+  if (this.messagePanelID >= 0) {
+    const panelColor = highlightTerms.length > 0 ? this.messagePanelHighlightColor : this.messagePanelBaseColor;
+    this.cmd("SetBackgroundColor", this.messagePanelID, panelColor);
+    this.cmd("SetAlpha", this.messagePanelID, 1);
+  }
+  if (this.messageID >= 0) {
+    this.cmd("SetText", this.messageID, captionText);
+    this.cmd("SetAlpha", this.messageID, 1);
   }
 
-  const canShowCaption = this.messageID >= 0 && this.messagePanelID >= 0;
-  if (mode === "caption" && !canShowCaption) {
-    mode = "board";
-  }
-
-  if (mode === "caption") {
-    const escapeRegExp = (value) =>
-      String(value).replace(/[.*+?^${}()|[\]\\]/g, (match) => `\\${match}`);
-    const highlightTerms = highlight
-      .slice()
-      .filter((term) => term !== undefined && term !== null)
-      .map((term) => String(term).trim())
-      .filter((term) => term.length > 0)
-      .sort((a, b) => b.length - a.length);
-    const decorated = [];
-    for (let i = 0; i < lines.length; i++) {
-      let formatted = String(lines[i]);
-      for (let j = 0; j < highlightTerms.length; j++) {
-        const target = highlightTerms[j];
-        const pattern = new RegExp(escapeRegExp(target), "gi");
-        formatted = formatted.replace(pattern, (match) => `«${match}»`);
-      }
-      decorated.push(`• ${formatted}`);
-    }
-    const readSeconds = Math.max(2, Math.round(fallbackMs / 1000));
-    decorated.push(`⏱ about ${readSeconds}s to absorb before we animate it.`);
-    const captionText = decorated.join("\n");
-
-    if (this.messagePanelID >= 0) {
-      const panelColor = highlightTerms.length > 0 ? this.messagePanelHighlightColor : this.messagePanelBaseColor;
-      this.cmd("SetBackgroundColor", this.messagePanelID, panelColor);
-      this.cmd("SetAlpha", this.messagePanelID, 1);
-    }
-    if (this.messageID >= 0) {
-      this.cmd("SetText", this.messageID, captionText);
-      this.cmd("SetAlpha", this.messageID, 1);
-    }
-
-    this.cmd("SpeakNarration", encoded);
-    this.cmd("WaitForNarrationSpeech", fallbackMs);
-
-    if (this.messagePanelID >= 0) {
-      this.cmd("SetBackgroundColor", this.messagePanelID, this.messagePanelBaseColor);
-      this.cmd("SetAlpha", this.messagePanelID, 0);
-    }
-    if (this.messageID >= 0) {
-      this.cmd("SetText", this.messageID, "");
-      this.cmd("SetAlpha", this.messageID, 0);
-    }
-    return;
-  }
-
-  this.cmd("ShowNarrationBoard", encoded);
+  this.cmd("SpeakNarration", encoded);
   this.cmd("WaitForNarrationSpeech", fallbackMs);
-  this.cmd("HideNarrationBoard");
+
+  if (this.messagePanelID >= 0) {
+    this.cmd("SetBackgroundColor", this.messagePanelID, this.messagePanelBaseColor);
+    this.cmd("SetAlpha", this.messagePanelID, 0);
+  }
+  if (this.messageID >= 0) {
+    this.cmd("SetText", this.messageID, "");
+    this.cmd("SetAlpha", this.messageID, 0);
+  }
 };
 
 CoinChangeBFS.prototype.describeCoinOutcome = function (
