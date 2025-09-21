@@ -81,7 +81,10 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
 
   this.titleID = -1;
   this.coinLabelID = -1;
+  this.messagePanelID = -1;
   this.messageID = -1;
+  this.messagePanelBaseColor = "#f1f4fb";
+  this.messagePanelHighlightColor = "#ffe7a3";
 
   this.amountLabelID = -1;
   this.amountValueID = -1;
@@ -105,6 +108,7 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.treeActiveColor = "#ffd27f";
   this.treeFoundColor = "#b4e4ff";
   this.inspectColor = "#ffe7a3";
+  this.messagePanelHighlightColor = this.inspectColor;
 
   this.coinColor = "#f0f7ff";
   this.coinHighlightColor = "#ffef9c";
@@ -335,10 +339,26 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetTextStyle", this.resultValueID, RESULT_FONT_STYLE);
 
   const messageY = thirdRowY + 48;
+  const messagePanelWidth = Math.max(360, Math.floor(canvasW * 0.7));
+  const messagePanelHeight = 72;
+  this.messagePanelID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.messagePanelID,
+    "",
+    messagePanelWidth,
+    messagePanelHeight,
+    canvasW / 2,
+    messageY
+  );
+  this.cmd("SetForegroundColor", this.messagePanelID, "#1f3d66");
+  this.cmd("SetBackgroundColor", this.messagePanelID, this.messagePanelBaseColor);
+  this.cmd("SetAlpha", this.messagePanelID, 0);
+
   this.messageID = this.nextIndex++;
   this.cmd("CreateLabel", this.messageID, this.messageText || "", canvasW / 2, messageY, 1);
-  this.cmd("SetForegroundColor", this.messageID, "#003366");
-  this.cmd("SetTextStyle", this.messageID, "bold 18");
+  this.cmd("SetForegroundColor", this.messageID, "#0b2d53");
+  this.cmd("SetTextStyle", this.messageID, "bold 20");
   this.cmd("SetAlpha", this.messageID, 0);
 
   const treeTopY = messageY + 60;
@@ -1754,6 +1774,66 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     );
   }
 
+  const requestedMode = options && typeof options.mode === "string" ? options.mode.toLowerCase() : null;
+  let mode = requestedMode === "caption" ? "caption" : "board";
+  if (options && options.board === true) {
+    mode = "board";
+  } else if (options && options.board === false) {
+    mode = "caption";
+  }
+
+  const canShowCaption = this.messageID >= 0 && this.messagePanelID >= 0;
+  if (mode === "caption" && !canShowCaption) {
+    mode = "board";
+  }
+
+  if (mode === "caption") {
+    const escapeRegExp = (value) =>
+      String(value).replace(/[.*+?^${}()|[\]\\]/g, (match) => `\\${match}`);
+    const highlightTerms = highlight
+      .slice()
+      .filter((term) => term !== undefined && term !== null)
+      .map((term) => String(term).trim())
+      .filter((term) => term.length > 0)
+      .sort((a, b) => b.length - a.length);
+    const decorated = [];
+    for (let i = 0; i < lines.length; i++) {
+      let formatted = String(lines[i]);
+      for (let j = 0; j < highlightTerms.length; j++) {
+        const target = highlightTerms[j];
+        const pattern = new RegExp(escapeRegExp(target), "gi");
+        formatted = formatted.replace(pattern, (match) => `«${match}»`);
+      }
+      decorated.push(`• ${formatted}`);
+    }
+    const readSeconds = Math.max(2, Math.round(fallbackMs / 1000));
+    decorated.push(`⏱ about ${readSeconds}s to absorb before we animate it.`);
+    const captionText = decorated.join("\n");
+
+    if (this.messagePanelID >= 0) {
+      const panelColor = highlightTerms.length > 0 ? this.messagePanelHighlightColor : this.messagePanelBaseColor;
+      this.cmd("SetBackgroundColor", this.messagePanelID, panelColor);
+      this.cmd("SetAlpha", this.messagePanelID, 1);
+    }
+    if (this.messageID >= 0) {
+      this.cmd("SetText", this.messageID, captionText);
+      this.cmd("SetAlpha", this.messageID, 1);
+    }
+
+    this.cmd("SpeakNarration", encoded);
+    this.cmd("WaitForNarrationSpeech", fallbackMs);
+
+    if (this.messagePanelID >= 0) {
+      this.cmd("SetBackgroundColor", this.messagePanelID, this.messagePanelBaseColor);
+      this.cmd("SetAlpha", this.messagePanelID, 0);
+    }
+    if (this.messageID >= 0) {
+      this.cmd("SetText", this.messageID, "");
+      this.cmd("SetAlpha", this.messageID, 0);
+    }
+    return;
+  }
+
   this.cmd("ShowNarrationBoard", encoded);
   this.cmd("WaitForNarrationSpeech", fallbackMs);
   this.cmd("HideNarrationBoard");
@@ -1793,7 +1873,6 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
     );
     lines.push(`We'll ignore overshoots and move on to the next coin.`);
     highlight.push(`coin ${coin}`, `${next}`, `goal ${amount}`, "overshoots");
-
   }
   return { lines, highlight };
 };
@@ -1847,7 +1926,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     [
       "Because the goal is positive, we'll keep expanding levels with BFS until the queue empties or the target appears.",
     ],
-    { highlight: ["BFS", "queue", "target"] }
+    { highlight: ["BFS", "queue", "target"], mode: "caption" }
   );
 
   this.highlightCode(2);
@@ -1855,7 +1934,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     [
       `I'll keep a visited checklist for every amount from 0 to ${amount} so we never branch from the same total twice.`,
     ],
-    { highlight: ["visited checklist", `0 to ${amount}`, "same total twice"] }
+    { highlight: ["visited checklist", `0 to ${amount}`, "same total twice"], mode: "caption" }
   );
   const visited = new Array(amount + 1).fill(false);
 
@@ -1864,7 +1943,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     [
       "A queue will hold the frontier so we handle the amounts level by level, like a waiting line.",
     ],
-    { highlight: ["queue", "level by level", "waiting line"] }
+    { highlight: ["queue", "level by level", "waiting line"], mode: "caption" }
   );
   const queue = [];
   this.refreshQueue(queue);
@@ -1875,9 +1954,8 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     [
       "We enqueue amount 0 because that's the total we already know how to make.",
     ],
-    { highlight: ["enqueue", "amount 0", "already know"] }
+    { highlight: ["enqueue", "amount 0", "already know"], mode: "caption" }
   );
-
   queue.push(0);
   this.refreshQueue(queue);
   this.cmd("SetText", this.queueSizeValueID, String(queue.length));
@@ -1888,9 +1966,8 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     [
       "Mark amount 0 as visited so we don't circle back to it later.",
     ],
-    { highlight: ["amount 0", "visited", "don't circle back"] }
+    { highlight: ["amount 0", "visited", "don't circle back"], mode: "caption" }
   );
-
   visited[0] = true;
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
@@ -1903,7 +1980,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     [
       "Set the step counter to zero to remember how many coins each wave has used so far.",
     ],
-    { highlight: ["step counter", "zero", "how many coins"] }
+    { highlight: ["step counter", "zero", "how many coins"], mode: "caption" }
   );
   let steps = 0;
   this.cmd("SetText", this.stepsValueID, String(steps));
@@ -1924,6 +2001,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
       ],
       {
         highlight: [`Wave ${nextDepth}`, `${size} amount${size === 1 ? "" : "s"}`, "queue", "layers stay in order"],
+        mode: nextDepth === 1 ? "board" : "caption",
       }
     );
     this.cmd("SetText", this.levelSizeValueID, String(size));
@@ -1944,7 +2022,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           `Let's work on amount ${curr}. Taking it out of the queue lets us branch from it right now.`,
           `Any path we grow from ${curr} will show totals made with ${steps} coin${steps === 1 ? "" : "s"} so far.`,
         ],
-        { highlight: [`amount ${curr}`, "queue", `${steps} coin${steps === 1 ? "" : "s"}`] }
+        { highlight: [`amount ${curr}`, "queue", `${steps} coin${steps === 1 ? "" : "s"}`], mode: "caption" }
       );
       this.highlightQueueSlot(0, true);
       this.highlightTreeNode(curr);
@@ -1963,7 +2041,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
         const next = curr + coin;
         const alreadyVisited = next <= amount ? visited[next] : false;
         const narration = this.describeCoinOutcome(curr, coin, next, amount, alreadyVisited, steps);
-        this.narrate(narration.lines, { highlight: narration.highlight });
+        this.narrate(narration.lines, { highlight: narration.highlight, mode: "caption" });
         this.highlightCoin(cIndex);
         this.cmd("SetText", this.coinValueID, String(coin));
         this.highlightCode(13);

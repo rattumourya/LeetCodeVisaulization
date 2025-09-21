@@ -1330,6 +1330,54 @@ function AnimationManager(objectManager)
                                         showNarrationOverlayFromPayload(nextCommand[1]);
                                 }
                         }
+                        else if (nextCommand[0].toUpperCase() == "SPEAKNARRATION")
+                        {
+                                var payload = nextCommand[1];
+                                var decodedPayload = payload;
+                                try
+                                {
+                                        decodedPayload = decodeURIComponent(payload);
+                                }
+                                catch (err)
+                                {
+                                }
+                                var speechData = {};
+                                try
+                                {
+                                        speechData = JSON.parse(decodedPayload);
+                                }
+                                catch (err2)
+                                {
+                                        speechData = { lines: [decodedPayload] };
+                                }
+                                var speechLines = cloneNarrationArray(speechData.lines);
+                                if ((!speechLines || speechLines.length === 0) && speechData.text)
+                                {
+                                        speechLines = [speechData.text];
+                                }
+                                var fallbackMs = 0;
+                                if (speechData.fallbackMs !== undefined && speechData.fallbackMs !== null)
+                                {
+                                        var parsedFallback = parseInt(speechData.fallbackMs, 10);
+                                        if (isFinite(parsedFallback) && parsedFallback > 0)
+                                        {
+                                                fallbackMs = parsedFallback;
+                                        }
+                                }
+                                if (!fallbackMs && speechData.wait !== undefined && speechData.wait !== null)
+                                {
+                                        var parsedWait = parseFloat(speechData.wait);
+                                        if (isFinite(parsedWait) && parsedWait > 0)
+                                        {
+                                                fallbackMs = Math.floor(parsedWait * 1000);
+                                        }
+                                }
+                                var startedSpeech = speakNarrationLines(speechLines);
+                                if (!startedSpeech && fallbackMs > 0)
+                                {
+                                        scheduleNarrationAdvance(fallbackMs);
+                                }
+                        }
                         else if (nextCommand[0].toUpperCase() == "UPDATENARRATIONTIMER")
                         {
                                 if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
