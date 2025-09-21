@@ -1793,6 +1793,7 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
     );
     lines.push(`We'll ignore overshoots and move on to the next coin.`);
     highlight.push(`coin ${coin}`, `${next}`, `goal ${amount}`, "overshoots");
+
   }
   return { lines, highlight };
 };
@@ -1876,6 +1877,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     ],
     { highlight: ["enqueue", "amount 0", "already know"] }
   );
+
   queue.push(0);
   this.refreshQueue(queue);
   this.cmd("SetText", this.queueSizeValueID, String(queue.length));
@@ -1888,6 +1890,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     ],
     { highlight: ["amount 0", "visited", "don't circle back"] }
   );
+
   visited[0] = true;
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
