@@ -409,6 +409,7 @@ CoinChangeBFS.prototype.setup = function () {
   };
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight, overrides);
 
+
   const stageMargin = Math.max(36, Math.floor(canvasW * 0.06));
   const maxBoardWidth = Math.max(320, canvasW - stageMargin * 2);
   const messageCenterX = canvasW / 2;
@@ -2102,6 +2103,7 @@ CoinChangeBFS.prototype.showNarrationBorder = function () {
     this.cmd("SetPosition", segment.id, segment.centerX, segment.centerY);
     this.cmd("SetAlpha", segment.id, 1);
   }
+
   if (this.messageBorderCorners) {
     const cornerKeys = Object.keys(this.messageBorderCorners);
     for (let i = 0; i < cornerKeys.length; i++) {
@@ -2116,6 +2118,7 @@ CoinChangeBFS.prototype.showNarrationBorder = function () {
       this.cmd("SetAlpha", corner.id, 0);
     }
   }
+
 };
 
 CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
@@ -2561,6 +2564,7 @@ CoinChangeBFS.prototype.resizeNarrationBoardForContent = function (width, lineCo
   this.updateNarrationBorderGeometry(targetWidth, targetHeight, centerX, centerY);
   this.resetNarrationBorder();
 };
+
 
 CoinChangeBFS.prototype.narrate = function (text, options) {
   const lines = Array.isArray(text)
