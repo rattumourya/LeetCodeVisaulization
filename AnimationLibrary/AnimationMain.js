@@ -211,7 +211,6 @@ function cancelNarrationSpeech()
                 }
         }
         resetNarrationSpeechState();
-
         clearNarrationAdvanceTimer();
 }
 
@@ -1362,7 +1361,6 @@ function AnimationManager(objectManager)
                                         this.currentlyAnimating = false;
                                 }
                                 foundBreak = true;
-
                         }
                         else if (nextCommand[0].toUpperCase() == "DELETE")
                         {

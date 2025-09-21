@@ -1875,7 +1875,6 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightVisitedEntry(0, true);
   this.setVisitedValue(0, true);
   this.markTreeNodeVisited(0, 0, this.treeVisitedColor, null, null);
-
   this.cmd("Step");
   this.highlightVisitedEntry(0, false);
 
@@ -1921,7 +1920,6 @@ CoinChangeBFS.prototype.runCoinChange = function () {
         ],
         { highlight: [`amount ${curr}`, "queue", `${steps} coin${steps === 1 ? "" : "s"}`] }
       );
-
       this.highlightQueueSlot(0, true);
       this.highlightTreeNode(curr);
       this.cmd("SetText", this.currentValueID, String(curr));

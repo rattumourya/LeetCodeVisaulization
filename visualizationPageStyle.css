@@ -129,18 +129,30 @@ EM {text-decoration: bold;}
    margin: 10px auto;
 }
 
+.canvas-stage {
+  position: relative;
+  display: block;
+  width: 720px;
+  max-width: 100%;
+  margin: 10px auto;
+}
+
+.canvas-stage #canvas {
+  margin: 0;
+}
+
 #canvas.narration-blur {
   filter: blur(6px);
   transition: filter 0.25s ease;
 }
 
 .narration-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 40px;
   background: rgba(11, 24, 46, 0.35);
   backdrop-filter: blur(2px);
   z-index: 50;
@@ -192,6 +204,8 @@ EM {text-decoration: bold;}
   font-size: 17px;
   line-height: 1.55;
   color: #0c1f3d;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .narration-content p {
