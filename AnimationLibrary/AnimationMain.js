@@ -435,7 +435,6 @@ function applyNarrationOverlayState(state)
                         elements.progress.style.width = "0%";
                 }
         }
-
         if (!narrationOverlayState.visible)
         {
                 cancelNarrationSpeech();
