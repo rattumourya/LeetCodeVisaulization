@@ -893,7 +893,6 @@ CoinChangeBFS.prototype.updateTreeLevelPositions = function (level) {
           Math.max(parentAmounts.length + 1, 2)
     );
   });
-
   const parentCenterLookup = new Map();
   for (let i = 0; i < parentAmounts.length; i++) {
     parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
@@ -1738,23 +1737,25 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     }
   }
 
+  const fallbackSeconds = Math.max(1, wait);
+  const fallbackMs = Math.max(1500, Math.round(fallbackSeconds * 1000));
   const payload = {
     lines,
     highlights: highlight,
-    total: wait,
+    total: 0,
+    fallbackMs,
   };
   let encoded = "";
   try {
     encoded = encodeURIComponent(JSON.stringify(payload));
   } catch (err) {
-    encoded = encodeURIComponent(JSON.stringify({ lines, highlights: highlight, total: wait }));
+    encoded = encodeURIComponent(
+      JSON.stringify({ lines, highlights: highlight, total: 0, fallbackMs })
+    );
   }
 
   this.cmd("ShowNarrationBoard", encoded);
-  for (let remaining = wait; remaining >= 1; remaining--) {
-    this.cmd("UpdateNarrationTimer", remaining, wait);
-    this.cmd("Step");
-  }
+  this.cmd("WaitForNarrationSpeech", fallbackMs);
   this.cmd("HideNarrationBoard");
 };
 
@@ -1834,7 +1835,6 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.markTreeNodeVisited(0, 0, this.treeFoundColor, null, null);
     this.setVisitedValue(0, true);
     this.highlightVisitedEntry(0, true);
-
     this.cmd("SetText", this.resultValueID, "0");
     this.cmd("Step");
     this.highlightVisitedEntry(0, false);
