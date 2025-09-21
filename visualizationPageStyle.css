@@ -164,7 +164,8 @@ EM {text-decoration: bold;}
 }
 
 .narration-board {
-  max-width: min(640px, 86vw);
+  width: clamp(360px, 60vw, calc(100% - 80px));
+  max-width: calc(100% - 48px);
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 18px 40px rgba(5, 24, 48, 0.28);
@@ -233,5 +234,5 @@ EM {text-decoration: bold;}
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, #2f80ed, #56ccf2);
-  transition: width 0.2s ease;
+  transition: width 0.12s linear;
 }

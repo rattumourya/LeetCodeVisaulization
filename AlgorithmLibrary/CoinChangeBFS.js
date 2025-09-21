@@ -89,6 +89,20 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.messageBorderSequence = null;
   this.messageBorderColor = "#2f80ed";
   this.messageBorderThickness = 0;
+  this.messageBorderCorners = null;
+  this.messagePanelBaseWidth = 0;
+  this.messagePanelBaseHeight = 0;
+  this.messagePanelMinWidth = 0;
+  this.messagePanelMaxWidth = 0;
+  this.messagePanelMinHeight = 0;
+  this.messagePanelMaxHeight = 0;
+  this.messagePanelCurrentWidth = 0;
+  this.messagePanelCurrentHeight = 0;
+  this.messagePanelCenterX = 0;
+  this.messagePanelCenterY = 0;
+  this.messagePanelTopBase = 0;
+  this.messagePanelHorizontalMargin = 0;
+  this.messageFontSize = 18;
 
   this.amountLabelID = -1;
   this.amountValueID = -1;
@@ -377,7 +391,7 @@ CoinChangeBFS.prototype.setup = function () {
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const reservedQueue = Math.max(180, Math.floor(canvasH * 0.14));
   const reservedStats = Math.max(220, Math.floor(canvasH * 0.17));
-  const bottomMargin = Math.max(80, Math.floor(canvasH * 0.06));
+  const bottomMargin = Math.max(60, Math.floor(canvasH * 0.05));
   const baseTreeHeight = Math.floor(canvasH * 0.44);
   let treeHeight = Math.max(
     340,
@@ -395,11 +409,15 @@ CoinChangeBFS.prototype.setup = function () {
   };
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight, overrides);
 
-  const messageCenterX = this.treeArea
-    ? this.treeArea.left + this.treeArea.width / 2
-    : treeLeft + treeWidth / 2;
+
+  const stageMargin = Math.max(36, Math.floor(canvasW * 0.06));
+  const maxBoardWidth = Math.max(320, canvasW - stageMargin * 2);
+  const messageCenterX = canvasW / 2;
   const messageY = boardCenterY;
-  const messagePanelWidth = this.treeArea ? this.treeArea.width : treeWidth;
+  let messagePanelWidth = this.treeArea ? this.treeArea.width : treeWidth;
+  const preferredBoardWidth = Math.max(320, Math.floor(canvasW * 0.48));
+  messagePanelWidth = Math.min(maxBoardWidth, Math.max(messagePanelWidth, preferredBoardWidth));
+  this.messageFontSize = Math.max(17, Math.min(20, Math.round(canvasW * 0.025)));
   this.messagePanelID = this.nextIndex++;
   this.cmd(
     "CreateRectangle",
@@ -417,7 +435,7 @@ CoinChangeBFS.prototype.setup = function () {
   this.messageID = this.nextIndex++;
   this.cmd("CreateLabel", this.messageID, this.messageText || "", messageCenterX, messageY, 1);
   this.cmd("SetForegroundColor", this.messageID, "#0b2d53");
-  this.cmd("SetTextStyle", this.messageID, "bold 20");
+  this.cmd("SetTextStyle", this.messageID, String(this.messageFontSize));
   this.cmd("SetAlpha", this.messageID, 0);
 
   const borderThickness = Math.max(4, Math.round(messagePanelHeight * 0.08));
@@ -482,7 +500,6 @@ CoinChangeBFS.prototype.setup = function () {
   segments.left.startY = boardTop;
   segments.left.endX = leftBorderX;
   segments.left.endY = boardBottom;
-
   const segmentKeys = Object.keys(segments);
   for (let i = 0; i < segmentKeys.length; i++) {
     const key = segmentKeys[i];
@@ -506,14 +523,63 @@ CoinChangeBFS.prototype.setup = function () {
     this.cmd("SetForegroundColor", segment.id, this.messageBorderColor);
     this.cmd("SetAlpha", segment.id, 0);
   }
+  const cornerRadius = Math.max(2, Math.round(borderThickness / 2));
+  const corners = {
+    bottomLeft: {
+      id: this.nextIndex++,
+      radius: cornerRadius,
+      centerX: boardLeft - cornerRadius,
+      centerY: boardBottom + cornerRadius,
+    },
+    bottomRight: {
+      id: this.nextIndex++,
+      radius: cornerRadius,
+      centerX: boardRight + cornerRadius,
+      centerY: boardBottom + cornerRadius,
+    },
+    topRight: {
+      id: this.nextIndex++,
+      radius: cornerRadius,
+      centerX: boardRight + cornerRadius,
+      centerY: boardTop - cornerRadius,
+    },
+    topLeft: {
+      id: this.nextIndex++,
+      radius: cornerRadius,
+      centerX: boardLeft - cornerRadius,
+      centerY: boardTop - cornerRadius,
+    },
+  };
+  const cornerKeys = Object.keys(corners);
+  for (let i = 0; i < cornerKeys.length; i++) {
+    const corner = corners[cornerKeys[i]];
+    this.cmd("CreateCircle", corner.id, "", corner.centerX, corner.centerY);
+    this.cmd("SetBackgroundColor", corner.id, this.messageBorderColor);
+    this.cmd("SetForegroundColor", corner.id, this.messageBorderColor);
+    this.cmd("SetWidth", corner.id, corner.radius * 2);
+    this.cmd("SetHeight", corner.id, corner.radius * 2);
+    this.cmd("SetAlpha", corner.id, 0);
+  }
+  this.messagePanelBaseWidth = messagePanelWidth;
+  this.messagePanelBaseHeight = messagePanelHeight;
+  this.messagePanelMinWidth = Math.max(320, Math.min(messagePanelWidth, maxBoardWidth));
+  this.messagePanelMaxWidth = maxBoardWidth;
+  this.messagePanelMinHeight = messagePanelHeight;
+  this.messagePanelMaxHeight = Math.max(messagePanelHeight, Math.floor(canvasH * 0.5));
+  this.messagePanelCurrentWidth = messagePanelWidth;
+  this.messagePanelCurrentHeight = messagePanelHeight;
+  this.messagePanelCenterX = messageCenterX;
+  this.messagePanelCenterY = messageY;
+  this.messagePanelTopBase = boardTop;
+  this.messagePanelHorizontalMargin = stageMargin;
   this.messageBorderSegments = segments;
   this.messageBorderSequence = [
-    { key: "bottom", start: "left" },
-    { key: "right", start: "bottom" },
-    { key: "top", start: "right" },
-    { key: "left", start: "top" },
+    { key: "bottom", start: "left", startCorner: "bottomLeft", endCorner: "bottomRight" },
+    { key: "right", start: "bottom", startCorner: "bottomRight", endCorner: "topRight" },
+    { key: "top", start: "right", startCorner: "topRight", endCorner: "topLeft" },
+    { key: "left", start: "top", startCorner: "topLeft", endCorner: "bottomLeft" },
   ];
-
+  this.messageBorderCorners = corners;
 
   const queueGapFromTree = Math.max(44, Math.floor(canvasH * 0.035));
   const queueY = treeLayout.bottomY + queueGapFromTree;
@@ -613,7 +679,8 @@ CoinChangeBFS.prototype.setup = function () {
   const safeBottomLimit = canvasH - bottomMargin - 20;
   const maxCodeStartY = safeBottomLimit - totalCodeHeight;
   const minCodeStart = coinsRowY + 24;
-  const desiredStart = queueLayout.bottomY + 48;
+  const queueSpacer = Math.max(88, Math.floor(canvasH * 0.07));
+  const desiredStart = queueLayout.bottomY + queueSpacer;
   let codeStartY = Math.max(minCodeStart, desiredStart);
   if (!Number.isFinite(codeStartY)) {
     codeStartY = minCodeStart;
@@ -2036,6 +2103,22 @@ CoinChangeBFS.prototype.showNarrationBorder = function () {
     this.cmd("SetPosition", segment.id, segment.centerX, segment.centerY);
     this.cmd("SetAlpha", segment.id, 1);
   }
+
+  if (this.messageBorderCorners) {
+    const cornerKeys = Object.keys(this.messageBorderCorners);
+    for (let i = 0; i < cornerKeys.length; i++) {
+      const corner = this.messageBorderCorners[cornerKeys[i]];
+      if (!corner) {
+        continue;
+      }
+      const radius = corner.radius || Math.max(2, Math.round(this.messageBorderThickness / 2));
+      this.cmd("SetWidth", corner.id, radius * 2);
+      this.cmd("SetHeight", corner.id, radius * 2);
+      this.cmd("SetPosition", corner.id, corner.centerX, corner.centerY);
+      this.cmd("SetAlpha", corner.id, 0);
+    }
+  }
+
 };
 
 CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
@@ -2044,6 +2127,19 @@ CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
   }
   const clamped = Math.max(0, Math.min(1, fraction));
   const segments = this.messageBorderSegments;
+  const corners = this.messageBorderCorners || null;
+  const cornerKeys = corners ? Object.keys(corners) : [];
+  for (let c = 0; c < cornerKeys.length; c++) {
+    const corner = corners[cornerKeys[c]];
+    if (!corner) {
+      continue;
+    }
+    const radius = corner.radius || Math.max(2, Math.round(this.messageBorderThickness / 2));
+    this.cmd("SetWidth", corner.id, radius * 2);
+    this.cmd("SetHeight", corner.id, radius * 2);
+    this.cmd("SetPosition", corner.id, corner.centerX, corner.centerY);
+    this.cmd("SetAlpha", corner.id, 0);
+  }
   const order =
     Array.isArray(this.messageBorderSequence) && this.messageBorderSequence.length > 0
       ? this.messageBorderSequence
@@ -2131,6 +2227,14 @@ CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
         this.cmd("SetPosition", segment.id, anchorX, centerY);
       }
       this.cmd("SetAlpha", segment.id, 1);
+      if (corners) {
+        if (entry.startCorner && corners[entry.startCorner]) {
+          this.cmd("SetAlpha", corners[entry.startCorner].id, 1);
+        }
+        if (take >= segLength - epsilon && entry.endCorner && corners[entry.endCorner]) {
+          this.cmd("SetAlpha", corners[entry.endCorner].id, 1);
+        }
+      }
     } else {
       if (segment.orientation === "horizontal") {
         const anchorX =
@@ -2156,6 +2260,14 @@ CoinChangeBFS.prototype.setNarrationBorderProgress = function (fraction) {
       this.cmd("SetAlpha", segment.id, 0);
     }
   }
+  if (clamped >= 1 && corners) {
+    for (let c = 0; c < cornerKeys.length; c++) {
+      const corner = corners[cornerKeys[c]];
+      if (corner) {
+        this.cmd("SetAlpha", corner.id, 1);
+      }
+    }
+  }
 };
 
 CoinChangeBFS.prototype.resetNarrationBorder = function () {
@@ -2179,6 +2291,20 @@ CoinChangeBFS.prototype.resetNarrationBorder = function () {
     this.cmd("SetPosition", segment.id, segment.centerX, segment.centerY);
     this.cmd("SetAlpha", segment.id, 0);
   }
+  if (this.messageBorderCorners) {
+    const cornerKeys = Object.keys(this.messageBorderCorners);
+    for (let i = 0; i < cornerKeys.length; i++) {
+      const corner = this.messageBorderCorners[cornerKeys[i]];
+      if (!corner) {
+        continue;
+      }
+      const radius = corner.radius || Math.max(2, Math.round(this.messageBorderThickness / 2));
+      this.cmd("SetWidth", corner.id, radius * 2);
+      this.cmd("SetHeight", corner.id, radius * 2);
+      this.cmd("SetPosition", corner.id, corner.centerX, corner.centerY);
+      this.cmd("SetAlpha", corner.id, 0);
+    }
+  }
 };
 
 CoinChangeBFS.prototype.estimateNarrationBeats = function (lines) {
@@ -2197,6 +2323,248 @@ CoinChangeBFS.prototype.estimateNarrationBeats = function (lines) {
   const lineBonus = Math.max(0, lines.length - 1);
   return Math.min(8, Math.max(2, base + lineBonus));
 };
+
+CoinChangeBFS.prototype.getNarrationFontSize = function () {
+  const parsed = Number(this.messageFontSize);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+  return 18;
+};
+
+CoinChangeBFS.prototype.estimateNarrationCharWidth = function () {
+  const fontSize = this.getNarrationFontSize();
+  return Math.max(7, Math.round(fontSize * 0.55));
+};
+
+CoinChangeBFS.prototype.estimateNarrationLineWidth = function (text) {
+  if (text === undefined || text === null) {
+    return 0;
+  }
+  const cleaned = String(text).replace(/[«»]/g, "");
+  const approxCharWidth = this.estimateNarrationCharWidth();
+  return cleaned.length * approxCharWidth + this.getNarrationFontSize() * 2;
+};
+
+CoinChangeBFS.prototype.determineNarrationWidth = function (lines) {
+  let target = this.messagePanelMinWidth || 320;
+  if (Array.isArray(lines)) {
+    for (let i = 0; i < lines.length; i++) {
+      const entry = lines[i];
+      if (entry === undefined || entry === null) {
+        continue;
+      }
+      target = Math.max(target, this.estimateNarrationLineWidth(entry));
+    }
+  }
+  const maxWidth = this.messagePanelMaxWidth && this.messagePanelMaxWidth > 0
+    ? this.messagePanelMaxWidth
+    : target;
+  const minWidth = this.messagePanelMinWidth && this.messagePanelMinWidth > 0
+    ? this.messagePanelMinWidth
+    : target;
+  if (maxWidth <= minWidth) {
+    return Math.max(minWidth, target);
+  }
+  return Math.min(maxWidth, Math.max(minWidth, Math.round(target)));
+};
+
+CoinChangeBFS.prototype.wrapNarrationParagraphs = function (lines, width) {
+  const wrapped = [];
+  if (!Array.isArray(lines) || lines.length === 0) {
+    return wrapped;
+  }
+  const fontSize = this.getNarrationFontSize();
+  const approxCharWidth = this.estimateNarrationCharWidth();
+  const usableWidth = Math.max(approxCharWidth * 8, Math.max(0, width - fontSize * 2.4));
+  const wrapLimit = Math.max(16, Math.floor(usableWidth / approxCharWidth));
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    if (rawLine === undefined || rawLine === null) {
+      continue;
+    }
+    let text = String(rawLine).trim();
+    if (text.length === 0) {
+      wrapped.push("");
+    } else {
+      while (text.length > wrapLimit) {
+        let breakIdx = text.lastIndexOf(" ", wrapLimit);
+        if (breakIdx <= 0) {
+          breakIdx = wrapLimit;
+        }
+        const segment = text.substring(0, breakIdx).trim();
+        if (segment.length > 0) {
+          wrapped.push(segment);
+        }
+        text = text.substring(breakIdx).trim();
+        if (text.length === 0) {
+          break;
+        }
+      }
+      if (text.length > 0) {
+        wrapped.push(text);
+      }
+    }
+    if (i < lines.length - 1) {
+      wrapped.push("");
+    }
+  }
+  while (wrapped.length > 0 && wrapped[wrapped.length - 1] === "") {
+    wrapped.pop();
+  }
+  if (wrapped.length === 0) {
+    wrapped.push("");
+  }
+  return wrapped;
+};
+
+CoinChangeBFS.prototype.updateNarrationBorderGeometry = function (
+  width,
+  height,
+  centerX,
+  centerY
+) {
+  if (!this.messageBorderSegments) {
+    return;
+  }
+  const segments = this.messageBorderSegments;
+  const thickness = this.messageBorderThickness || 0;
+  const halfWidth = width / 2;
+  const halfHeight = height / 2;
+  const boardLeft = centerX - halfWidth;
+  const boardRight = centerX + halfWidth;
+  const boardTop = centerY - halfHeight;
+  const boardBottom = centerY + halfHeight;
+  const topBorderY = boardTop - thickness / 2;
+  const bottomBorderY = boardBottom + thickness / 2;
+  const leftBorderX = boardLeft - thickness / 2;
+  const rightBorderX = boardRight + thickness / 2;
+
+  if (segments.top) {
+    segments.top.baseLength = width;
+    segments.top.centerX = centerX;
+    segments.top.centerY = topBorderY;
+    segments.top.startX = boardRight;
+    segments.top.startY = topBorderY;
+    segments.top.endX = boardLeft;
+    segments.top.endY = topBorderY;
+  }
+  if (segments.bottom) {
+    segments.bottom.baseLength = width;
+    segments.bottom.centerX = centerX;
+    segments.bottom.centerY = bottomBorderY;
+    segments.bottom.startX = boardLeft;
+    segments.bottom.startY = bottomBorderY;
+    segments.bottom.endX = boardRight;
+    segments.bottom.endY = bottomBorderY;
+  }
+  if (segments.left) {
+    segments.left.baseLength = height;
+    segments.left.centerX = leftBorderX;
+    segments.left.centerY = centerY;
+    segments.left.startX = leftBorderX;
+    segments.left.startY = boardTop;
+    segments.left.endX = leftBorderX;
+    segments.left.endY = boardBottom;
+  }
+  if (segments.right) {
+    segments.right.baseLength = height;
+    segments.right.centerX = rightBorderX;
+    segments.right.centerY = centerY;
+    segments.right.startX = rightBorderX;
+    segments.right.startY = boardBottom;
+    segments.right.endX = rightBorderX;
+    segments.right.endY = boardTop;
+  }
+
+  if (this.messageBorderCorners) {
+    const cornerRadius = this.messageBorderCorners.bottomLeft
+      ? this.messageBorderCorners.bottomLeft.radius
+      : Math.max(2, Math.round(thickness / 2));
+    if (this.messageBorderCorners.bottomLeft) {
+      this.messageBorderCorners.bottomLeft.centerX = boardLeft - cornerRadius;
+      this.messageBorderCorners.bottomLeft.centerY = boardBottom + cornerRadius;
+      this.messageBorderCorners.bottomLeft.radius = cornerRadius;
+    }
+    if (this.messageBorderCorners.bottomRight) {
+      this.messageBorderCorners.bottomRight.centerX = boardRight + cornerRadius;
+      this.messageBorderCorners.bottomRight.centerY = boardBottom + cornerRadius;
+      this.messageBorderCorners.bottomRight.radius = cornerRadius;
+    }
+    if (this.messageBorderCorners.topRight) {
+      this.messageBorderCorners.topRight.centerX = boardRight + cornerRadius;
+      this.messageBorderCorners.topRight.centerY = boardTop - cornerRadius;
+      this.messageBorderCorners.topRight.radius = cornerRadius;
+    }
+    if (this.messageBorderCorners.topLeft) {
+      this.messageBorderCorners.topLeft.centerX = boardLeft - cornerRadius;
+      this.messageBorderCorners.topLeft.centerY = boardTop - cornerRadius;
+      this.messageBorderCorners.topLeft.radius = cornerRadius;
+    }
+  }
+};
+
+CoinChangeBFS.prototype.resizeNarrationBoardForContent = function (width, lineCount) {
+  if (this.messagePanelID < 0) {
+    return;
+  }
+  const minWidth = this.messagePanelMinWidth || 320;
+  const maxWidth = this.messagePanelMaxWidth && this.messagePanelMaxWidth > minWidth
+    ? this.messagePanelMaxWidth
+    : minWidth;
+  let targetWidth = Math.max(minWidth, Math.min(maxWidth, Math.round(width)));
+  if (!Number.isFinite(targetWidth) || targetWidth <= 0) {
+    targetWidth = minWidth;
+  }
+
+  const fontSize = this.getNarrationFontSize();
+  const lineSpacing = Math.max(22, Math.round(fontSize * 1.35));
+  const padding = Math.max(28, Math.round(fontSize * 1.4));
+  const lines = Math.max(1, Number.isFinite(lineCount) ? Math.round(lineCount) : 1);
+  const textHeight = lineSpacing * (lines - 1) + fontSize * 1.6;
+  const minHeight = this.messagePanelMinHeight && this.messagePanelMinHeight > 0
+    ? this.messagePanelMinHeight
+    : 120;
+  const maxHeight = this.messagePanelMaxHeight && this.messagePanelMaxHeight > minHeight
+    ? this.messagePanelMaxHeight
+    : Math.max(minHeight, Math.floor((this.canvasHeight || 720) * 0.5));
+  let targetHeight = Math.max(minHeight, Math.round(textHeight + padding));
+  if (targetHeight > maxHeight) {
+    targetHeight = maxHeight;
+  }
+
+  const margin = this.messagePanelHorizontalMargin || 32;
+  const canvasWidth = this.canvasWidth || 720;
+  let centerX = this.messagePanelCenterX || canvasWidth / 2;
+  const minCenter = margin + targetWidth / 2;
+  const maxCenter = canvasWidth - margin - targetWidth / 2;
+  if (minCenter <= maxCenter) {
+    centerX = Math.min(Math.max(centerX, minCenter), maxCenter);
+  } else {
+    centerX = canvasWidth / 2;
+  }
+  const hasBaseTop = this.messagePanelTopBase !== undefined && this.messagePanelTopBase !== null;
+  const fallbackCenter = this.messagePanelCenterY || fontSize * 4;
+  const baseTop = hasBaseTop ? this.messagePanelTopBase : fallbackCenter - targetHeight / 2;
+  const centerY = baseTop + targetHeight / 2;
+
+  this.messagePanelCurrentWidth = targetWidth;
+  this.messagePanelCurrentHeight = targetHeight;
+  this.messagePanelCenterX = centerX;
+  this.messagePanelCenterY = centerY;
+  this.messagePanelTopBase = baseTop;
+
+  this.cmd("SetWidth", this.messagePanelID, targetWidth);
+  this.cmd("SetHeight", this.messagePanelID, targetHeight);
+  this.cmd("SetPosition", this.messagePanelID, centerX, centerY);
+  if (this.messageID >= 0) {
+    this.cmd("SetPosition", this.messageID, centerX, centerY);
+  }
+
+  this.updateNarrationBorderGeometry(targetWidth, targetHeight, centerX, centerY);
+  this.resetNarrationBorder();
+};
+
 
 CoinChangeBFS.prototype.narrate = function (text, options) {
   const lines = Array.isArray(text)
@@ -2268,9 +2636,25 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     }
     decorated.push(formatted.trim());
   }
-  const captionText = decorated
+  let targetWidth = this.determineNarrationWidth(decorated);
+  targetWidth = Math.max(
+    this.messagePanelMinWidth || 320,
+    Math.min(this.messagePanelMaxWidth || targetWidth, targetWidth)
+  );
+  let wrappedLines = this.wrapNarrationParagraphs(decorated, targetWidth);
+  const measuredWidth = this.determineNarrationWidth(wrappedLines);
+  if (measuredWidth > targetWidth) {
+    targetWidth = Math.max(
+      this.messagePanelMinWidth || 320,
+      Math.min(this.messagePanelMaxWidth || measuredWidth, measuredWidth)
+    );
+    wrappedLines = this.wrapNarrationParagraphs(decorated, targetWidth);
+  }
+  const captionText = wrappedLines
     .map((entry) => entry.replace(/«/g, "⟦").replace(/»/g, "⟧"))
-    .join("\n\n");
+    .join("\n");
+
+  this.resizeNarrationBoardForContent(targetWidth, wrappedLines.length);
 
   if (this.messagePanelID >= 0) {
     const panelColor = highlightTerms.length > 0 ? this.messagePanelHighlightColor : this.messagePanelBaseColor;
@@ -2285,7 +2669,7 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
   this.showNarrationBorder();
   this.setNarrationBorderProgress(1);
   this.cmd("SpeakNarration", encoded);
-  const progressSteps = Math.max(8, Math.round(fallbackMs / 400));
+  const progressSteps = Math.max(24, Math.round(fallbackMs / 120));
   for (let i = 0; i < progressSteps; i++) {
     const fraction =
       progressSteps <= 1 ? 0 : Math.max(0, (progressSteps - i - 0.5) / progressSteps);
