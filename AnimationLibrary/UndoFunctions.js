@@ -301,10 +301,48 @@ UndoSetText.prototype.undoInitialStep = function(world)
 
 function UndoSetTextColor(id, color, index)
 {
-	this.objectID = id;
-	this.color = color;
-	this.index = index;
+        this.objectID = id;
+        this.color = color;
+        this.index = index;
 }
+
+function cloneOverlayList(values)
+{
+        if (!values || typeof values.slice !== "function")
+        {
+                return [];
+        }
+        return values.slice(0);
+}
+
+function UndoNarrationOverlay(state)
+{
+        state = state || {};
+        this.state = {
+                visible: !!state.visible,
+                lines: cloneOverlayList(state.lines),
+                highlights: cloneOverlayList(state.highlights),
+                total: state.total || 0,
+                remaining: state.remaining || 0
+        };
+}
+
+UndoNarrationOverlay.prototype = new UndoBlock();
+UndoNarrationOverlay.prototype.constructor = UndoNarrationOverlay;
+
+UndoNarrationOverlay.prototype.undoInitialStep = function(world)
+{
+        if (typeof window !== "undefined" && typeof window.applyNarrationOverlayState === "function")
+        {
+                window.applyNarrationOverlayState({
+                        visible: this.state.visible,
+                        lines: cloneOverlayList(this.state.lines),
+                        highlights: cloneOverlayList(this.state.highlights),
+                        total: this.state.total,
+                        remaining: this.state.remaining
+                });
+        }
+};
 
 UndoSetTextColor.prototype = new UndoBlock();
 UndoSetTextColor.prototype.constructor = UndoSetTextColor;
