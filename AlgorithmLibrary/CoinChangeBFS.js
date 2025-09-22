@@ -307,8 +307,11 @@ CoinChangeBFS.prototype.setup = function () {
     messageY,
     reservedHeight: boardReservedHeight,
   });
-
-  const treeTopY = messageY + boardReservedHeight;
+  const boardToTreeGap = Math.max(
+    24,
+    Math.floor((this.boardReservedHeight || 0) * 0.12)
+  );
+  const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
   const maxQueueBottom = maxCodeStartY - 40;
@@ -333,6 +336,7 @@ CoinChangeBFS.prototype.setup = function () {
   }
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
 
+  const actualTreeTop = this.treeArea ? this.treeArea.top : treeTopY;
   const queueY = treeLayout.bottomY + queueGapFromTree;
   const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
   const queueTop = queueY - queueLayout.slotHeight / 2;
@@ -343,7 +347,7 @@ CoinChangeBFS.prototype.setup = function () {
       Math.floor((this.treeNodeRadius || 24) * 1.2)
     )
   );
-  const visitedTop = treeTopY + visitedTopOffset;
+  const visitedTop = actualTreeTop + visitedTopOffset;
   let visitedBottom = Math.max(
     treeLayout.bottomY,
     queueTop - Math.max(16, Math.floor(queueLayout.slotHeight * 0.4))
@@ -409,9 +413,10 @@ CoinChangeBFS.prototype.buildVariablePanel = function (options) {
   const variableFont = settings.variableFont || "bold 17";
   const resultFont = settings.resultFont || variableFont;
 
-  const minColumnX = codeStartX + Math.max(340, Math.floor(canvasW * 0.48));
-  const desiredGap = Math.max(100, Math.floor(canvasW * 0.14));
-  const maxValueX = canvasW - Math.max(36, Math.floor(canvasW * 0.06));
+  const minColumnX = codeStartX + Math.max(320, Math.floor(canvasW * 0.44));
+  const desiredGap = Math.max(110, Math.floor(canvasW * 0.16));
+  const rightMargin = Math.max(64, Math.floor(canvasW * 0.09));
+  const maxValueX = canvasW - rightMargin;
   let valueX = maxValueX;
   let columnX = valueX - desiredGap;
   if (columnX < minColumnX) {
@@ -421,7 +426,7 @@ CoinChangeBFS.prototype.buildVariablePanel = function (options) {
       valueX = maxValueX;
     }
   }
-  const minGap = Math.max(72, Math.floor(canvasW * 0.1));
+  const minGap = Math.max(88, Math.floor(canvasW * 0.12));
   if (valueX - columnX < minGap) {
     columnX = Math.max(minColumnX, valueX - minGap);
   }
@@ -540,13 +545,19 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
     boardHeight = Math.max(96, Math.floor(reservedHeight * 0.9));
   }
 
-  let boardTop = messageY + Math.max(12, Math.floor((reservedHeight - boardHeight) / 2));
+  const topPadding = Math.max(8, Math.floor(reservedHeight * 0.03));
+  const upwardNudge = Math.max(6, Math.floor(reservedHeight * 0.05));
+  const baseOffset = Math.max(topPadding, Math.floor((reservedHeight - boardHeight) / 2));
+  const boardTopMin = messageY + Math.max(4, Math.floor(reservedHeight * 0.02));
+  let boardTop = messageY + Math.max(topPadding, baseOffset - upwardNudge);
+
   const boardBottomLimit = messageY + reservedHeight;
   if (boardTop + boardHeight > boardBottomLimit) {
     boardTop = boardBottomLimit - boardHeight;
   }
-  if (boardTop < messageY) {
-    boardTop = messageY;
+
+  if (boardTop < boardTopMin) {
+    boardTop = boardTopMin;
   }
 
   const centerX = canvasW / 2;
@@ -635,7 +646,6 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const usableBottom = Math.max(usableTop + 32, textAreaBottom);
   const usableHeight = Math.max(0, usableBottom - usableTop);
   const minSpacing = Math.max(18, Math.floor(boardHeight * 0.15));
-
   let lineCount = 4;
   while (lineCount > 1) {
     const allowedSpan = usableBottom - minLineY;
@@ -957,18 +967,33 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   }
 
   const areaHeight = Math.max(240, height || 260);
+  let areaTop = topY;
+
+  this.visitedPanelWidth = panelWidth;
+  this.visitedPanelGap = panelGap;
+  const reservedForLabel = this.boardReservedHeight || 0;
+  const labelOffsetBase =
+    reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.35) : 36;
+  const labelOffset = Math.max(20, Math.min(34, Math.floor(labelOffsetBase * 0.75)));
+  if (this.boardInfo) {
+    const boardBottom = this.boardInfo.bottom || 0;
+    const minGap = Math.max(18, Math.floor(reservedForLabel * 0.08));
+    const expectedLabelY = areaTop - labelOffset;
+    const requiredLabelY = boardBottom + minGap;
+    if (expectedLabelY < requiredLabelY) {
+      areaTop += requiredLabelY - expectedLabelY;
+    }
+  }
 
   this.treeArea = {
     left: marginLeft,
     right: marginLeft + areaWidth,
     width: areaWidth,
-    top: topY,
+    top: areaTop,
     height: areaHeight,
-    bottom: topY + areaHeight,
+    bottom: areaTop + areaHeight,
   };
 
-  this.visitedPanelWidth = panelWidth;
-  this.visitedPanelGap = panelGap;
   const visitedLeft = this.treeArea.right + panelGap;
   const visitedRight = Math.min(
     canvasW - marginRight,
@@ -978,8 +1003,8 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
     left: visitedLeft,
     right: visitedRight,
     width: visitedRight - visitedLeft,
-    top: topY,
-    bottom: topY + areaHeight,
+    top: areaTop,
+    bottom: areaTop + areaHeight,
     height: areaHeight,
   };
   this.visitedPanelWidth = this.visitedArea.width;
@@ -1003,11 +1028,7 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   );
 
   const treeCenterX = this.treeArea.left + this.treeArea.width / 2;
-  const reservedForLabel = this.boardReservedHeight || 0;
-  const labelOffsetBase =
-    reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.35) : 36;
-  const labelOffset = Math.max(20, Math.min(34, Math.floor(labelOffsetBase * 0.75)));
-  const treeLabelY = topY - labelOffset;
+  const treeLabelY = areaTop - labelOffset;
   this.treeLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
