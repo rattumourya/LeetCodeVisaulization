@@ -261,6 +261,9 @@ CoinChangeBFS.prototype.setup = function () {
     objectManager.statusReport.addedToScene = false;
   }
 
+  this.celebrationOverlayIDs = [];
+  this.celebrationActive = false;
+
   const TITLE_Y = 48;
   const CODE_START_X = 80;
   const CODE_LINE_H = 17;
@@ -2924,6 +2927,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightCode(-1);
   this.clearTreeHighlight();
   this.unhighlightCoin();
+  this.clearCelebrationOverlay();
   this.resetTreeDisplay();
   this.resetQueueDisplay();
   this.resetVisitedDisplay();
@@ -3081,6 +3085,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           }
           this.launchConfettiCelebration();
           this.unhighlightCoin();
+          this.launchConfettiCelebration({ lingerSteps: 2 });
           this.highlightCode(-1);
           return this.commands;
         }
@@ -3258,6 +3263,7 @@ CoinChangeBFS.prototype.launchConfettiCelebration = function (options) {
 
   this.clearCelebrationOverlay();
 };
+
 
 CoinChangeBFS.prototype.clearCelebrationOverlay = function () {
   if (!Array.isArray(this.celebrationOverlayIDs)) {
