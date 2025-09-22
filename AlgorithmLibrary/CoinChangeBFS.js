@@ -572,6 +572,7 @@ CoinChangeBFS.prototype.clearNarrationBoardVisuals = function () {
   this.boardProgressFillID = -1;
 };
 
+
 CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const settings = options || {};
   const canvasW = settings.canvasW || this.canvasWidth || 720;
@@ -601,6 +602,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   if (boardTop + boardHeight > boardBottomLimit) {
     boardTop = boardBottomLimit - boardHeight;
   }
+
   if (boardTop < boardTopMin) {
     boardTop = boardTopMin;
   }
