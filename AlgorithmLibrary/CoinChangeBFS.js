@@ -62,6 +62,7 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.treeDepthCapacity = 0;
   this.treeDepthBaseEstimate = 0;
   this.treeEdgeLabelColor = "#1d3f72";
+  this.boardReservedHeight = 0;
 
   this.queueSlotIDs = [];
   this.queueValues = [];
@@ -245,11 +246,10 @@ CoinChangeBFS.prototype.setup = function () {
   const CODE_FONT_SIZE = 15;
   const VARIABLE_FONT_STYLE = "bold 17";
   const RESULT_FONT_STYLE = "bold 21";
-  const INFO_SPACING = 30;
+  const VARIABLE_SPACING = 32;
   const coinHeaderY = TITLE_Y + 48;
   const coinsRowY = coinHeaderY + 44;
-  const infoStartY = coinsRowY + 56;
-  const infoBottomY = infoStartY + 2 * INFO_SPACING;
+  const messageY = coinsRowY + 72;
 
   this.commands = [];
   this.codeIDs = [];
@@ -274,99 +274,84 @@ CoinChangeBFS.prototype.setup = function () {
 
   this.buildCoinsRow(canvasW, coinsRowY);
 
-  const infoX = CODE_START_X;
-
-  this.amountLabelID = this.nextIndex++;
-  this.amountValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.amountLabelID, "amount:", infoX, infoStartY, 0);
-  this.cmd("CreateLabel", this.amountValueID, String(this.amount), infoX + 120, infoStartY, 0);
-  this.cmd("SetTextStyle", this.amountLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.amountValueID, VARIABLE_FONT_STYLE);
-
-  this.stepsLabelID = this.nextIndex++;
-  this.stepsValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.stepsLabelID, "steps:", infoX + 220, infoStartY, 0);
-  this.cmd("CreateLabel", this.stepsValueID, "0", infoX + 320, infoStartY, 0);
-  this.cmd("SetTextStyle", this.stepsLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.stepsValueID, VARIABLE_FONT_STYLE);
-
-  this.queueSizeLabelID = this.nextIndex++;
-  this.queueSizeValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.queueSizeLabelID, "queue size:", infoX + 420, infoStartY, 0);
-  this.cmd("CreateLabel", this.queueSizeValueID, "0", infoX + 540, infoStartY, 0);
-  this.cmd("SetTextStyle", this.queueSizeLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.queueSizeValueID, VARIABLE_FONT_STYLE);
-
-  const secondRowY = infoStartY + INFO_SPACING;
-  this.levelSizeLabelID = this.nextIndex++;
-  this.levelSizeValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.levelSizeLabelID, "level size:", infoX, secondRowY, 0);
-  this.cmd("CreateLabel", this.levelSizeValueID, "0", infoX + 120, secondRowY, 0);
-  this.cmd("SetTextStyle", this.levelSizeLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.levelSizeValueID, VARIABLE_FONT_STYLE);
-
-  this.currentLabelID = this.nextIndex++;
-  this.currentValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.currentLabelID, "current amount:", infoX + 220, secondRowY, 0);
-  this.cmd("CreateLabel", this.currentValueID, "-", infoX + 380, secondRowY, 0);
-  this.cmd("SetTextStyle", this.currentLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.currentValueID, VARIABLE_FONT_STYLE);
-
-  this.coinValueLabelID = this.nextIndex++;
-  this.coinValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.coinValueLabelID, "coin:", infoX + 420, secondRowY, 0);
-  this.cmd("CreateLabel", this.coinValueID, "-", infoX + 520, secondRowY, 0);
-  this.cmd("SetTextStyle", this.coinValueLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.coinValueID, VARIABLE_FONT_STYLE);
-
-  const thirdRowY = infoStartY + 2 * INFO_SPACING;
-  this.nextLabelID = this.nextIndex++;
-  this.nextValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.nextLabelID, "next amount:", infoX, thirdRowY, 0);
-  this.cmd("CreateLabel", this.nextValueID, "-", infoX + 160, thirdRowY, 0);
-  this.cmd("SetTextStyle", this.nextLabelID, VARIABLE_FONT_STYLE);
-  this.cmd("SetTextStyle", this.nextValueID, VARIABLE_FONT_STYLE);
-
-  this.resultLabelID = this.nextIndex++;
-  this.resultValueID = this.nextIndex++;
-  this.cmd("CreateLabel", this.resultLabelID, "result:", infoX + 220, thirdRowY, 0);
-  this.cmd("CreateLabel", this.resultValueID, "?", infoX + 320, thirdRowY, 0);
-  this.cmd("SetTextStyle", this.resultLabelID, RESULT_FONT_STYLE);
-  this.cmd("SetTextStyle", this.resultValueID, RESULT_FONT_STYLE);
-
-  const messageY = thirdRowY + 48;
   this.messageID = this.nextIndex++;
-  this.cmd("CreateLabel", this.messageID, this.messageText || "", canvasW / 2, messageY, 1);
+  this.cmd(
+    "CreateLabel",
+    this.messageID,
+    this.messageText || "",
+    canvasW / 2,
+    messageY,
+    1
+  );
   this.cmd("SetForegroundColor", this.messageID, "#003366");
   this.cmd("SetTextStyle", this.messageID, "bold 18");
   this.cmd("SetAlpha", this.messageID, 0);
 
-  const treeTopY = messageY + 60;
+  const boardReservedHeight = Math.max(
+    120,
+    Math.min(220, Math.floor(canvasH * 0.16))
+  );
+  this.boardReservedHeight = boardReservedHeight;
+  const treeTopY = messageY + boardReservedHeight;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
   const maxQueueBottom = maxCodeStartY - 40;
   const queueGapFromTree = Math.max(32, Math.floor(canvasH * 0.025));
   const estimatedQueueHalf = Math.max(24, Math.floor(canvasH * 0.018));
-  const baseTreeHeight = Math.floor(canvasH * 0.42);
-  const maxTreeHeight = Math.max(
-    220,
-    maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf
+  const baseTreeHeight = Math.floor(canvasH * 0.4);
+  const rawTreeLimit =
+    maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf;
+  const treeHeightLimit = Math.max(220, rawTreeLimit);
+  const minTreeHeight = Math.min(
+    treeHeightLimit,
+    Math.max(260, Math.floor(canvasH * 0.28))
   );
-  const treeHeight = Math.max(320, Math.min(baseTreeHeight, maxTreeHeight));
+  let treeHeight = Math.min(baseTreeHeight, treeHeightLimit);
+  if (!Number.isFinite(treeHeight) || treeHeight <= 0) {
+    treeHeight =
+      minTreeHeight > 0
+        ? minTreeHeight
+        : Math.max(220, Math.floor(canvasH * 0.32));
+  } else if (treeHeight < minTreeHeight) {
+    treeHeight = minTreeHeight;
+  }
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
 
   const queueY = treeLayout.bottomY + queueGapFromTree;
   const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
   const queueTop = queueY - queueLayout.slotHeight / 2;
-  const visitedBottom = Math.max(
+  const visitedTopOffset = Math.max(
+    24,
+    Math.floor((this.boardReservedHeight || 0) * 0.4)
+  );
+  const visitedTop = treeTopY + visitedTopOffset;
+  let visitedBottom = Math.max(
     treeLayout.bottomY,
     queueTop - Math.max(16, Math.floor(queueLayout.slotHeight * 0.4))
   );
-  this.buildVisitedDisplay(treeTopY, visitedBottom, this.amount);
+  const minVisitedHeight = Math.max(140, Math.floor(canvasH * 0.14));
+  if (visitedBottom - visitedTop < minVisitedHeight) {
+    visitedBottom = visitedTop + minVisitedHeight;
+  }
+  this.buildVisitedDisplay(visitedTop, visitedBottom, this.amount);
 
   const codeStartPreferred = queueLayout.bottomY + 64;
-  const codeStartY = Math.min(Math.max(codeStartPreferred, thirdRowY + 120), maxCodeStartY);
+  const codeStartY = Math.min(
+    Math.max(codeStartPreferred, messageY + 140),
+    maxCodeStartY
+  );
+  const codeBottomY = codeStartY + totalCodeHeight;
   this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H, CODE_FONT_SIZE);
+  this.buildVariablePanel({
+    canvasW,
+    canvasH,
+    codeStartX: CODE_START_X,
+    codeStartY,
+    codeBottomY,
+    variableFont: VARIABLE_FONT_STYLE,
+    resultFont: RESULT_FONT_STYLE,
+    spacing: VARIABLE_SPACING,
+  });
 
   this.resetTreeDisplay();
   this.resetQueueDisplay();
@@ -391,6 +376,115 @@ CoinChangeBFS.prototype.buildCodeDisplay = function (
     this.cmd("CreateLabel", id, CoinChangeBFS.CODE[i], startX, startY + i * lineHeight, 0);
     this.cmd("SetForegroundColor", id, "#000000");
     this.cmd("SetTextStyle", id, textStyle);
+  }
+};
+
+CoinChangeBFS.prototype.buildVariablePanel = function (options) {
+  const settings = options || {};
+  const canvasW = settings.canvasW || this.canvasWidth || 720;
+  const canvasH = settings.canvasH || this.canvasHeight || 1280;
+  const codeStartX = settings.codeStartX || 0;
+  const codeStartY = settings.codeStartY || 0;
+  const codeBottomY = settings.codeBottomY || codeStartY;
+  const spacing = Math.max(28, settings.spacing || 32);
+  const variableFont = settings.variableFont || "bold 17";
+  const resultFont = settings.resultFont || variableFont;
+
+  const minColumnX = codeStartX + Math.max(340, Math.floor(canvasW * 0.48));
+  const desiredGap = Math.max(100, Math.floor(canvasW * 0.14));
+  const maxValueX = canvasW - Math.max(36, Math.floor(canvasW * 0.06));
+  let valueX = maxValueX;
+  let columnX = valueX - desiredGap;
+  if (columnX < minColumnX) {
+    columnX = minColumnX;
+    valueX = columnX + desiredGap;
+    if (valueX > maxValueX) {
+      valueX = maxValueX;
+    }
+  }
+  const minGap = Math.max(72, Math.floor(canvasW * 0.1));
+  if (valueX - columnX < minGap) {
+    columnX = Math.max(minColumnX, valueX - minGap);
+  }
+
+  const entries = [
+    {
+      labelProp: "amountLabelID",
+      valueProp: "amountValueID",
+      label: "amount:",
+      value: String(this.amount),
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "stepsLabelID",
+      valueProp: "stepsValueID",
+      label: "steps:",
+      value: "0",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "queueSizeLabelID",
+      valueProp: "queueSizeValueID",
+      label: "queue size:",
+      value: "0",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "levelSizeLabelID",
+      valueProp: "levelSizeValueID",
+      label: "level size:",
+      value: "0",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "currentLabelID",
+      valueProp: "currentValueID",
+      label: "current amount:",
+      value: "-",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "coinValueLabelID",
+      valueProp: "coinValueID",
+      label: "coin:",
+      value: "-",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "nextLabelID",
+      valueProp: "nextValueID",
+      label: "next amount:",
+      value: "-",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "resultLabelID",
+      valueProp: "resultValueID",
+      label: "result:",
+      value: "?",
+      valueFont: resultFont,
+      labelFont: resultFont,
+    },
+  ];
+
+  const columnBottom = Math.min(canvasH - 48, codeBottomY);
+  let startY = columnBottom - (entries.length - 1) * spacing;
+  if (startY < codeStartY) {
+    startY = codeStartY;
+  }
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    const labelID = this.nextIndex++;
+    const valueID = this.nextIndex++;
+    this[entry.labelProp] = labelID;
+    this[entry.valueProp] = valueID;
+    const y = startY + i * spacing;
+    this.cmd("CreateLabel", labelID, entry.label, columnX, y, 0);
+    this.cmd("CreateLabel", valueID, entry.value, valueX, y, 0);
+    const labelFont = entry.labelFont || variableFont;
+    this.cmd("SetTextStyle", labelID, labelFont);
+    this.cmd("SetTextStyle", valueID, entry.valueFont || variableFont);
   }
 };
 
@@ -499,13 +593,18 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   );
 
   const treeCenterX = this.treeArea.left + this.treeArea.width / 2;
+  const reservedForLabel = this.boardReservedHeight || 0;
+  const labelOffsetBase =
+    reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.35) : 36;
+  const labelOffset = Math.max(28, Math.min(44, labelOffsetBase));
+  const treeLabelY = topY - labelOffset;
   this.treeLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.treeLabelID,
     "BFS exploration tree",
     treeCenterX,
-    topY - 40,
+    treeLabelY,
     1
   );
   this.cmd("SetTextStyle", this.treeLabelID, "bold 18");
@@ -554,13 +653,19 @@ CoinChangeBFS.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
   const panelRight = this.visitedArea.right;
   const centerX = panelLeft + this.visitedArea.width / 2;
 
+  const visitedLabelBase =
+    this.boardReservedHeight && this.boardReservedHeight > 0
+      ? Math.floor(this.boardReservedHeight * 0.32)
+      : 36;
+  const visitedLabelOffset = Math.max(28, Math.min(44, visitedLabelBase));
+  const visitedLabelY = topY - visitedLabelOffset;
   this.visitedLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.visitedLabelID,
     "visited array",
     centerX,
-    topY - 40,
+    visitedLabelY,
     1
   );
   this.cmd("SetTextStyle", this.visitedLabelID, "bold 18");
@@ -1751,11 +1856,12 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
   }
 
   this.cmd("ShowNarrationBoard", encoded);
-  for (let remaining = wait; remaining >= 1; remaining--) {
+  for (let remaining = wait; remaining >= 0; remaining--) {
     this.cmd("UpdateNarrationTimer", remaining, wait);
-    this.cmd("Step");
+    if (remaining > 0) {
+      this.cmd("Step");
+    }
   }
-  this.cmd("HideNarrationBoard");
 };
 
 CoinChangeBFS.prototype.describeCoinOutcome = function (

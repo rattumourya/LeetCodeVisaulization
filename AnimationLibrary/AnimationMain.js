@@ -107,6 +107,63 @@ var narrationOverlayState = {
         total: 0,
         remaining: 0
 };
+var narrationOverlayResizeBound = false;
+
+function positionNarrationOverlay()
+{
+        var elements = narrationOverlayElements || ensureNarrationOverlayElements();
+        if (!elements || !elements.overlay)
+        {
+                return;
+        }
+        if (typeof document === "undefined")
+        {
+                return;
+        }
+        var canvasNode = document.getElementById("canvas");
+        if (!canvasNode)
+        {
+                return;
+        }
+        var overlay = elements.overlay;
+        var anchor = overlay.parentElement;
+        if (!anchor)
+        {
+                return;
+        }
+        var canvasRect = canvasNode.getBoundingClientRect();
+        var anchorRect = anchor.getBoundingClientRect();
+        var left = Math.round(canvasRect.left - anchorRect.left);
+        var top = Math.round(canvasRect.top - anchorRect.top);
+        var width = Math.round(canvasRect.width);
+        var height = Math.round(canvasRect.height);
+        if (width < 0)
+        {
+                width = 0;
+        }
+        if (height < 0)
+        {
+                height = 0;
+        }
+        overlay.style.left = String(left) + "px";
+        overlay.style.top = String(top) + "px";
+        overlay.style.width = String(width) + "px";
+        overlay.style.height = String(height) + "px";
+}
+
+function bindNarrationOverlayPositioning()
+{
+        if (narrationOverlayResizeBound)
+        {
+                return;
+        }
+        if (typeof window === "undefined")
+        {
+                return;
+        }
+        narrationOverlayResizeBound = true;
+        window.addEventListener("resize", positionNarrationOverlay);
+}
 
 function ensureNarrationOverlayElements()
 {
@@ -132,6 +189,8 @@ function ensureNarrationOverlayElements()
                 timer: timer,
                 progress: progress
         };
+        bindNarrationOverlayPositioning();
+        positionNarrationOverlay();
         return narrationOverlayElements;
 }
 
@@ -233,20 +292,16 @@ function applyNarrationOverlayState(state)
         if (narrationOverlayState.visible)
         {
                 elements.overlay.classList.add("active");
-                var canvasElement = document.getElementById("canvas");
-                if (canvasElement)
-                {
-                        canvasElement.classList.add("narration-blur");
-                }
         }
         else
         {
                 elements.overlay.classList.remove("active");
-                var canvasNode = document.getElementById("canvas");
-                if (canvasNode)
-                {
-                        canvasNode.classList.remove("narration-blur");
-                }
+        }
+
+        var canvasNode = document.getElementById("canvas");
+        if (canvasNode)
+        {
+                canvasNode.classList.remove("narration-blur");
         }
 
         if (elements.content)
@@ -281,6 +336,8 @@ function applyNarrationOverlayState(state)
                         elements.progress.style.width = "0%";
                 }
         }
+
+        positionNarrationOverlay();
 }
 
 function getNarrationOverlayState()
@@ -826,9 +883,14 @@ function AnimationManager(objectManager)
 		width.value = canvas.width;
 		heightEntry.value = canvas.height;
 		
-		this.animatedObjects.draw();
-		this.fireEvent("CanvasSizeChanged",{width:canvas.width, height:canvas.height});		
-	}
+                this.animatedObjects.draw();
+                this.fireEvent("CanvasSizeChanged",{width:canvas.width, height:canvas.height});
+
+                if (typeof positionNarrationOverlay === "function")
+                {
+                        positionNarrationOverlay();
+                }
+        }
 	
 	this.startNextBlock = function()
 	{
