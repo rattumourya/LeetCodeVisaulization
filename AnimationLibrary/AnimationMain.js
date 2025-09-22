@@ -553,7 +553,6 @@ function AnimationManager(objectManager)
 		
                 this.animatedObjects.draw();
                 this.fireEvent("CanvasSizeChanged",{width:canvas.width, height:canvas.height});
-
         }
 
         this.startNextBlock = function()
