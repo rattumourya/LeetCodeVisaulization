@@ -83,6 +83,12 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.titleID = -1;
   this.coinLabelID = -1;
   this.messageID = -1;
+  this.boardBackgroundID = -1;
+  this.boardTimerID = -1;
+  this.boardProgressTrackID = -1;
+  this.boardProgressFillID = -1;
+  this.boardLineIDs = [];
+  this.boardInfo = null;
 
   this.amountLabelID = -1;
   this.amountValueID = -1;
@@ -288,10 +294,18 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetAlpha", this.messageID, 0);
 
   const boardReservedHeight = Math.max(
-    120,
-    Math.min(220, Math.floor(canvasH * 0.16))
+    160,
+    Math.min(260, Math.floor(canvasH * 0.18))
   );
   this.boardReservedHeight = boardReservedHeight;
+  this.boardLineIDs = [];
+  this.boardInfo = null;
+  this.buildNarrationBoard({
+    canvasW,
+    messageY,
+    reservedHeight: boardReservedHeight,
+  });
+
   const treeTopY = messageY + boardReservedHeight;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
@@ -487,6 +501,349 @@ CoinChangeBFS.prototype.buildVariablePanel = function (options) {
     this.cmd("SetTextStyle", valueID, entry.valueFont || variableFont);
   }
 };
+
+CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
+  const settings = options || {};
+  const canvasW = settings.canvasW || this.canvasWidth || 720;
+  const messageY = settings.messageY || 0;
+  const reservedHeight = Math.max(
+    0,
+    settings.reservedHeight !== undefined && settings.reservedHeight !== null
+      ? settings.reservedHeight
+      : this.boardReservedHeight || 0
+  );
+
+  const marginSpace = Math.max(24, Math.floor(reservedHeight * 0.18));
+  let boardHeight = Math.max(96, reservedHeight - marginSpace);
+  if (boardHeight > reservedHeight) {
+    boardHeight = Math.max(96, Math.floor(reservedHeight * 0.9));
+  }
+
+  let boardTop = messageY + Math.max(12, Math.floor((reservedHeight - boardHeight) / 2));
+  const boardBottomLimit = messageY + reservedHeight;
+  if (boardTop + boardHeight > boardBottomLimit) {
+    boardTop = boardBottomLimit - boardHeight;
+  }
+  if (boardTop < messageY) {
+    boardTop = messageY;
+  }
+
+  const centerX = canvasW / 2;
+  const centerY = boardTop + boardHeight / 2;
+
+  const minBoardWidth = Math.max(420, Math.floor(canvasW * 0.7));
+  const maxBoardWidth = canvasW - Math.max(64, Math.floor(canvasW * 0.12));
+  let boardWidth = Math.max(minBoardWidth, Math.floor(canvasW * 0.86));
+  if (boardWidth > maxBoardWidth) {
+    boardWidth = maxBoardWidth;
+  }
+  if (boardWidth < minBoardWidth && maxBoardWidth >= minBoardWidth) {
+    boardWidth = maxBoardWidth;
+  }
+  if (boardWidth > canvasW - 24) {
+    boardWidth = canvasW - 24;
+  }
+
+  this.boardBackgroundID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.boardBackgroundID,
+    "",
+    boardWidth,
+    boardHeight,
+    centerX,
+    centerY
+  );
+  this.cmd("SetForegroundColor", this.boardBackgroundID, "#324d7a");
+  this.cmd("SetBackgroundColor", this.boardBackgroundID, "#f6f8ff");
+
+  const progressHeight = Math.max(12, Math.floor(boardHeight * 0.12));
+  const progressPadding = Math.max(18, Math.floor(boardHeight * 0.18));
+  const progressY = boardTop + boardHeight - progressPadding - progressHeight / 2;
+  let progressWidth = boardWidth - Math.max(140, Math.floor(boardWidth * 0.32));
+  if (progressWidth < 160) {
+    progressWidth = Math.max(120, Math.floor(boardWidth * 0.7));
+  }
+  const progressCenterX = centerX;
+
+  this.boardProgressTrackID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.boardProgressTrackID,
+    "",
+    progressWidth,
+    progressHeight,
+    progressCenterX,
+    progressY
+  );
+  this.cmd("SetBackgroundColor", this.boardProgressTrackID, "#d7e3ff");
+  this.cmd("SetForegroundColor", this.boardProgressTrackID, "#d7e3ff");
+
+  this.boardProgressFillID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.boardProgressFillID,
+    "",
+    progressWidth,
+    progressHeight,
+    progressCenterX,
+    progressY
+  );
+  this.cmd("SetBackgroundColor", this.boardProgressFillID, "#5a9bff");
+  this.cmd("SetForegroundColor", this.boardProgressFillID, "#5a9bff");
+  this.cmd("SetAlpha", this.boardProgressFillID, 0);
+
+  const timerY = boardTop + Math.max(20, Math.floor(boardHeight * 0.2));
+  const timerX = centerX + boardWidth / 2 - Math.max(64, Math.floor(boardWidth * 0.18));
+  this.boardTimerID = this.nextIndex++;
+  this.cmd("CreateLabel", this.boardTimerID, "", timerX, timerY, 1);
+  this.cmd("SetTextStyle", this.boardTimerID, "bold 15");
+  this.cmd("SetForegroundColor", this.boardTimerID, "#2c4378");
+
+  const textPaddingX = Math.max(32, Math.floor(boardWidth * 0.12));
+  const textStartX = centerX - boardWidth / 2 + textPaddingX;
+  const textAreaTop = boardTop + Math.max(28, Math.floor(boardHeight * 0.22));
+  const textAreaBottom = Math.max(
+    textAreaTop + 32,
+    progressY - progressHeight / 2 - Math.max(18, Math.floor(boardHeight * 0.1))
+  );
+  const minLineY = boardTop + 18;
+  const usableTop = Math.max(minLineY, textAreaTop);
+  const usableBottom = Math.max(usableTop + 32, textAreaBottom);
+  const usableHeight = Math.max(0, usableBottom - usableTop);
+  const minSpacing = Math.max(20, Math.floor(boardHeight * 0.16));
+  let lineCount = 4;
+  while (lineCount > 1) {
+    const allowedSpan = usableBottom - minLineY;
+    const requiredSpan = (lineCount - 1) * minSpacing;
+    if (allowedSpan >= requiredSpan) {
+      break;
+    }
+    lineCount--;
+  }
+  if (lineCount < 1) {
+    lineCount = 1;
+  }
+  let lineSpacing = 0;
+  if (lineCount > 1) {
+    lineSpacing = Math.max(minSpacing, Math.floor(usableHeight / (lineCount - 1)));
+    const allowedSpan = Math.max(0, usableBottom - minLineY);
+    if (lineSpacing * (lineCount - 1) > allowedSpan) {
+      lineSpacing = Math.floor(allowedSpan / Math.max(lineCount - 1, 1));
+    }
+    lineSpacing = Math.max(minSpacing, lineSpacing);
+  }
+  const totalSpan = lineCount > 1 ? lineSpacing * (lineCount - 1) : 0;
+  let firstLineY;
+  if (lineCount > 1) {
+    const maxStart = usableBottom - totalSpan;
+    const preferredStart = Math.min(usableTop, maxStart);
+    firstLineY = Math.max(minLineY, preferredStart);
+  } else {
+    firstLineY = Math.max(minLineY, Math.min(usableBottom, (usableTop + usableBottom) / 2));
+  }
+
+  this.boardLineIDs = [];
+  for (let i = 0; i < lineCount; i++) {
+    const offset = lineCount > 1 ? lineSpacing * i : 0;
+    const lineY = Math.round(firstLineY + offset);
+    const labelID = this.nextIndex++;
+    this.boardLineIDs.push(labelID);
+    this.cmd("CreateLabel", labelID, "", textStartX, lineY, 0);
+    this.cmd("SetTextStyle", labelID, "bold 17");
+    this.cmd("SetForegroundColor", labelID, "#0a223f");
+  }
+
+  const charLimit = Math.max(34, Math.floor((boardWidth - textPaddingX * 1.6) / 9));
+  this.boardInfo = {
+    centerX,
+    centerY,
+    width: boardWidth,
+    height: boardHeight,
+    top: boardTop,
+    bottom: boardTop + boardHeight,
+    progressWidth,
+    progressHeight,
+    progressLeft: progressCenterX - progressWidth / 2,
+    progressY,
+    progressMinWidth: Math.max(6, Math.floor(progressWidth * 0.06)),
+    charLimit,
+    lineCount,
+  };
+
+  this.updateNarrationLines([]);
+  this.renderNarrationTimer(0, 0);
+};
+
+CoinChangeBFS.prototype.updateNarrationLines = function (lines) {
+  if (!this.boardLineIDs) {
+    return;
+  }
+  const entries = Array.isArray(lines) ? lines : [];
+  for (let i = 0; i < this.boardLineIDs.length; i++) {
+    const id = this.boardLineIDs[i];
+    if (id === undefined || id === null || id < 0) {
+      continue;
+    }
+    const text = i < entries.length ? String(entries[i]) : "";
+    this.cmd("SetText", id, text);
+  }
+};
+
+CoinChangeBFS.prototype.normalizeNarrationHighlights = function (list) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return [];
+  }
+  const seen = {};
+  const result = [];
+  for (let i = 0; i < list.length; i++) {
+    const entry = list[i];
+    if (entry === undefined || entry === null) {
+      continue;
+    }
+    const text = String(entry).trim();
+    if (!text) {
+      continue;
+    }
+    const key = text.toLowerCase();
+    if (seen[key]) {
+      continue;
+    }
+    seen[key] = true;
+    result.push(text);
+  }
+  return result;
+};
+
+CoinChangeBFS.prototype.applyNarrationHighlights = function (lines, highlightList) {
+  if (!lines || lines.length === 0) {
+    return [];
+  }
+  const normalized = this.normalizeNarrationHighlights(highlightList);
+  if (normalized.length === 0) {
+    return lines.map((line) => String(line));
+  }
+
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const formatted = [];
+  for (let i = 0; i < lines.length; i++) {
+    let text = String(lines[i]);
+    for (let j = 0; j < normalized.length; j++) {
+      const highlight = normalized[j];
+      if (!highlight) {
+        continue;
+      }
+      const pattern = new RegExp("(" + escapeRegExp(highlight) + ")", "gi");
+      text = text.replace(pattern, (match) => match.toUpperCase());
+    }
+    formatted.push(text);
+  }
+  return formatted;
+};
+
+CoinChangeBFS.prototype.wrapNarrationLines = function (lines, charLimit, maxLines) {
+  if (!lines || lines.length === 0) {
+    return [];
+  }
+  const limit = Math.max(10, Math.min(charLimit || 48, 80));
+  const allowedLines = Math.max(1, maxLines || lines.length);
+  const wrapped = [];
+  const overflow = [];
+
+  for (let i = 0; i < lines.length && wrapped.length < allowedLines; i++) {
+    let text = String(lines[i]).trim();
+    if (!text) {
+      if (wrapped.length < allowedLines) {
+        wrapped.push("");
+      }
+      continue;
+    }
+    while (text.length > limit && wrapped.length < allowedLines - 1) {
+      let breakIndex = text.lastIndexOf(" ", limit);
+      if (breakIndex <= 0) {
+        breakIndex = limit;
+      }
+      const segment = text.substring(0, breakIndex).trim();
+      if (segment.length > 0) {
+        wrapped.push(segment);
+      }
+      text = text.substring(breakIndex).trim();
+      if (wrapped.length >= allowedLines - 1) {
+        break;
+      }
+    }
+    if (wrapped.length >= allowedLines) {
+      if (text && text.length > 0) {
+        overflow.push(text);
+      }
+      for (let j = i + 1; j < lines.length; j++) {
+        const extra = String(lines[j]).trim();
+        if (extra) {
+          overflow.push(extra);
+        }
+      }
+      break;
+    }
+    if (text.length > 0) {
+      wrapped.push(text);
+    }
+  }
+
+  if (overflow.length > 0) {
+    if (wrapped.length === 0) {
+      return [overflow.join(" ")];
+    }
+    const lastIndex = wrapped.length - 1;
+    const combined = (wrapped[lastIndex] + " " + overflow.join(" ")).trim();
+    wrapped[lastIndex] = combined;
+  }
+
+  if (wrapped.length > allowedLines) {
+    const trimmed = wrapped.slice(0, allowedLines - 1);
+    const remainder = wrapped.slice(allowedLines - 1).join(" ");
+    trimmed.push(remainder);
+    return trimmed;
+  }
+
+  return wrapped;
+};
+
+CoinChangeBFS.prototype.renderNarrationTimer = function (remaining, total) {
+  const safeRemaining = Math.max(0, Math.ceil(Number(remaining))); // display purpose only
+  const safeTotal = Math.max(0, Math.ceil(Number(total)));
+  const timerActive = safeTotal > 0;
+
+  if (this.boardTimerID >= 0) {
+    let timerText = "";
+    if (timerActive) {
+      timerText = safeRemaining > 0 ? `Next in ${safeRemaining}s` : "Next step ready";
+    }
+    this.cmd("SetText", this.boardTimerID, timerText);
+  }
+
+  if (this.boardProgressFillID >= 0 && this.boardInfo) {
+    const totalDuration = timerActive ? safeTotal : 1;
+    const remainingTime = timerActive
+      ? Math.max(0, Math.min(safeRemaining, totalDuration))
+      : totalDuration;
+    const consumed = timerActive ? Math.max(0, totalDuration - remainingTime) : 0;
+    const ratio = timerActive && totalDuration > 0 ? consumed / totalDuration : 0;
+    let fillWidth = Math.round(this.boardInfo.progressWidth * ratio);
+    if (ratio <= 0) {
+      fillWidth = this.boardInfo.progressMinWidth;
+    } else {
+      fillWidth = Math.max(
+        this.boardInfo.progressMinWidth,
+        Math.min(fillWidth, this.boardInfo.progressWidth)
+      );
+    }
+    const fillCenter = this.boardInfo.progressLeft + fillWidth / 2;
+    this.cmd("SetWidth", this.boardProgressFillID, fillWidth);
+    this.cmd("SetPosition", this.boardProgressFillID, fillCenter, this.boardInfo.progressY);
+    this.cmd("SetAlpha", this.boardProgressFillID, ratio > 0 ? 1 : 0);
+  }
+};
+
 
 CoinChangeBFS.prototype.buildCoinsRow = function (canvasW, coinsY) {
   const coinCount = this.coinValues.length;
@@ -1818,17 +2175,6 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     return;
   }
 
-  const highlight = [];
-  if (options && Array.isArray(options.highlight)) {
-    for (let i = 0; i < options.highlight.length; i++) {
-      const entry = options.highlight[i];
-      if (entry === undefined || entry === null) {
-        continue;
-      }
-      highlight.push(String(entry));
-    }
-  }
-
   let wait = this.estimateNarrationBeats(lines);
   if (options && options.wait !== undefined && options.wait !== null) {
     const parsed = Math.round(Number(options.wait));
@@ -1843,21 +2189,27 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     }
   }
 
-  const payload = {
-    lines,
-    highlights: highlight,
-    total: wait,
-  };
-  let encoded = "";
-  try {
-    encoded = encodeURIComponent(JSON.stringify(payload));
-  } catch (err) {
-    encoded = encodeURIComponent(JSON.stringify({ lines, highlights: highlight, total: wait }));
+  const highlightList =
+    options && Array.isArray(options.highlight) ? options.highlight : [];
+  const emphasized = this.applyNarrationHighlights(lines, highlightList);
+  const maxLines = Math.max(
+    1,
+    this.boardInfo && this.boardInfo.lineCount
+      ? this.boardInfo.lineCount
+      : this.boardLineIDs && this.boardLineIDs.length > 0
+      ? this.boardLineIDs.length
+      : emphasized.length
+  );
+  const charLimit =
+    this.boardInfo && this.boardInfo.charLimit ? this.boardInfo.charLimit : 48;
+  let wrapped = this.wrapNarrationLines(emphasized, charLimit, maxLines);
+  if (!wrapped || wrapped.length === 0) {
+    wrapped = [""];
   }
-
-  this.cmd("ShowNarrationBoard", encoded);
+  this.updateNarrationLines(wrapped);
   for (let remaining = wait; remaining >= 0; remaining--) {
-    this.cmd("UpdateNarrationTimer", remaining, wait);
+    this.renderNarrationTimer(remaining, wait);
+
     if (remaining > 0) {
       this.cmd("Step");
     }
