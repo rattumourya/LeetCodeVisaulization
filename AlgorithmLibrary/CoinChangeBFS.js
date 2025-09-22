@@ -305,6 +305,7 @@ CoinChangeBFS.prototype.setup = function () {
     messageY,
     reservedHeight: boardReservedHeight,
   });
+
   const treeTopY = messageY + boardReservedHeight;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
@@ -842,6 +843,7 @@ CoinChangeBFS.prototype.renderNarrationTimer = function (remaining, total) {
     this.cmd("SetAlpha", this.boardProgressFillID, ratio > 0 ? 1 : 0);
   }
 };
+
 
 CoinChangeBFS.prototype.buildCoinsRow = function (canvasW, coinsY) {
   const coinCount = this.coinValues.length;
@@ -2207,6 +2209,7 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
   this.updateNarrationLines(wrapped);
   for (let remaining = wait; remaining >= 0; remaining--) {
     this.renderNarrationTimer(remaining, wait);
+
     if (remaining > 0) {
       this.cmd("Step");
     }
