@@ -3171,6 +3171,23 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           if (amount < this.visitedSlotIDs.length) {
             this.highlightVisitedEntry(amount, false);
           }
+          this.narrate(
+            [
+              `Amount ${amount} appears in round ${steps}, so we need ${steps} coin${
+                steps === 1 ? "" : "s"
+              }.`,
+              "Follow the highlighted path to see one optimal combination.",
+            ],
+            {
+              highlight: [
+                `amount ${amount}`,
+                `round ${steps}`,
+                `${steps} coin${steps === 1 ? "" : "s"}`,
+                "optimal combination",
+              ],
+              wait: 6,
+            }
+          );
           this.unhighlightCoin();
           this.launchConfettiCelebration({ lingerSteps: 2 });
           this.highlightCode(-1);
