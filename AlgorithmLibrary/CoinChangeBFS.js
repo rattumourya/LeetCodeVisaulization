@@ -550,10 +550,12 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const baseOffset = Math.max(topPadding, Math.floor((reservedHeight - boardHeight) / 2));
   const boardTopMin = messageY + Math.max(4, Math.floor(reservedHeight * 0.02));
   let boardTop = messageY + Math.max(topPadding, baseOffset - upwardNudge);
+
   const boardBottomLimit = messageY + reservedHeight;
   if (boardTop + boardHeight > boardBottomLimit) {
     boardTop = boardBottomLimit - boardHeight;
   }
+
   if (boardTop < boardTopMin) {
     boardTop = boardTopMin;
   }
