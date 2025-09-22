@@ -252,7 +252,7 @@ CoinChangeBFS.prototype.setup = function () {
   const TITLE_Y = 48;
   const CODE_START_X = 80;
   const CODE_LINE_H = 17;
-  const CODE_FONT_SIZE = 15;
+  const CODE_FONT_SIZE = 16;
   const VARIABLE_FONT_STYLE = "bold 17";
   const RESULT_FONT_STYLE = "bold 21";
   const VARIABLE_SPACING = 32;
@@ -273,7 +273,7 @@ CoinChangeBFS.prototype.setup = function () {
   this.visitedHighlightIndex = -1;
 
   this.titleID = this.nextIndex++;
-  this.cmd("CreateLabel", this.titleID, "coin change BFS", canvasW / 2, TITLE_Y, 1);
+  this.cmd("CreateLabel", this.titleID, "Coin Change BFS", canvasW / 2, TITLE_Y, 1);
   this.cmd("SetTextStyle", this.titleID, "bold 26");
   this.cmd("SetForegroundColor", this.titleID, "#1b1b1b");
 
@@ -685,7 +685,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const textAreaLeft = boardLeft + textPaddingX;
   const textAreaRight = boardRight - textPaddingX;
   const textAreaWidth = Math.max(0, textAreaRight - textAreaLeft);
-  const paragraphFontSize = 14;
+  const paragraphFontSize = 16;
   const approxCharWidth = Math.max(6, Math.floor(paragraphFontSize * 0.6));
   let textAreaTop = boardTop + Math.max(24, Math.floor(boardHeight * 0.2));
   const timerClearance =
@@ -1367,7 +1367,7 @@ CoinChangeBFS.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
   this.cmd(
     "CreateLabel",
     this.visitedLabelID,
-    "visited array",
+    "Visited Array",
     centerX,
     visitedLabelY,
     1
