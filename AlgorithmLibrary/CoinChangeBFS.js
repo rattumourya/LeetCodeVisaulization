@@ -307,6 +307,7 @@ CoinChangeBFS.prototype.setup = function () {
     messageY,
     reservedHeight: boardReservedHeight,
   });
+
   const treeTopY = messageY + boardReservedHeight;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
@@ -634,6 +635,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const usableBottom = Math.max(usableTop + 32, textAreaBottom);
   const usableHeight = Math.max(0, usableBottom - usableTop);
   const minSpacing = Math.max(18, Math.floor(boardHeight * 0.15));
+
   let lineCount = 4;
   while (lineCount > 1) {
     const allowedSpan = usableBottom - minLineY;
