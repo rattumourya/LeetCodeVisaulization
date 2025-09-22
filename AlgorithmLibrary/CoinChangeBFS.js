@@ -554,6 +554,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   if (boardTop + boardHeight > boardBottomLimit) {
     boardTop = boardBottomLimit - boardHeight;
   }
+
   if (boardTop < boardTopMin) {
     boardTop = boardTopMin;
   }
