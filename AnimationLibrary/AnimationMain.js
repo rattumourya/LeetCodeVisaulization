@@ -233,20 +233,16 @@ function applyNarrationOverlayState(state)
         if (narrationOverlayState.visible)
         {
                 elements.overlay.classList.add("active");
-                var canvasElement = document.getElementById("canvas");
-                if (canvasElement)
-                {
-                        canvasElement.classList.add("narration-blur");
-                }
         }
         else
         {
                 elements.overlay.classList.remove("active");
-                var canvasNode = document.getElementById("canvas");
-                if (canvasNode)
-                {
-                        canvasNode.classList.remove("narration-blur");
-                }
+        }
+
+        var canvasNode = document.getElementById("canvas");
+        if (canvasNode)
+        {
+                canvasNode.classList.remove("narration-blur");
         }
 
         if (elements.content)
