@@ -62,6 +62,7 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.treeDepthCapacity = 0;
   this.treeDepthBaseEstimate = 0;
   this.treeEdgeLabelColor = "#1d3f72";
+  this.boardReservedHeight = 0;
 
   this.queueSlotIDs = [];
   this.queueValues = [];
@@ -286,28 +287,53 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetTextStyle", this.messageID, "bold 18");
   this.cmd("SetAlpha", this.messageID, 0);
 
-  const treeTopY = messageY + 60;
+  const boardReservedHeight = Math.max(
+    120,
+    Math.min(220, Math.floor(canvasH * 0.16))
+  );
+  this.boardReservedHeight = boardReservedHeight;
+  const treeTopY = messageY + boardReservedHeight;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
   const maxQueueBottom = maxCodeStartY - 40;
   const queueGapFromTree = Math.max(32, Math.floor(canvasH * 0.025));
   const estimatedQueueHalf = Math.max(24, Math.floor(canvasH * 0.018));
-  const baseTreeHeight = Math.floor(canvasH * 0.42);
-  const maxTreeHeight = Math.max(
-    220,
-    maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf
+  const baseTreeHeight = Math.floor(canvasH * 0.4);
+  const rawTreeLimit =
+    maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf;
+  const treeHeightLimit = Math.max(220, rawTreeLimit);
+  const minTreeHeight = Math.min(
+    treeHeightLimit,
+    Math.max(260, Math.floor(canvasH * 0.28))
   );
-  const treeHeight = Math.max(320, Math.min(baseTreeHeight, maxTreeHeight));
+  let treeHeight = Math.min(baseTreeHeight, treeHeightLimit);
+  if (!Number.isFinite(treeHeight) || treeHeight <= 0) {
+    treeHeight =
+      minTreeHeight > 0
+        ? minTreeHeight
+        : Math.max(220, Math.floor(canvasH * 0.32));
+  } else if (treeHeight < minTreeHeight) {
+    treeHeight = minTreeHeight;
+  }
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
 
   const queueY = treeLayout.bottomY + queueGapFromTree;
   const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
   const queueTop = queueY - queueLayout.slotHeight / 2;
-  const visitedBottom = Math.max(
+  const visitedTopOffset = Math.max(
+    24,
+    Math.floor((this.boardReservedHeight || 0) * 0.4)
+  );
+  const visitedTop = treeTopY + visitedTopOffset;
+  let visitedBottom = Math.max(
     treeLayout.bottomY,
     queueTop - Math.max(16, Math.floor(queueLayout.slotHeight * 0.4))
   );
-  this.buildVisitedDisplay(treeTopY, visitedBottom, this.amount);
+  const minVisitedHeight = Math.max(140, Math.floor(canvasH * 0.14));
+  if (visitedBottom - visitedTop < minVisitedHeight) {
+    visitedBottom = visitedTop + minVisitedHeight;
+  }
+  this.buildVisitedDisplay(visitedTop, visitedBottom, this.amount);
 
   const codeStartPreferred = queueLayout.bottomY + 64;
   const codeStartY = Math.min(
@@ -567,13 +593,18 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   );
 
   const treeCenterX = this.treeArea.left + this.treeArea.width / 2;
+  const reservedForLabel = this.boardReservedHeight || 0;
+  const labelOffsetBase =
+    reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.35) : 36;
+  const labelOffset = Math.max(28, Math.min(44, labelOffsetBase));
+  const treeLabelY = topY - labelOffset;
   this.treeLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.treeLabelID,
     "BFS exploration tree",
     treeCenterX,
-    topY - 40,
+    treeLabelY,
     1
   );
   this.cmd("SetTextStyle", this.treeLabelID, "bold 18");
@@ -622,13 +653,19 @@ CoinChangeBFS.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
   const panelRight = this.visitedArea.right;
   const centerX = panelLeft + this.visitedArea.width / 2;
 
+  const visitedLabelBase =
+    this.boardReservedHeight && this.boardReservedHeight > 0
+      ? Math.floor(this.boardReservedHeight * 0.32)
+      : 36;
+  const visitedLabelOffset = Math.max(28, Math.min(44, visitedLabelBase));
+  const visitedLabelY = topY - visitedLabelOffset;
   this.visitedLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.visitedLabelID,
     "visited array",
     centerX,
-    topY - 40,
+    visitedLabelY,
     1
   );
   this.cmd("SetTextStyle", this.visitedLabelID, "bold 18");
