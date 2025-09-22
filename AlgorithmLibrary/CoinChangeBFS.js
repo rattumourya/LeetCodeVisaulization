@@ -282,10 +282,9 @@ CoinChangeBFS.prototype.setup = function () {
     labelFontSize: coinLabelFontSize,
   });
   const coinsRowY = coinLayout.y;
-  const messageY =
-    coinsRowY +
-    Math.floor((coinLayout.coinHeight || 36) / 2) +
-    Math.max(28, Math.floor((coinLayout.coinHeight || 36) * 0.85));
+  const coinBandHeight = coinLayout.coinHeight || 36;
+  const boardOffset = Math.max(20, Math.floor(coinBandHeight * 0.6));
+  const messageY = coinsRowY + Math.floor(coinBandHeight / 2) + boardOffset;
 
   this.commands = [];
   this.codeIDs = [];
@@ -335,8 +334,8 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetAlpha", this.messageID, 0);
 
   const boardReservedHeight = Math.max(
-    200,
-    Math.min(300, Math.floor(canvasH * 0.22))
+    170,
+    Math.min(240, Math.floor(canvasH * 0.18))
   );
   this.boardReservedHeight = boardReservedHeight;
   this.boardLineIDs = [];
@@ -347,8 +346,8 @@ CoinChangeBFS.prototype.setup = function () {
     reservedHeight: boardReservedHeight,
   });
   const boardToTreeGap = Math.max(
-    20,
-    Math.floor((this.boardReservedHeight || 0) * 0.08)
+    16,
+    Math.floor((this.boardReservedHeight || 0) * 0.06)
   );
   const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
@@ -1372,6 +1371,9 @@ CoinChangeBFS.prototype.buildCoinsRow = function (layout) {
       ? settings.startX
       : Math.floor(((settings.canvasW || this.canvasWidth || 720) - rowWidth) / 2) + coinWidth / 2;
 
+  this.coinCellWidth = coinWidth;
+  this.coinCellHeight = coinHeight;
+  this.coinCellSpacing = spacing;
   const leftEdge = startX - coinWidth / 2;
   const rightEdge = leftEdge + rowWidth;
   this.coinRowBounds = {
@@ -1698,20 +1700,38 @@ CoinChangeBFS.prototype.highlightVisitedEntry = function (index, highlight) {
 CoinChangeBFS.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellWidth, baseGap) {
   const amount = this.amount;
   const slotCount = Math.max(3, amount + 1);
-  const gap = Math.max(6, baseGap || 10);
   const margin = 40;
-  let slotWidth = baseCellWidth;
-  if (!slotWidth || slotWidth < 28) {
-    slotWidth = 40;
-  }
+  const baseWidth =
+    baseCellWidth && baseCellWidth >= 0
+      ? baseCellWidth
+      : this.coinCellWidth && this.coinCellWidth > 0
+      ? this.coinCellWidth
+      : 40;
+  const rawBaseHeight =
+    this.coinCellHeight && this.coinCellHeight > 0
+      ? this.coinCellHeight
+      : Math.max(26, Math.min(60, baseWidth + 6));
+  const aspect = baseWidth > 0 ? rawBaseHeight / baseWidth : 0.8;
+  const spacingSeed =
+    baseGap !== undefined && baseGap !== null
+      ? baseGap
+      : this.coinCellSpacing !== undefined && this.coinCellSpacing !== null
+      ? this.coinCellSpacing * 0.6
+      : 10;
+  const gap = Math.max(6, Math.floor(spacingSeed));
+  let slotWidth = Math.max(22, Math.floor(baseWidth));
   let totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
   const areaWidth = canvasW - 2 * margin;
   if (totalWidth > areaWidth) {
     slotWidth = Math.max(22, Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount));
     totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
   }
+  let slotHeight = Math.max(24, Math.round(slotWidth * (aspect > 0 ? aspect : 0.8)));
+  if (slotWidth >= baseWidth && rawBaseHeight > 0) {
+    slotHeight = Math.max(24, Math.min(slotHeight, Math.round(rawBaseHeight)));
+  }
   const startX = Math.floor((canvasW - totalWidth) / 2) + slotWidth / 2;
-  const slotHeight = Math.max(26, Math.min(60, slotWidth + 6));
+  const labelOffset = Math.max(20, Math.floor(slotHeight * 0.85));
 
   this.queueLabelID = this.nextIndex++;
   this.cmd(
@@ -1719,7 +1739,7 @@ CoinChangeBFS.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellW
     this.queueLabelID,
     "BFS queue",
     canvasW / 2,
-    queueY - slotHeight / 2 - 24,
+    queueY - slotHeight / 2 - labelOffset,
     1
   );
   this.cmd("SetTextStyle", this.queueLabelID, "bold 18");
@@ -2694,11 +2714,19 @@ CoinChangeBFS.prototype.unhighlightCoin = function () {
 };
 
 CoinChangeBFS.prototype.clearCelebrationOverlay = function () {
+  if (this.celebrationOverlayIDs && this.celebrationOverlayIDs.length > 0) {
+    for (let i = 0; i < this.celebrationOverlayIDs.length; i++) {
+      const id = this.celebrationOverlayIDs[i];
+      if (id !== undefined && id !== null && id >= 0) {
+        this.cmd("Delete", id);
+      }
+    }
+  }
   this.celebrationOverlayIDs = [];
   this.celebrationActive = false;
 };
 
-CoinChangeBFS.prototype.launchSkyCelebration = function (options) {
+CoinChangeBFS.prototype.launchConfettiCelebration = function (options) {
   if (this.celebrationActive) {
     return;
   }
@@ -2707,123 +2735,51 @@ CoinChangeBFS.prototype.launchSkyCelebration = function (options) {
   const settings = options || {};
   const canvasW = this.canvasWidth || 720;
   const canvasH = this.canvasHeight || 600;
-  const overlayWidth = canvasW + Math.max(60, Math.floor(canvasW * 0.08));
-  const overlayHeight = canvasH + Math.max(80, Math.floor(canvasH * 0.12));
-  const startY = -overlayHeight / 2;
-  const targetY = canvasH / 2;
-  const overlayID = this.nextIndex++;
-
-  const overlayColor =
-    (settings.overlayColor && String(settings.overlayColor)) || "#f5f8ff";
-  const overlayOutline =
-    (settings.overlayOutline && String(settings.overlayOutline)) || "#4d6bd4";
-
-  this.celebrationOverlayIDs = [overlayID];
-
-  this.cmd(
-    "CreateRectangle",
-    overlayID,
-    "",
-    overlayWidth,
-    overlayHeight,
-    canvasW / 2,
-    startY
-  );
-  this.cmd("SetForegroundColor", overlayID, overlayOutline);
-  this.cmd("SetBackgroundColor", overlayID, overlayColor);
-  this.cmd("SetAlpha", overlayID, 0);
-  this.cmd("Move", overlayID, canvasW / 2, targetY);
-  this.cmd("SetAlpha", overlayID, 0.88);
-
   const palette =
-    Array.isArray(settings.palette) && settings.palette.length > 0
-      ? settings.palette.map((entry) => String(entry))
-      : [
-          "#ffadad",
-          "#ffd6a5",
-          "#fdffb6",
-          "#caffbf",
-          "#9bf6ff",
-          "#a0c4ff",
-          "#ffc6ff",
-          "#bdb2ff",
-        ];
+    settings.palette ||
+    ["#ff9b85", "#ffd166", "#b5e48c", "#73c0ff", "#bdb2ff", "#ffcad4"];
+  const pieceCount = Math.max(28, Math.floor(canvasW / 18));
+  const baseWidth = Math.max(6, Math.floor(canvasW * 0.012));
+  const ratioSourceWidth =
+    this.coinCellWidth && this.coinCellWidth > 0 ? this.coinCellWidth : baseWidth;
+  const ratioSourceHeight =
+    this.coinCellHeight && this.coinCellHeight > 0
+      ? this.coinCellHeight
+      : Math.max(10, Math.floor(canvasH * 0.02));
+  const baseRatio =
+    ratioSourceWidth > 0 ? Math.max(0.45, ratioSourceHeight / ratioSourceWidth) : 0.75;
+  const driftSpan = Math.max(80, Math.floor(canvasW * 0.2));
+  const fallExtension = Math.max(120, Math.floor(canvasH * 0.25));
+  const confettiIDs = [];
 
-  const streakCount = Math.max(4, Math.min(8, Math.floor(canvasW / 160)));
-  const streakIDs = [];
-  const streakHeight = Math.max(160, Math.floor(canvasH * 0.36));
-  const streakWidth = Math.max(12, Math.floor(canvasW * 0.02));
-  for (let i = 0; i < streakCount; i++) {
-    const streakID = this.nextIndex++;
-    streakIDs.push(streakID);
-    const fraction = (i + 1) / (streakCount + 1);
-    const margin = Math.max(Math.floor(canvasW * 0.08), streakWidth * 2);
-    const x = Math.min(
-      canvasW - margin,
-      Math.max(margin, Math.round(fraction * canvasW))
+  for (let i = 0; i < pieceCount; i++) {
+    const id = this.nextIndex++;
+    confettiIDs.push(id);
+    const widthScale = 0.65 + Math.random() * 0.9;
+    const width = Math.max(6, Math.floor(baseWidth * widthScale));
+    const height = Math.max(
+      8,
+      Math.floor(width * baseRatio * (0.85 + Math.random() * 0.5))
     );
-    const startStreakY = -streakHeight;
-    const endStreakY = canvasH + streakHeight / 2;
-    this.cmd(
-      "CreateRectangle",
-      streakID,
-      "",
-      streakWidth,
-      streakHeight,
-      x,
-      startStreakY
+    const startX = Math.max(
+      24,
+      Math.min(canvasW - 24, Math.floor(Math.random() * canvasW))
     );
-    const fillColor = palette[i % palette.length];
-    this.cmd("SetBackgroundColor", streakID, fillColor);
-    this.cmd("SetForegroundColor", streakID, fillColor);
-    this.cmd("SetAlpha", streakID, 0);
-    this.cmd("Move", streakID, x, endStreakY);
-    this.cmd("SetAlpha", streakID, 0.95);
+    const startY = -Math.floor(Math.random() * Math.max(40, canvasH * 0.12));
+    const horizontalDrift = (Math.random() - 0.5) * driftSpan;
+    const endX = Math.max(24, Math.min(canvasW - 24, Math.round(startX + horizontalDrift)));
+    const endY = canvasH + Math.floor(Math.random() * fallExtension);
+    const color = palette[i % palette.length];
+
+    this.cmd("CreateRectangle", id, "", width, height, startX, startY);
+    this.cmd("SetBackgroundColor", id, color);
+    this.cmd("SetForegroundColor", id, color);
+    this.cmd("SetAlpha", id, 0);
+    this.cmd("SetAlpha", id, 0.95);
+    this.cmd("Move", id, endX, endY);
   }
 
-  const sparkCount = Math.max(6, Math.min(18, Math.floor(canvasW / 45)));
-  const sparkSize = Math.max(10, Math.floor(canvasW * 0.02));
-  const sparkIDs = [];
-  for (let i = 0; i < sparkCount; i++) {
-    const sparkID = this.nextIndex++;
-    sparkIDs.push(sparkID);
-    const color = palette[(i + 3) % palette.length];
-    const columnFraction = (i + 0.5) / sparkCount;
-    const startX = Math.min(
-      canvasW - 24,
-      Math.max(24, Math.round(columnFraction * canvasW))
-    );
-    const startY = -Math.floor((i % 5) * Math.max(26, canvasH * 0.035));
-    const direction = i % 3 === 0 ? -1 : i % 3 === 1 ? 1 : 0;
-    const horizontalSwing = Math.max(140, Math.floor(canvasW * 0.18));
-    const endX = Math.min(
-      canvasW - 24,
-      Math.max(24, startX + direction * horizontalSwing)
-    );
-    const verticalDrop = Math.max(60, Math.floor(canvasH * 0.12));
-    const endY = canvasH + Math.floor((i % 4) * verticalDrop);
-    this.cmd(
-      "CreateRectangle",
-      sparkID,
-      "",
-      sparkSize,
-      sparkSize,
-      startX,
-      startY
-    );
-    this.cmd("SetBackgroundColor", sparkID, color);
-    this.cmd("SetForegroundColor", sparkID, color);
-    this.cmd("SetAlpha", sparkID, 0);
-    this.cmd("Move", sparkID, endX, endY);
-    this.cmd("SetAlpha", sparkID, 0.95);
-  }
-
-  if (streakIDs.length > 0) {
-    this.celebrationOverlayIDs.push(...streakIDs);
-  }
-  if (sparkIDs.length > 0) {
-    this.celebrationOverlayIDs.push(...sparkIDs);
-  }
+  this.celebrationOverlayIDs = confettiIDs.slice();
 
   this.cmd("Step");
   this.cmd("Step");
@@ -2833,22 +2789,12 @@ CoinChangeBFS.prototype.launchSkyCelebration = function (options) {
     this.cmd("Step");
   }
 
-  this.cmd("SetAlpha", overlayID, 0);
-  for (let i = 0; i < streakIDs.length; i++) {
-    this.cmd("SetAlpha", streakIDs[i], 0);
+  for (let i = 0; i < confettiIDs.length; i++) {
+    this.cmd("SetAlpha", confettiIDs[i], 0);
   }
-  for (let i = 0; i < sparkIDs.length; i++) {
-    this.cmd("SetAlpha", sparkIDs[i], 0);
-  }
-
   this.cmd("Step");
-
-  this.cmd("Delete", overlayID);
-  for (let i = 0; i < streakIDs.length; i++) {
-    this.cmd("Delete", streakIDs[i]);
-  }
-  for (let i = 0; i < sparkIDs.length; i++) {
-    this.cmd("Delete", sparkIDs[i]);
+  for (let i = 0; i < confettiIDs.length; i++) {
+    this.cmd("Delete", confettiIDs[i]);
   }
 
   this.celebrationOverlayIDs = [];
@@ -3117,7 +3063,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.highlightVisitedEntry(0, true);
 
     this.cmd("SetText", this.resultValueID, "0");
-    this.launchSkyCelebration({ lingerSteps: 1 });
+    this.launchConfettiCelebration({ lingerSteps: 1 });
     this.highlightVisitedEntry(0, false);
     this.highlightCode(-1);
     return this.commands;
@@ -3243,7 +3189,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
             }
           );
           this.unhighlightCoin();
-          this.launchSkyCelebration({ lingerSteps: 2 });
+          this.launchConfettiCelebration({ lingerSteps: 2 });
           this.highlightCode(-1);
           return this.commands;
         }
