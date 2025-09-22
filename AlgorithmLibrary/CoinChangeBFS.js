@@ -257,7 +257,7 @@ CoinChangeBFS.prototype.setup = function () {
   const VARIABLE_SPACING = 32;
   const coinHeaderY = TITLE_Y + 48;
   const coinsRowY = coinHeaderY + 44;
-  const messageY = coinsRowY + 60;
+  const messageY = coinsRowY + 48;
 
   this.commands = [];
   this.codeIDs = [];
@@ -309,7 +309,7 @@ CoinChangeBFS.prototype.setup = function () {
   });
   const boardToTreeGap = Math.max(
     24,
-    Math.floor((this.boardReservedHeight || 0) * 0.12)
+    Math.floor((this.boardReservedHeight || 0) * 0.1)
   );
   const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
@@ -413,9 +413,9 @@ CoinChangeBFS.prototype.buildVariablePanel = function (options) {
   const variableFont = settings.variableFont || "bold 17";
   const resultFont = settings.resultFont || variableFont;
 
-  const minColumnX = codeStartX + Math.max(320, Math.floor(canvasW * 0.44));
-  const desiredGap = Math.max(110, Math.floor(canvasW * 0.16));
-  const rightMargin = Math.max(64, Math.floor(canvasW * 0.09));
+  const minColumnX = codeStartX + Math.max(360, Math.floor(canvasW * 0.5));
+  const desiredGap = Math.max(140, Math.floor(canvasW * 0.2));
+  const rightMargin = Math.max(52, Math.floor(canvasW * 0.075));
   const maxValueX = canvasW - rightMargin;
   let valueX = maxValueX;
   let columnX = valueX - desiredGap;
@@ -426,7 +426,7 @@ CoinChangeBFS.prototype.buildVariablePanel = function (options) {
       valueX = maxValueX;
     }
   }
-  const minGap = Math.max(88, Math.floor(canvasW * 0.12));
+  const minGap = Math.max(132, Math.floor(canvasW * 0.18));
   if (valueX - columnX < minGap) {
     columnX = Math.max(minColumnX, valueX - minGap);
   }
@@ -539,18 +539,17 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
       : this.boardReservedHeight || 0
   );
 
-  const marginSpace = Math.max(20, Math.floor(reservedHeight * 0.14));
+  const marginSpace = Math.max(18, Math.floor(reservedHeight * 0.12));
   let boardHeight = Math.max(96, reservedHeight - marginSpace);
   if (boardHeight > reservedHeight) {
     boardHeight = Math.max(96, Math.floor(reservedHeight * 0.9));
   }
 
   const topPadding = Math.max(8, Math.floor(reservedHeight * 0.03));
-  const upwardNudge = Math.max(6, Math.floor(reservedHeight * 0.05));
+  const upwardNudge = Math.max(12, Math.floor(reservedHeight * 0.08));
   const baseOffset = Math.max(topPadding, Math.floor((reservedHeight - boardHeight) / 2));
   const boardTopMin = messageY + Math.max(4, Math.floor(reservedHeight * 0.02));
   let boardTop = messageY + Math.max(topPadding, baseOffset - upwardNudge);
-
   const boardBottomLimit = messageY + reservedHeight;
   if (boardTop + boardHeight > boardBottomLimit) {
     boardTop = boardBottomLimit - boardHeight;
@@ -562,8 +561,8 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
 
   const centerX = canvasW / 2;
   const centerY = boardTop + boardHeight / 2;
-  const outerMargin = Math.max(20, Math.floor(canvasW * 0.035));
-  const minBoardWidth = Math.max(420, Math.floor(canvasW * 0.75));
+  const outerMargin = Math.max(18, Math.floor(canvasW * 0.03));
+  const minBoardWidth = Math.max(430, Math.floor(canvasW * 0.78));
   const maxBoardWidth = Math.max(minBoardWidth, canvasW - outerMargin * 2);
   let boardWidth = Math.max(minBoardWidth, Math.floor(canvasW * 0.9));
   if (boardWidth > maxBoardWidth) {
@@ -588,10 +587,11 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   this.cmd("SetForegroundColor", this.boardBackgroundID, "#324d7a");
   this.cmd("SetBackgroundColor", this.boardBackgroundID, "#f6f8ff");
 
-  const progressHeight = Math.max(8, Math.floor(boardHeight * 0.08));
-  const progressMarginY = Math.max(18, Math.floor(boardHeight * 0.2));
-  const progressMarginX = Math.max(16, Math.floor(boardWidth * 0.045));
-  const progressY = boardTop + boardHeight - progressMarginY - progressHeight / 2;
+  const progressHeight = Math.max(5, Math.floor(boardHeight * 0.055));
+  const progressBottomMargin = Math.max(8, Math.floor(boardHeight * 0.06));
+  const progressMarginX = Math.max(12, Math.floor(boardWidth * 0.035));
+  const progressY =
+    boardTop + boardHeight - progressBottomMargin - progressHeight / 2;
   let progressWidth = boardWidth - progressMarginX * 2;
   if (progressWidth < 140) {
     progressWidth = Math.max(120, Math.floor(boardWidth * 0.85));
