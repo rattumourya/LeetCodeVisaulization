@@ -572,7 +572,6 @@ CoinChangeBFS.prototype.clearNarrationBoardVisuals = function () {
   this.boardProgressFillID = -1;
 };
 
-
 CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const settings = options || {};
   const canvasW = settings.canvasW || this.canvasWidth || 720;
@@ -686,7 +685,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const textAreaLeft = boardLeft + textPaddingX;
   const textAreaRight = boardRight - textPaddingX;
   const textAreaWidth = Math.max(0, textAreaRight - textAreaLeft);
-  const paragraphFontSize = Math.max(15, Math.floor(boardHeight * 0.17));
+  const paragraphFontSize = 14;
   const approxCharWidth = Math.max(6, Math.floor(paragraphFontSize * 0.6));
   let textAreaTop = boardTop + Math.max(24, Math.floor(boardHeight * 0.2));
   const timerClearance =

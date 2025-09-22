@@ -98,6 +98,7 @@ var widthEntry;
 var heightEntry;
 var sizeButton;
 
+
 function returnSubmit(field, funct, maxsize, intOnly)
 {
     
