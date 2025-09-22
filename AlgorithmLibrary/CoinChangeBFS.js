@@ -50,6 +50,8 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.coinHighlight = -1;
 
   this.treeLabelID = -1;
+  this.treeLabelOffset = 0;
+  this.treeLabelYCoord = 0;
   this.treeArea = null;
   this.treeLevels = [];
   this.treeNodes = {};
@@ -255,7 +257,7 @@ CoinChangeBFS.prototype.setup = function () {
   const VARIABLE_SPACING = 32;
   const coinHeaderY = TITLE_Y + 48;
   const coinsRowY = coinHeaderY + 44;
-  const messageY = coinsRowY + 72;
+  const messageY = coinsRowY + 60;
 
   this.commands = [];
   this.codeIDs = [];
@@ -335,8 +337,11 @@ CoinChangeBFS.prototype.setup = function () {
   const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
   const queueTop = queueY - queueLayout.slotHeight / 2;
   const visitedTopOffset = Math.max(
-    24,
-    Math.floor((this.boardReservedHeight || 0) * 0.4)
+    12,
+    Math.min(
+      Math.floor((this.boardReservedHeight || 0) * 0.22),
+      Math.floor((this.treeNodeRadius || 24) * 1.2)
+    )
   );
   const visitedTop = treeTopY + visitedTopOffset;
   let visitedBottom = Math.max(
@@ -481,10 +486,26 @@ CoinChangeBFS.prototype.buildVariablePanel = function (options) {
     },
   ];
 
+  const columnTop = codeStartY;
   const columnBottom = Math.min(canvasH - 48, codeBottomY);
-  let startY = columnBottom - (entries.length - 1) * spacing;
-  if (startY < codeStartY) {
-    startY = codeStartY;
+  const availableHeight = Math.max(0, columnBottom - columnTop);
+  let spacingValue = spacing;
+  if (entries.length > 1) {
+    const requiredSpan = (entries.length - 1) * spacingValue;
+    if (requiredSpan > availableHeight) {
+      const minSpacing = Math.max(22, Math.floor(spacing * 0.7));
+      spacingValue = Math.max(
+        minSpacing,
+        Math.floor(availableHeight / Math.max(entries.length - 1, 1))
+      );
+    }
+  }
+  let startY = columnTop;
+  if (entries.length > 1) {
+    const usedSpan = (entries.length - 1) * spacingValue;
+    if (startY + usedSpan > columnBottom) {
+      startY = Math.max(columnTop, columnBottom - usedSpan);
+    }
   }
 
   for (let i = 0; i < entries.length; i++) {
@@ -493,7 +514,7 @@ CoinChangeBFS.prototype.buildVariablePanel = function (options) {
     const valueID = this.nextIndex++;
     this[entry.labelProp] = labelID;
     this[entry.valueProp] = valueID;
-    const y = startY + i * spacing;
+    const y = startY + i * spacingValue;
     this.cmd("CreateLabel", labelID, entry.label, columnX, y, 0);
     this.cmd("CreateLabel", valueID, entry.value, valueX, y, 0);
     const labelFont = entry.labelFont || variableFont;
@@ -513,7 +534,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
       : this.boardReservedHeight || 0
   );
 
-  const marginSpace = Math.max(24, Math.floor(reservedHeight * 0.18));
+  const marginSpace = Math.max(20, Math.floor(reservedHeight * 0.14));
   let boardHeight = Math.max(96, reservedHeight - marginSpace);
   if (boardHeight > reservedHeight) {
     boardHeight = Math.max(96, Math.floor(reservedHeight * 0.9));
@@ -530,19 +551,18 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
 
   const centerX = canvasW / 2;
   const centerY = boardTop + boardHeight / 2;
-
-  const minBoardWidth = Math.max(420, Math.floor(canvasW * 0.7));
-  const maxBoardWidth = canvasW - Math.max(64, Math.floor(canvasW * 0.12));
-  let boardWidth = Math.max(minBoardWidth, Math.floor(canvasW * 0.86));
+  const outerMargin = Math.max(20, Math.floor(canvasW * 0.035));
+  const minBoardWidth = Math.max(420, Math.floor(canvasW * 0.75));
+  const maxBoardWidth = Math.max(minBoardWidth, canvasW - outerMargin * 2);
+  let boardWidth = Math.max(minBoardWidth, Math.floor(canvasW * 0.9));
   if (boardWidth > maxBoardWidth) {
     boardWidth = maxBoardWidth;
   }
-  if (boardWidth < minBoardWidth && maxBoardWidth >= minBoardWidth) {
-    boardWidth = maxBoardWidth;
+  if (boardWidth > canvasW - 16) {
+    boardWidth = canvasW - 16;
   }
-  if (boardWidth > canvasW - 24) {
-    boardWidth = canvasW - 24;
-  }
+  const boardLeft = centerX - boardWidth / 2;
+  const boardRight = centerX + boardWidth / 2;
 
   this.boardBackgroundID = this.nextIndex++;
   this.cmd(
@@ -557,12 +577,13 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   this.cmd("SetForegroundColor", this.boardBackgroundID, "#324d7a");
   this.cmd("SetBackgroundColor", this.boardBackgroundID, "#f6f8ff");
 
-  const progressHeight = Math.max(12, Math.floor(boardHeight * 0.12));
-  const progressPadding = Math.max(18, Math.floor(boardHeight * 0.18));
-  const progressY = boardTop + boardHeight - progressPadding - progressHeight / 2;
-  let progressWidth = boardWidth - Math.max(140, Math.floor(boardWidth * 0.32));
-  if (progressWidth < 160) {
-    progressWidth = Math.max(120, Math.floor(boardWidth * 0.7));
+  const progressHeight = Math.max(8, Math.floor(boardHeight * 0.08));
+  const progressMarginY = Math.max(18, Math.floor(boardHeight * 0.2));
+  const progressMarginX = Math.max(16, Math.floor(boardWidth * 0.045));
+  const progressY = boardTop + boardHeight - progressMarginY - progressHeight / 2;
+  let progressWidth = boardWidth - progressMarginX * 2;
+  if (progressWidth < 140) {
+    progressWidth = Math.max(120, Math.floor(boardWidth * 0.85));
   }
   const progressCenterX = centerX;
 
@@ -593,25 +614,28 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   this.cmd("SetForegroundColor", this.boardProgressFillID, "#5a9bff");
   this.cmd("SetAlpha", this.boardProgressFillID, 0);
 
-  const timerY = boardTop + Math.max(20, Math.floor(boardHeight * 0.2));
-  const timerX = centerX + boardWidth / 2 - Math.max(64, Math.floor(boardWidth * 0.18));
+  const timerMarginX = Math.max(18, Math.floor(boardWidth * 0.04));
+  const timerMarginY = Math.max(14, Math.floor(boardHeight * 0.12));
+  const timerAnchorX = boardRight - timerMarginX;
+  const timerY = boardTop + timerMarginY;
   this.boardTimerID = this.nextIndex++;
-  this.cmd("CreateLabel", this.boardTimerID, "", timerX, timerY, 1);
+  this.cmd("CreateLabel", this.boardTimerID, "", timerAnchorX, timerY, 0);
   this.cmd("SetTextStyle", this.boardTimerID, "bold 15");
   this.cmd("SetForegroundColor", this.boardTimerID, "#2c4378");
 
-  const textPaddingX = Math.max(32, Math.floor(boardWidth * 0.12));
-  const textStartX = centerX - boardWidth / 2 + textPaddingX;
-  const textAreaTop = boardTop + Math.max(28, Math.floor(boardHeight * 0.22));
+  const textPaddingX = Math.max(18, Math.floor(boardWidth * 0.06));
+  const textStartX = boardLeft + textPaddingX;
+  const textAreaTop = boardTop + Math.max(24, Math.floor(boardHeight * 0.18));
   const textAreaBottom = Math.max(
     textAreaTop + 32,
-    progressY - progressHeight / 2 - Math.max(18, Math.floor(boardHeight * 0.1))
+    progressY - progressHeight / 2 - Math.max(16, Math.floor(boardHeight * 0.08))
   );
-  const minLineY = boardTop + 18;
+  const minLineY = boardTop + 16;
   const usableTop = Math.max(minLineY, textAreaTop);
   const usableBottom = Math.max(usableTop + 32, textAreaBottom);
   const usableHeight = Math.max(0, usableBottom - usableTop);
-  const minSpacing = Math.max(20, Math.floor(boardHeight * 0.16));
+  const minSpacing = Math.max(18, Math.floor(boardHeight * 0.15));
+
   let lineCount = 4;
   while (lineCount > 1) {
     const allowedSpan = usableBottom - minLineY;
@@ -654,10 +678,14 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
     this.cmd("SetForegroundColor", labelID, "#0a223f");
   }
 
-  const charLimit = Math.max(34, Math.floor((boardWidth - textPaddingX * 1.6) / 9));
+  const charLimit = Math.max(36, Math.floor((boardWidth - textPaddingX * 1.1) / 8));
+  const approxTimerCharWidth = Math.max(7, Math.floor(boardWidth * 0.015));
+  const timerExtraPadding = Math.max(4, Math.floor(approxTimerCharWidth * 0.8));
   this.boardInfo = {
     centerX,
     centerY,
+    left: boardLeft,
+    right: boardRight,
     width: boardWidth,
     height: boardHeight,
     top: boardTop,
@@ -666,9 +694,13 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
     progressHeight,
     progressLeft: progressCenterX - progressWidth / 2,
     progressY,
-    progressMinWidth: Math.max(6, Math.floor(progressWidth * 0.06)),
+    progressMinWidth: Math.max(4, Math.floor(progressWidth * 0.05)),
     charLimit,
     lineCount,
+    timerAnchorX,
+    timerAnchorY: timerY,
+    timerCharWidth: approxTimerCharWidth,
+    timerExtraPadding,
   };
 
   this.updateNarrationLines([]);
@@ -819,6 +851,28 @@ CoinChangeBFS.prototype.renderNarrationTimer = function (remaining, total) {
       timerText = safeRemaining > 0 ? `Next in ${safeRemaining}s` : "Next step ready";
     }
     this.cmd("SetText", this.boardTimerID, timerText);
+    if (
+      this.boardInfo &&
+      this.boardInfo.timerAnchorX !== undefined &&
+      this.boardInfo.timerAnchorY !== undefined
+    ) {
+      const charWidth = this.boardInfo.timerCharWidth || 8;
+      const extra = this.boardInfo.timerExtraPadding || 0;
+      const anchorX = this.boardInfo.timerAnchorX;
+      const anchorY = this.boardInfo.timerAnchorY;
+      let estimatedWidth = 0;
+      if (timerText && timerText.length > 0) {
+        estimatedWidth = Math.max(0, Math.round(timerText.length * charWidth) + extra);
+      }
+      let posX = anchorX - estimatedWidth;
+      if (this.boardInfo.left !== undefined) {
+        const leftLimit = this.boardInfo.left + Math.max(6, Math.floor((this.boardInfo.width || 0) * 0.015));
+        if (posX < leftLimit) {
+          posX = leftLimit;
+        }
+      }
+      this.cmd("SetPosition", this.boardTimerID, posX, anchorY);
+    }
   }
 
   if (this.boardProgressFillID >= 0 && this.boardInfo) {
@@ -843,7 +897,6 @@ CoinChangeBFS.prototype.renderNarrationTimer = function (remaining, total) {
     this.cmd("SetAlpha", this.boardProgressFillID, ratio > 0 ? 1 : 0);
   }
 };
-
 
 CoinChangeBFS.prototype.buildCoinsRow = function (canvasW, coinsY) {
   const coinCount = this.coinValues.length;
@@ -953,7 +1006,7 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
   const reservedForLabel = this.boardReservedHeight || 0;
   const labelOffsetBase =
     reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.35) : 36;
-  const labelOffset = Math.max(28, Math.min(44, labelOffsetBase));
+  const labelOffset = Math.max(20, Math.min(34, Math.floor(labelOffsetBase * 0.75)));
   const treeLabelY = topY - labelOffset;
   this.treeLabelID = this.nextIndex++;
   this.cmd(
@@ -965,6 +1018,8 @@ CoinChangeBFS.prototype.buildTreeDisplay = function (canvasW, topY, height) {
     1
   );
   this.cmd("SetTextStyle", this.treeLabelID, "bold 18");
+  this.treeLabelOffset = labelOffset;
+  this.treeLabelYCoord = treeLabelY;
 
   this.treeLevels = [];
   this.treeNodes = {};
@@ -1012,10 +1067,17 @@ CoinChangeBFS.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
 
   const visitedLabelBase =
     this.boardReservedHeight && this.boardReservedHeight > 0
-      ? Math.floor(this.boardReservedHeight * 0.32)
-      : 36;
-  const visitedLabelOffset = Math.max(28, Math.min(44, visitedLabelBase));
-  const visitedLabelY = topY - visitedLabelOffset;
+      ? Math.floor(this.boardReservedHeight * 0.28)
+      : 32;
+  const desiredOffset =
+    this.treeLabelOffset !== undefined && this.treeLabelOffset !== null
+      ? this.treeLabelOffset
+      : visitedLabelBase;
+  const visitedLabelOffset = Math.max(20, Math.min(40, desiredOffset));
+  const visitedLabelY =
+    this.treeLabelYCoord !== undefined && this.treeLabelYCoord !== null
+      ? this.treeLabelYCoord
+      : topY - visitedLabelOffset;
   this.visitedLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
@@ -2209,7 +2271,6 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
   this.updateNarrationLines(wrapped);
   for (let remaining = wait; remaining >= 0; remaining--) {
     this.renderNarrationTimer(remaining, wait);
-
     if (remaining > 0) {
       this.cmd("Step");
     }
