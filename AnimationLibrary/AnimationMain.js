@@ -108,85 +108,6 @@ var narrationOverlayState = {
         remaining: 0
 };
 
-var narrationSpeechState = {
-        active: false,
-        lastText: ""
-};
-
-var narrationOverlayAdvanceTimer = null;
-
-function clearNarrationAdvanceTimer()
-{
-        if (narrationOverlayAdvanceTimer)
-        {
-                try
-                {
-                        clearTimeout(narrationOverlayAdvanceTimer);
-                }
-                catch (err)
-                {
-                }
-                narrationOverlayAdvanceTimer = null;
-        }
-}
-
-function scheduleNarrationAdvance(milliseconds)
-{
-        clearNarrationAdvanceTimer();
-        var delay = parseInt(milliseconds, 10);
-        if (!isFinite(delay) || delay <= 0)
-        {
-                return;
-        }
-        narrationOverlayAdvanceTimer = setTimeout(function ()
-        {
-                narrationOverlayAdvanceTimer = null;
-                handleNarrationSpeechFinished();
-        }, delay);
-}
-
-function handleNarrationSpeechFinished()
-{
-        clearNarrationAdvanceTimer();
-        if (typeof animationManager !== "undefined" && animationManager && typeof animationManager.onNarrationSpeechFinished === "function")
-        {
-                try
-                {
-                        animationManager.onNarrationSpeechFinished();
-                }
-                catch (err)
-                {
-                }
-        }
-}
-
-function resetNarrationSpeechState()
-{
-        narrationSpeechState.active = false;
-        narrationSpeechState.lastText = "";
-}
-
-function cancelNarrationSpeech()
-{
-        resetNarrationSpeechState();
-        clearNarrationAdvanceTimer();
-}
-
-function speakNarrationLines(lines)
-{
-        if (Array.isArray(lines) && lines.length > 0)
-        {
-                narrationSpeechState.lastText = lines.join(" ");
-                narrationSpeechState.active = true;
-        }
-        else
-        {
-                narrationSpeechState.lastText = "";
-                narrationSpeechState.active = false;
-        }
-        return false;
-}
-
 function ensureNarrationOverlayElements()
 {
         if (narrationOverlayElements)
@@ -360,11 +281,6 @@ function applyNarrationOverlayState(state)
                         elements.progress.style.width = "0%";
                 }
         }
-
-        if (!narrationOverlayState.visible)
-        {
-                cancelNarrationSpeech();
-        }
 }
 
 function getNarrationOverlayState()
@@ -408,26 +324,9 @@ function showNarrationOverlayFromPayload(payload)
         }
         var highlights = cloneNarrationArray(data.highlights);
         var total = parseInt(data.total, 10);
-        if (!isFinite(total) || total < 0)
+        if (!isFinite(total) || total < 1)
         {
-                total = 0;
-        }
-        var fallbackMs = 0;
-        if (data.fallbackMs !== undefined && data.fallbackMs !== null)
-        {
-                var parsedFallback = parseInt(data.fallbackMs, 10);
-                if (isFinite(parsedFallback) && parsedFallback > 0)
-                {
-                        fallbackMs = parsedFallback;
-                }
-        }
-        if (!fallbackMs && data.wait !== undefined && data.wait !== null)
-        {
-                var parsedWait = parseFloat(data.wait);
-                if (isFinite(parsedWait) && parsedWait > 0)
-                {
-                        fallbackMs = Math.floor(parsedWait * 1000);
-                }
+                total = 1;
         }
         applyNarrationOverlayState({
                 visible: true,
@@ -436,11 +335,6 @@ function showNarrationOverlayFromPayload(payload)
                 total: total,
                 remaining: total
         });
-        var started = speakNarrationLines(lines);
-        if (!started && fallbackMs > 0)
-        {
-                scheduleNarrationAdvance(fallbackMs);
-        }
 }
 
 function updateNarrationOverlayTimer(remaining, total)
@@ -830,12 +724,11 @@ function AnimationManager(objectManager)
 
 	// Control variables for stopping / starting animation
 	
-        this.animationPaused = false;
-        this.awaitingStep = false;
-        this.currentlyAnimating = false;
-        this.waitingForNarrationSpeech = false;
-
-        // Array holding the code for the animation.  This is
+	this.animationPaused = false;
+	this.awaitingStep = false;
+	this.currentlyAnimating = false;
+	
+	// Array holding the code for the animation.  This is 
 	// an array of strings, each of which is an animation command
 	// currentAnimation is an index into this array
 	this.AnimationSteps = [];
@@ -911,11 +804,11 @@ function AnimationManager(objectManager)
 	}
 	
 	
-        this.changeSize = function()
-        {
-
-                var width = parseInt(widthEntry.value);
-                var height = parseInt(heightEntry.value);
+	this.changeSize = function()
+	{
+		
+		var width = parseInt(widthEntry.value);
+		var height = parseInt(heightEntry.value);
 		
 		if (width > 100)
 		{
@@ -933,45 +826,14 @@ function AnimationManager(objectManager)
 		width.value = canvas.width;
 		heightEntry.value = canvas.height;
 		
-                this.animatedObjects.draw();
-                this.fireEvent("CanvasSizeChanged",{width:canvas.width, height:canvas.height});
-        }
-
-        this.onNarrationSpeechFinished = function()
-        {
-                if (!this.waitingForNarrationSpeech)
-                {
-                        return;
-                }
-                this.waitingForNarrationSpeech = false;
-                this.awaitingStep = false;
-                this.startNextBlock();
-                if (this.waitingForNarrationSpeech)
-                {
-                        return;
-                }
-                if (this.AnimationSteps == null || (this.currentAnimation >= this.AnimationSteps.length && (!this.currentBlock || this.currentBlock.length === 0)))
-                {
-                        this.currentlyAnimating = false;
-                        return;
-                }
-                if (this.animationPaused)
-                {
-                        this.awaitingStep = true;
-                        this.currentlyAnimating = false;
-                        this.fireEvent("AnimationWaiting","NoData");
-                        return;
-                }
-                this.fireEvent("AnimationStarted","NoData");
-                this.currentlyAnimating = true;
-                clearTimeout(timer);
-                timer = setTimeout('timeout()', 30);
-        }
-
-        this.startNextBlock = function()
-        {
-                this.awaitingStep = false;
-                this.currentBlock = [];
+		this.animatedObjects.draw();
+		this.fireEvent("CanvasSizeChanged",{width:canvas.width, height:canvas.height});		
+	}
+	
+	this.startNextBlock = function()
+	{
+		this.awaitingStep = false;
+		this.currentBlock = [];
 		var undoBlock = []
 		if (this.currentAnimation == this.AnimationSteps.length )
 		{
@@ -1202,54 +1064,6 @@ function AnimationManager(objectManager)
                                         showNarrationOverlayFromPayload(nextCommand[1]);
                                 }
                         }
-                        else if (nextCommand[0].toUpperCase() == "SPEAKNARRATION")
-                        {
-                                var payload = nextCommand[1];
-                                var decodedPayload = payload;
-                                try
-                                {
-                                        decodedPayload = decodeURIComponent(payload);
-                                }
-                                catch (err)
-                                {
-                                }
-                                var speechData = {};
-                                try
-                                {
-                                        speechData = JSON.parse(decodedPayload);
-                                }
-                                catch (err2)
-                                {
-                                        speechData = { lines: [decodedPayload] };
-                                }
-                                var speechLines = cloneNarrationArray(speechData.lines);
-                                if ((!speechLines || speechLines.length === 0) && speechData.text)
-                                {
-                                        speechLines = [speechData.text];
-                                }
-                                var fallbackMs = 0;
-                                if (speechData.fallbackMs !== undefined && speechData.fallbackMs !== null)
-                                {
-                                        var parsedFallback = parseInt(speechData.fallbackMs, 10);
-                                        if (isFinite(parsedFallback) && parsedFallback > 0)
-                                        {
-                                                fallbackMs = parsedFallback;
-                                        }
-                                }
-                                if (!fallbackMs && speechData.wait !== undefined && speechData.wait !== null)
-                                {
-                                        var parsedWait = parseFloat(speechData.wait);
-                                        if (isFinite(parsedWait) && parsedWait > 0)
-                                        {
-                                                fallbackMs = Math.floor(parsedWait * 1000);
-                                        }
-                                }
-                                var startedSpeech = speakNarrationLines(speechLines);
-                                if (!startedSpeech && fallbackMs > 0)
-                                {
-                                        scheduleNarrationAdvance(fallbackMs);
-                                }
-                        }
                         else if (nextCommand[0].toUpperCase() == "UPDATENARRATIONTIMER")
                         {
                                 if (typeof getNarrationOverlayState === "function" && typeof UndoNarrationOverlay !== "undefined")
@@ -1271,16 +1085,6 @@ function AnimationManager(objectManager)
                                 {
                                         hideNarrationOverlay();
                                 }
-                                this.waitingForNarrationSpeech = false;
-                        }
-                        else if (nextCommand[0].toUpperCase() == "WAITFORNARRATIONSPEECH")
-                        {
-                                if (!this.animatedObjects.runFast && !this.doingUndo)
-                                {
-                                        this.waitingForNarrationSpeech = true;
-                                        this.currentlyAnimating = false;
-                                }
-                                foundBreak = true;
                         }
                         else if (nextCommand[0].toUpperCase() == "DELETE")
                         {
@@ -1545,25 +1349,18 @@ function AnimationManager(objectManager)
 		{
 			this.AnimationSteps = ["Step"];
 		}
-                else
-                {
-                        this.AnimationSteps = commands;
-                }
-                this.undoAnimationStepIndices = new Array();
-                this.currentAnimation = 0;
-                this.startNextBlock();
-                if (this.waitingForNarrationSpeech)
-                {
-                        this.currentlyAnimating = false;
-                }
-                else
-                {
-                        this.currentlyAnimating = true;
-                }
-                this.fireEvent("AnimationStarted","NoData");
-                timer = setTimeout('timeout()', 30);
+		else
+		{
+			this.AnimationSteps = commands;
+		}
+		this.undoAnimationStepIndices = new Array();
+		this.currentAnimation = 0;
+		this.startNextBlock();
+		this.currentlyAnimating = true;
+		this.fireEvent("AnimationStarted","NoData");
+		timer = setTimeout('timeout()', 30); 
 
-        }
+	}
 	
 	
 	// Step backwards one step.  A no-op if the animation is not currently paused
@@ -1677,18 +1474,13 @@ function AnimationManager(objectManager)
 		clearTimeout(timer);
 	}
 	
-        this.skipForward = function()
-        {
-                if (this.waitingForNarrationSpeech)
-                {
-                        cancelNarrationSpeech();
-                        this.onNarrationSpeechFinished();
-                }
-                if (this.currentlyAnimating)
-                {
-                        this.animatedObjects.runFast = true;
-                        while (this.AnimationSteps != null && this.currentAnimation < this.AnimationSteps.length)
-                        {
+	this.skipForward = function()
+	{
+		if (this.currentlyAnimating)
+		{
+			this.animatedObjects.runFast = true;
+			while (this.AnimationSteps != null && this.currentAnimation < this.AnimationSteps.length)
+			{
 				var i;
 				for (i = 0; this.currentBlock != null && i < this.currentBlock.length; i++)
 				{

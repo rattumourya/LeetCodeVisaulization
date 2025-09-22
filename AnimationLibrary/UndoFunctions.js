@@ -332,22 +332,16 @@ UndoNarrationOverlay.prototype.constructor = UndoNarrationOverlay;
 
 UndoNarrationOverlay.prototype.undoInitialStep = function(world)
 {
-        if (typeof window === "undefined")
+        if (typeof window !== "undefined" && typeof window.applyNarrationOverlayState === "function")
         {
-                return;
+                window.applyNarrationOverlayState({
+                        visible: this.state.visible,
+                        lines: cloneOverlayList(this.state.lines),
+                        highlights: cloneOverlayList(this.state.highlights),
+                        total: this.state.total,
+                        remaining: this.state.remaining
+                });
         }
-        var applyState = window.applyNarrationOverlayState;
-        if (!applyState || typeof applyState !== "function")
-        {
-                return;
-        }
-        applyState({
-                visible: this.state.visible,
-                lines: cloneOverlayList(this.state.lines),
-                highlights: cloneOverlayList(this.state.highlights),
-                total: this.state.total,
-                remaining: this.state.remaining
-        });
 };
 
 UndoSetTextColor.prototype = new UndoBlock();
