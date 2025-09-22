@@ -94,7 +94,7 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.boardInfo = null;
 
   this.celebrationOverlayIDs = [];
-  this.celebrationActive = false;
+  this.celebrationOverlayActive = false;
 
   this.amountLabelID = -1;
   this.amountValueID = -1;
@@ -2923,6 +2923,7 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
 
 CoinChangeBFS.prototype.runCoinChange = function () {
   this.commands = [];
+  this.clearCelebrationOverlay();
   this.highlightCode(-1);
   this.clearTreeHighlight();
   this.unhighlightCoin();
@@ -2975,7 +2976,6 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.highlightVisitedEntry(0, true);
 
     this.cmd("SetText", this.resultValueID, "0");
-
     this.highlightVisitedEntry(0, false);
     this.highlightCode(-1);
     return this.commands;
@@ -3157,7 +3157,33 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightCode(-1);
   return this.commands;
 };
+
+CoinChangeBFS.prototype.clearCelebrationOverlay = function () {
+  if (!Array.isArray(this.celebrationOverlayIDs)) {
+    this.celebrationOverlayIDs = [];
+    this.celebrationOverlayActive = false;
+    return;
+  }
+
+  let removedAny = false;
+  for (let i = 0; i < this.celebrationOverlayIDs.length; i++) {
+    const id = this.celebrationOverlayIDs[i];
+    if (id !== undefined && id !== null && id >= 0) {
+      this.cmd("Delete", id);
+      removedAny = true;
+    }
+  }
+
+  if (removedAny && typeof objectManager !== "undefined" && objectManager) {
+    objectManager.draw();
+  }
+
+  this.celebrationOverlayIDs.length = 0;
+  this.celebrationOverlayActive = false;
+};
+
 CoinChangeBFS.prototype.reset = function () {
+  this.clearCelebrationOverlay();
   this.nextIndex = 0;
   this.boardBackgroundID = -1;
   this.boardTimerID = -1;
