@@ -2840,6 +2840,7 @@ CoinChangeBFS.prototype.launchSkyCelebration = function (options) {
   for (let i = 0; i < sparkIDs.length; i++) {
     this.cmd("SetAlpha", sparkIDs[i], 0);
   }
+
   this.cmd("Step");
 
   this.cmd("Delete", overlayID);
@@ -3224,6 +3225,23 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           if (amount < this.visitedSlotIDs.length) {
             this.highlightVisitedEntry(amount, false);
           }
+          this.narrate(
+            [
+              `Amount ${amount} appears in round ${steps}, so we need ${steps} coin${
+                steps === 1 ? "" : "s"
+              }.`,
+              "Follow the highlighted path to see one optimal combination.",
+            ],
+            {
+              highlight: [
+                `amount ${amount}`,
+                `round ${steps}`,
+                `${steps} coin${steps === 1 ? "" : "s"}`,
+                "optimal combination",
+              ],
+              wait: 6,
+            }
+          );
           this.unhighlightCoin();
           this.launchSkyCelebration({ lingerSteps: 2 });
           this.highlightCode(-1);
