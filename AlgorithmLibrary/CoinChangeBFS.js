@@ -261,6 +261,9 @@ CoinChangeBFS.prototype.setup = function () {
     objectManager.statusReport.addedToScene = false;
   }
 
+  this.celebrationOverlayIDs = [];
+  this.celebrationActive = false;
+
   const TITLE_Y = 48;
   const CODE_START_X = 80;
   const CODE_LINE_H = 17;
@@ -2924,6 +2927,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightCode(-1);
   this.clearTreeHighlight();
   this.unhighlightCoin();
+  this.clearCelebrationOverlay();
   this.resetTreeDisplay();
   this.resetQueueDisplay();
   this.resetVisitedDisplay();
@@ -3079,7 +3083,25 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           if (amount < this.visitedSlotIDs.length) {
             this.highlightVisitedEntry(amount, false);
           }
+          this.narrate(
+            [
+              `Amount ${amount} appears in round ${steps}, so we need ${steps} coin${
+                steps === 1 ? "" : "s"
+              }.`,
+              "Follow the highlighted path to see one optimal combination.",
+            ],
+            {
+              highlight: [
+                `amount ${amount}`,
+                `round ${steps}`,
+                `${steps} coin${steps === 1 ? "" : "s"}`,
+                "optimal combination",
+              ],
+              wait: 6,
+            }
+          );
           this.unhighlightCoin();
+          this.launchConfettiCelebration({ lingerSteps: 2 });
           this.highlightCode(-1);
           return this.commands;
         }
