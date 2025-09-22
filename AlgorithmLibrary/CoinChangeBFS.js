@@ -2713,94 +2713,6 @@ CoinChangeBFS.prototype.unhighlightCoin = function () {
   this.coinHighlight = -1;
 };
 
-CoinChangeBFS.prototype.clearCelebrationOverlay = function () {
-  if (this.celebrationOverlayIDs && this.celebrationOverlayIDs.length > 0) {
-    for (let i = 0; i < this.celebrationOverlayIDs.length; i++) {
-      const id = this.celebrationOverlayIDs[i];
-      if (id !== undefined && id !== null && id >= 0) {
-        this.cmd("Delete", id);
-      }
-    }
-  }
-  this.celebrationOverlayIDs = [];
-  this.celebrationActive = false;
-};
-
-CoinChangeBFS.prototype.launchConfettiCelebration = function (options) {
-  if (this.celebrationActive) {
-    return;
-  }
-  this.celebrationActive = true;
-
-  const settings = options || {};
-  const canvasW = this.canvasWidth || 720;
-  const canvasH = this.canvasHeight || 600;
-  const palette =
-    settings.palette ||
-    ["#ff9b85", "#ffd166", "#b5e48c", "#73c0ff", "#bdb2ff", "#ffcad4"];
-  const pieceCount = Math.max(28, Math.floor(canvasW / 18));
-  const baseWidth = Math.max(6, Math.floor(canvasW * 0.012));
-  const ratioSourceWidth =
-    this.coinCellWidth && this.coinCellWidth > 0 ? this.coinCellWidth : baseWidth;
-  const ratioSourceHeight =
-    this.coinCellHeight && this.coinCellHeight > 0
-      ? this.coinCellHeight
-      : Math.max(10, Math.floor(canvasH * 0.02));
-  const baseRatio =
-    ratioSourceWidth > 0 ? Math.max(0.45, ratioSourceHeight / ratioSourceWidth) : 0.75;
-  const driftSpan = Math.max(80, Math.floor(canvasW * 0.2));
-  const fallExtension = Math.max(120, Math.floor(canvasH * 0.25));
-  const confettiIDs = [];
-
-  for (let i = 0; i < pieceCount; i++) {
-    const id = this.nextIndex++;
-    confettiIDs.push(id);
-    const widthScale = 0.65 + Math.random() * 0.9;
-    const width = Math.max(6, Math.floor(baseWidth * widthScale));
-    const height = Math.max(
-      8,
-      Math.floor(width * baseRatio * (0.85 + Math.random() * 0.5))
-    );
-    const startX = Math.max(
-      24,
-      Math.min(canvasW - 24, Math.floor(Math.random() * canvasW))
-    );
-    const startY = -Math.floor(Math.random() * Math.max(40, canvasH * 0.12));
-    const horizontalDrift = (Math.random() - 0.5) * driftSpan;
-    const endX = Math.max(24, Math.min(canvasW - 24, Math.round(startX + horizontalDrift)));
-    const endY = canvasH + Math.floor(Math.random() * fallExtension);
-    const color = palette[i % palette.length];
-
-    this.cmd("CreateRectangle", id, "", width, height, startX, startY);
-    this.cmd("SetBackgroundColor", id, color);
-    this.cmd("SetForegroundColor", id, color);
-    this.cmd("SetAlpha", id, 0);
-    this.cmd("SetAlpha", id, 0.95);
-    this.cmd("Move", id, endX, endY);
-  }
-
-  this.celebrationOverlayIDs = confettiIDs.slice();
-
-  this.cmd("Step");
-  this.cmd("Step");
-
-  const lingerSteps = Math.max(0, Math.floor(settings.lingerSteps || 0));
-  for (let i = 0; i < lingerSteps; i++) {
-    this.cmd("Step");
-  }
-
-  for (let i = 0; i < confettiIDs.length; i++) {
-    this.cmd("SetAlpha", confettiIDs[i], 0);
-  }
-  this.cmd("Step");
-  for (let i = 0; i < confettiIDs.length; i++) {
-    this.cmd("Delete", confettiIDs[i]);
-  }
-
-  this.celebrationOverlayIDs = [];
-  this.celebrationActive = false;
-};
-
 CoinChangeBFS.prototype.cmd = function () {
   if (
     arguments.length > 0 &&
@@ -3063,7 +2975,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.highlightVisitedEntry(0, true);
 
     this.cmd("SetText", this.resultValueID, "0");
-    this.launchConfettiCelebration({ lingerSteps: 1 });
+
     this.highlightVisitedEntry(0, false);
     this.highlightCode(-1);
     return this.commands;
@@ -3247,6 +3159,13 @@ CoinChangeBFS.prototype.runCoinChange = function () {
 };
 CoinChangeBFS.prototype.reset = function () {
   this.nextIndex = 0;
+  this.boardBackgroundID = -1;
+  this.boardTimerID = -1;
+  this.boardProgressTrackID = -1;
+  this.boardProgressFillID = -1;
+  this.boardLineIDs = [];
+  this.boardTextSegments = [];
+  this.boardInfo = null;
   if (typeof animationManager !== "undefined" && animationManager.animatedObjects) {
     animationManager.animatedObjects.clearAllObjects();
   }
