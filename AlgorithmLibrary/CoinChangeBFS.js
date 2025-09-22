@@ -128,6 +128,15 @@ CoinChangeBFS.prototype.init = function (am, w, h) {
   this.canvasWidth = w || 720;
   this.canvasHeight = h || 1280;
 
+  this.narrationBudgetInitialized = false;
+  this.totalStepBudget = 0;
+  this.structuralStepAllowance = 0;
+  this.maxNarrationBudget = 0;
+  this.totalStepCount = 0;
+  this.narrationBeatsUsed = 0;
+  this.structuralStepsUsed = 0;
+  this._narrationStepContext = false;
+
   this.setup();
 };
 
@@ -2495,9 +2504,69 @@ CoinChangeBFS.prototype.unhighlightCoin = function () {
   this.coinHighlight = -1;
 };
 
+CoinChangeBFS.prototype.cmd = function () {
+  if (
+    arguments.length > 0 &&
+    arguments[0] === "Step" &&
+    this.narrationBudgetInitialized
+  ) {
+    this.totalStepCount = (this.totalStepCount || 0) + 1;
+    if (this._narrationStepContext) {
+      this.narrationBeatsUsed = (this.narrationBeatsUsed || 0) + 1;
+    } else {
+      this.structuralStepsUsed = (this.structuralStepsUsed || 0) + 1;
+    }
+  }
+  CoinChangeBFS.superclass.cmd.apply(this, arguments);
+};
+
+CoinChangeBFS.prototype.initializeNarrationBudget = function (coins, amount) {
+  const totalBudget = 510;
+  const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+  const coinCount = Array.isArray(coins) ? coins.length : 0;
+  const boundedCoinCount = Math.max(0, Math.min(8, coinCount));
+  const processedUpper = Math.max(1, safeAmount === 0 ? 1 : safeAmount);
+  const popUpper = processedUpper * 2;
+  const perCoinUpper = processedUpper * boundedCoinCount;
+  const highlightUpper = processedUpper * boundedCoinCount;
+  const newVisitedUpper = safeAmount * 2;
+  const finishingSteps = safeAmount > 0 ? 2 : 1;
+  let structuralAllowance =
+    2 + popUpper + perCoinUpper + highlightUpper + newVisitedUpper + finishingSteps;
+  structuralAllowance = Math.max(0, Math.min(structuralAllowance, totalBudget));
+  const narrationBudget = Math.max(0, totalBudget - structuralAllowance);
+
+  this.totalStepBudget = totalBudget;
+  this.structuralStepAllowance = structuralAllowance;
+  this.maxNarrationBudget = narrationBudget;
+  this.totalStepCount = 0;
+  this.narrationBeatsUsed = 0;
+  this.structuralStepsUsed = 0;
+  this._narrationStepContext = false;
+  this.narrationBudgetInitialized = true;
+};
+
+CoinChangeBFS.prototype.getNarrationBudgetRemaining = function () {
+  if (!this.narrationBudgetInitialized) {
+    return 0;
+  }
+  const totalBudget = Number.isFinite(this.totalStepBudget) ? this.totalStepBudget : 0;
+  const structuralAllowance = Number.isFinite(this.structuralStepAllowance)
+    ? this.structuralStepAllowance
+    : 0;
+  const used = Number.isFinite(this.totalStepCount) ? this.totalStepCount : 0;
+  const structuralUsed = Number.isFinite(this.structuralStepsUsed)
+    ? this.structuralStepsUsed
+    : 0;
+  const structuralReserve = Math.max(0, structuralAllowance - structuralUsed);
+  const available = totalBudget - used - structuralReserve;
+  return Math.max(0, Math.floor(available));
+};
+
 CoinChangeBFS.prototype.estimateNarrationBeats = function (lines) {
   if (!lines || lines.length === 0) {
-    return 1;
+    const remaining = this.getNarrationBudgetRemaining();
+    return remaining > 0 ? Math.min(1, remaining) : 0;
   }
   let wordCount = 0;
   let sentenceCount = 0;
@@ -2513,14 +2582,32 @@ CoinChangeBFS.prototype.estimateNarrationBeats = function (lines) {
       sentenceCount += sentences.length;
     }
   }
-  if (wordCount === 0) {
-    return 2;
+  const remainingBudget = this.getNarrationBudgetRemaining();
+  if (wordCount === 0 || remainingBudget <= 0) {
+    return Math.max(0, remainingBudget);
   }
   const readingSeconds = Math.ceil(wordCount / 3);
   const structureBonus = Math.max(0, Math.ceil(sentenceCount / 2));
-  const base = Math.max(3, readingSeconds + structureBonus);
-  const lineBonus = Math.max(0, Math.min(3, lines.length - 1));
-  return Math.min(12, base + lineBonus);
+  let estimate = Math.max(2, readingSeconds + structureBonus);
+  estimate += Math.max(0, Math.min(2, lines.length - 1));
+  estimate = Math.min(9, estimate);
+
+  const narrationBudget = this.maxNarrationBudget || 0;
+  const used = this.narrationBeatsUsed || 0;
+  if (narrationBudget > 0) {
+    const usageRatio = used / narrationBudget;
+    if (usageRatio >= 0.8) {
+      estimate = Math.min(estimate, Math.max(1, Math.ceil(estimate * 0.5)));
+    } else if (usageRatio >= 0.6) {
+      estimate = Math.min(estimate, Math.ceil(estimate * 0.7));
+    } else if (usageRatio >= 0.4) {
+      estimate = Math.min(estimate, Math.ceil(estimate * 0.85));
+    }
+  }
+  if (remainingBudget <= 3) {
+    return Math.max(0, Math.min(remainingBudget, estimate));
+  }
+  return Math.max(1, Math.min(estimate, remainingBudget));
 };
 
 CoinChangeBFS.prototype.narrate = function (text, options) {
@@ -2536,15 +2623,22 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
   let wait = this.estimateNarrationBeats(lines);
   if (options && options.wait !== undefined && options.wait !== null) {
     const parsed = Math.round(Number(options.wait));
-    if (!Number.isNaN(parsed) && parsed > 0) {
+    if (!Number.isNaN(parsed) && parsed >= 0) {
       wait = parsed;
     }
   }
   if (options && options.waitSteps !== undefined && options.waitSteps !== null) {
     const parsed = Math.round(Number(options.waitSteps));
-    if (!Number.isNaN(parsed) && parsed > 0) {
+    if (!Number.isNaN(parsed) && parsed >= 0) {
       wait = parsed;
     }
+  }
+
+  const budgetRemaining = this.getNarrationBudgetRemaining();
+  if (budgetRemaining <= 0) {
+    wait = 0;
+  } else {
+    wait = Math.max(0, Math.min(wait, budgetRemaining));
   }
 
   const highlightList =
@@ -2565,12 +2659,15 @@ CoinChangeBFS.prototype.narrate = function (text, options) {
     wrapped = [[]];
   }
   this.updateNarrationLines(wrapped);
+  const previousContext = this._narrationStepContext;
+  this._narrationStepContext = true;
   for (let remaining = wait; remaining >= 0; remaining--) {
     this.renderNarrationTimer(remaining, wait);
     if (remaining > 0) {
       this.cmd("Step");
     }
   }
+  this._narrationStepContext = previousContext;
 };
 
 CoinChangeBFS.prototype.describeCoinOutcome = function (
@@ -2583,12 +2680,10 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
 ) {
   const highlight = [];
   const lines = [];
+  let wait = 2;
   if (next === amount) {
     lines.push(
-      `Adding coin ${coin} moves us from ${curr} straight to the target ${amount}.`
-    );
-    lines.push(
-      `Because this is round ${steps}, we've hit the minimum number of coins.`
+      `Adding coin ${coin} from ${curr} hits the target ${amount} in round ${steps}, so we've found the minimum coins.`
     );
     highlight.push(
       `coin ${coin}`,
@@ -2596,24 +2691,24 @@ CoinChangeBFS.prototype.describeCoinOutcome = function (
       `round ${steps}`,
       "minimum number"
     );
+    wait = 3;
   } else if (next < amount && !alreadyVisited) {
-    lines.push(`Coin ${coin} reaches a fresh amount ${next}.`);
-    lines.push(`Mark ${next} as visited and add it to the queue for the next round.`);
+    lines.push(
+      `Coin ${coin} reaches new amount ${next}, so we mark it visited and queue it for the next round.`
+    );
     highlight.push(`coin ${coin}`, `${next}`, "visited", "queue");
   } else if (next < amount) {
     lines.push(
-      `Coin ${coin} lands on ${next} again, but that amount is already marked visited.`
+      `Coin ${coin} lands on ${next}, but we've already visited that amount, so skip it.`
     );
-    lines.push(`Skip it so we focus on brand-new totals.`);
-    highlight.push(`coin ${coin}`, `${next}`, "visited", "skip it");
+    highlight.push(`coin ${coin}`, `${next}`, "visited", "skip");
   } else {
     lines.push(
-      `Coin ${coin} jumps to ${next}, which is past the target ${amount}.`
+      `Coin ${coin} jumps to ${next}, which is beyond the target ${amount}, so ignore it.`
     );
-    lines.push(`Ignore it and try the next coin option.`);
     highlight.push(`coin ${coin}`, `${next}`, `target ${amount}`, "ignore");
   }
-  return { lines, highlight };
+  return { lines, highlight, wait };
 };
 
 CoinChangeBFS.prototype.runCoinChange = function () {
@@ -2636,6 +2731,8 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.cmd("SetText", this.coinValueID, "-");
   this.cmd("SetText", this.nextValueID, "-");
   this.cmd("SetText", this.resultValueID, "?");
+
+  this.initializeNarrationBudget(coins, amount);
 
   this.highlightCode(0);
   this.narrate(
@@ -2773,7 +2870,11 @@ CoinChangeBFS.prototype.runCoinChange = function () {
         const next = curr + coin;
         const alreadyVisited = next <= amount ? visited[next] : false;
         const narration = this.describeCoinOutcome(curr, coin, next, amount, alreadyVisited, steps);
-        this.narrate(narration.lines, { highlight: narration.highlight });
+        const narrationOptions = { highlight: narration.highlight };
+        if (narration.wait !== undefined && narration.wait !== null) {
+          narrationOptions.wait = narration.wait;
+        }
+        this.narrate(narration.lines, narrationOptions);
         this.highlightCoin(cIndex);
         this.cmd("SetText", this.coinValueID, String(coin));
         this.highlightCode(13);
