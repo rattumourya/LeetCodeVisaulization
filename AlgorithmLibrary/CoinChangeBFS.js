@@ -3083,23 +3083,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           if (amount < this.visitedSlotIDs.length) {
             this.highlightVisitedEntry(amount, false);
           }
-          this.narrate(
-            [
-              `Amount ${amount} appears in round ${steps}, so we need ${steps} coin${
-                steps === 1 ? "" : "s"
-              }.`,
-              "Follow the highlighted path to see one optimal combination.",
-            ],
-            {
-              highlight: [
-                `amount ${amount}`,
-                `round ${steps}`,
-                `${steps} coin${steps === 1 ? "" : "s"}`,
-                "optimal combination",
-              ],
-              wait: 6,
-            }
-          );
+          this.launchConfettiCelebration();
           this.unhighlightCoin();
           this.launchConfettiCelebration({ lingerSteps: 2 });
           this.highlightCode(-1);
@@ -3157,6 +3141,129 @@ CoinChangeBFS.prototype.runCoinChange = function () {
   this.highlightCode(-1);
   return this.commands;
 };
+
+CoinChangeBFS.prototype.launchConfettiCelebration = function (options) {
+  if (!Array.isArray(this.celebrationOverlayIDs)) {
+    this.celebrationOverlayIDs = [];
+  }
+  if (this.celebrationOverlayActive || this.celebrationOverlayIDs.length > 0) {
+    this.clearCelebrationOverlay();
+  }
+
+  const canvasW = this.canvasWidth || 720;
+  const canvasH = this.canvasHeight || 1280;
+
+  const palette =
+    options && Array.isArray(options.colors) && options.colors.length > 0
+      ? options.colors
+      : [
+          "#ff6b6b",
+          "#ffd166",
+          "#06d6a0",
+          "#118ab2",
+          "#9c89ff",
+          "#ff9f1c",
+          "#f15bb5",
+        ];
+
+  const clamp = function (value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  };
+
+  const requestedPieces =
+    options && Number.isFinite(options.count) ? Math.floor(options.count) : null;
+  const pieceCount = clamp(
+    requestedPieces === null
+      ? Math.round(canvasW / 24) + Math.round(canvasH / 140)
+      : requestedPieces,
+    18,
+    72
+  );
+
+  const baseWidth = Math.max(10, Math.round(canvasW * 0.018));
+  const baseHeight = Math.max(22, Math.round(canvasH * 0.025));
+  const horizontalSwing = Math.max(48, Math.round(canvasW * 0.16));
+  const verticalTravel = canvasH + Math.max(120, Math.round(canvasH * 0.2));
+
+  const overlayIDs = [];
+  const confettiPieces = [];
+
+  for (let i = 0; i < pieceCount; i++) {
+    const width = clamp(
+      baseWidth + ((i % 4) - 1) * Math.max(2, Math.round(baseWidth * 0.25)),
+      8,
+      Math.round(canvasW * 0.05)
+    );
+    const height = clamp(
+      baseHeight + ((i % 5) - 2) * Math.max(4, Math.round(baseHeight * 0.22)),
+      Math.round(baseHeight * 0.65),
+      Math.round(canvasH * 0.09)
+    );
+
+    const normalized = (i + 0.5) / pieceCount;
+    const jitterBand = ((i * 37) % 11) - 5;
+    const startX = clamp(
+      Math.round(normalized * canvasW + jitterBand * Math.max(6, canvasW * 0.016)),
+      width / 2,
+      canvasW - width / 2
+    );
+    const startYOffset = ((i * 53) % 7) * Math.max(18, Math.round(canvasH * 0.014));
+    const startY = -height - startYOffset;
+
+    const swingFactor = ((i * 29) % 13) / 12;
+    const swingDir = (i % 2 === 0 ? 1 : -1) * (i % 3 === 0 ? -1 : 1);
+    const targetX = clamp(
+      Math.round(startX + swingDir * swingFactor * horizontalSwing),
+      width / 2,
+      canvasW - width / 2
+    );
+    const depthOffset = ((i * 19) % 9) * Math.max(14, Math.round(canvasH * 0.012));
+    const targetY = startY + verticalTravel + depthOffset;
+
+    const id = this.nextIndex++;
+    overlayIDs.push(id);
+    confettiPieces.push({ id, targetX, targetY });
+
+    const color = palette[i % palette.length];
+    this.cmd("CreateRectangle", id, "", width, height, startX, startY);
+    this.cmd("SetForegroundColor", id, color);
+    this.cmd("SetBackgroundColor", id, color);
+    this.cmd("SetLayer", id, 10);
+    this.cmd("SetAlpha", id, 0);
+  }
+
+  if (confettiPieces.length === 0) {
+    this.celebrationOverlayIDs = [];
+    this.celebrationOverlayActive = false;
+    return;
+  }
+
+  this.celebrationOverlayIDs = overlayIDs;
+  this.celebrationOverlayActive = true;
+
+  for (let i = 0; i < confettiPieces.length; i++) {
+    const piece = confettiPieces[i];
+    this.cmd("SetAlpha", piece.id, 0.95);
+    this.cmd("Move", piece.id, piece.targetX, piece.targetY);
+  }
+  this.cmd("Step");
+
+  const holdBeats =
+    options && Number.isFinite(options.holdBeats)
+      ? Math.max(0, Math.floor(options.holdBeats))
+      : 1;
+  for (let i = 0; i < holdBeats; i++) {
+    this.cmd("Step");
+  }
+
+  for (let i = 0; i < confettiPieces.length; i++) {
+    this.cmd("SetAlpha", confettiPieces[i].id, 0);
+  }
+  this.cmd("Step");
+
+  this.clearCelebrationOverlay();
+};
+
 
 CoinChangeBFS.prototype.clearCelebrationOverlay = function () {
   if (!Array.isArray(this.celebrationOverlayIDs)) {
