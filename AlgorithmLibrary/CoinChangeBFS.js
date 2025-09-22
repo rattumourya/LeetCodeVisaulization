@@ -335,8 +335,8 @@ CoinChangeBFS.prototype.setup = function () {
   this.cmd("SetAlpha", this.messageID, 0);
 
   const boardReservedHeight = Math.max(
-    240,
-    Math.min(360, Math.floor(canvasH * 0.26))
+    200,
+    Math.min(300, Math.floor(canvasH * 0.22))
   );
   this.boardReservedHeight = boardReservedHeight;
   this.boardLineIDs = [];
@@ -347,8 +347,8 @@ CoinChangeBFS.prototype.setup = function () {
     reservedHeight: boardReservedHeight,
   });
   const boardToTreeGap = Math.max(
-    24,
-    Math.floor((this.boardReservedHeight || 0) * 0.1)
+    20,
+    Math.floor((this.boardReservedHeight || 0) * 0.08)
   );
   const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
   const totalCodeHeight = (CoinChangeBFS.CODE.length - 1) * CODE_LINE_H;
@@ -380,10 +380,10 @@ CoinChangeBFS.prototype.setup = function () {
   const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
   const queueTop = queueY - queueLayout.slotHeight / 2;
   const visitedTopOffset = Math.max(
-    12,
+    10,
     Math.min(
-      Math.floor((this.boardReservedHeight || 0) * 0.22),
-      Math.floor((this.treeNodeRadius || 24) * 1.2)
+      Math.floor((this.boardReservedHeight || 0) * 0.18),
+      Math.floor((this.treeNodeRadius || 24) * 1.15)
     )
   );
   const visitedTop = actualTreeTop + visitedTopOffset;
@@ -624,8 +624,8 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   this.clearNarrationText();
   this.clearNarrationBoardVisuals();
 
-  let boardHeight = Math.max(140, Math.floor(reservedHeight * 0.88));
-  const topGap = Math.max(12, Math.floor(reservedHeight * 0.06));
+  let boardHeight = Math.max(120, Math.floor(reservedHeight * 0.78));
+  const topGap = Math.max(10, Math.floor(reservedHeight * 0.05));
   const boardTopMin = messageY + Math.max(6, Math.floor(reservedHeight * 0.025));
   let boardTop = messageY + topGap;
   const boardBottomLimit = messageY + reservedHeight;
@@ -636,7 +636,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
     boardHeight = Math.max(120, boardBottomLimit - boardTop);
   }
   if (boardHeight <= 0) {
-    boardHeight = Math.max(140, Math.floor(reservedHeight * 0.82));
+    boardHeight = Math.max(120, Math.floor(reservedHeight * 0.78));
     boardTop = Math.max(boardTopMin, boardBottomLimit - boardHeight);
   }
 
@@ -668,8 +668,8 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   this.cmd("SetForegroundColor", this.boardBackgroundID, "#324d7a");
   this.cmd("SetBackgroundColor", this.boardBackgroundID, "#f6f8ff");
 
-  const progressHeight = Math.max(5, Math.floor(boardHeight * 0.055));
-  const progressBottomMargin = Math.max(8, Math.floor(boardHeight * 0.06));
+  const progressHeight = Math.max(4, Math.floor(boardHeight * 0.05));
+  const progressBottomMargin = Math.max(6, Math.floor(boardHeight * 0.05));
   const progressMarginX = Math.max(12, Math.floor(boardWidth * 0.035));
   const progressY =
     boardTop + boardHeight - progressBottomMargin - progressHeight / 2;
@@ -707,7 +707,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   this.cmd("SetAlpha", this.boardProgressFillID, 0);
 
   const timerMarginX = Math.max(14, Math.floor(boardWidth * 0.035));
-  const timerMarginY = Math.max(10, Math.floor(boardHeight * 0.08));
+  const timerMarginY = Math.max(8, Math.floor(boardHeight * 0.07));
   const timerAnchorX = boardRight - timerMarginX;
   const timerY = boardTop + timerMarginY;
   this.boardTimerID = this.nextIndex++;
@@ -721,7 +721,7 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   const textAreaWidth = Math.max(0, textAreaRight - textAreaLeft);
   const paragraphFontSize = 16;
   const approxCharWidth = Math.max(6, Math.floor(paragraphFontSize * 0.6));
-  let textAreaTop = boardTop + Math.max(24, Math.floor(boardHeight * 0.2));
+  let textAreaTop = boardTop + Math.max(20, Math.floor(boardHeight * 0.18));
   const timerClearance =
     timerY + paragraphFontSize + Math.max(8, Math.floor(boardHeight * 0.06));
   if (textAreaTop < timerClearance) {
@@ -729,19 +729,20 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
   }
   const textAreaBottom = Math.max(
     textAreaTop + paragraphFontSize * 2,
-    progressY - progressHeight / 2 - Math.max(20, Math.floor(boardHeight * 0.08))
+    progressY - progressHeight / 2 - Math.max(16, Math.floor(boardHeight * 0.07))
   );
-  const minLineY = boardTop + Math.max(14, Math.floor(boardHeight * 0.07));
+  const minLineY = boardTop + Math.max(12, Math.floor(boardHeight * 0.06));
   const usableTop = Math.max(minLineY, textAreaTop);
   const usableBottom = Math.max(usableTop + paragraphFontSize, textAreaBottom);
   const availableSpan = Math.max(0, usableBottom - usableTop);
-  const minSpacing = Math.max(paragraphFontSize + 4, Math.floor(boardHeight * 0.16));
+  const minSpacing = Math.max(paragraphFontSize + 2, Math.floor(boardHeight * 0.12));
   const maxLinesBySpan = availableSpan > 0 ? Math.floor(availableSpan / minSpacing) + 1 : 1;
-  const lineCount = Math.min(6, Math.max(1, maxLinesBySpan));
+  const lineCount = Math.min(7, Math.max(1, maxLinesBySpan));
   let lineSpacing = 0;
   if (lineCount > 1) {
     const rawSpacing = Math.floor(availableSpan / Math.max(lineCount - 1, 1));
-    lineSpacing = Math.max(minSpacing, rawSpacing);
+    const maxSpacing = Math.max(paragraphFontSize + 4, Math.floor(boardHeight * 0.18));
+    lineSpacing = Math.max(minSpacing, Math.min(maxSpacing, rawSpacing));
   }
   const totalSpan = lineCount > 1 ? lineSpacing * (lineCount - 1) : 0;
   let firstLineY;
@@ -770,7 +771,14 @@ CoinChangeBFS.prototype.buildNarrationBoard = function (options) {
     });
   }
 
-  const charLimit = Math.max(36, Math.floor(textAreaWidth / Math.max(approxCharWidth, 1)));
+  const maxCharsByWidth = Math.max(
+    10,
+    Math.floor(textAreaWidth / Math.max(approxCharWidth, 1))
+  );
+  const charLimit = Math.max(
+    20,
+    Math.min(maxCharsByWidth, Math.floor(maxCharsByWidth * 0.92))
+  );
   const approxTimerCharWidth = Math.max(7, Math.floor(boardWidth * 0.015));
   const timerExtraPadding = Math.max(4, Math.floor(approxTimerCharWidth * 0.8));
   this.boardInfo = {
@@ -1090,10 +1098,15 @@ CoinChangeBFS.prototype.wrapNarrationLines = function (lines, charLimit, maxLine
     1,
     maxLines || (this.boardLineIDs ? this.boardLineIDs.length : lines.length)
   );
-  const maxCharsPerLine = Math.max(
+  const widthLimit = Math.max(
     4,
     Math.floor(textAreaWidth / Math.max(approxCharWidth, 1))
   );
+  const charLimitCap =
+    charLimit !== undefined && charLimit !== null
+      ? Math.max(4, Math.floor(charLimit))
+      : widthLimit;
+  const maxCharsPerLine = Math.max(4, Math.min(widthLimit, charLimitCap));
 
   const flattened = [];
   let startOfFlow = true;
@@ -2685,12 +2698,13 @@ CoinChangeBFS.prototype.clearCelebrationOverlay = function () {
   this.celebrationActive = false;
 };
 
-CoinChangeBFS.prototype.launchSkyCelebration = function () {
+CoinChangeBFS.prototype.launchSkyCelebration = function (options) {
   if (this.celebrationActive) {
     return;
   }
   this.celebrationActive = true;
 
+  const settings = options || {};
   const canvasW = this.canvasWidth || 720;
   const canvasH = this.canvasHeight || 600;
   const overlayWidth = canvasW + Math.max(60, Math.floor(canvasW * 0.08));
@@ -2698,6 +2712,11 @@ CoinChangeBFS.prototype.launchSkyCelebration = function () {
   const startY = -overlayHeight / 2;
   const targetY = canvasH / 2;
   const overlayID = this.nextIndex++;
+
+  const overlayColor =
+    (settings.overlayColor && String(settings.overlayColor)) || "#f5f8ff";
+  const overlayOutline =
+    (settings.overlayOutline && String(settings.overlayOutline)) || "#4d6bd4";
 
   this.celebrationOverlayIDs = [overlayID];
 
@@ -2710,16 +2729,30 @@ CoinChangeBFS.prototype.launchSkyCelebration = function () {
     canvasW / 2,
     startY
   );
-  this.cmd("SetForegroundColor", overlayID, "#6faef5");
-  this.cmd("SetBackgroundColor", overlayID, "#e8f5ff");
+  this.cmd("SetForegroundColor", overlayID, overlayOutline);
+  this.cmd("SetBackgroundColor", overlayID, overlayColor);
   this.cmd("SetAlpha", overlayID, 0);
   this.cmd("Move", overlayID, canvasW / 2, targetY);
-  this.cmd("SetAlpha", overlayID, 0.85);
+  this.cmd("SetAlpha", overlayID, 0.88);
 
-  const streakCount = Math.max(3, Math.min(7, Math.floor(canvasW / 180)));
+  const palette =
+    Array.isArray(settings.palette) && settings.palette.length > 0
+      ? settings.palette.map((entry) => String(entry))
+      : [
+          "#ffadad",
+          "#ffd6a5",
+          "#fdffb6",
+          "#caffbf",
+          "#9bf6ff",
+          "#a0c4ff",
+          "#ffc6ff",
+          "#bdb2ff",
+        ];
+
+  const streakCount = Math.max(4, Math.min(8, Math.floor(canvasW / 160)));
   const streakIDs = [];
-  const streakHeight = Math.max(140, Math.floor(canvasH * 0.34));
-  const streakWidth = Math.max(10, Math.floor(canvasW * 0.018));
+  const streakHeight = Math.max(160, Math.floor(canvasH * 0.36));
+  const streakWidth = Math.max(12, Math.floor(canvasW * 0.02));
   for (let i = 0; i < streakCount; i++) {
     const streakID = this.nextIndex++;
     streakIDs.push(streakID);
@@ -2740,28 +2773,82 @@ CoinChangeBFS.prototype.launchSkyCelebration = function () {
       x,
       startStreakY
     );
-    const fillColor = i % 2 === 0 ? "#cbe4ff" : "#f4fbff";
+    const fillColor = palette[i % palette.length];
     this.cmd("SetBackgroundColor", streakID, fillColor);
     this.cmd("SetForegroundColor", streakID, fillColor);
     this.cmd("SetAlpha", streakID, 0);
     this.cmd("Move", streakID, x, endStreakY);
-    this.cmd("SetAlpha", streakID, 0.9);
+    this.cmd("SetAlpha", streakID, 0.95);
   }
+
+  const sparkCount = Math.max(6, Math.min(18, Math.floor(canvasW / 45)));
+  const sparkSize = Math.max(10, Math.floor(canvasW * 0.02));
+  const sparkIDs = [];
+  for (let i = 0; i < sparkCount; i++) {
+    const sparkID = this.nextIndex++;
+    sparkIDs.push(sparkID);
+    const color = palette[(i + 3) % palette.length];
+    const columnFraction = (i + 0.5) / sparkCount;
+    const startX = Math.min(
+      canvasW - 24,
+      Math.max(24, Math.round(columnFraction * canvasW))
+    );
+    const startY = -Math.floor((i % 5) * Math.max(26, canvasH * 0.035));
+    const direction = i % 3 === 0 ? -1 : i % 3 === 1 ? 1 : 0;
+    const horizontalSwing = Math.max(140, Math.floor(canvasW * 0.18));
+    const endX = Math.min(
+      canvasW - 24,
+      Math.max(24, startX + direction * horizontalSwing)
+    );
+    const verticalDrop = Math.max(60, Math.floor(canvasH * 0.12));
+    const endY = canvasH + Math.floor((i % 4) * verticalDrop);
+    this.cmd(
+      "CreateRectangle",
+      sparkID,
+      "",
+      sparkSize,
+      sparkSize,
+      startX,
+      startY
+    );
+    this.cmd("SetBackgroundColor", sparkID, color);
+    this.cmd("SetForegroundColor", sparkID, color);
+    this.cmd("SetAlpha", sparkID, 0);
+    this.cmd("Move", sparkID, endX, endY);
+    this.cmd("SetAlpha", sparkID, 0.95);
+  }
+
   if (streakIDs.length > 0) {
     this.celebrationOverlayIDs.push(...streakIDs);
+  }
+  if (sparkIDs.length > 0) {
+    this.celebrationOverlayIDs.push(...sparkIDs);
   }
 
   this.cmd("Step");
   this.cmd("Step");
+
+  const lingerSteps = Math.max(0, Math.floor(settings.lingerSteps || 0));
+  for (let i = 0; i < lingerSteps; i++) {
+    this.cmd("Step");
+  }
+
   this.cmd("SetAlpha", overlayID, 0);
   for (let i = 0; i < streakIDs.length; i++) {
     this.cmd("SetAlpha", streakIDs[i], 0);
   }
+  for (let i = 0; i < sparkIDs.length; i++) {
+    this.cmd("SetAlpha", sparkIDs[i], 0);
+  }
+
   this.cmd("Step");
 
   this.cmd("Delete", overlayID);
   for (let i = 0; i < streakIDs.length; i++) {
     this.cmd("Delete", streakIDs[i]);
+  }
+  for (let i = 0; i < sparkIDs.length; i++) {
+    this.cmd("Delete", sparkIDs[i]);
   }
 
   this.celebrationOverlayIDs = [];
@@ -3030,8 +3117,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
     this.highlightVisitedEntry(0, true);
 
     this.cmd("SetText", this.resultValueID, "0");
-    this.launchSkyCelebration();
-    this.cmd("Step");
+    this.launchSkyCelebration({ lingerSteps: 1 });
     this.highlightVisitedEntry(0, false);
     this.highlightCode(-1);
     return this.commands;
@@ -3119,7 +3205,23 @@ CoinChangeBFS.prototype.runCoinChange = function () {
           }
           this.cmd("SetText", this.resultValueID, String(steps));
           this.pulseTreeEdge(curr, next);
-          this.launchSkyCelebration();
+          this.narrate(
+            [
+              `Amount ${amount} appears in round ${steps}, so we need ${steps} coin${
+                steps === 1 ? "" : "s"
+              }.`,
+              "Follow the highlighted path to see one optimal combination.",
+            ],
+            {
+              highlight: [
+                `amount ${amount}`,
+                `round ${steps}`,
+                `${steps} coin${steps === 1 ? "" : "s"}`,
+                "optimal combination",
+              ],
+              wait: 6,
+            }
+          );
           if (amount < this.visitedSlotIDs.length) {
             this.highlightVisitedEntry(amount, false);
           }
@@ -3141,6 +3243,7 @@ CoinChangeBFS.prototype.runCoinChange = function () {
             }
           );
           this.unhighlightCoin();
+          this.launchSkyCelebration({ lingerSteps: 2 });
           this.highlightCode(-1);
           return this.commands;
         }
