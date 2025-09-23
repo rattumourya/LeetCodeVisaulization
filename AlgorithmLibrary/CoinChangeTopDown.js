@@ -8,21 +8,28 @@ CoinChangeTopDown.superclass = Algorithm.prototype;
 
 CoinChangeTopDown.CODE = [
   "public int coinChange(int[] coins, int amount) {",
+  "        final int width = amount + 1;",
+  "        final int INF = width;",
   "        Map<Integer, Integer> memo = new HashMap<>();",
-  "        memo.put(0, 0);",
-  "        int ans = dfs(amount, coins, memo);",
-  "        return ans;",
+  "        int ans = knapsack(coins, 0, amount, width, INF, memo);",
+  "        return ans >= INF ? -1 : ans;",
   "    }",
-  "    private int dfs(int rem, int[] coins, Map<Integer, Integer> memo) {",
-  "        if (memo.containsKey(rem)) return memo.get(rem);",
-  "        if (rem < 0) return -1;",
-  "        int best = Integer.MAX_VALUE;",
-  "        for (int coin : coins) {",
-  "            int next = dfs(rem - coin, coins, memo);",
-  "            if (next >= 0) best = Math.min(best, 1 + next);",
+  "    private int knapsack(int[] coins, int index, int remain,",
+  "                         final int width, final int INF,",
+  "                         Map<Integer, Integer> memo) {",
+  "        if (remain == 0) return 0;",
+  "        if (index == coins.length) return INF;",
+  "        int key = index * width + remain;",
+  "        if (memo.containsKey(key)) return memo.get(key);",
+  "        int best = INF;",
+  "        if (coins[index] <= remain) {",
+  "            best = Math.min(best, 1 +",
+  "                knapsack(coins, index, remain - coins[index], width, INF, memo));",
   "        }",
-  "        memo.put(rem, best == Integer.MAX_VALUE ? -1 : best);",
-  "        return memo.get(rem);",
+  "        best = Math.min(best,",
+  "            knapsack(coins, index + 1, remain, width, INF, memo));",
+  "        memo.put(key, best);",
+  "        return memo.get(key);",
   "    }",
 ];
 
@@ -136,6 +143,64 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this._narrationStepContext = false;
 
   this.setup();
+};
+
+CoinChangeTopDown.prototype.getMemoWidth = function () {
+  const amount = this.amount !== undefined && this.amount !== null ? this.amount : 0;
+  return Math.max(1, Math.floor(amount) + 1);
+};
+
+CoinChangeTopDown.prototype.getCoinCount = function () {
+  return Array.isArray(this.coinValues) ? this.coinValues.length : 0;
+};
+
+CoinChangeTopDown.prototype.makeStateId = function (index, remainder) {
+  const width = this.getMemoWidth();
+  const safeIndex = Math.max(0, Math.floor(index));
+  const safeRemainder = Math.max(0, Math.min(width - 1, Math.floor(remainder)));
+  return safeIndex * width + safeRemainder;
+};
+
+CoinChangeTopDown.prototype.getStateComponents = function (stateId) {
+  const width = this.getMemoWidth();
+  const safeId = Math.max(0, Math.floor(stateId));
+  const index = Math.floor(safeId / width);
+  const remainder = safeId % width;
+  return { index, remainder };
+};
+
+CoinChangeTopDown.prototype.getStateDisplay = function (stateId) {
+  if (stateId === undefined || stateId === null) {
+    return "-";
+  }
+  const parts = this.getStateComponents(stateId);
+  return `i${parts.index}|r${parts.remainder}`;
+};
+
+CoinChangeTopDown.prototype.getStateDescription = function (stateId) {
+  if (stateId === undefined || stateId === null) {
+    return "-";
+  }
+  const parts = this.getStateComponents(stateId);
+  return `index ${parts.index}, remainder ${parts.remainder}`;
+};
+
+CoinChangeTopDown.prototype.isInfiniteResult = function (value) {
+  if (value === undefined || value === null) {
+    return false;
+  }
+  if (value === Infinity) {
+    return true;
+  }
+  const sentinel = this.getMemoWidth();
+  return Number.isFinite(value) && value >= sentinel;
+};
+
+CoinChangeTopDown.prototype.formatResultValue = function (value) {
+  if (value === undefined || value === null) {
+    return "?";
+  }
+  return this.isInfiniteResult(value) ? "∞" : String(value);
 };
 
 CoinChangeTopDown.prototype.addControls = function () {
@@ -496,28 +561,28 @@ CoinChangeTopDown.prototype.buildVariablePanel = function (options) {
     {
       labelProp: "currentLabelID",
       valueProp: "currentValueID",
-      label: "current remainder:",
+      label: "current state:",
       value: "-",
       valueFont: variableFont,
     },
     {
       labelProp: "coinValueLabelID",
       valueProp: "coinValueID",
-      label: "coin:",
+      label: "decision:",
       value: "-",
       valueFont: variableFont,
     },
     {
       labelProp: "nextLabelID",
       valueProp: "nextValueID",
-      label: "next remainder:",
+      label: "child state:",
       value: "-",
       valueFont: variableFont,
     },
     {
       labelProp: "bestLabelID",
       valueProp: "bestValueID",
-      label: "best so far:",
+      label: "best cost:",
       value: "-",
       valueFont: variableFont,
     },
@@ -1569,14 +1634,16 @@ CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amoun
   this.cmd(
     "CreateLabel",
     this.visitedLabelID,
-    "Memo table",
+    "Memo table (index, remainder)",
     centerX,
     visitedLabelY,
     1
   );
   this.cmd("SetTextStyle", this.visitedLabelID, "bold 18");
 
-  const slotCount = Math.max(1, (amount || 0) + 1);
+  const width = this.getMemoWidth();
+  const coinCount = this.getCoinCount();
+  const slotCount = Math.max(1, width * Math.max(1, coinCount + 1));
   const availableHeight = this.visitedArea.height;
   const minSlotHeight = 18;
   const maxSlotHeight = 34;
@@ -1618,7 +1685,7 @@ CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amoun
   const slotX = panelRight - slotWidth / 2 - 8;
 
   this.visitedIndexHeaderID = this.nextIndex++;
-  this.cmd("CreateLabel", this.visitedIndexHeaderID, "remainder", indexX, headerY, 1);
+  this.cmd("CreateLabel", this.visitedIndexHeaderID, "state", indexX, headerY, 1);
   this.cmd("SetTextStyle", this.visitedIndexHeaderID, "bold 12");
 
   this.visitedValueHeaderID = this.nextIndex++;
@@ -1632,8 +1699,10 @@ CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amoun
 
   for (let i = 0; i < slotCount; i++) {
     const centerY = startY + i * (slotHeight + spacing) + slotHeight / 2;
+    const stateId = i;
+    const label = this.getStateDisplay(stateId);
     const indexId = this.nextIndex++;
-    this.cmd("CreateLabel", indexId, String(i), indexX, centerY, 1);
+    this.cmd("CreateLabel", indexId, label, indexX, centerY, 1);
     this.cmd("SetTextStyle", indexId, "14");
     this.visitedIndexIDs.push(indexId);
 
@@ -1664,14 +1733,14 @@ CoinChangeTopDown.prototype.setVisitedValue = function (index, value, options) {
     return;
   }
   const id = this.visitedSlotIDs[index];
-  const text = value === undefined || value === null ? "?" : String(value);
+  const text = this.formatResultValue(value);
   this.visitedStates[index] = text;
   this.cmd("SetText", id, text);
   let color = this.visitedFalseColor;
   if (options && options.color) {
     color = options.color;
   } else if (text !== "?") {
-    color = this.visitedTrueColor;
+    color = this.isInfiniteResult(value) ? this.inspectColor : this.visitedTrueColor;
   }
   this.cmd("SetBackgroundColor", id, color);
 };
@@ -2287,8 +2356,9 @@ CoinChangeTopDown.prototype.createTreeRoot = function () {
   if (!this.treeArea) {
     return;
   }
-  const rootAmount = this.amount !== undefined && this.amount !== null ? this.amount : 0;
-  this.treeLevels[0] = [rootAmount];
+  const remainder = this.amount !== undefined && this.amount !== null ? this.amount : 0;
+  const rootState = this.makeStateId(0, remainder);
+  this.treeLevels[0] = [rootState];
   const positions = this.updateTreeLevelPositions(0);
   const pos = positions[0] || {
     x: this.treeArea.left + this.treeArea.width / 2,
@@ -2296,7 +2366,7 @@ CoinChangeTopDown.prototype.createTreeRoot = function () {
   };
 
   const nodeID = this.nextIndex++;
-  this.cmd("CreateCircle", nodeID, String(rootAmount), pos.x, pos.y);
+  this.cmd("CreateCircle", nodeID, this.getStateDisplay(rootState), pos.x, pos.y);
   this.cmd("SetBackgroundColor", nodeID, this.treeDefaultColor);
   this.cmd("SetForegroundColor", nodeID, "#000000");
 
@@ -2304,7 +2374,7 @@ CoinChangeTopDown.prototype.createTreeRoot = function () {
   this.cmd("CreateLabel", labelID, this.formatTreeNodeLabel(null), pos.x, pos.y + this.treeNodeLabelOffset, 1);
   this.cmd("SetTextStyle", labelID, "14");
 
-  this.treeNodes[rootAmount] = {
+  this.treeNodes[rootState] = {
     id: nodeID,
     labelID,
     level: 0,
@@ -2388,7 +2458,7 @@ CoinChangeTopDown.prototype.ensureTreeNode = function (
   };
 
   const nodeID = this.nextIndex++;
-  this.cmd("CreateCircle", nodeID, String(amount), pos.x, pos.y);
+  this.cmd("CreateCircle", nodeID, this.getStateDisplay(amount), pos.x, pos.y);
   this.cmd("SetBackgroundColor", nodeID, this.treeDefaultColor);
   this.cmd("SetForegroundColor", nodeID, "#000000");
 
@@ -2530,7 +2600,7 @@ CoinChangeTopDown.prototype.setEdgeLabel = function (amount, coin) {
   if (!parent) {
     return;
   }
-  const labelText = `-${coin}`;
+  const labelText = coin === undefined || coin === null ? "" : String(coin);
   const pos = this.computeEdgeLabelPosition(parent, node);
   if (
     node.edgeLabelID === undefined ||
@@ -2664,7 +2734,15 @@ CoinChangeTopDown.prototype.resetQueueDisplay = function () {
 CoinChangeTopDown.prototype.refreshQueue = function (queue) {
   this.queueValues = queue.slice();
   for (let i = 0; i < this.queueSlotIDs.length; i++) {
-    const text = i < this.queueValues.length ? String(this.queueValues[i]) : "";
+    let text = "";
+    if (i < this.queueValues.length) {
+      const value = this.queueValues[i];
+      if (typeof value === "string") {
+        text = value;
+      } else if (value !== undefined && value !== null) {
+        text = this.getStateDisplay(value);
+      }
+    }
     this.cmd("SetText", this.queueSlotIDs[i], text);
     this.cmd("SetBackgroundColor", this.queueSlotIDs[i], this.queueColor);
   }
@@ -2731,10 +2809,12 @@ CoinChangeTopDown.prototype.initializeNarrationBudget = function (coins, amount)
   const coinCount = Array.isArray(coins) ? coins.length : 0;
   const boundedCoinCount = Math.max(0, Math.min(8, coinCount));
   const stateUpper = Math.max(1, safeAmount + 1);
-  const branchUpper = stateUpper * Math.max(1, boundedCoinCount);
-  const stackUpper = branchUpper * 2;
-  const memoUpper = stateUpper + boundedCoinCount;
-  const highlightUpper = branchUpper;
+  const coinUpper = Math.max(1, boundedCoinCount + 1);
+  const memoStateUpper = stateUpper * coinUpper;
+  const branchUpper = memoStateUpper * 2;
+  const stackUpper = memoStateUpper * 2;
+  const memoUpper = memoStateUpper;
+  const highlightUpper = memoStateUpper;
   const finishingSteps = safeAmount > 0 ? 8 : 4;
   let structuralAllowance =
     4 + stackUpper + memoUpper + highlightUpper + finishingSteps;
@@ -2930,6 +3010,8 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
 
   const coins = this.coinValues.slice();
   const amount = this.amount;
+  const width = this.getMemoWidth();
+  const INF = width;
 
   this.cmd("SetText", this.amountValueID, String(amount));
   this.cmd("SetText", this.stepsValueID, "0");
@@ -2946,45 +3028,27 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   this.highlightCode(0);
   this.narrate(
     [
-      "A top-down depth-first search subtracts coins from the remaining amount.",
-      "Memoization stores answers for each remainder so repeated calls reuse that value instantly.",
-      `When a recursive path reaches 0 we know how many coins were used to reach the goal.`,
+      "Model the problem as an unbounded knapsack where each state tracks a coin index and a remaining amount.",
+      "Memoization stores the cheapest cost for every (index, remainder) pair so overlapping calls reuse their cached value.",
+      "Choosing a coin keeps the index while skipping advances to the next denomination, exploring two knapsack decisions.",
     ],
     {
-      highlight: ["top-down", "Memoization", "remainder", "0"],
+      highlight: ["unbounded knapsack", "Memoization", "Choosing", "skipping"],
       wait: 8,
     }
   );
 
   this.highlightCode(1);
-  const memo = Object.create(null);
+  this.cmd("Step");
 
   this.highlightCode(2);
-  memo[0] = 0;
-  this.setVisitedValue(0, 0, { color: this.visitedTrueColor });
-  this.highlightVisitedEntry(0, true);
   this.cmd("Step");
-  this.highlightVisitedEntry(0, false);
+
+  this.highlightCode(3);
+  const memo = Object.create(null);
+  this.cmd("Step");
 
   const safeCoins = coins.filter((c) => Number.isFinite(c) && c > 0);
-  if (safeCoins.length === 0) {
-    if (amount === 0) {
-      this.cmd("SetText", this.resultValueID, "0");
-      this.cmd("SetText", this.bestValueID, "0");
-      this.narrate([
-        "No coins are provided but the target is 0, so the empty set already solves the problem.",
-      ]);
-    } else {
-      this.cmd("SetText", this.resultValueID, "-1");
-      this.cmd("SetText", this.bestValueID, "no");
-      this.narrate([
-        "No positive coins are available, so there is no way to build the amount.",
-      ]);
-    }
-    this.cmd("SetText", this.queueSizeValueID, "0");
-    this.highlightCode(-1);
-    return this.commands;
-  }
 
   safeCoins.sort((a, b) => a - b);
 
@@ -2992,171 +3056,247 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   let memoHits = 0;
   const stack = [];
 
-  const dfs = (rem, depth, parent, coinUsed) => {
-    stack.push(rem);
+  const knapsack = (index, rem, depth, parentState, edgeLabel) => {
+    if (rem < 0) {
+      return INF;
+    }
+
+    const stateId = this.makeStateId(index, rem);
+    stack.push(stateId);
     this.refreshQueue(stack);
     this.cmd("SetText", this.queueSizeValueID, String(stack.length));
-    this.cmd("SetText", this.currentValueID, String(rem));
-    if (coinUsed !== undefined && coinUsed !== null) {
-      this.cmd("SetText", this.coinValueID, String(coinUsed));
-    }
-    this.cmd("SetText", this.nextValueID, String(rem));
+    this.cmd("SetText", this.currentValueID, this.getStateDescription(stateId));
+    this.cmd("SetText", this.coinValueID, edgeLabel || "-");
+    this.cmd("SetText", this.nextValueID, this.getStateDescription(stateId));
 
-    if (rem >= 0) {
-      const known = Object.prototype.hasOwnProperty.call(memo, rem);
-      this.ensureTreeNode(
-        rem,
-        depth,
-        parent,
-        known ? memo[rem] : null,
-        coinUsed
-      );
-      this.highlightTreeNode(rem);
-      this.cmd("SetText", this.nextValueID, String(rem));
-    } else {
-      this.clearTreeHighlight();
-    }
+    const known = Object.prototype.hasOwnProperty.call(memo, stateId);
+    const knownValue = known ? memo[stateId] : null;
+    this.ensureTreeNode(
+      stateId,
+      depth,
+      parentState,
+      knownValue !== null && knownValue !== undefined
+        ? this.isInfiniteResult(knownValue)
+          ? Infinity
+          : knownValue
+        : null,
+      edgeLabel
+    );
+    this.highlightTreeNode(stateId);
     this.cmd("Step");
 
-    this.highlightCode(7);
-    if (rem >= 0 && Object.prototype.hasOwnProperty.call(memo, rem)) {
-      memoHits += 1;
-      this.cmd("SetText", this.levelSizeValueID, String(memoHits));
-      if (rem <= amount) {
-        this.highlightVisitedEntry(rem, true);
-      }
-      const cached = memo[rem];
-      const cachedColor =
-        cached < 0
-          ? this.inspectColor
-          : rem === 0
-          ? this.treeFoundColor
-          : this.treeVisitedColor;
-      this.markTreeNodeVisited(rem, depth, cachedColor, cached, coinUsed, parent);
+    this.highlightCode(10);
+    if (rem === 0) {
+      const result = 0;
+      memo[stateId] = result;
+      solvedStates += 1;
+      this.cmd("SetText", this.stepsValueID, String(solvedStates));
+      this.setVisitedValue(stateId, result, { color: this.treeFoundColor });
+      this.highlightVisitedEntry(stateId, true);
       this.cmd("Step");
-      if (rem <= amount) {
-        this.highlightVisitedEntry(rem, false);
-      }
+      this.highlightVisitedEntry(stateId, false);
+      this.markTreeNodeVisited(stateId, depth, this.treeFoundColor, result, edgeLabel, parentState);
+      this.cmd("SetText", this.bestValueID, this.formatResultValue(result));
       stack.pop();
       this.refreshQueue(stack);
       this.cmd("SetText", this.queueSizeValueID, String(stack.length));
+      return result;
+    }
+
+    this.highlightCode(11);
+    if (index >= safeCoins.length) {
+      const result = INF;
+      memo[stateId] = result;
+      solvedStates += 1;
+      this.cmd("SetText", this.stepsValueID, String(solvedStates));
+      this.setVisitedValue(stateId, Infinity, { color: this.inspectColor });
+      this.highlightVisitedEntry(stateId, true);
+      this.cmd("Step");
+      this.highlightVisitedEntry(stateId, false);
+      this.markTreeNodeVisited(stateId, depth, this.inspectColor, Infinity, edgeLabel, parentState);
+      this.cmd("SetText", this.bestValueID, this.formatResultValue(result));
+      stack.pop();
+      this.refreshQueue(stack);
+      this.cmd("SetText", this.queueSizeValueID, String(stack.length));
+      return result;
+    }
+
+    this.highlightCode(12);
+    const key = stateId;
+
+    this.highlightCode(13);
+    if (Object.prototype.hasOwnProperty.call(memo, key)) {
+      memoHits += 1;
+      this.cmd("SetText", this.levelSizeValueID, String(memoHits));
+      this.highlightVisitedEntry(key, true);
+      this.cmd("Step");
+      this.highlightVisitedEntry(key, false);
+      const cached = memo[key];
+      const displayCached = this.isInfiniteResult(cached) ? Infinity : cached;
+      const cachedColor = this.isInfiniteResult(cached)
+        ? this.inspectColor
+        : this.treeVisitedColor;
+      this.markTreeNodeVisited(stateId, depth, cachedColor, displayCached, edgeLabel, parentState);
+      this.cmd("SetText", this.bestValueID, this.formatResultValue(cached));
+      stack.pop();
+      this.refreshQueue(stack);
+      this.cmd("SetText", this.queueSizeValueID, String(stack.length));
+      const parentStateId = stack.length > 0 ? stack[stack.length - 1] : null;
+      this.cmd(
+        "SetText",
+        this.currentValueID,
+        parentStateId !== null ? this.getStateDescription(parentStateId) : "-"
+      );
+      this.cmd("SetText", this.coinValueID, edgeLabel || "-");
+      this.cmd("SetText", this.nextValueID, this.getStateDescription(stateId));
       return cached;
     }
 
-    this.highlightCode(8);
-    if (rem < 0) {
-      this.cmd("Step");
-      stack.pop();
-      this.refreshQueue(stack);
-      this.cmd("SetText", this.queueSizeValueID, String(stack.length));
-      return -1;
-    }
-
-    this.setTreeNodeColor(rem, this.treeActiveColor);
-
-    this.highlightCode(9);
-    let best = Infinity;
-    this.cmd("SetText", this.bestValueID, "∞");
+    this.highlightCode(14);
+    let best = INF;
+    this.cmd("SetText", this.bestValueID, this.formatResultValue(best));
     this.cmd("Step");
 
-    for (let idx = 0; idx < safeCoins.length; idx++) {
-      const coin = safeCoins[idx];
-      this.highlightCode(10);
-      this.highlightCoin(idx);
-      const nextRem = rem - coin;
-      this.cmd("SetText", this.coinValueID, String(coin));
-      this.cmd("SetText", this.nextValueID, String(nextRem));
-      if (nextRem >= 0) {
-        const childKnown = Object.prototype.hasOwnProperty.call(memo, nextRem);
-        this.ensureTreeNode(
-          nextRem,
-          depth + 1,
-          rem,
-          childKnown ? memo[nextRem] : null,
-          coin
-        );
-        this.pulseTreeEdge(rem, nextRem);
-      } else {
-        this.clearTreeEdgeHighlight();
+    const coinValue = index < safeCoins.length ? safeCoins[index] : null;
+    if (coinValue !== null && coinValue <= rem) {
+      const takeLabel = `take ${coinValue}`;
+      const childStateId = this.makeStateId(index, rem - coinValue);
+      const childKnown = Object.prototype.hasOwnProperty.call(memo, childStateId)
+        ? memo[childStateId]
+        : null;
+      this.highlightCode(15);
+      this.highlightCoin(index);
+      this.cmd("SetText", this.coinValueID, takeLabel);
+      this.cmd("SetText", this.nextValueID, this.getStateDescription(childStateId));
+      this.ensureTreeNode(
+        childStateId,
+        depth + 1,
+        stateId,
+        childKnown !== null && childKnown !== undefined
+          ? this.isInfiniteResult(childKnown)
+            ? Infinity
+            : childKnown
+          : null,
+        takeLabel
+      );
+      this.pulseTreeEdge(stateId, childStateId);
+      const sub = knapsack(index, rem - coinValue, depth + 1, stateId, takeLabel);
+      this.cmd("SetText", this.currentValueID, this.getStateDescription(stateId));
+      let candidate = INF;
+      if (!this.isInfiniteResult(sub) && sub < INF) {
+        candidate = sub + 1;
       }
-      this.highlightCode(11);
-      const sub = dfs(nextRem, depth + 1, rem, coin);
-      this.highlightCode(12);
-      if (sub >= 0) {
-        const candidate = sub + 1;
-        if (candidate < best) {
-          best = candidate;
-          this.cmd("SetText", this.bestValueID, String(best));
-          this.updateTreeNodeLabel(rem, best);
-        }
+      if (candidate < best) {
+        best = candidate;
+        const displayBest = this.isInfiniteResult(best) ? Infinity : best;
+        this.cmd("SetText", this.bestValueID, this.formatResultValue(best));
+        this.updateTreeNodeLabel(stateId, displayBest);
       }
-      this.highlightTreeNode(rem);
+      this.highlightTreeNode(stateId);
     }
-    this.unhighlightCoin();
-    if (coinUsed !== undefined && coinUsed !== null) {
-      this.cmd("SetText", this.coinValueID, String(coinUsed));
-    } else {
-      this.cmd("SetText", this.coinValueID, "-");
-    }
-    this.cmd("SetText", this.nextValueID, String(rem));
 
-    this.highlightCode(14);
-    const final = best === Infinity ? -1 : best;
-    memo[rem] = final;
+    this.unhighlightCoin();
+
+    const skipLabel = coinValue !== null ? `skip ${coinValue}` : "skip";
+    const skipStateId = this.makeStateId(index + 1, rem);
+    const skipKnown = Object.prototype.hasOwnProperty.call(memo, skipStateId)
+      ? memo[skipStateId]
+      : null;
+    this.highlightCode(19);
+    this.cmd("SetText", this.coinValueID, skipLabel);
+    this.cmd("SetText", this.nextValueID, this.getStateDescription(skipStateId));
+    this.ensureTreeNode(
+      skipStateId,
+      depth + 1,
+      stateId,
+      skipKnown !== null && skipKnown !== undefined
+        ? this.isInfiniteResult(skipKnown)
+          ? Infinity
+          : skipKnown
+        : null,
+      skipLabel
+    );
+    this.pulseTreeEdge(stateId, skipStateId);
+    const skip = knapsack(index + 1, rem, depth + 1, stateId, skipLabel);
+    this.cmd("SetText", this.currentValueID, this.getStateDescription(stateId));
+    if (skip < best) {
+      best = skip;
+      const displayBest = this.isInfiniteResult(best) ? Infinity : best;
+      this.cmd("SetText", this.bestValueID, this.formatResultValue(best));
+      this.updateTreeNodeLabel(stateId, displayBest);
+    }
+    this.highlightTreeNode(stateId);
+
+    this.highlightCode(21);
+    const final = best;
+    memo[key] = final;
     solvedStates += 1;
     this.cmd("SetText", this.stepsValueID, String(solvedStates));
-    if (rem <= amount) {
-      this.setVisitedValue(rem, final, {
-        color: final < 0 ? this.inspectColor : this.visitedTrueColor,
-      });
-      this.highlightVisitedEntry(rem, true);
-      this.cmd("Step");
-      this.highlightVisitedEntry(rem, false);
-    } else {
-      this.cmd("Step");
-    }
-    const nodeColor =
-      final < 0
-        ? this.inspectColor
-        : rem === 0
-        ? this.treeFoundColor
-        : this.treeVisitedColor;
-    this.markTreeNodeVisited(rem, depth, nodeColor, final, coinUsed, parent);
-    this.highlightCode(15);
+    const displayFinal = this.isInfiniteResult(final) ? Infinity : final;
+    const entryColor = this.isInfiniteResult(final)
+      ? this.inspectColor
+      : this.visitedTrueColor;
+    this.setVisitedValue(stateId, displayFinal, { color: entryColor });
+    this.highlightVisitedEntry(stateId, true);
+    this.cmd("Step");
+    this.highlightVisitedEntry(stateId, false);
+    const nodeColor = this.isInfiniteResult(final)
+      ? this.inspectColor
+      : this.treeVisitedColor;
+    this.markTreeNodeVisited(stateId, depth, nodeColor, displayFinal, edgeLabel, parentState);
+
+    this.highlightCode(22);
     stack.pop();
     this.refreshQueue(stack);
     this.cmd("SetText", this.queueSizeValueID, String(stack.length));
+    const parentStateId = stack.length > 0 ? stack[stack.length - 1] : null;
+    this.cmd(
+      "SetText",
+      this.currentValueID,
+      parentStateId !== null ? this.getStateDescription(parentStateId) : "-"
+    );
+    this.cmd("SetText", this.coinValueID, edgeLabel || "-");
+    this.cmd("SetText", this.nextValueID, this.getStateDescription(stateId));
     return final;
   };
 
-  this.highlightCode(3);
-  const answer = dfs(amount, 0, null, null);
-
   this.highlightCode(4);
-  this.cmd("SetText", this.resultValueID, String(answer));
+  const answer = knapsack(0, amount, 0, null, null);
+
+  this.highlightCode(5);
+  const finalAnswer = answer >= INF ? -1 : answer;
+  this.cmd("SetText", this.stepsValueID, String(solvedStates));
+  this.cmd("SetText", this.levelSizeValueID, String(memoHits));
+  this.cmd("SetText", this.resultValueID, String(finalAnswer));
   this.cmd("SetText", this.coinValueID, "-");
   this.cmd("SetText", this.nextValueID, "-");
+  this.refreshQueue([]);
   this.cmd("SetText", this.queueSizeValueID, "0");
-  this.cmd("SetText", this.bestValueID, answer >= 0 ? String(answer) : "no");
+  this.cmd(
+    "SetText",
+    this.bestValueID,
+    this.formatResultValue(answer >= INF ? Infinity : answer)
+  );
+  this.cmd("SetText", this.currentValueID, "-");
   this.clearTreeHighlight();
   this.clearTreeEdgeHighlight();
 
-  if (answer >= 0) {
+  if (finalAnswer >= 0) {
     this.narrate(
       [
-        `Memoization solved ${solvedStates} unique remainders and produced the optimal answer ${answer}.`,
-        "Following the stored answers reconstructs one optimal solution length instantly for future queries.",
+        `Memoization solved ${solvedStates} knapsack states and produced the optimal cost ${finalAnswer}.`,
+        "Cached (index, remainder) entries now answer repeated queries instantly without re-traversing the recursion tree.",
       ],
-      { highlight: ["Memoization", `${answer}`], wait: 6 }
+      { highlight: ["Memoization", `${finalAnswer}`], wait: 6 }
     );
     this.launchConfettiCelebration({ holdBeats: 2 });
   } else {
     this.narrate(
       [
-        "Every recursive branch exhausted the coins without landing exactly on 0.",
-        "The memo table records -1 for every remainder, signaling that no combination reaches the goal.",
+        "Every branch of the unbounded knapsack exhausted the coin list without covering the remaining amount.",
+        "The memo table records ∞ for the unreachable states, signalling that no combination reaches the target.",
       ],
-      { highlight: ["no combination", "memo table"] }
+      { highlight: ["unbounded knapsack", "∞"] }
     );
   }
 
