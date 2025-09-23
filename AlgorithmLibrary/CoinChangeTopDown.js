@@ -77,7 +77,8 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.visitedSlotIDs = [];
   this.visitedIndexIDs = [];
   this.visitedStates = [];
-  this.visitedHighlightIndex = -1;
+  this.memoColumnHeaderIDs = [];
+  this.visitedHighlightCell = null;
   this.visitedArea = null;
   this.visitedPanelWidth = 0;
   this.visitedPanelGap = 0;
@@ -130,8 +131,8 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.visitedFalseColor = "#f5f7fb";
   this.visitedTrueColor = "#dff7df";
 
-  this.canvasWidth = w || 720;
-  this.canvasHeight = h || 1280;
+  this.canvasWidth = w || 1080;
+  this.canvasHeight = h || 1920;
 
   this.narrationBudgetInitialized = false;
   this.totalStepBudget = 0;
@@ -356,7 +357,8 @@ CoinChangeTopDown.prototype.setup = function () {
   this.visitedSlotIDs = [];
   this.visitedIndexIDs = [];
   this.visitedStates = [];
-  this.visitedHighlightIndex = -1;
+  this.memoColumnHeaderIDs = [];
+  this.visitedHighlightCell = null;
 
   this.titleID = this.nextIndex++;
   this.cmd("CreateLabel", this.titleID, "Coin Change Top-Down Memo", canvasW / 2, TITLE_Y, 1);
@@ -413,15 +415,15 @@ CoinChangeTopDown.prototype.setup = function () {
   const totalCodeHeight = (CoinChangeTopDown.CODE.length - 1) * CODE_LINE_H;
   const maxCodeStartY = canvasH - totalCodeHeight - 32;
   const maxQueueBottom = maxCodeStartY - 40;
-  const queueGapFromTree = Math.max(32, Math.floor(canvasH * 0.025));
+  const queueGapFromTree = Math.max(40, Math.floor(canvasH * 0.03));
   const estimatedQueueHalf = Math.max(24, Math.floor(canvasH * 0.018));
-  const baseTreeHeight = Math.floor(canvasH * 0.4);
+  const baseTreeHeight = Math.floor(canvasH * 0.44);
   const rawTreeLimit =
     maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf;
   const treeHeightLimit = Math.max(220, rawTreeLimit);
   const minTreeHeight = Math.min(
     treeHeightLimit,
-    Math.max(260, Math.floor(canvasH * 0.28))
+    Math.max(320, Math.floor(canvasH * 0.3))
   );
   let treeHeight = Math.min(baseTreeHeight, treeHeightLimit);
   if (!Number.isFinite(treeHeight) || treeHeight <= 0) {
@@ -1465,17 +1467,32 @@ CoinChangeTopDown.prototype.buildCoinsRow = function (layout) {
 };
 
 CoinChangeTopDown.prototype.buildTreeDisplay = function (canvasW, topY, height) {
-  const marginLeft = Math.max(60, Math.floor(canvasW * 0.08));
-  let marginRight = Math.max(60, Math.floor(canvasW * 0.08));
-  let panelGap = Math.max(30, Math.floor(canvasW * 0.045));
-  let panelWidth = Math.max(160, Math.floor(canvasW * 0.22));
+  const marginLeft = Math.max(60, Math.floor(canvasW * 0.07));
+  let marginRight = Math.max(60, Math.floor(canvasW * 0.07));
+  let panelGap = Math.max(36, Math.floor(canvasW * 0.05));
+  let panelWidth = Math.max(320, Math.floor(canvasW * 0.4));
+  const memoCols = Math.max(1, this.getMemoWidth());
+  const estimatedCellWidth = Math.max(32, Math.min(64, Math.floor(canvasW * 0.032)));
+  const estimatedGap = Math.max(4, Math.floor(estimatedCellWidth * 0.35));
+  const estimatedRowHeader = Math.max(64, Math.floor(canvasW * 0.08));
+  const estimatedPadding = Math.max(28, Math.floor(canvasW * 0.05));
+  const memoEstimate =
+    estimatedRowHeader +
+    memoCols * estimatedCellWidth +
+    Math.max(0, memoCols - 1) * estimatedGap +
+    estimatedPadding * 2;
+  const maxPanelPreference = Math.floor(canvasW * 0.48);
+  panelWidth = Math.max(panelWidth, Math.min(maxPanelPreference, memoEstimate));
+
+  const minTreeWidth = Math.max(360, Math.floor(canvasW * 0.42));
 
   let treeRight = canvasW - marginRight - panelGap - panelWidth;
   let areaWidth = treeRight - marginLeft;
 
-  if (areaWidth < 320) {
-    const deficit = 320 - areaWidth;
-    const reduciblePanel = Math.max(0, panelWidth - 140);
+  if (areaWidth < minTreeWidth) {
+    const deficit = minTreeWidth - areaWidth;
+    const minPanelWidth = Math.max(220, Math.floor(canvasW * 0.24));
+    const reduciblePanel = Math.max(0, panelWidth - minPanelWidth);
     const reducePanel = Math.min(deficit, reduciblePanel);
     panelWidth -= reducePanel;
     const remaining = deficit - reducePanel;
@@ -1488,8 +1505,9 @@ CoinChangeTopDown.prototype.buildTreeDisplay = function (canvasW, topY, height) 
     areaWidth = treeRight - marginLeft;
   }
 
-  if (areaWidth < 260) {
-    areaWidth = 260;
+  const fallbackTreeWidth = Math.max(300, Math.floor(canvasW * 0.36));
+  if (areaWidth < fallbackTreeWidth) {
+    areaWidth = fallbackTreeWidth;
     treeRight = marginLeft + areaWidth;
     marginRight = Math.max(30, canvasW - treeRight - panelGap - panelWidth);
     if (marginRight < 30) {
@@ -1497,7 +1515,7 @@ CoinChangeTopDown.prototype.buildTreeDisplay = function (canvasW, topY, height) 
     }
   }
 
-  const areaHeight = Math.max(240, height || 260);
+  const areaHeight = Math.max(300, height || 320);
   let areaTop = topY;
 
   this.visitedPanelWidth = panelWidth;
@@ -1590,7 +1608,7 @@ CoinChangeTopDown.prototype.computeTreeDepthCapacity = function () {
     0,
     this.treeArea.height - this.treeNodeRadius * 2
   );
-  const minSpacing = Math.max(70, this.treeNodeRadius * 2.6);
+  const minSpacing = Math.max(80, this.treeNodeRadius * 2.8);
   const capacity = Math.floor(usableHeight / Math.max(minSpacing, 1));
   return Math.max(2, capacity > 0 ? capacity : 2);
 };
@@ -1615,6 +1633,8 @@ CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amoun
 
   const panelLeft = this.visitedArea.left;
   const panelRight = this.visitedArea.right;
+  const panelWidth = this.visitedArea.width;
+  const panelHeight = this.visitedArea.height;
   const centerX = panelLeft + this.visitedArea.width / 2;
 
   const visitedLabelBase =
@@ -1641,132 +1661,237 @@ CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amoun
   );
   this.cmd("SetTextStyle", this.visitedLabelID, "bold 18");
 
-  const width = this.getMemoWidth();
-  const coinCount = this.getCoinCount();
-  const slotCount = Math.max(1, width * Math.max(1, coinCount + 1));
-  const availableHeight = this.visitedArea.height;
-  const minSlotHeight = 18;
-  const maxSlotHeight = 34;
+  const width = Math.max(1, this.getMemoWidth());
+  const coinCount = Math.max(0, this.getCoinCount());
+  const rows = Math.max(1, coinCount + 1);
+  const cols = Math.max(1, width);
 
-  let spacing = Math.max(3, Math.floor(availableHeight * 0.02));
-  let slotHeight = Math.floor((availableHeight - (slotCount - 1) * spacing) / slotCount);
-  if (slotHeight > maxSlotHeight) {
-    slotHeight = maxSlotHeight;
+  const paddingX = Math.max(16, Math.floor(panelWidth * 0.08));
+  const paddingY = Math.max(18, Math.floor(panelHeight * 0.08));
+  const headerColumnWidth = Math.max(56, Math.min(96, Math.floor(panelWidth * 0.22)));
+  const columnHeaderHeight = Math.max(32, Math.min(54, Math.floor(panelHeight * 0.2)));
+  const gridWidth = Math.max(120, panelWidth - paddingX * 2 - headerColumnWidth);
+  const gridHeight = Math.max(120, panelHeight - paddingY * 2 - columnHeaderHeight);
+
+  let gapX = Math.max(6, Math.floor(gridWidth * 0.012));
+  if (cols <= 1) {
+    gapX = 0;
   }
-  if (slotHeight < minSlotHeight) {
-    slotHeight = minSlotHeight;
-    spacing = Math.max(
+  const minCellWidth = 32;
+  const maxCellWidth = Math.min(96, Math.floor(gridWidth / Math.max(cols, 1)));
+  if (cols > 1 && gridWidth - (cols - 1) * gapX < minCellWidth * cols) {
+    gapX = Math.max(
       2,
-      Math.floor(
-        (availableHeight - slotCount * slotHeight) / Math.max(slotCount - 1, 1)
-      )
+      Math.floor((gridWidth - minCellWidth * cols) / Math.max(cols - 1, 1))
     );
   }
-
-  let totalHeight = slotCount * slotHeight + (slotCount - 1) * spacing;
-  if (totalHeight > availableHeight) {
-    const extra = totalHeight - availableHeight;
-    const reducePerGap = Math.ceil(extra / Math.max(slotCount - 1, 1));
-    spacing = Math.max(2, spacing - reducePerGap);
-    totalHeight = slotCount * slotHeight + (slotCount - 1) * spacing;
+  if (!Number.isFinite(gapX) || gapX < 0) {
+    gapX = 0;
   }
-
-  let startY = topY;
-  if (totalHeight < availableHeight) {
-    startY = topY + (availableHeight - totalHeight) / 2;
+  let cellWidth = Math.floor((gridWidth - (cols - 1) * gapX) / cols);
+  if (!Number.isFinite(cellWidth) || cellWidth <= 0) {
+    cellWidth = Math.floor(gridWidth / Math.max(cols, 1));
   }
+  cellWidth = Math.max(minCellWidth, Math.min(maxCellWidth, cellWidth));
+  const usedGridWidth = cellWidth * cols + Math.max(0, cols - 1) * gapX;
 
-  const headerY = Math.max(topY - 12, startY - Math.max(18, spacing));
-  const indexX = panelLeft + 18;
-  const slotWidth = Math.min(
-    92,
-    Math.max(58, Math.floor(this.visitedPanelWidth * 0.6))
-  );
-  const slotX = panelRight - slotWidth / 2 - 8;
+  let gapY = Math.max(6, Math.floor(gridHeight * 0.018));
+  if (rows <= 1) {
+    gapY = 0;
+  }
+  const minCellHeight = 28;
+  const maxCellHeight = Math.min(86, Math.floor(gridHeight / Math.max(rows, 1)));
+  if (rows > 1 && gridHeight - (rows - 1) * gapY < minCellHeight * rows) {
+    gapY = Math.max(
+      2,
+      Math.floor((gridHeight - minCellHeight * rows) / Math.max(rows - 1, 1))
+    );
+  }
+  if (!Number.isFinite(gapY) || gapY < 0) {
+    gapY = 0;
+  }
+  let cellHeight = Math.floor((gridHeight - (rows - 1) * gapY) / rows);
+  if (!Number.isFinite(cellHeight) || cellHeight <= 0) {
+    cellHeight = Math.floor(gridHeight / Math.max(rows, 1));
+  }
+  cellHeight = Math.max(minCellHeight, Math.min(maxCellHeight, cellHeight));
+  const usedGridHeight = cellHeight * rows + Math.max(0, rows - 1) * gapY;
+
+  const gridLeft =
+    panelLeft +
+    paddingX +
+    headerColumnWidth +
+    Math.max(0, (gridWidth - usedGridWidth) / 2);
+  const gridTop =
+    topY +
+    paddingY +
+    columnHeaderHeight +
+    Math.max(0, (gridHeight - usedGridHeight) / 2);
+
+  const columnHeaderY = gridTop - Math.max(18, columnHeaderHeight * 0.52);
+  const rowHeaderX = panelLeft + paddingX + headerColumnWidth / 2;
+  const remainderHeaderY =
+    columnHeaderY - Math.max(16, Math.floor(columnHeaderHeight * 0.55));
+  const remainderHeaderX = gridLeft + usedGridWidth / 2;
 
   this.visitedIndexHeaderID = this.nextIndex++;
-  this.cmd("CreateLabel", this.visitedIndexHeaderID, "state", indexX, headerY, 1);
-  this.cmd("SetTextStyle", this.visitedIndexHeaderID, "bold 12");
+  this.cmd(
+    "CreateLabel",
+    this.visitedIndexHeaderID,
+    "index",
+    rowHeaderX,
+    columnHeaderY,
+    1
+  );
+  this.cmd("SetTextStyle", this.visitedIndexHeaderID, "bold 14");
 
   this.visitedValueHeaderID = this.nextIndex++;
-  this.cmd("CreateLabel", this.visitedValueHeaderID, "value", slotX, headerY, 1);
-  this.cmd("SetTextStyle", this.visitedValueHeaderID, "bold 12");
+  this.cmd(
+    "CreateLabel",
+    this.visitedValueHeaderID,
+    "remainder",
+    remainderHeaderX,
+    remainderHeaderY,
+    1
+  );
+  this.cmd("SetTextStyle", this.visitedValueHeaderID, "bold 14");
 
-  this.visitedSlotIDs = [];
-  this.visitedIndexIDs = [];
-  this.visitedStates = [];
-  this.visitedHighlightIndex = -1;
-
-  for (let i = 0; i < slotCount; i++) {
-    const centerY = startY + i * (slotHeight + spacing) + slotHeight / 2;
-    const stateId = i;
-    const label = this.getStateDisplay(stateId);
-    const indexId = this.nextIndex++;
-    this.cmd("CreateLabel", indexId, label, indexX, centerY, 1);
-    this.cmd("SetTextStyle", indexId, "14");
-    this.visitedIndexIDs.push(indexId);
-
-    const slotId = this.nextIndex++;
-    this.cmd("CreateRectangle", slotId, "?", slotWidth, slotHeight, slotX, centerY);
-    this.cmd("SetBackgroundColor", slotId, this.visitedFalseColor);
-    this.cmd("SetForegroundColor", slotId, "#000000");
-    this.visitedSlotIDs.push(slotId);
+  this.memoColumnHeaderIDs = [];
+  for (let col = 0; col < cols; col++) {
+    const headerX = gridLeft + col * (cellWidth + gapX) + cellWidth / 2;
+    const headerId = this.nextIndex++;
+    this.cmd("CreateLabel", headerId, `r${col}`, headerX, columnHeaderY, 1);
+    this.cmd("SetTextStyle", headerId, "14");
+    this.memoColumnHeaderIDs.push(headerId);
   }
+
+  this.visitedSlotIDs = new Array(rows);
+  this.visitedStates = new Array(rows);
+  this.visitedIndexIDs = [];
+  this.visitedHighlightCell = null;
+
+  for (let row = 0; row < rows; row++) {
+    const centerY = gridTop + row * (cellHeight + gapY) + cellHeight / 2;
+    const rowLabelId = this.nextIndex++;
+    this.cmd("CreateLabel", rowLabelId, "i" + row, rowHeaderX, centerY, 1);
+    this.cmd("SetTextStyle", rowLabelId, "14");
+    this.visitedIndexIDs.push(rowLabelId);
+
+    this.visitedSlotIDs[row] = new Array(cols);
+    this.visitedStates[row] = new Array(cols);
+    for (let col = 0; col < cols; col++) {
+      const centerX = gridLeft + col * (cellWidth + gapX) + cellWidth / 2;
+      const slotId = this.nextIndex++;
+      this.cmd(
+        "CreateRectangle",
+        slotId,
+        "?",
+        cellWidth,
+        cellHeight,
+        centerX,
+        centerY
+      );
+      this.cmd("SetBackgroundColor", slotId, this.visitedFalseColor);
+      this.cmd("SetForegroundColor", slotId, "#000000");
+      this.visitedSlotIDs[row][col] = slotId;
+      this.visitedStates[row][col] = "?";
+    }
+  }
+};
+
+CoinChangeTopDown.prototype.resolveMemoCell = function (stateId) {
+  if (stateId === undefined || stateId === null) {
+    return null;
+  }
+  const { index, remainder } = this.getStateComponents(stateId);
+  if (!Array.isArray(this.visitedSlotIDs)) {
+    return null;
+  }
+  if (index < 0 || index >= this.visitedSlotIDs.length) {
+    return null;
+  }
+  const row = this.visitedSlotIDs[index];
+  if (!Array.isArray(row)) {
+    return null;
+  }
+  if (remainder < 0 || remainder >= row.length) {
+    return null;
+  }
+  const id = row[remainder];
+  if (id === undefined || id === null) {
+    return null;
+  }
+  return { id, row: index, col: remainder };
 };
 
 CoinChangeTopDown.prototype.resetVisitedDisplay = function () {
-  if (!this.visitedSlotIDs) {
+  if (!Array.isArray(this.visitedSlotIDs)) {
     this.visitedSlotIDs = [];
   }
-  this.visitedStates = new Array(this.visitedSlotIDs.length).fill("?");
-  for (let i = 0; i < this.visitedSlotIDs.length; i++) {
-    const id = this.visitedSlotIDs[i];
-    this.cmd("SetText", id, "?");
-    this.cmd("SetBackgroundColor", id, this.visitedFalseColor);
-    this.cmd("SetHighlight", id, 0);
+  this.visitedStates = new Array(this.visitedSlotIDs.length);
+  for (let row = 0; row < this.visitedSlotIDs.length; row++) {
+    const rowSlots = this.visitedSlotIDs[row] || [];
+    this.visitedStates[row] = new Array(rowSlots.length);
+    for (let col = 0; col < rowSlots.length; col++) {
+      const slotId = rowSlots[col];
+      if (slotId !== undefined && slotId !== null) {
+        this.cmd("SetText", slotId, "?");
+        this.cmd("SetBackgroundColor", slotId, this.visitedFalseColor);
+        this.cmd("SetHighlight", slotId, 0);
+      }
+      this.visitedStates[row][col] = "?";
+    }
   }
-  this.visitedHighlightIndex = -1;
+  this.visitedHighlightCell = null;
 };
 
-CoinChangeTopDown.prototype.setVisitedValue = function (index, value, options) {
-  if (index < 0 || index >= this.visitedSlotIDs.length) {
+CoinChangeTopDown.prototype.setVisitedValue = function (stateId, value, options) {
+  const cell = this.resolveMemoCell(stateId);
+  if (!cell) {
     return;
   }
-  const id = this.visitedSlotIDs[index];
   const text = this.formatResultValue(value);
-  this.visitedStates[index] = text;
-  this.cmd("SetText", id, text);
+  if (!Array.isArray(this.visitedStates[cell.row])) {
+    this.visitedStates[cell.row] = [];
+  }
+  this.visitedStates[cell.row][cell.col] = text;
+  this.cmd("SetText", cell.id, text);
   let color = this.visitedFalseColor;
   if (options && options.color) {
     color = options.color;
   } else if (text !== "?") {
     color = this.isInfiniteResult(value) ? this.inspectColor : this.visitedTrueColor;
   }
-  this.cmd("SetBackgroundColor", id, color);
+  this.cmd("SetBackgroundColor", cell.id, color);
 };
 
-CoinChangeTopDown.prototype.highlightVisitedEntry = function (index, highlight) {
-  if (index < 0 || index >= this.visitedSlotIDs.length) {
+CoinChangeTopDown.prototype.highlightVisitedEntry = function (stateId, highlight) {
+  const cell = this.resolveMemoCell(stateId);
+  if (!cell) {
     return;
   }
   if (highlight) {
-    if (
-      this.visitedHighlightIndex !== -1 &&
-      this.visitedHighlightIndex !== index &&
-      this.visitedSlotIDs[this.visitedHighlightIndex]
-    ) {
-      this.cmd(
-        "SetHighlight",
-        this.visitedSlotIDs[this.visitedHighlightIndex],
-        0
-      );
+    if (this.visitedHighlightCell) {
+      const prev = this.visitedHighlightCell;
+      if (
+        (prev.row !== cell.row || prev.col !== cell.col) &&
+        this.visitedSlotIDs[prev.row] &&
+        this.visitedSlotIDs[prev.row][prev.col] !== undefined &&
+        this.visitedSlotIDs[prev.row][prev.col] !== null
+      ) {
+        this.cmd("SetHighlight", this.visitedSlotIDs[prev.row][prev.col], 0);
+      }
     }
-    this.cmd("SetHighlight", this.visitedSlotIDs[index], 1);
-    this.visitedHighlightIndex = index;
+    this.cmd("SetHighlight", cell.id, 1);
+    this.visitedHighlightCell = { row: cell.row, col: cell.col };
   } else {
-    this.cmd("SetHighlight", this.visitedSlotIDs[index], 0);
-    if (this.visitedHighlightIndex === index) {
-      this.visitedHighlightIndex = -1;
+    this.cmd("SetHighlight", cell.id, 0);
+    if (
+      this.visitedHighlightCell &&
+      this.visitedHighlightCell.row === cell.row &&
+      this.visitedHighlightCell.col === cell.col
+    ) {
+      this.visitedHighlightCell = null;
     }
   }
 };
@@ -2024,8 +2149,8 @@ CoinChangeTopDown.prototype.updateTreeLevelPositions = function (level) {
   }
 
   const availableWidth = Math.max(0, baseRight - baseLeft);
-  const baseSpacing = Math.max(this.treeNodeRadius * 3.1, 96);
-  const minSpacing = Math.max(this.treeNodeRadius * 2.4, 74);
+  const baseSpacing = Math.max(this.treeNodeRadius * 3.4, 110);
+  const minSpacing = Math.max(this.treeNodeRadius * 2.6, 82);
 
   const computeLayout = (spacing) => {
     const margin = Math.max(spacing * 0.5, this.treeNodeRadius * 1.3, 36);
