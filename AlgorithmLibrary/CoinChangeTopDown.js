@@ -1856,12 +1856,14 @@ CoinChangeTopDown.prototype.setVisitedValue = function (stateId, value, options)
   }
   this.visitedStates[cell.row][cell.col] = text;
   this.cmd("SetText", cell.id, text);
+
   let color = this.visitedFalseColor;
   if (options && options.color) {
     color = options.color;
   } else if (text !== "?") {
     color = this.isInfiniteResult(value) ? this.inspectColor : this.visitedTrueColor;
   }
+
   this.cmd("SetBackgroundColor", cell.id, color);
 };
 
@@ -3121,7 +3123,6 @@ CoinChangeTopDown.prototype.narrate = function (text, options) {
   }
   this._narrationStepContext = previousContext;
 };
-
 
 CoinChangeTopDown.prototype.runCoinChange = function () {
   this.commands = [];
