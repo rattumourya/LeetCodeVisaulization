@@ -2997,7 +2997,6 @@ CoinChangeTopDown.prototype.narrate = function (text, options) {
   this._narrationStepContext = previousContext;
 };
 
-
 CoinChangeTopDown.prototype.runCoinChange = function () {
   this.commands = [];
   this.clearCelebrationOverlay();
@@ -3050,6 +3049,7 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   this.cmd("Step");
 
   const safeCoins = coins.filter((c) => Number.isFinite(c) && c > 0);
+
   safeCoins.sort((a, b) => a - b);
 
   let solvedStates = 0;
