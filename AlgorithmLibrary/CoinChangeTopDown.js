@@ -82,6 +82,7 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.setup();
 };
 
+
 CoinChangeTopDown.prototype.addControls = function () {
   this.controls = [];
 
@@ -100,6 +101,7 @@ CoinChangeTopDown.prototype.addControls = function () {
     "Button",
     "Run Top-Down Memo"
   );
+
   this.runButton.onclick = this.runCallback.bind(this);
 
   addLabelToAlgorithmBar("\u00A0");
@@ -238,6 +240,7 @@ CoinChangeTopDown.prototype.setup = function () {
   );
   this.cmd("SetTextStyle", this.titleID, "bold 26");
 
+
   this.coinLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
@@ -322,6 +325,7 @@ CoinChangeTopDown.prototype.buildCodeDisplay = function (startX, startY, lineHei
       startY + i * lineHeight,
       0
     );
+
     this.cmd("SetTextStyle", id, textStyle);
   }
 };
@@ -339,6 +343,7 @@ CoinChangeTopDown.prototype.buildVariablePanel = function (x, startY, spacing) {
     { labelProp: "memoLabelID", valueProp: "memoValueID", label: "memo result:" },
     { labelProp: "resultLabelID", valueProp: "resultValueID", label: "answer:" },
   ];
+
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
@@ -977,7 +982,6 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
 
   return this.commands;
 };
-
 
 var currentAlg;
 function init() {
