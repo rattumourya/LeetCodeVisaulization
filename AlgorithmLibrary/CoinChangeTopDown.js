@@ -7,30 +7,26 @@ CoinChangeTopDown.prototype.constructor = CoinChangeTopDown;
 CoinChangeTopDown.superclass = Algorithm.prototype;
 
 CoinChangeTopDown.CODE = [
-  "int coinChange(int[] coins, int amount) {",
-  "  final int INF = amount + 1;",
-  "  Map<State, Integer> memo = new HashMap<>();",
-  "  int ans = dfs(0, amount);",
-  "  return ans >= INF ? -1 : ans;",
+  "public int coinChange(int[] coins, int amount) {",
+  "        if (amount == 0) return 0;",
+  "        int[] memo = new int[amount + 1];",
+  "        Arrays.fill(memo, -2);",
+  "        return dfs(coins, amount, 0, memo);",
   "}",
-  "int dfs(int index, int remain) {",
-  "  if (remain == 0) return 0;",
-  "  if (index == coins.length) return INF;",
-  "  if (memo.containsKey((index, remain))) return memo.get((index, remain));",
-  "  int take = INF;",
-  "  if (coins[index] <= remain)",
-  "    take = 1 + dfs(index, remain - coins[index]);",
-  "  int skip = dfs(index + 1, remain);",
-  "  int best = Math.min(take, skip);",
-  "  memo.put((index, remain), best);",
-  "  return best;",
+  "private int dfs(int[] coins, int amount, int curr, int[] memo) {",
+  "        if (curr == amount) return 0;",
+  "        if (curr > amount) return amount + 1;",
+  "        if (memo[curr] != -2) return memo[curr];",
+  "        int best = amount + 1;",
+  "        for (int coin : coins) {",
+  "            int next = dfs(coins, amount, curr + coin, memo);",
+  "            if (next != amount + 1)",
+  "                best = Math.min(best, 1 + next);",
+  "        }",
+  "        memo[curr] = best;",
+  "        return best;",
   "}",
 ];
-
-CoinChangeTopDown.DEFAULT_COINS = [1, 2, 5];
-CoinChangeTopDown.DEFAULT_AMOUNT = 11;
-CoinChangeTopDown.MAX_COINS = 6;
-CoinChangeTopDown.MAX_AMOUNT = 20;
 
 CoinChangeTopDown.prototype.init = function (am, w, h) {
   CoinChangeTopDown.superclass.init.call(this, am, w, h);
@@ -38,46 +34,110 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.addControls();
 
   this.nextIndex = 0;
-  this.coinValues = CoinChangeTopDown.DEFAULT_COINS.slice();
-  this.amount = CoinChangeTopDown.DEFAULT_AMOUNT;
+  this.coinValues = [1, 2, 5];
+  this.amount = 11;
   this.messageText = "";
 
   this.codeIDs = [];
+  this.controls = [];
   this.coinIDs = [];
-  this.memoCellIDs = [];
-  this.memoRowLabelIDs = [];
-  this.memoHeaderIDs = [];
+  this.coinPositions = [];
+  this.coinHighlight = -1;
+
+  this.treeLabelID = -1;
+  this.treeLabelOffset = 0;
+  this.treeLabelYCoord = 0;
+  this.treeArea = null;
+  this.treeLevels = [];
   this.treeNodes = {};
-  this.treeEdgeLabelIDs = [];
-  this.currentCodeHighlight = -1;
+  this.treePendingParents = {};
+  this.treeHighlightAmount = null;
+  this.treeActiveEdge = null;
+  this.treeDepthDenominator = 1;
+  this.treeNodeRadius = 28;
+  this.treeNodeLabelOffset = 44;
+  this.treeDepthCapacity = 0;
+  this.treeDepthBaseEstimate = 0;
+  this.treeEdgeLabelColor = "#1d3f72";
+  this.boardReservedHeight = 0;
+
+  this.queueSlotIDs = [];
+  this.queueValues = [];
+  this.queueLabelID = -1;
+  this.queueHighlightIndex = -1;
+
+  this.visitedLabelID = -1;
+  this.visitedIndexHeaderID = -1;
+  this.visitedValueHeaderID = -1;
+  this.visitedSlotIDs = [];
+  this.visitedIndexIDs = [];
+  this.visitedValueIDs = [];
+  this.visitedStates = [];
+  this.visitedHighlightIndex = -1;
+  this.visitedArea = null;
+  this.visitedPanelWidth = 0;
+  this.visitedPanelGap = 0;
 
   this.titleID = -1;
   this.coinLabelID = -1;
   this.messageID = -1;
-  this.stateLabelID = -1;
-  this.stateValueID = -1;
+  this.boardBackgroundID = -1;
+  this.boardTimerID = -1;
+  this.boardProgressTrackID = -1;
+  this.boardProgressFillID = -1;
+  this.boardLineIDs = [];
+  this.boardTextSegments = [];
+  this.boardInfo = null;
+
+  this.celebrationOverlayIDs = [];
+  this.celebrationOverlayActive = false;
+
+  this.amountLabelID = -1;
+  this.amountValueID = -1;
+  this.depthLabelID = -1;
+  this.depthValueID = -1;
+  this.currentLabelID = -1;
+  this.currentValueID = -1;
   this.coinValueLabelID = -1;
   this.coinValueID = -1;
-  this.takeLabelID = -1;
-  this.takeValueID = -1;
-  this.skipLabelID = -1;
-  this.skipValueID = -1;
+  this.childLabelID = -1;
+  this.childValueID = -1;
+  this.bestLabelID = -1;
+  this.bestValueID = -1;
   this.memoLabelID = -1;
   this.memoValueID = -1;
   this.resultLabelID = -1;
   this.resultValueID = -1;
 
   this.treeDefaultColor = "#f5f7fb";
-  this.treeActiveColor = "#ffe8a6";
-  this.treeSolvedColor = "#dff7df";
+  this.treeVisitedColor = "#dff7df";
+  this.treeActiveColor = "#ffd27f";
+  this.treeFoundColor = "#b4e4ff";
   this.treeFailColor = "#fdd6d6";
   this.treeMemoColor = "#cfe0ff";
+  this.inspectColor = "#ffe7a3";
 
   this.coinColor = "#f0f7ff";
-  this.memoCellColor = "#f4f6ff";
+  this.coinHighlightColor = "#ffef9c";
 
-  this.canvasWidth = w || 900;
-  this.canvasHeight = h || 1600;
+  this.queueColor = "#edf3ff";
+  this.queueHighlightColor = "#ffd27f";
+
+  this.visitedFalseColor = "#f5f7fb";
+  this.visitedTrueColor = "#dff7df";
+  this.memoInfinity = Number.POSITIVE_INFINITY;
+
+  this.canvasWidth = w || 720;
+  this.canvasHeight = h || 1280;
+
+  this.narrationBudgetInitialized = false;
+  this.totalStepBudget = 0;
+  this.structuralStepAllowance = 0;
+  this.maxNarrationBudget = 0;
+  this.totalStepCount = 0;
+  this.narrationBeatsUsed = 0;
+  this.structuralStepsUsed = 0;
+  this._narrationStepContext = false;
 
   this.setup();
 };
@@ -97,11 +157,7 @@ CoinChangeTopDown.prototype.addControls = function () {
   this.buildButton = addControlToAlgorithmBar("Button", "Set Input");
   this.buildButton.onclick = this.setInputCallback.bind(this);
 
-  this.runButton = addControlToAlgorithmBar(
-    "Button",
-    "Run Top-Down Memo"
-  );
-
+  this.runButton = addControlToAlgorithmBar("Button", "Run Coin Change Top-Down");
   this.runButton.onclick = this.runCallback.bind(this);
 
   addLabelToAlgorithmBar("\u00A0");
@@ -120,34 +176,46 @@ CoinChangeTopDown.prototype.addControls = function () {
 };
 
 CoinChangeTopDown.prototype.setInputCallback = function () {
-  const coinInfo = this.parseCoinsInput(this.coinsField.value.trim());
-  const amountInfo = this.parseAmountInput(this.amountField.value.trim());
+  const rawCoins = this.coinsField.value.trim();
+  const parsedCoins = rawCoins
+    ? rawCoins
+        .split(/[\s,;]+/)
+        .map(Number)
+        .filter((v) => !Number.isNaN(v) && v > 0)
+    : [];
 
-  let coins = coinInfo.coins;
-  const messages = [];
-
-  if (coinInfo.warnings.length > 0) {
-    messages.push(...coinInfo.warnings);
+  let trimmedMessage = "";
+  if (parsedCoins.length > 0) {
+    parsedCoins.sort((a, b) => a - b);
+    if (parsedCoins.length > 8) {
+      parsedCoins.length = 8;
+    }
+    this.coinValues = parsedCoins;
   }
 
-  if (!coins || coins.length === 0) {
-    coins = CoinChangeTopDown.DEFAULT_COINS.slice();
-    messages.push("Using default coin set 1, 2, 5.");
+  if (!this.coinValues || this.coinValues.length === 0) {
+    this.coinValues = [1, 2, 5];
   }
 
-  let amount = amountInfo.amount;
-  if (amountInfo.warnings.length > 0) {
-    messages.push(...amountInfo.warnings);
+  if (this.coinValues.length > 0) {
+    this.coinsField.value = this.coinValues.join(", ");
   }
 
-  this.coinsField.value = coins.join(",");
-  this.amountField.value = String(amount);
+  const coinForLimit = this.coinValues[this.coinValues.length - 1] || 1;
 
-  this.coinValues = coins;
-  this.amount = amount;
-  this.messageText = messages.join(" ");
+  const amountValue = parseInt(this.amountField.value, 10);
+  if (!Number.isNaN(amountValue)) {
+    const layoutBound = Math.max(coinForLimit * 5, coinForLimit);
+    const clampedAmount = Math.max(0, Math.min(12, layoutBound, amountValue));
+    if (clampedAmount !== amountValue) {
+      trimmedMessage = `Amount limited to ${clampedAmount} to keep the BFS tree readable.`;
+    }
+    this.amount = clampedAmount;
+    this.amountField.value = String(this.amount);
+  }
 
-  this.setup();
+  this.messageText = trimmedMessage;
+  this.reset();
 };
 
 CoinChangeTopDown.prototype.runCallback = function () {
@@ -170,89 +238,82 @@ CoinChangeTopDown.prototype.stepCallback = function () {
 };
 
 CoinChangeTopDown.prototype.setup = function () {
-  if (!Array.isArray(this.coinValues) || this.coinValues.length === 0) {
-    this.coinValues = CoinChangeTopDown.DEFAULT_COINS.slice();
+  if (!this.coinValues || this.coinValues.length === 0) {
+    this.coinValues = [1, 2, 5];
   }
-  if (!Number.isFinite(this.amount) || this.amount < 0) {
-    this.amount = CoinChangeTopDown.DEFAULT_AMOUNT;
+  if (this.amount === undefined || this.amount === null) {
+    this.amount = 11;
   }
 
   const canvasElem = document.getElementById("canvas");
-  const canvasW = canvasElem ? canvasElem.width : this.canvasWidth;
-  const canvasH = canvasElem ? canvasElem.height : this.canvasHeight;
+  const canvasW = canvasElem ? canvasElem.width : 720;
+  const canvasH = canvasElem ? canvasElem.height : 1280;
 
   this.canvasWidth = canvasW;
   this.canvasHeight = canvasH;
 
+  if (
+    typeof objectManager !== "undefined" &&
+    objectManager &&
+    objectManager.statusReport
+  ) {
+    objectManager.statusReport.setText("");
+    objectManager.statusReport.addedToScene = false;
+  }
+
+  this.celebrationOverlayIDs = [];
+  this.celebrationActive = false;
+
+  const TITLE_Y = 48;
+
+  const coinLabelText = "coins array:";
+  const coinLabelFontSize = 18;
+  const coinRowY = TITLE_Y + Math.max(52, Math.floor(canvasH * 0.05));
+  const coinLayout = this.computeCoinRowLayout({
+    canvasW,
+    rowY: coinRowY,
+    labelText: coinLabelText,
+    labelFontSize: coinLabelFontSize,
+  });
+  const coinsRowY = coinLayout.y;
+  const coinBandHeight = coinLayout.coinHeight || 36;
+  const boardOffset = Math.max(20, Math.floor(coinBandHeight * 0.6));
+  const messageY = coinsRowY + Math.floor(coinBandHeight / 2) + boardOffset;
+
   this.commands = [];
   this.codeIDs = [];
+  this.queueSlotIDs = [];
+  this.queueValues = [];
+  this.queueHighlightIndex = -1;
   this.coinIDs = [];
-  this.memoCellIDs = [];
-  this.memoRowLabelIDs = [];
-  this.memoHeaderIDs = [];
-  this.treeNodes = {};
-  this.treeEdgeLabelIDs = [];
-  this.currentCodeHighlight = -1;
-
-  const TITLE_Y = 44;
-  const coinRowY = TITLE_Y + 70;
-  const messageY = coinRowY + 48;
-  const CODE_START_X = 64;
-  const CODE_START_Y = messageY + 40;
-  const CODE_LINE_H = 20;
-  const PANEL_X = canvasW - 140;
-  const PANEL_START_Y = CODE_START_Y;
-  const PANEL_SPACING = 28;
-
-  const treeLeft = CODE_START_X + 240;
-  const treeRightMargin = 220;
-  const treeTop = messageY + 120;
-  const treeWidth = Math.max(300, canvasW - treeLeft - treeRightMargin);
-  const maxTreeHeight = canvasH - treeTop - 440;
-  const treeHeight = Math.max(360, Math.min(540, maxTreeHeight));
-  const memoTop = treeTop + treeHeight + 60;
-
-  this.treeArea = {
-    left: treeLeft,
-    top: treeTop,
-    width: treeWidth,
-    height: treeHeight,
-  };
-  this.treeNodeRadius = 28;
-  this.treeNodeLabelOffset = 44;
-  this.treeCenterX = treeLeft + treeWidth / 2;
-
-  const estimatedDepth = Math.max(4, Math.min(this.amount + 3, 14));
-  this.treeLevelGap = Math.max(
-    42,
-    Math.min(110, Math.floor(treeHeight / estimatedDepth))
-  );
-  this.treeBaseHorizontalGap = Math.max(140, Math.floor(treeWidth * 0.7));
+  this.coinPositions = [];
+  this.visitedSlotIDs = [];
+  this.visitedIndexIDs = [];
+  this.visitedValueIDs = [];
+  this.visitedStates = [];
+  this.visitedHighlightIndex = -1;
 
   this.titleID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.titleID,
-    "Coin Change (Top-Down Memo)",
-    canvasW / 2,
-    TITLE_Y,
-    1
-  );
+  this.cmd("CreateLabel", this.titleID, "Coin Change Top-Down", canvasW / 2, TITLE_Y, 1);
   this.cmd("SetTextStyle", this.titleID, "bold 26");
-
+  this.cmd("SetForegroundColor", this.titleID, "#1b1b1b");
 
   this.coinLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.coinLabelID,
-    "coins array:",
-    canvasW / 2,
-    coinRowY - 36,
-    1
+    coinLabelText,
+    coinLayout.labelCenterX,
+    coinLayout.labelY,
+    coinLayout.labelCentered ? 1 : 0
   );
-  this.cmd("SetTextStyle", this.coinLabelID, "bold 18");
+  this.cmd(
+    "SetTextStyle",
+    this.coinLabelID,
+    `bold ${coinLabelFontSize}`
+  );
 
-  this.buildCoinsRow({ rowY: coinRowY });
+  this.buildCoinsRow(coinLayout);
 
   this.messageID = this.nextIndex++;
   this.cmd(
@@ -263,349 +324,2059 @@ CoinChangeTopDown.prototype.setup = function () {
     messageY,
     1
   );
+  this.cmd("SetForegroundColor", this.messageID, "#003366");
   this.cmd("SetTextStyle", this.messageID, "bold 18");
-  this.cmd("SetForegroundColor", this.messageID, "#1f3b73");
-  this.cmd("SetAlpha", this.messageID, this.messageText ? 1 : 0);
+  this.cmd("SetAlpha", this.messageID, 0);
 
-  this.buildCodeDisplay(CODE_START_X, CODE_START_Y, CODE_LINE_H);
-  this.buildVariablePanel(PANEL_X, PANEL_START_Y, PANEL_SPACING);
-  this.buildMemoTable(memoTop);
-  this.resetMemoTable();
-  this.resetVariablePanel();
+  const boardReservedHeight = Math.max(
+    170,
+    Math.min(240, Math.floor(canvasH * 0.18))
+  );
+  this.boardReservedHeight = boardReservedHeight;
+  this.boardLineIDs = [];
+  this.boardInfo = null;
+  this.buildNarrationBoard({
+    canvasW,
+    messageY,
+    reservedHeight: boardReservedHeight,
+  });
+  const boardToTreeGap = Math.max(
+    16,
+    Math.floor((this.boardReservedHeight || 0) * 0.06)
+  );
+  const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
+  const memoReservedHeight = Math.max(240, Math.floor(canvasH * 0.23));
+  const bottomMargin = Math.max(24, Math.floor(canvasH * 0.02));
+  const queueGapFromTree = Math.max(36, Math.floor(canvasH * 0.03));
+  const memoGapFromQueue = Math.max(32, Math.floor(canvasH * 0.025));
+  const baseTreeHeight = Math.floor(canvasH * 0.52);
+  const queueMetrics = this.measureQueueMetrics(canvasW, null, null);
+  const estimatedSlotHeight =
+    queueMetrics && queueMetrics.slotHeight
+      ? queueMetrics.slotHeight
+      : Math.max(28, Math.floor(canvasH * 0.04));
+  const estimatedLabelOffset =
+    queueMetrics && queueMetrics.labelOffset
+      ? queueMetrics.labelOffset
+      : Math.max(22, Math.floor(estimatedSlotHeight * 0.85));
+  const estimatedQueueBlock = estimatedSlotHeight + estimatedLabelOffset;
+
+  const minTreeHeight = Math.max(320, Math.floor(canvasH * 0.3));
+  let treeHeightLimit =
+    canvasH -
+    memoReservedHeight -
+    memoGapFromQueue -
+    bottomMargin -
+    treeTopY -
+    queueGapFromTree -
+    estimatedQueueBlock;
+  if (!Number.isFinite(treeHeightLimit) || treeHeightLimit < minTreeHeight) {
+    treeHeightLimit = minTreeHeight;
+  }
+  let treeHeight = Math.min(baseTreeHeight, treeHeightLimit);
+  if (!Number.isFinite(treeHeight) || treeHeight < minTreeHeight) {
+    treeHeight = minTreeHeight;
+  }
+  const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
+
+  const queueBottomLimit =
+    canvasH - memoReservedHeight - memoGapFromQueue - bottomMargin;
+  const preferredQueueY =
+    treeLayout.bottomY + queueGapFromTree + estimatedSlotHeight / 2;
+  const maxQueueCenter = queueBottomLimit - estimatedSlotHeight / 2;
+  let queueY = Math.min(preferredQueueY, maxQueueCenter);
+  const minQueueCenter =
+    treeLayout.bottomY + queueGapFromTree + estimatedSlotHeight / 2;
+  if (queueY < minQueueCenter) {
+    queueY = minQueueCenter;
+  }
+  const queueLayout = this.buildQueueDisplay(
+    canvasW,
+    queueY,
+    queueMetrics ? queueMetrics.slotWidth : null,
+    queueMetrics ? queueMetrics.gap : null
+  );
+
+  let memoTop = queueLayout.bottomY + memoGapFromQueue;
+  const memoBottom = canvasH - bottomMargin;
+  const minMemoHeight = Math.max(220, Math.floor(canvasH * 0.22));
+  if (memoBottom - memoTop < minMemoHeight) {
+    memoTop = Math.max(
+      queueLayout.bottomY + memoGapFromQueue,
+      memoBottom - minMemoHeight
+    );
+  }
+  this.buildVisitedDisplay(memoTop, memoBottom, this.amount);
+
   this.resetTreeDisplay();
+  this.resetQueueDisplay();
+  this.resetVisitedDisplay();
+  this.safeSetText(this.amountValueID, String(this.amount));
 
   animationManager.StartNewAnimation(this.commands);
   animationManager.skipForward();
   animationManager.clearHistory();
 };
 
-CoinChangeTopDown.prototype.buildCoinsRow = function (options) {
-  const settings = options || {};
-  const coins = this.coinValues || [];
-  const count = coins.length;
-  const rowY = settings.rowY || 120;
-  const availableWidth = this.canvasWidth - 160;
-  const baseWidth = count > 0 ? Math.floor(availableWidth / count) : availableWidth;
-  const cellWidth = Math.max(40, Math.min(68, baseWidth - 12));
-  const spacing = Math.max(12, Math.floor(cellWidth * 0.25));
-  const totalWidth = count * cellWidth + Math.max(0, count - 1) * spacing;
-  const startX = Math.floor((this.canvasWidth - totalWidth) / 2) + cellWidth / 2;
-  const cellHeight = Math.max(32, Math.floor(cellWidth * 0.75));
-
-  this.coinIDs = [];
-  for (let i = 0; i < count; i++) {
-    const id = this.nextIndex++;
-    this.coinIDs.push(id);
-    const x = startX + i * (cellWidth + spacing);
-    this.cmd(
-      "CreateRectangle",
-      id,
-      String(coins[i]),
-      cellWidth,
-      cellHeight,
-      x,
-      rowY
-    );
-    this.cmd("SetBackgroundColor", id, this.coinColor);
-    this.cmd("SetForegroundColor", id, "#000000");
-    this.cmd("SetTextStyle", id, "bold 18");
-  }
-};
-
-CoinChangeTopDown.prototype.buildCodeDisplay = function (startX, startY, lineHeight) {
-  const textStyle = "16";
+CoinChangeTopDown.prototype.buildCodeDisplay = function (
+  startX,
+  startY,
+  lineHeight,
+  fontSize
+) {
+  const textStyle = fontSize ? String(fontSize) : "12";
   for (let i = 0; i < CoinChangeTopDown.CODE.length; i++) {
     const id = this.nextIndex++;
     this.codeIDs.push(id);
-    this.cmd(
-      "CreateLabel",
-      id,
-      CoinChangeTopDown.CODE[i],
-      startX,
-      startY + i * lineHeight,
-      0
-    );
-
+    this.cmd("CreateLabel", id, CoinChangeTopDown.CODE[i], startX, startY + i * lineHeight, 0);
+    this.cmd("SetForegroundColor", id, "#000000");
     this.cmd("SetTextStyle", id, textStyle);
   }
 };
 
-CoinChangeTopDown.prototype.buildVariablePanel = function (x, startY, spacing) {
+CoinChangeTopDown.prototype.buildVariablePanel = function (options) {
+  const settings = options || {};
+  const canvasW = settings.canvasW || this.canvasWidth || 720;
+  const canvasH = settings.canvasH || this.canvasHeight || 1280;
+  const codeStartX = settings.codeStartX || 0;
+  const codeStartY = settings.codeStartY || 0;
+  const codeBottomY = settings.codeBottomY || codeStartY;
+  const spacing = Math.max(28, settings.spacing || 32);
+  const variableFont = settings.variableFont || "bold 17";
+  const resultFont = settings.resultFont || variableFont;
+
+  const minColumnX = codeStartX + Math.max(360, Math.floor(canvasW * 0.5));
+  const desiredGap = Math.max(140, Math.floor(canvasW * 0.2));
+  const rightMargin = Math.max(52, Math.floor(canvasW * 0.075));
+  const maxValueX = canvasW - rightMargin;
+  let valueX = maxValueX;
+  let columnX = valueX - desiredGap;
+  if (columnX < minColumnX) {
+    columnX = minColumnX;
+    valueX = columnX + desiredGap;
+    if (valueX > maxValueX) {
+      valueX = maxValueX;
+    }
+  }
+  const minGap = Math.max(132, Math.floor(canvasW * 0.18));
+  if (valueX - columnX < minGap) {
+    columnX = Math.max(minColumnX, valueX - minGap);
+  }
+
   const entries = [
-    { labelProp: "stateLabelID", valueProp: "stateValueID", label: "state:" },
+    {
+      labelProp: "amountLabelID",
+      valueProp: "amountValueID",
+      label: "target amount:",
+      value: String(this.amount),
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "depthLabelID",
+      valueProp: "depthValueID",
+      label: "call depth:",
+      value: "0",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "currentLabelID",
+      valueProp: "currentValueID",
+      label: "current sum:",
+      value: "-",
+      valueFont: variableFont,
+    },
     {
       labelProp: "coinValueLabelID",
       valueProp: "coinValueID",
-      label: "current coin:",
+      label: "coin tried:",
+      value: "-",
+      valueFont: variableFont,
     },
-    { labelProp: "takeLabelID", valueProp: "takeValueID", label: "take cost:" },
-    { labelProp: "skipLabelID", valueProp: "skipValueID", label: "skip cost:" },
-    { labelProp: "memoLabelID", valueProp: "memoValueID", label: "memo result:" },
-    { labelProp: "resultLabelID", valueProp: "resultValueID", label: "answer:" },
+    {
+      labelProp: "childLabelID",
+      valueProp: "childValueID",
+      label: "child result:",
+      value: "-",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "bestLabelID",
+      valueProp: "bestValueID",
+      label: "best so far:",
+      value: "∞",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "memoLabelID",
+      valueProp: "memoValueID",
+      label: "memo[curr]:",
+      value: "?",
+      valueFont: variableFont,
+    },
+    {
+      labelProp: "resultLabelID",
+      valueProp: "resultValueID",
+      label: "result:",
+      value: "?",
+      valueFont: resultFont,
+      labelFont: resultFont,
+    },
   ];
 
+  const columnTop = codeStartY;
+  const columnBottom = Math.min(canvasH - 48, codeBottomY);
+  const availableHeight = Math.max(0, columnBottom - columnTop);
+  let spacingValue = spacing;
+  if (entries.length > 1) {
+    const requiredSpan = (entries.length - 1) * spacingValue;
+    if (requiredSpan > availableHeight) {
+      const minSpacing = Math.max(22, Math.floor(spacing * 0.7));
+      spacingValue = Math.max(
+        minSpacing,
+        Math.floor(availableHeight / Math.max(entries.length - 1, 1))
+      );
+    }
+  }
+  let startY = columnTop;
+  if (entries.length > 1) {
+    const usedSpan = (entries.length - 1) * spacingValue;
+    if (startY + usedSpan > columnBottom) {
+      startY = Math.max(columnTop, columnBottom - usedSpan);
+    }
+  }
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
     const labelID = this.nextIndex++;
     const valueID = this.nextIndex++;
-    const y = startY + i * spacing;
     this[entry.labelProp] = labelID;
     this[entry.valueProp] = valueID;
-
-    this.cmd("CreateLabel", labelID, entry.label, x, y, 0);
-    this.cmd("SetTextStyle", labelID, "bold 16");
-
-    this.cmd("CreateLabel", valueID, "-", x, y + 18, 0);
-    this.cmd("SetTextStyle", valueID, "bold 18");
-    this.cmd("SetForegroundColor", valueID, "#1f3b73");
+    const y = startY + i * spacingValue;
+    this.cmd("CreateLabel", labelID, entry.label, columnX, y, 0);
+    this.cmd("CreateLabel", valueID, entry.value, valueX, y, 0);
+    const labelFont = entry.labelFont || variableFont;
+    this.cmd("SetTextStyle", labelID, labelFont);
+    this.cmd("SetTextStyle", valueID, entry.valueFont || variableFont);
   }
 };
 
-CoinChangeTopDown.prototype.buildMemoTable = function (topY) {
-  const amount = Math.max(0, Math.floor(this.amount));
-  const rows = (this.coinValues ? this.coinValues.length : 0) + 1;
-  const cols = amount + 1;
-  const gap = 6;
-  const cellWidth = Math.max(
-    44,
-    Math.min(70, Math.floor((this.canvasWidth - 140) / (cols + 1)))
-  );
-  const cellHeight = 42;
-  const totalWidth = (cols + 1) * cellWidth + cols * gap;
-  const startX = Math.floor((this.canvasWidth - totalWidth) / 2);
-
-  this.memoHeaderIDs = [];
-  for (let c = 0; c <= cols; c++) {
-    const headerID = this.nextIndex++;
-    const text = c === 0 ? "index" : String(c - 1);
-    const x = startX + c * (cellWidth + gap) + cellWidth / 2;
-    this.cmd("CreateLabel", headerID, text, x, topY, 1);
-    this.cmd("SetTextStyle", headerID, "bold 15");
-    this.memoHeaderIDs.push(headerID);
-  }
-
-  this.memoCellIDs = [];
-  this.memoRowLabelIDs = [];
-  const rowLabelTexts = [];
-  for (let r = 0; r < rows; r++) {
-    let labelText = `i=${r}`;
-    if (r < this.coinValues.length) {
-      labelText += ` (coin ${this.coinValues[r]})`;
-    } else {
-      labelText += " (end)";
-    }
-    rowLabelTexts.push(labelText);
-  }
-
-  for (let r = 0; r < rows; r++) {
-    const rowLabelID = this.nextIndex++;
-    const y = topY + (r + 1) * (cellHeight + gap);
-    const x = startX + cellWidth / 2;
-    this.cmd("CreateLabel", rowLabelID, rowLabelTexts[r], x, y, 1);
-    this.cmd("SetTextStyle", rowLabelID, "bold 15");
-    this.memoRowLabelIDs.push(rowLabelID);
-
-    const rowCells = [];
-    for (let c = 0; c < cols; c++) {
-      const cellID = this.nextIndex++;
-      const cellX = startX + (c + 1) * (cellWidth + gap) + cellWidth / 2;
-      this.cmd(
-        "CreateRectangle",
-        cellID,
-        "",
-        cellWidth,
-        cellHeight,
-        cellX,
-        y
-      );
-      this.cmd("SetBackgroundColor", cellID, this.memoCellColor);
-      this.cmd("SetForegroundColor", cellID, "#000000");
-      rowCells.push({ id: cellID, row: r, col: c });
-    }
-    this.memoCellIDs.push(rowCells);
-  }
-
-  this.memoColCount = cols;
-  this.memoRowCount = rows;
-  this.memoCellWidth = cellWidth;
-  this.memoCellHeight = cellHeight;
-};
-
-CoinChangeTopDown.prototype.resetMemoTable = function () {
-  if (!Array.isArray(this.memoCellIDs)) {
+CoinChangeTopDown.prototype.clearNarrationText = function () {
+  if (!this.boardLineIDs) {
     return;
   }
-  for (let r = 0; r < this.memoRowCount; r++) {
-    for (let c = 0; c < this.memoColCount; c++) {
-      const cell = this.getMemoCell(r, c);
-      if (cell) {
-        this.cmd("SetText", cell.id, "?");
-        this.cmd("SetBackgroundColor", cell.id, this.memoCellColor);
-        this.cmd("SetHighlight", cell.id, 0);
+  for (let i = 0; i < this.boardLineIDs.length; i++) {
+    const row = this.boardLineIDs[i];
+    if (!row || !row.segments) {
+      continue;
+    }
+    for (let j = 0; j < row.segments.length; j++) {
+      const segment = row.segments[j];
+      if (!segment || segment.id === undefined || segment.id === null) {
+        continue;
+      }
+      const segmentId = Number(segment.id);
+      if (!Number.isNaN(segmentId) && segmentId >= 0) {
+        this.cmd("Delete", segmentId);
       }
     }
+    row.segments = [];
   }
+  this.boardTextSegments = [];
 };
 
-CoinChangeTopDown.prototype.resetVariablePanel = function () {
-  const defaults = [
-    [this.stateValueID, "-"],
-    [this.coinValueID, "-"],
-    [this.takeValueID, "-"],
-    [this.skipValueID, "-"],
-    [this.memoValueID, "-"],
-    [this.resultValueID, "-"],
+CoinChangeTopDown.prototype.clearNarrationBoardVisuals = function () {
+  const ids = [
+    this.boardBackgroundID,
+    this.boardTimerID,
+    this.boardProgressTrackID,
+    this.boardProgressFillID,
   ];
-  for (let i = 0; i < defaults.length; i++) {
-    const [id, text] = defaults[i];
-    if (id >= 0) {
-      this.cmd("SetText", id, text);
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
+    if (id !== undefined && id !== null && id >= 0) {
+      this.cmd("Delete", id);
     }
   }
+  this.boardBackgroundID = -1;
+  this.boardTimerID = -1;
+  this.boardProgressTrackID = -1;
+  this.boardProgressFillID = -1;
 };
 
-CoinChangeTopDown.prototype.resetTreeDisplay = function () {
-  if (this.treeNodes) {
-    const keys = Object.keys(this.treeNodes);
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const node = this.treeNodes[key];
-      if (!node) continue;
-      if (node.parentKey && this.treeNodes[node.parentKey]) {
-        this.cmd(
-          "Disconnect",
-          this.treeNodes[node.parentKey].id,
-          node.id
-        );
-      }
-      if (node.edgeLabelID !== undefined && node.edgeLabelID >= 0) {
-        this.cmd("Delete", node.edgeLabelID);
-      }
-      if (node.labelID >= 0) {
-        this.cmd("Delete", node.labelID);
-      }
-      this.cmd("Delete", node.id);
-    }
-  }
-  this.treeNodes = {};
-  this.treeEdgeLabelIDs = [];
-};
+CoinChangeTopDown.prototype.buildNarrationBoard = function (options) {
+  const settings = options || {};
+  const canvasW = settings.canvasW || this.canvasWidth || 720;
+  const messageY = settings.messageY || 0;
+  const reservedHeight = Math.max(
+    0,
+    settings.reservedHeight !== undefined && settings.reservedHeight !== null
+      ? settings.reservedHeight
+      : this.boardReservedHeight || 0
+  );
 
-CoinChangeTopDown.prototype.parseCoinsInput = function (raw) {
-  const result = { coins: [], warnings: [] };
-  if (!raw) {
-    return result;
+  this.clearNarrationText();
+  this.clearNarrationBoardVisuals();
+
+  let boardHeight = Math.max(120, Math.floor(reservedHeight * 0.78));
+  const topGap = Math.max(10, Math.floor(reservedHeight * 0.05));
+  const boardTopMin = messageY + Math.max(6, Math.floor(reservedHeight * 0.025));
+  let boardTop = messageY + topGap;
+  const boardBottomLimit = messageY + reservedHeight;
+  if (boardTop < boardTopMin) {
+    boardTop = boardTopMin;
+  }
+  if (boardTop + boardHeight > boardBottomLimit) {
+    boardHeight = Math.max(120, boardBottomLimit - boardTop);
+  }
+  if (boardHeight <= 0) {
+    boardHeight = Math.max(120, Math.floor(reservedHeight * 0.78));
+    boardTop = Math.max(boardTopMin, boardBottomLimit - boardHeight);
   }
 
-  const tokens = raw.split(/[\s,;]+/).filter((t) => t.length > 0);
-  if (tokens.length === 0) {
-    return result;
+  const centerX = canvasW / 2;
+  const centerY = boardTop + boardHeight / 2;
+  const outerMargin = Math.max(18, Math.floor(canvasW * 0.03));
+  const minBoardWidth = Math.max(430, Math.floor(canvasW * 0.78));
+  const maxBoardWidth = Math.max(minBoardWidth, canvasW - outerMargin * 2);
+  let boardWidth = Math.max(minBoardWidth, Math.floor(canvasW * 0.9));
+  if (boardWidth > maxBoardWidth) {
+    boardWidth = maxBoardWidth;
   }
+  if (boardWidth > canvasW - 16) {
+    boardWidth = canvasW - 16;
+  }
+  const boardLeft = centerX - boardWidth / 2;
+  const boardRight = centerX + boardWidth / 2;
 
-  const values = [];
-  for (let i = 0; i < tokens.length; i++) {
-    const num = Number(tokens[i]);
-    if (Number.isFinite(num) && num > 0) {
-      values.push(Math.floor(num));
-    }
-  }
-  if (values.length === 0) {
-    return result;
-  }
+  this.boardBackgroundID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.boardBackgroundID,
+    "",
+    boardWidth,
+    boardHeight,
+    centerX,
+    centerY
+  );
+  this.cmd("SetForegroundColor", this.boardBackgroundID, "#324d7a");
+  this.cmd("SetBackgroundColor", this.boardBackgroundID, "#f6f8ff");
 
-  const unique = [];
-  const seen = new Set();
-  for (let i = 0; i < values.length; i++) {
-    const value = values[i];
-    if (!seen.has(value)) {
-      seen.add(value);
-      unique.push(value);
-    }
+  const progressHeight = Math.max(4, Math.floor(boardHeight * 0.05));
+  const progressBottomMargin = Math.max(6, Math.floor(boardHeight * 0.05));
+  const progressMarginX = Math.max(12, Math.floor(boardWidth * 0.035));
+  const progressY =
+    boardTop + boardHeight - progressBottomMargin - progressHeight / 2;
+  let progressWidth = boardWidth - progressMarginX * 2;
+  if (progressWidth < 140) {
+    progressWidth = Math.max(120, Math.floor(boardWidth * 0.85));
   }
-  if (unique.length < values.length) {
-    result.warnings.push("Duplicate coin values ignored.");
-  }
+  const progressCenterX = centerX;
 
-  unique.sort((a, b) => a - b);
-  if (unique.length > CoinChangeTopDown.MAX_COINS) {
-    unique.length = CoinChangeTopDown.MAX_COINS;
-    result.warnings.push(
-      `Showing the first ${CoinChangeTopDown.MAX_COINS} coins for clarity.`
+  this.boardProgressTrackID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.boardProgressTrackID,
+    "",
+    progressWidth,
+    progressHeight,
+    progressCenterX,
+    progressY
+  );
+  this.cmd("SetBackgroundColor", this.boardProgressTrackID, "#d7e3ff");
+  this.cmd("SetForegroundColor", this.boardProgressTrackID, "#d7e3ff");
+
+  this.boardProgressFillID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.boardProgressFillID,
+    "",
+    progressWidth,
+    progressHeight,
+    progressCenterX,
+    progressY
+  );
+  this.cmd("SetBackgroundColor", this.boardProgressFillID, "#5a9bff");
+  this.cmd("SetForegroundColor", this.boardProgressFillID, "#5a9bff");
+  this.cmd("SetAlpha", this.boardProgressFillID, 0);
+
+  const timerMarginX = Math.max(14, Math.floor(boardWidth * 0.035));
+  const timerMarginY = Math.max(8, Math.floor(boardHeight * 0.07));
+  const timerAnchorX = boardRight - timerMarginX;
+  const timerY = boardTop + timerMarginY;
+  this.boardTimerID = this.nextIndex++;
+  this.cmd("CreateLabel", this.boardTimerID, "", timerAnchorX, timerY, 0);
+  this.cmd("SetTextStyle", this.boardTimerID, "bold 16");
+  this.cmd("SetForegroundColor", this.boardTimerID, "#2c4378");
+
+  const textPaddingX = Math.max(18, Math.floor(boardWidth * 0.06));
+  const textAreaLeft = boardLeft + textPaddingX;
+  const textAreaRight = boardRight - textPaddingX;
+  const textAreaWidth = Math.max(0, textAreaRight - textAreaLeft);
+  const paragraphFontSize = 16;
+  const approxCharWidth = Math.max(6, Math.floor(paragraphFontSize * 0.6));
+  let textAreaTop = boardTop + Math.max(20, Math.floor(boardHeight * 0.18));
+  const timerClearance =
+    timerY + paragraphFontSize + Math.max(8, Math.floor(boardHeight * 0.06));
+  if (textAreaTop < timerClearance) {
+    textAreaTop = timerClearance;
+  }
+  const textAreaBottom = Math.max(
+    textAreaTop + paragraphFontSize * 2,
+    progressY - progressHeight / 2 - Math.max(16, Math.floor(boardHeight * 0.07))
+  );
+  const minLineY = boardTop + Math.max(12, Math.floor(boardHeight * 0.06));
+  const usableTop = Math.max(minLineY, textAreaTop);
+  const usableBottom = Math.max(usableTop + paragraphFontSize, textAreaBottom);
+  const availableSpan = Math.max(0, usableBottom - usableTop);
+  const minSpacing = Math.max(paragraphFontSize + 2, Math.floor(boardHeight * 0.12));
+  const maxLinesBySpan = availableSpan > 0 ? Math.floor(availableSpan / minSpacing) + 1 : 1;
+  const lineCount = Math.min(7, Math.max(1, maxLinesBySpan));
+  let lineSpacing = 0;
+  if (lineCount > 1) {
+    const rawSpacing = Math.floor(availableSpan / Math.max(lineCount - 1, 1));
+    const maxSpacing = Math.max(paragraphFontSize + 4, Math.floor(boardHeight * 0.18));
+    lineSpacing = Math.max(minSpacing, Math.min(maxSpacing, rawSpacing));
+  }
+  const totalSpan = lineCount > 1 ? lineSpacing * (lineCount - 1) : 0;
+  let firstLineY;
+  if (lineCount > 1) {
+    const maxStart = usableBottom - totalSpan;
+    const preferredStart = Math.min(usableTop, maxStart);
+    firstLineY = Math.max(minLineY, preferredStart);
+  } else {
+    const centerCandidate = Math.max(
+      usableTop,
+      Math.min(usableBottom, boardTop + boardHeight / 2)
     );
+    firstLineY = Math.max(minLineY, centerCandidate);
   }
 
-  result.coins = unique;
+  this.boardLineIDs = [];
+  this.boardTextSegments = [];
+  for (let i = 0; i < lineCount; i++) {
+    const offset = lineCount > 1 ? lineSpacing * i : 0;
+    const lineY = Math.round(firstLineY + offset);
+    this.boardLineIDs.push({
+      y: lineY,
+      startX: textAreaLeft,
+      rightX: textAreaRight,
+      segments: [],
+    });
+  }
+
+  const maxCharsByWidth = Math.max(
+    10,
+    Math.floor(textAreaWidth / Math.max(approxCharWidth, 1))
+  );
+  const charLimit = Math.max(
+    20,
+    Math.min(maxCharsByWidth, Math.floor(maxCharsByWidth * 0.92))
+  );
+  const approxTimerCharWidth = Math.max(7, Math.floor(boardWidth * 0.015));
+  const timerExtraPadding = Math.max(4, Math.floor(approxTimerCharWidth * 0.8));
+  this.boardInfo = {
+    centerX,
+    centerY,
+    left: boardLeft,
+    right: boardRight,
+    width: boardWidth,
+    height: boardHeight,
+    top: boardTop,
+    bottom: boardTop + boardHeight,
+    progressWidth,
+    progressHeight,
+    progressLeft: progressCenterX - progressWidth / 2,
+    progressY,
+    progressMinWidth: Math.max(4, Math.floor(progressWidth * 0.05)),
+    charLimit,
+    lineCount,
+    lineSpacing,
+    textAreaLeft,
+    textAreaRight,
+    textAreaWidth,
+    textFontSize: paragraphFontSize,
+    textCharWidth: approxCharWidth,
+    timerAnchorX,
+    timerAnchorY: timerY,
+    timerCharWidth: approxTimerCharWidth,
+    timerExtraPadding,
+  };
+
+  this.updateNarrationLines([]);
+  this.renderNarrationTimer(0, 0);
+};
+
+CoinChangeTopDown.prototype.getApproxTextWidth = function (text, fontSize) {
+  const size = Math.max(10, Math.floor(Number(fontSize) || 16));
+  if (!text) {
+    return size * 2;
+  }
+  const safe = String(text);
+  const average = Math.max(5, Math.floor(size * 0.56));
+  return Math.max(size * 2, Math.floor(safe.length * average));
+};
+
+CoinChangeTopDown.prototype.computeCoinRowLayout = function (options) {
+  const settings = options || {};
+  const canvasW = settings.canvasW || this.canvasWidth || 720;
+  const rowY =
+    settings.rowY !== undefined && settings.rowY !== null
+      ? settings.rowY
+      : Math.max(80, Math.floor((this.canvasHeight || 600) * 0.12));
+  const labelText = settings.labelText || "coins:";
+  const labelFontSize = Math.max(14, Math.floor(settings.labelFontSize || 18));
+
+  const coinCount = Math.max(1, this.coinValues && this.coinValues.length ? this.coinValues.length : 1);
+  const baseWidth = Math.min(
+    Math.max(40, Math.floor(canvasW * 0.055)),
+    Math.floor(canvasW * 0.12)
+  );
+  let coinWidth = Math.max(36, baseWidth);
+  let coinHeight = Math.max(28, Math.floor(coinWidth * 0.68));
+  let spacing = Math.max(16, Math.floor(coinWidth * 0.58));
+  let rowWidth = coinCount * coinWidth + (coinCount - 1) * spacing;
+  const maxRowWidth = Math.max(260, Math.floor(canvasW * 0.6));
+  if (rowWidth > maxRowWidth) {
+    const shrink = maxRowWidth / rowWidth;
+    coinWidth = Math.max(30, Math.floor(coinWidth * shrink));
+    coinHeight = Math.max(24, Math.floor(coinHeight * shrink));
+    spacing = Math.max(12, Math.floor(spacing * shrink));
+    rowWidth = coinCount * coinWidth + (coinCount - 1) * spacing;
+  }
+
+  const labelWidth = Math.max(
+    Math.floor(labelFontSize * 2.4),
+    this.getApproxTextWidth(labelText, labelFontSize)
+  );
+  let labelGap = Math.max(18, Math.floor(coinWidth * 0.85));
+  let totalWidth = labelWidth + labelGap + rowWidth;
+  const sideMargin = Math.max(36, Math.floor(canvasW * 0.06));
+  const availableWidth = Math.max(240, canvasW - sideMargin * 2);
+  if (totalWidth > availableWidth) {
+    const overflow = totalWidth - availableWidth;
+    const gapReduce = Math.min(overflow, Math.max(0, labelGap - 12));
+    labelGap -= gapReduce;
+    totalWidth = labelWidth + labelGap + rowWidth;
+    if (totalWidth > availableWidth) {
+      const targetRow = Math.max(160, availableWidth - labelWidth - labelGap);
+      if (targetRow > 0 && rowWidth > targetRow) {
+        const resize = targetRow / rowWidth;
+        coinWidth = Math.max(28, Math.floor(coinWidth * resize));
+        coinHeight = Math.max(24, Math.floor(coinHeight * resize));
+        spacing = Math.max(10, Math.floor(spacing * resize));
+        rowWidth = coinCount * coinWidth + (coinCount - 1) * spacing;
+        totalWidth = labelWidth + labelGap + rowWidth;
+      }
+    }
+  }
+
+  let groupLeft = Math.floor((canvasW - totalWidth) / 2);
+  const minLeft = sideMargin;
+  const maxLeft = canvasW - sideMargin - totalWidth;
+  if (groupLeft < minLeft) {
+    groupLeft = minLeft;
+  }
+  if (groupLeft > maxLeft) {
+    groupLeft = Math.max(minLeft, maxLeft);
+  }
+
+  const labelCenterX = groupLeft + labelWidth / 2;
+  const startX = groupLeft + labelWidth + labelGap + coinWidth / 2;
+  const maxRowSpace = Math.max(160, availableWidth - labelWidth - labelGap);
+
+  return {
+    canvasW,
+    y: rowY,
+    coinWidth,
+    coinHeight,
+    spacing,
+    startX,
+    maxRowWidth: maxRowSpace,
+    labelCenterX,
+    labelY: rowY,
+    labelCentered: true,
+  };
+};
+
+CoinChangeTopDown.prototype.updateNarrationLines = function (lines) {
+  if (!this.boardLineIDs) {
+    return;
+  }
+  const rows = this.boardLineIDs;
+  const prepared = Array.isArray(lines) ? lines : [];
+  const charWidth =
+    this.boardInfo && this.boardInfo.textCharWidth
+      ? this.boardInfo.textCharWidth
+      : 8;
+  const fontSize =
+    this.boardInfo && this.boardInfo.textFontSize
+      ? this.boardInfo.textFontSize
+      : 16;
+
+  this.clearNarrationText();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) {
+      continue;
+    }
+    const tokens =
+      i < prepared.length && Array.isArray(prepared[i]) ? prepared[i] : [];
+    if (!tokens || tokens.length === 0) {
+      continue;
+    }
+
+    let cursorX = row.startX;
+    row.segments = [];
+
+    for (let j = 0; j < tokens.length; j++) {
+      const token = tokens[j];
+      if (!token || token.text === undefined || token.text === null) {
+        continue;
+      }
+      const text = String(token.text);
+      if (!text) {
+        continue;
+      }
+      const labelID = this.nextIndex++;
+      this.cmd("CreateLabel", labelID, text, Math.round(cursorX), row.y, 0);
+      const fontStyle = token.bold ? `bold ${fontSize}` : `${fontSize}`;
+      this.cmd("SetTextStyle", labelID, fontStyle);
+      this.cmd("SetForegroundColor", labelID, "#0a223f");
+      const segmentWidth =
+        token.width !== undefined && token.width !== null
+          ? Number(token.width)
+          : text.length * charWidth;
+      row.segments.push({ id: labelID });
+      this.boardTextSegments.push(labelID);
+      cursorX += Number.isFinite(segmentWidth) ? segmentWidth : text.length * charWidth;
+    }
+  }
+};
+
+CoinChangeTopDown.prototype.normalizeNarrationHighlights = function (list) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return [];
+  }
+  const seen = {};
+  const result = [];
+  for (let i = 0; i < list.length; i++) {
+    const entry = list[i];
+    if (entry === undefined || entry === null) {
+      continue;
+    }
+    const text = String(entry).trim();
+    if (!text) {
+      continue;
+    }
+    const key = text.toLowerCase();
+    if (seen[key]) {
+      continue;
+    }
+    seen[key] = true;
+    result.push(text);
+  }
   return result;
 };
 
-CoinChangeTopDown.prototype.parseAmountInput = function (raw) {
-  const warnings = [];
-  let value = Number(raw);
-  if (!Number.isFinite(value)) {
-    warnings.push("Amount reset to default 11.");
-    value = CoinChangeTopDown.DEFAULT_AMOUNT;
+CoinChangeTopDown.prototype.applyNarrationHighlights = function (lines, highlightList) {
+  if (!lines || lines.length === 0) {
+    return [];
   }
-  value = Math.floor(value);
-  if (value < 0) {
-    warnings.push("Amount cannot be negative. Using 0.");
-    value = 0;
+  const normalized = this.normalizeNarrationHighlights(highlightList);
+  const highlightPatterns = [];
+  for (let i = 0; i < normalized.length; i++) {
+    const entry = normalized[i];
+    if (!entry) {
+      continue;
+    }
+    const parts = String(entry)
+      .toLowerCase()
+      .split(/\s+/)
+      .map((token) => token.replace(/[^0-9a-zA-Z]+/g, ""))
+      .filter((token) => token && token.length > 0);
+    if (parts.length > 0) {
+      highlightPatterns.push(parts);
+    }
   }
-  if (value > CoinChangeTopDown.MAX_AMOUNT) {
-    warnings.push(
-      `Amount limited to ${CoinChangeTopDown.MAX_AMOUNT} to keep the memo table readable.`
-    );
-    value = CoinChangeTopDown.MAX_AMOUNT;
+
+  const tokenized = [];
+  for (let i = 0; i < lines.length; i++) {
+    const tokens = this.tokenizeNarrationLine(lines[i]);
+    if (tokens.length === 0) {
+      tokenized.push(null);
+      continue;
+    }
+    if (highlightPatterns.length > 0) {
+      this.highlightNarrationTokens(tokens, highlightPatterns);
+    }
+    tokenized.push(tokens);
   }
-  return { amount: value, warnings };
+  return tokenized;
 };
 
-CoinChangeTopDown.prototype.makeStateKey = function (index, remain) {
-  return `${index}|${remain}`;
+CoinChangeTopDown.prototype.tokenizeNarrationLine = function (text) {
+  if (text === undefined || text === null) {
+    return [];
+  }
+  const source = String(text);
+  if (!source.trim()) {
+    return [];
+  }
+  const segments = source.split(/(\s+)/);
+  const tokens = [];
+  let previousWasSpace = true;
+  for (let i = 0; i < segments.length; i++) {
+    const part = segments[i];
+    if (!part) {
+      continue;
+    }
+    if (/^\s+$/.test(part)) {
+      previousWasSpace = true;
+      continue;
+    }
+    const sanitized = part.replace(/[^0-9a-zA-Z]+/g, "").toLowerCase();
+    tokens.push({
+      text: part,
+      leadingSpace: tokens.length > 0 ? previousWasSpace : false,
+      sanitized,
+      bold: false,
+    });
+    previousWasSpace = false;
+  }
+  return tokens;
 };
 
-CoinChangeTopDown.prototype.ensureTreeNode = function (
-  key,
-  index,
-  remain,
-  depth,
-  parentKey,
-  branchType,
-  branchLabel
-) {
+CoinChangeTopDown.prototype.highlightNarrationTokens = function (tokens, highlightPatterns) {
+  if (!tokens || tokens.length === 0 || !highlightPatterns || highlightPatterns.length === 0) {
+    return;
+  }
+  for (let p = 0; p < highlightPatterns.length; p++) {
+    const pattern = highlightPatterns[p];
+    if (!pattern || pattern.length === 0) {
+      continue;
+    }
+    for (let i = 0; i <= tokens.length - pattern.length; i++) {
+      let matches = true;
+      for (let j = 0; j < pattern.length; j++) {
+        const token = tokens[i + j];
+        if (!token || !token.sanitized || token.sanitized !== pattern[j]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        for (let j = 0; j < pattern.length; j++) {
+          tokens[i + j].bold = true;
+        }
+        i += pattern.length - 1;
+      }
+    }
+  }
+};
+
+CoinChangeTopDown.prototype.wrapNarrationLines = function (lines, charLimit, maxLines) {
+  if (!lines || lines.length === 0) {
+    return [];
+  }
+  const approxCharWidth =
+    this.boardInfo && this.boardInfo.textCharWidth
+      ? this.boardInfo.textCharWidth
+      : 8;
+  const textAreaWidth =
+    this.boardInfo && this.boardInfo.textAreaWidth
+      ? this.boardInfo.textAreaWidth
+      : Math.max(approxCharWidth, Math.max(10, charLimit || 48) * approxCharWidth);
+  const allowedLines = Math.max(
+    1,
+    maxLines || (this.boardLineIDs ? this.boardLineIDs.length : lines.length)
+  );
+  const widthLimit = Math.max(
+    4,
+    Math.floor(textAreaWidth / Math.max(approxCharWidth, 1))
+  );
+  const charLimitCap =
+    charLimit !== undefined && charLimit !== null
+      ? Math.max(4, Math.floor(charLimit))
+      : widthLimit;
+  const maxCharsPerLine = Math.max(4, Math.min(widthLimit, charLimitCap));
+
+  const flattened = [];
+  let startOfFlow = true;
+  for (let i = 0; i < lines.length; i++) {
+    const entry = lines[i];
+    if (!entry || (Array.isArray(entry) && entry.length === 0)) {
+      if (!startOfFlow) {
+        flattened.push({ type: "break" });
+        startOfFlow = true;
+      }
+      continue;
+    }
+    const tokens = Array.isArray(entry) ? entry : [entry];
+    let firstTokenInLine = true;
+    for (let j = 0; j < tokens.length; j++) {
+      const token = tokens[j];
+      if (!token || token.text === undefined || token.text === null) {
+        continue;
+      }
+      let content = String(token.text);
+      if (!content) {
+        continue;
+      }
+      if (!startOfFlow) {
+        if (token.leadingSpace || firstTokenInLine) {
+          content = " " + content;
+        }
+      }
+      flattened.push({ type: "token", text: content, bold: !!token.bold });
+      startOfFlow = false;
+      firstTokenInLine = false;
+    }
+  }
+
+  const rows = [];
+  let currentRow = [];
+  let currentWidth = 0;
+
+  const pushRow = () => {
+    if (currentRow.length > 0) {
+      rows.push(currentRow);
+    }
+    currentRow = [];
+    currentWidth = 0;
+  };
+
+  for (let i = 0; i < flattened.length; i++) {
+    const item = flattened[i];
+    if (!item) {
+      continue;
+    }
+    if (item.type === "break") {
+      pushRow();
+      continue;
+    }
+    let text = item.text;
+    if (!text) {
+      continue;
+    }
+
+    const dropLeadingSpacesForRowStart = () => {
+      while (text.length > 0 && text.charAt(0) === " " && currentRow.length === 0) {
+        text = text.substring(1);
+      }
+    };
+
+    dropLeadingSpacesForRowStart();
+
+    while (text.length > 0) {
+      if (
+        currentRow.length > 0 &&
+        currentWidth + text.length * approxCharWidth > textAreaWidth
+      ) {
+        pushRow();
+        dropLeadingSpacesForRowStart();
+        if (text.length === 0) {
+          break;
+        }
+      }
+
+      const remainingWidth = textAreaWidth - currentWidth;
+      let capacityChars =
+        currentRow.length === 0
+          ? maxCharsPerLine
+          : Math.max(1, Math.floor(remainingWidth / approxCharWidth));
+      if (capacityChars <= 0) {
+        pushRow();
+        dropLeadingSpacesForRowStart();
+        continue;
+      }
+
+      let take = Math.min(text.length, capacityChars);
+      if (take < text.length) {
+        const slice = text.substring(0, take);
+        const lastSpace = slice.lastIndexOf(" ");
+        if (lastSpace > 0) {
+          take = lastSpace;
+        }
+      }
+      if (take <= 0) {
+        take = Math.min(text.length, capacityChars);
+      }
+
+      let consumed = take;
+      let chunk = text.substring(0, take);
+      if (currentRow.length === 0 && chunk.charAt(0) === " ") {
+        chunk = chunk.substring(1);
+      }
+      if (chunk.length > 0) {
+        const width = chunk.length * approxCharWidth;
+        currentRow.push({ text: chunk, bold: item.bold, width });
+        currentWidth += width;
+      }
+      text = text.substring(consumed);
+      dropLeadingSpacesForRowStart();
+    }
+  }
+
+  if (currentRow.length > 0) {
+    rows.push(currentRow);
+  }
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  if (rows.length > allowedLines) {
+    if (allowedLines === 1) {
+      const merged = [];
+      for (let i = 0; i < rows.length; i++) {
+        merged.push(...rows[i]);
+      }
+      return [merged];
+    }
+    const trimmed = rows.slice(0, allowedLines - 1);
+    const overflow = [];
+    for (let i = allowedLines - 1; i < rows.length; i++) {
+      overflow.push(...rows[i]);
+    }
+    trimmed.push(overflow);
+    return trimmed;
+  }
+
+  return rows;
+};
+
+CoinChangeTopDown.prototype.renderNarrationTimer = function (remaining, total, meta) {
+  const info = meta || {};
+  const safeStepsRemaining = Math.max(0, Math.ceil(Number(remaining)));
+  const safeStepTotal = Math.max(0, Math.ceil(Number(total)));
+  let totalSeconds =
+    info.totalSeconds !== undefined && info.totalSeconds !== null
+      ? Number(info.totalSeconds)
+      : safeStepTotal;
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
+    totalSeconds = safeStepTotal;
+  }
+  const safeTotalSeconds = Math.max(0, Math.ceil(totalSeconds));
+  let secondsPerStep;
+  if (info.secondsPerStep !== undefined && info.secondsPerStep !== null) {
+    secondsPerStep = Number(info.secondsPerStep);
+  } else if (safeStepTotal > 0 && safeTotalSeconds > 0) {
+    secondsPerStep = safeTotalSeconds / safeStepTotal;
+  } else {
+    secondsPerStep = 1;
+  }
+  if (!Number.isFinite(secondsPerStep) || secondsPerStep <= 0) {
+    secondsPerStep = 1;
+  }
+
+  let remainingSeconds = Math.ceil(safeStepsRemaining * secondsPerStep);
+  if (!Number.isFinite(remainingSeconds) || remainingSeconds < 0) {
+    remainingSeconds = 0;
+  }
+
+  if (this.boardTimerID >= 0) {
+    const timerActive = safeTotalSeconds > 0;
+    let timerText = "";
+    if (timerActive) {
+      if (remainingSeconds > 0) {
+        const prefix = info.label || "Reading";
+        timerText = `${prefix} ${remainingSeconds}s`;
+      } else {
+        timerText = info.completionLabel || "Next step ready";
+      }
+    }
+    this.cmd("SetText", this.boardTimerID, timerText);
+    if (
+      this.boardInfo &&
+      this.boardInfo.timerAnchorX !== undefined &&
+      this.boardInfo.timerAnchorY !== undefined
+    ) {
+      const charWidth = this.boardInfo.timerCharWidth || 8;
+      const extra = this.boardInfo.timerExtraPadding || 0;
+      const anchorX = this.boardInfo.timerAnchorX;
+      const anchorY = this.boardInfo.timerAnchorY;
+      let estimatedWidth = 0;
+      if (timerText && timerText.length > 0) {
+        estimatedWidth = Math.max(0, Math.round(timerText.length * charWidth) + extra);
+      }
+      let posX = anchorX - estimatedWidth;
+      if (this.boardInfo.left !== undefined) {
+        const leftLimit = this.boardInfo.left + Math.max(6, Math.floor((this.boardInfo.width || 0) * 0.015));
+        if (posX < leftLimit) {
+          posX = leftLimit;
+        }
+      }
+      this.cmd("SetPosition", this.boardTimerID, posX, anchorY);
+    }
+  }
+
+  if (this.boardProgressFillID >= 0 && this.boardInfo) {
+    const timerActive = safeTotalSeconds > 0;
+    const totalDuration = timerActive ? Math.max(1, safeTotalSeconds) : 1;
+    const remainingTime = timerActive
+      ? Math.max(0, Math.min(remainingSeconds, totalDuration))
+      : totalDuration;
+    const consumed = timerActive ? Math.max(0, totalDuration - remainingTime) : 0;
+    const ratio = timerActive && totalDuration > 0 ? consumed / totalDuration : 0;
+    let fillWidth = Math.round(this.boardInfo.progressWidth * ratio);
+    if (ratio <= 0) {
+      fillWidth = this.boardInfo.progressMinWidth;
+    } else {
+      fillWidth = Math.max(
+        this.boardInfo.progressMinWidth,
+        Math.min(fillWidth, this.boardInfo.progressWidth)
+      );
+    }
+    const fillCenter = this.boardInfo.progressLeft + fillWidth / 2;
+    this.cmd("SetWidth", this.boardProgressFillID, fillWidth);
+    this.cmd("SetPosition", this.boardProgressFillID, fillCenter, this.boardInfo.progressY);
+    this.cmd("SetAlpha", this.boardProgressFillID, ratio > 0 ? 1 : 0);
+  }
+};
+
+CoinChangeTopDown.prototype.buildCoinsRow = function (layout) {
+  const coinCount = this.coinValues.length;
+  if (coinCount === 0) {
+    return;
+  }
+
+  const settings = layout || {};
+  const coinsY =
+    settings.y !== undefined && settings.y !== null ? settings.y : this.canvasHeight * 0.1;
+  let coinWidth = Math.max(32, Math.floor(settings.coinWidth || 48));
+  let coinHeight = Math.max(26, Math.floor(settings.coinHeight || 36));
+  let spacing = Math.max(12, Math.floor(settings.spacing || 18));
+  let rowWidth = coinCount * coinWidth + (coinCount - 1) * spacing;
+  const availableRowWidth =
+    settings.maxRowWidth && settings.maxRowWidth > 0
+      ? settings.maxRowWidth
+      : this.canvasWidth - Math.max(40, Math.floor(this.canvasWidth * 0.08));
+  if (rowWidth > availableRowWidth) {
+    const scale = availableRowWidth / rowWidth;
+    coinWidth = Math.max(28, Math.floor(coinWidth * scale));
+    coinHeight = Math.max(24, Math.floor(coinHeight * scale));
+    spacing = Math.max(10, Math.floor(spacing * scale));
+    rowWidth = coinCount * coinWidth + (coinCount - 1) * spacing;
+  }
+
+  const startX =
+    settings.startX !== undefined && settings.startX !== null
+      ? settings.startX
+      : Math.floor(((settings.canvasW || this.canvasWidth || 720) - rowWidth) / 2) + coinWidth / 2;
+
+  this.coinCellWidth = coinWidth;
+  this.coinCellHeight = coinHeight;
+  this.coinCellSpacing = spacing;
+  const leftEdge = startX - coinWidth / 2;
+  const rightEdge = leftEdge + rowWidth;
+  this.coinRowBounds = {
+    left: leftEdge,
+    right: rightEdge,
+    width: rowWidth,
+    height: coinHeight,
+    y: coinsY,
+  };
+
+  this.coinPositions = [];
+  this.coinIDs = [];
+  for (let i = 0; i < coinCount; i++) {
+    const id = this.nextIndex++;
+    const x = startX + i * (coinWidth + spacing);
+    this.coinIDs.push(id);
+    this.coinPositions.push({ x, y: coinsY });
+    this.cmd("CreateRectangle", id, String(this.coinValues[i]), coinWidth, coinHeight, x, coinsY);
+    this.cmd("SetBackgroundColor", id, this.coinColor);
+    this.cmd("SetForegroundColor", id, "#000000");
+  }
+};
+
+CoinChangeTopDown.prototype.buildTreeDisplay = function (canvasW, topY, height) {
+  const margin = Math.max(50, Math.floor(canvasW * 0.08));
+  let areaWidth = Math.max(320, canvasW - margin * 2);
+  if (areaWidth > canvasW - 16) {
+    areaWidth = canvasW - 16;
+  }
+  const areaLeft = (canvasW - areaWidth) / 2;
+  const areaHeight = Math.max(300, height || 320);
+  let areaTop = topY;
+
+  const reservedForLabel = this.boardReservedHeight || 0;
+  const labelOffsetBase =
+    reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.32) : 42;
+  let labelOffset = Math.max(26, Math.min(52, labelOffsetBase));
+  if (this.boardInfo) {
+    const boardBottom = this.boardInfo.bottom || 0;
+    const minGap = Math.max(18, Math.floor(reservedForLabel * 0.08));
+    const expectedLabelY = areaTop - labelOffset;
+    const requiredLabelY = boardBottom + minGap;
+    if (expectedLabelY < requiredLabelY) {
+      const adjustment = requiredLabelY - expectedLabelY;
+      areaTop += adjustment;
+    }
+  }
+
+  if (areaTop < topY) {
+    areaTop = topY;
+  }
+
+  this.treeArea = {
+    left: areaLeft,
+    right: areaLeft + areaWidth,
+    width: areaWidth,
+    top: areaTop,
+    height: areaHeight,
+    bottom: areaTop + areaHeight,
+  };
+
+  this.visitedArea = null;
+  this.visitedPanelWidth = this.treeArea.width;
+  this.visitedPanelGap = 0;
+
+  this.treeDepthDenominator = 1;
+  const dynamicRadius =
+    Math.floor(this.treeArea.width / Math.max(6, this.amount + 2)) + 6;
+  this.treeNodeRadius = Math.max(24, Math.min(34, dynamicRadius));
+  this.treeNodeLabelOffset = this.treeNodeRadius + 16;
+
+  const coinValuesForDepth =
+    this.coinValues && this.coinValues.length > 0 ? this.coinValues : [1];
+  const largestCoin = coinValuesForDepth[coinValuesForDepth.length - 1] || 1;
+  const estimatedDepth =
+    this.amount > 0 ? Math.ceil(this.amount / Math.max(largestCoin, 1)) : 0;
+  this.treeDepthBaseEstimate = Math.max(2, Math.min(estimatedDepth, 6));
+  this.treeDepthCapacity = Math.max(2, this.computeTreeDepthCapacity());
+  this.treeDepthDenominator = Math.max(
+    2,
+    Math.min(this.treeDepthCapacity, this.treeDepthBaseEstimate)
+  );
+
+  const treeCenterX = this.treeArea.left + this.treeArea.width / 2;
+  const treeLabelY = areaTop - labelOffset;
+  this.treeLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.treeLabelID,
+    "Recursion tree",
+    treeCenterX,
+    treeLabelY,
+    1
+  );
+  this.cmd("SetTextStyle", this.treeLabelID, "bold 18");
+  this.treeLabelOffset = labelOffset;
+  this.treeLabelYCoord = treeLabelY;
+
+  this.treeLevels = [];
+  this.treeNodes = {};
+  this.treeHighlightAmount = null;
+
+  return {
+    bottomY: this.treeArea.bottom,
+  };
+};
+
+CoinChangeTopDown.prototype.computeTreeDepthCapacity = function () {
   if (!this.treeArea) {
-    return null;
+    return 2;
+  }
+  const usableHeight = Math.max(
+    0,
+    this.treeArea.height - this.treeNodeRadius * 2
+  );
+  const minSpacing = Math.max(70, this.treeNodeRadius * 2.6);
+  const capacity = Math.floor(usableHeight / Math.max(minSpacing, 1));
+  return Math.max(2, capacity > 0 ? capacity : 2);
+};
+
+CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
+  const canvasW = this.canvasWidth || 720;
+  const areaTop = Math.max(0, topY);
+  const areaBottom = Math.max(areaTop + 80, bottomY);
+  const areaHeight = Math.max(160, areaBottom - areaTop);
+  let areaWidth = Math.max(240, Math.floor(canvasW * 0.8));
+  if (areaWidth > canvasW - 24) {
+    areaWidth = canvasW - 24;
+  }
+  const areaLeft = (canvasW - areaWidth) / 2;
+
+  this.visitedArea = {
+    left: areaLeft,
+    right: areaLeft + areaWidth,
+    width: areaWidth,
+    top: areaTop,
+    bottom: areaTop + areaHeight,
+    height: areaHeight,
+  };
+  this.visitedPanelWidth = this.visitedArea.width;
+  this.visitedPanelGap = 0;
+
+  const slotCount = Math.max(1, (amount || 0) + 1);
+  const labelOffset = Math.max(26, Math.floor(areaHeight * 0.16));
+  let labelY = areaTop - labelOffset;
+  if (labelY < 60) {
+    labelY = Math.max(36, labelY);
+  }
+  this.visitedLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.visitedLabelID,
+    "Memo table",
+    canvasW / 2,
+    labelY,
+    1
+  );
+  this.cmd("SetTextStyle", this.visitedLabelID, "bold 18");
+
+  const minCellWidth = 64;
+  const minCellHeight = 56;
+  const gapXBase = Math.max(8, Math.floor(this.visitedArea.width * 0.012));
+  const gapYBase = Math.max(10, Math.floor(areaHeight * 0.08));
+  let bestLayout = null;
+  const maxColumns = Math.min(
+    slotCount,
+    Math.max(4, Math.floor(this.visitedArea.width / (minCellWidth + gapXBase)))
+  );
+
+  for (let cols = maxColumns; cols >= 1; cols--) {
+    const rows = Math.ceil(slotCount / cols);
+    const gapX = Math.max(gapXBase, Math.floor(this.visitedArea.width * 0.01));
+    const gapY = Math.max(gapYBase, Math.floor(areaHeight * 0.06));
+    const usableWidth = this.visitedArea.width - gapX * (cols - 1);
+    const usableHeight = areaHeight - gapY * (rows - 1);
+    if (usableWidth <= 0 || usableHeight <= 0) {
+      continue;
+    }
+    const cellWidth = usableWidth / cols;
+    const cellHeight = usableHeight / rows;
+    if (cellWidth < minCellWidth || cellHeight < minCellHeight) {
+      continue;
+    }
+    const score = Math.min(cellWidth, cellHeight);
+    if (!bestLayout || score > bestLayout.score) {
+      bestLayout = {
+        cols,
+        rows,
+        cellWidth,
+        cellHeight,
+        gapX,
+        gapY,
+        score,
+      };
+    }
   }
 
-  let node = this.treeNodes[key];
-  if (node) {
-    return node;
+  if (!bestLayout) {
+    const cols = Math.max(1, Math.min(slotCount, Math.floor(this.visitedArea.width / minCellWidth)));
+    const rows = Math.max(1, Math.ceil(slotCount / cols));
+    bestLayout = {
+      cols,
+      rows,
+      cellWidth: Math.max(
+        minCellWidth,
+        (this.visitedArea.width - gapXBase * (cols - 1)) / cols
+      ),
+      cellHeight: Math.max(
+        minCellHeight,
+        (areaHeight - gapYBase * (rows - 1)) / rows
+      ),
+      gapX: gapXBase,
+      gapY: gapYBase,
+      score: 0,
+    };
   }
 
-  let x = this.treeCenterX;
-  let y = this.treeArea.top + this.treeNodeRadius;
-  if (parentKey && this.treeNodes[parentKey]) {
-    const parent = this.treeNodes[parentKey];
-    const offset = this.treeBaseHorizontalGap / Math.pow(Math.max(depth, 1), 1.2);
-    const direction = branchType === "take" ? -1 : 1;
-    x = parent.x + direction * offset;
-    y = parent.y + this.treeLevelGap;
-    const minX = this.treeArea.left + this.treeNodeRadius;
-    const maxX = this.treeArea.left + this.treeArea.width - this.treeNodeRadius;
-    if (x < minX) {
-      x = minX;
+  const { cols, rows, cellWidth, cellHeight, gapX, gapY } = bestLayout;
+  const gridWidth = cols * cellWidth + (cols - 1) * gapX;
+  const gridHeight = rows * cellHeight + (rows - 1) * gapY;
+  const startX =
+    this.visitedArea.left + (this.visitedArea.width - gridWidth) / 2 + cellWidth / 2;
+  const startY =
+    this.visitedArea.top + (areaHeight - gridHeight) / 2 + cellHeight / 2;
+
+  this.visitedSlotIDs = [];
+  this.visitedIndexIDs = [];
+  this.visitedValueIDs = [];
+  this.visitedStates = [];
+  this.visitedHighlightIndex = -1;
+
+  for (let i = 0; i < slotCount; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const x = startX + col * (cellWidth + gapX);
+    const y = startY + row * (cellHeight + gapY);
+
+    const rectId = this.nextIndex++;
+    this.visitedSlotIDs.push(rectId);
+    this.cmd("CreateRectangle", rectId, "", cellWidth, cellHeight, x, y);
+    this.cmd("SetBackgroundColor", rectId, this.visitedFalseColor);
+    this.cmd("SetForegroundColor", rectId, "#1d3f72");
+
+    const indexId = this.nextIndex++;
+    this.visitedIndexIDs.push(indexId);
+    const indexOffset = Math.max(12, Math.floor(cellHeight * 0.2));
+    this.cmd("CreateLabel", indexId, String(i), x, y - cellHeight / 2 + indexOffset, 1);
+    this.cmd("SetTextStyle", indexId, "bold 12");
+    this.cmd("SetForegroundColor", indexId, "#1d3f72");
+
+    const valueId = this.nextIndex++;
+    this.visitedValueIDs.push(valueId);
+    const valueOffset = Math.max(
+      0,
+      Math.min(Math.floor(cellHeight * 0.22), Math.floor(cellHeight / 2) - 12)
+    );
+    this.cmd("CreateLabel", valueId, "?", x, y + valueOffset, 1);
+    this.cmd("SetTextStyle", valueId, "bold 18");
+    this.cmd("SetForegroundColor", valueId, "#0a223f");
+  }
+};
+
+CoinChangeTopDown.prototype.resetVisitedDisplay = function () {
+  if (!this.visitedSlotIDs) {
+    this.visitedSlotIDs = [];
+  }
+  if (!this.visitedValueIDs) {
+    this.visitedValueIDs = [];
+  }
+  this.visitedStates = new Array(this.visitedSlotIDs.length).fill(null);
+  for (let i = 0; i < this.visitedSlotIDs.length; i++) {
+    const id = this.visitedSlotIDs[i];
+    if (id !== undefined && id !== null) {
+      this.cmd("SetBackgroundColor", id, this.visitedFalseColor);
+      this.cmd("SetHighlight", id, 0);
     }
-    if (x > maxX) {
-      x = maxX;
-    }
-    const maxY = this.treeArea.top + this.treeArea.height - this.treeNodeRadius;
-    if (y > maxY) {
-      y = maxY;
+    const valueId = this.visitedValueIDs[i];
+    if (valueId !== undefined && valueId !== null) {
+      this.cmd("SetText", valueId, "?");
     }
   }
+  this.visitedHighlightIndex = -1;
+};
+
+CoinChangeTopDown.prototype.setVisitedValue = function (index, value, options) {
+  if (index < 0 || index >= this.visitedSlotIDs.length) {
+    return;
+  }
+  const id = this.visitedSlotIDs[index];
+  const valueId =
+    this.visitedValueIDs && index < this.visitedValueIDs.length
+      ? this.visitedValueIDs[index]
+      : null;
+  this.visitedStates[index] = value;
+  let text = "?";
+  if (value !== undefined && value !== null) {
+    const infGuard =
+      this.memoInfinity !== undefined && this.memoInfinity !== null
+        ? this.memoInfinity
+        : Number.POSITIVE_INFINITY;
+    if (!Number.isFinite(value) || value >= infGuard) {
+      text = "∞";
+    } else {
+      text = String(value);
+    }
+  }
+  if (valueId !== undefined && valueId !== null) {
+    this.cmd("SetText", valueId, text);
+  }
+  let background = this.visitedFalseColor;
+  if (options && options.background) {
+    background = options.background;
+  } else if (value !== undefined && value !== null) {
+    background = this.visitedTrueColor;
+  }
+  if (id !== undefined && id !== null) {
+    this.cmd("SetBackgroundColor", id, background);
+  }
+};
+
+CoinChangeTopDown.prototype.formatMemoDisplay = function (value) {
+  if (value === undefined || value === null) {
+    return "?";
+  }
+  const infGuard =
+    this.memoInfinity !== undefined && this.memoInfinity !== null
+      ? this.memoInfinity
+      : Number.POSITIVE_INFINITY;
+  if (!Number.isFinite(value) || value >= infGuard) {
+    return "∞";
+  }
+  return String(value);
+};
+
+CoinChangeTopDown.prototype.highlightVisitedEntry = function (index, highlight) {
+  if (index < 0 || index >= this.visitedSlotIDs.length) {
+    return;
+  }
+  const slotId = this.visitedSlotIDs[index];
+  if (highlight) {
+    if (
+      this.visitedHighlightIndex !== -1 &&
+      this.visitedHighlightIndex !== index &&
+      this.visitedSlotIDs[this.visitedHighlightIndex]
+    ) {
+      this.cmd(
+        "SetHighlight",
+        this.visitedSlotIDs[this.visitedHighlightIndex],
+        0
+      );
+    }
+    if (slotId !== undefined && slotId !== null) {
+      this.cmd("SetHighlight", slotId, 1);
+    }
+    this.visitedHighlightIndex = index;
+  } else {
+    if (slotId !== undefined && slotId !== null) {
+      this.cmd("SetHighlight", slotId, 0);
+    }
+    if (this.visitedHighlightIndex === index) {
+      this.visitedHighlightIndex = -1;
+    }
+  }
+};
+
+CoinChangeTopDown.prototype.measureQueueMetrics = function (
+  canvasW,
+  baseCellWidth,
+  baseGap
+) {
+  const amount = this.amount;
+  const slotCount = Math.max(3, amount + 1);
+  const margin = 40;
+  const baseWidth =
+    baseCellWidth && baseCellWidth >= 0
+      ? baseCellWidth
+      : this.coinCellWidth && this.coinCellWidth > 0
+      ? this.coinCellWidth
+      : 40;
+  const rawBaseHeight =
+    this.coinCellHeight && this.coinCellHeight > 0
+      ? this.coinCellHeight
+      : Math.max(26, Math.min(60, baseWidth + 6));
+  const aspect = baseWidth > 0 ? rawBaseHeight / baseWidth : 0.8;
+  const spacingSeed =
+    baseGap !== undefined && baseGap !== null
+      ? baseGap
+      : this.coinCellSpacing !== undefined && this.coinCellSpacing !== null
+      ? this.coinCellSpacing * 0.6
+      : 10;
+  const gap = Math.max(6, Math.floor(spacingSeed));
+  let slotWidth = Math.max(22, Math.floor(baseWidth));
+  let totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
+  const areaWidth = canvasW - 2 * margin;
+  if (totalWidth > areaWidth) {
+    slotWidth = Math.max(
+      22,
+      Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount)
+    );
+    totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
+  }
+  let slotHeight = Math.max(
+    24,
+    Math.round(slotWidth * (aspect > 0 ? aspect : 0.8))
+  );
+  if (slotWidth >= baseWidth && rawBaseHeight > 0) {
+    slotHeight = Math.max(
+      24,
+      Math.min(slotHeight, Math.round(rawBaseHeight))
+    );
+  }
+  const labelOffset = Math.max(20, Math.floor(slotHeight * 0.85));
+  return { slotWidth, slotHeight, gap, labelOffset };
+};
+
+CoinChangeTopDown.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellWidth, baseGap) {
+  const amount = this.amount;
+  const slotCount = Math.max(3, amount + 1);
+  const margin = 40;
+  const baseWidth =
+    baseCellWidth && baseCellWidth >= 0
+      ? baseCellWidth
+      : this.coinCellWidth && this.coinCellWidth > 0
+      ? this.coinCellWidth
+      : 40;
+  const rawBaseHeight =
+    this.coinCellHeight && this.coinCellHeight > 0
+      ? this.coinCellHeight
+      : Math.max(26, Math.min(60, baseWidth + 6));
+  const aspect = baseWidth > 0 ? rawBaseHeight / baseWidth : 0.8;
+  const spacingSeed =
+    baseGap !== undefined && baseGap !== null
+      ? baseGap
+      : this.coinCellSpacing !== undefined && this.coinCellSpacing !== null
+      ? this.coinCellSpacing * 0.6
+      : 10;
+  const gap = Math.max(6, Math.floor(spacingSeed));
+  let slotWidth = Math.max(22, Math.floor(baseWidth));
+  let totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
+  const areaWidth = canvasW - 2 * margin;
+  if (totalWidth > areaWidth) {
+    slotWidth = Math.max(22, Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount));
+    totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
+  }
+  let slotHeight = Math.max(24, Math.round(slotWidth * (aspect > 0 ? aspect : 0.8)));
+  if (slotWidth >= baseWidth && rawBaseHeight > 0) {
+    slotHeight = Math.max(24, Math.min(slotHeight, Math.round(rawBaseHeight)));
+  }
+  const startX = Math.floor((canvasW - totalWidth) / 2) + slotWidth / 2;
+  const labelOffset = Math.max(20, Math.floor(slotHeight * 0.85));
+
+  this.queueLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.queueLabelID,
+    "Call stack",
+    canvasW / 2,
+    queueY - slotHeight / 2 - labelOffset,
+    1
+  );
+  this.cmd("SetTextStyle", this.queueLabelID, "bold 18");
+
+  this.queueSlotIDs = [];
+  this.queueValues = [];
+  for (let i = 0; i < slotCount; i++) {
+    const x = startX + i * (slotWidth + gap);
+    const id = this.nextIndex++;
+    this.queueSlotIDs.push(id);
+    this.cmd("CreateRectangle", id, "", slotWidth, slotHeight, x, queueY);
+    this.cmd("SetBackgroundColor", id, this.queueColor);
+    this.cmd("SetForegroundColor", id, "#000000");
+  }
+
+  return {
+    slotWidth,
+    slotHeight,
+    gap,
+    bottomY: queueY + slotHeight / 2,
+  };
+};
+
+CoinChangeTopDown.prototype.getTreeLevelY = function (level) {
+  if (!this.treeArea) {
+    return 0;
+  }
+  const steps = Math.max(1, this.treeDepthDenominator);
+  const limitedLevel = Math.min(Math.max(level, 0), steps);
+  const usableHeight = Math.max(0, this.treeArea.height - this.treeNodeRadius * 2);
+  const baseY = this.treeArea.top + this.treeNodeRadius;
+  if (steps <= 0) {
+    return baseY;
+  }
+  const spacing = usableHeight / steps;
+  return baseY + limitedLevel * spacing;
+};
+
+CoinChangeTopDown.prototype.getNodeParent = function (amount) {
+  if (
+    this.treeNodes[amount] !== undefined &&
+    this.treeNodes[amount] !== null &&
+    this.treeNodes[amount].parent !== undefined
+  ) {
+    return this.treeNodes[amount].parent;
+  }
+  if (
+    this.treePendingParents &&
+    Object.prototype.hasOwnProperty.call(this.treePendingParents, amount)
+  ) {
+    return this.treePendingParents[amount];
+  }
+  return null;
+};
+
+CoinChangeTopDown.prototype.ensureTreeDepthCapacity = function (level) {
+  if (!this.treeArea) {
+    return;
+  }
+  const requiredDepth = Math.max(1, level);
+  const maxDepth = Math.max(2, this.computeTreeDepthCapacity());
+  this.treeDepthCapacity = maxDepth;
+  if (requiredDepth > this.treeDepthBaseEstimate) {
+    this.treeDepthBaseEstimate = requiredDepth;
+  }
+
+  let targetDenominator = this.treeDepthDenominator;
+  if (requiredDepth > maxDepth) {
+    targetDenominator = Math.max(targetDenominator, requiredDepth);
+  } else if (requiredDepth > targetDenominator) {
+    targetDenominator = Math.max(
+      targetDenominator,
+      Math.min(requiredDepth, maxDepth)
+    );
+  }
+
+  if (targetDenominator !== this.treeDepthDenominator) {
+    this.treeDepthDenominator = targetDenominator;
+    this.reflowTreeLayout();
+  }
+};
+
+CoinChangeTopDown.prototype.reflowTreeLayout = function () {
+  if (!this.treeLevels) {
+    return;
+  }
+  for (let level = 0; level < this.treeLevels.length; level++) {
+    this.updateTreeLevelPositions(level);
+  }
+};
+
+CoinChangeTopDown.prototype.insertIntoTreeLevel = function (level, amount, parent) {
+  if (!this.treeLevels[level]) {
+    this.treeLevels[level] = [];
+  }
+
+  const existingIndex = this.treeLevels[level].indexOf(amount);
+  if (existingIndex !== -1) {
+    return existingIndex;
+  }
+
+  if (level === 0) {
+    this.treeLevels[level].push(amount);
+    return this.treeLevels[level].length - 1;
+  }
+
+  const previousLevel = this.treeLevels[level - 1] || [];
+  const parentOrder = new Map();
+  for (let i = 0; i < previousLevel.length; i++) {
+    parentOrder.set(previousLevel[i], i);
+  }
+
+  const normalizedParent = parent === undefined ? null : parent;
+  const parentRank = parentOrder.has(normalizedParent)
+    ? parentOrder.get(normalizedParent)
+    : Number.MAX_SAFE_INTEGER;
+
+  let insertIndex = this.treeLevels[level].length;
+  for (let i = 0; i < this.treeLevels[level].length; i++) {
+    const currentAmount = this.treeLevels[level][i];
+    const currentParent = this.getNodeParent(currentAmount);
+    const currentRank = parentOrder.has(currentParent)
+      ? parentOrder.get(currentParent)
+      : Number.MAX_SAFE_INTEGER;
+
+    if (currentRank > parentRank) {
+      insertIndex = i;
+      break;
+    }
+
+    if (currentRank === parentRank && currentParent === normalizedParent) {
+      insertIndex = i + 1;
+    }
+  }
+
+  this.treeLevels[level].splice(insertIndex, 0, amount);
+  return insertIndex;
+};
+
+CoinChangeTopDown.prototype.updateTreeLevelPositions = function (level) {
+  const positions = [];
+  const levelAmounts = this.treeLevels[level] || [];
+  if (!this.treeArea || levelAmounts.length === 0) {
+    return positions;
+  }
+
+  const y = this.getTreeLevelY(level);
+  const baseLeft = this.treeArea.left + this.treeNodeRadius;
+  const baseRight = this.treeArea.right - this.treeNodeRadius;
+  const clamp = (value) => Math.max(baseLeft, Math.min(baseRight, value));
+
+  if (level === 0) {
+    const centerX = clamp((baseLeft + baseRight) / 2);
+    const rootAmount = levelAmounts[0];
+    positions.push({ x: centerX, y });
+    const rootNode = this.treeNodes[rootAmount];
+    if (rootNode) {
+      this.cmd("Move", rootNode.id, centerX, y);
+      if (rootNode.labelID >= 0) {
+        this.cmd("Move", rootNode.labelID, centerX, y + this.treeNodeLabelOffset);
+      }
+      rootNode.x = centerX;
+      rootNode.y = y;
+    }
+    return positions;
+  }
+
+  const parentAmounts = this.treeLevels[level - 1] || [];
+  const fallbackCenter = clamp((baseLeft + baseRight) / 2);
+  const parentCenters = parentAmounts.map((amount, index) => {
+    const parentNode = this.treeNodes[amount];
+    if (parentNode && parentNode.x !== undefined && parentNode.x !== null) {
+      return clamp(parentNode.x);
+    }
+    return clamp(
+      baseLeft +
+        ((index + 1) * (baseRight - baseLeft)) /
+          Math.max(parentAmounts.length + 1, 2)
+    );
+  });
+
+  const parentCenterLookup = new Map();
+  for (let i = 0; i < parentAmounts.length; i++) {
+    parentCenterLookup.set(parentAmounts[i], parentCenters[i]);
+  }
+
+  const groupSequence = [];
+  const groupLookup = new Map();
+  for (const amount of levelAmounts) {
+    const parent = this.getNodeParent(amount);
+    if (!groupLookup.has(parent)) {
+      const desiredCenter = parentCenterLookup.has(parent)
+        ? parentCenterLookup.get(parent)
+        : fallbackCenter;
+      const entry = {
+        parent,
+        children: [],
+        desiredCenter,
+      };
+      groupLookup.set(parent, entry);
+      groupSequence.push(entry);
+    }
+    groupLookup.get(parent).children.push(amount);
+  }
+
+  if (groupSequence.length === 0) {
+    return positions;
+  }
+
+  const availableWidth = Math.max(0, baseRight - baseLeft);
+  const baseSpacing = Math.max(this.treeNodeRadius * 3.1, 96);
+  const minSpacing = Math.max(this.treeNodeRadius * 2.4, 74);
+
+  const computeLayout = (spacing) => {
+    const margin = Math.max(spacing * 0.5, this.treeNodeRadius * 1.3, 36);
+    const padding = Math.max(spacing * 0.28, this.treeNodeRadius * 0.9, 18);
+    const groups = [];
+
+    for (const entry of groupSequence) {
+      const { parent, children, desiredCenter } = entry;
+      if (!children || children.length === 0) {
+        continue;
+      }
+
+      let parentCenter = parentCenterLookup.has(parent)
+        ? parentCenterLookup.get(parent)
+        : desiredCenter;
+      if (!Number.isFinite(parentCenter)) {
+        parentCenter = fallbackCenter;
+      }
+      parentCenter = clamp(parentCenter);
+
+      const info = {
+        parent,
+        children: children.slice(),
+        parentCenter,
+        center: parentCenter,
+        positions: [],
+        padding,
+      };
+
+      if (children.length === 1) {
+        const x = clamp(parentCenter);
+        info.positions.push(x);
+        info.minX = x;
+        info.maxX = x;
+      } else {
+        const offsets = [];
+        if (children.length % 2 === 0) {
+          const base = children.length / 2 - 0.5;
+          for (let i = 0; i < children.length; i++) {
+            offsets.push(i - base);
+          }
+        } else {
+          const mid = Math.floor(children.length / 2);
+          for (let i = 0; i < children.length; i++) {
+            offsets.push(i - mid);
+          }
+        }
+
+        const rawPositions = [];
+        let minX = Infinity;
+        let maxX = -Infinity;
+        for (let i = 0; i < children.length; i++) {
+          const x = parentCenter + offsets[i] * spacing;
+          rawPositions.push(x);
+          if (x < minX) {
+            minX = x;
+          }
+          if (x > maxX) {
+            maxX = x;
+          }
+        }
+
+        if (!Number.isFinite(minX) || !Number.isFinite(maxX)) {
+          const x = clamp(parentCenter);
+          info.positions = children.map(() => x);
+          info.minX = x;
+          info.maxX = x;
+          info.center = x;
+        } else {
+          let shift = 0;
+          if (minX < baseLeft) {
+            shift += baseLeft - minX;
+          }
+          if (maxX + shift > baseRight) {
+            shift -= maxX + shift - baseRight;
+            const minShift = baseLeft - minX;
+            const maxShift = baseRight - maxX;
+            if (shift < minShift) {
+              shift = minShift;
+            } else if (shift > maxShift) {
+              shift = maxShift;
+            }
+          }
+          const adjusted = rawPositions.map((value) => value + shift);
+          info.positions = adjusted;
+          info.minX = Math.min(...adjusted);
+          info.maxX = Math.max(...adjusted);
+          info.center = parentCenter + shift;
+        }
+      }
+
+      if (info.minX === undefined || info.maxX === undefined) {
+        const x = clamp(info.center);
+        info.positions = info.children.map(() => x);
+        info.minX = x;
+        info.maxX = x;
+        info.center = x;
+      }
+
+      info.width = Math.max(info.maxX - info.minX, 0);
+      info.start = Math.max(baseLeft, info.minX - padding);
+      info.end = Math.min(baseRight, info.maxX + padding);
+      info.blockWidth = Math.max(
+        info.end - info.start,
+        this.treeNodeRadius * 2.6,
+        spacing * 0.4
+      );
+      groups.push(info);
+    }
+
+    let totalWidth = 0;
+    if (groups.length > 0) {
+      totalWidth = (
+        groups.reduce((sum, info) => sum + info.blockWidth, 0) +
+        margin * (groups.length - 1)
+      );
+    }
+
+    return { groups, margin, totalWidth };
+  };
+
+  let siblingSpacing = baseSpacing;
+  let layout = computeLayout(siblingSpacing);
+  if (availableWidth > 0 && layout.groups.length > 0) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (layout.totalWidth <= availableWidth + 1) {
+        break;
+      }
+      const scale = availableWidth / Math.max(layout.totalWidth, 1);
+      const nextSpacing = Math.max(minSpacing, siblingSpacing * scale);
+      if (Math.abs(nextSpacing - siblingSpacing) < 0.5) {
+        siblingSpacing = nextSpacing;
+        layout = computeLayout(siblingSpacing);
+        break;
+      }
+      siblingSpacing = nextSpacing;
+      layout = computeLayout(siblingSpacing);
+    }
+  }
+
+  const finalGroups = layout.groups;
+  const margin = layout.margin;
+
+  const adjustGroup = (info, delta) => {
+    if (!info || !Number.isFinite(delta) || delta === 0) {
+      return 0;
+    }
+    const minDelta = baseLeft - info.minX;
+    const maxDelta = baseRight - info.maxX;
+    let applied = Math.max(minDelta, Math.min(maxDelta, delta));
+    if (!Number.isFinite(applied) || Math.abs(applied) < 0.01) {
+      return 0;
+    }
+    for (let i = 0; i < info.positions.length; i++) {
+      info.positions[i] += applied;
+    }
+    info.minX += applied;
+    info.maxX += applied;
+    info.center += applied;
+    info.start = Math.max(baseLeft, info.minX - info.padding);
+    info.end = Math.min(baseRight, info.maxX + info.padding);
+    info.blockWidth = Math.max(
+      info.end - info.start,
+      this.treeNodeRadius * 2.6,
+      siblingSpacing * 0.4
+    );
+    return applied;
+  };
+
+  if (finalGroups.length > 1 && availableWidth > 0) {
+    const sorted = finalGroups.slice().sort((a, b) => a.center - b.center);
+    const maxIterations = 6;
+    for (let iter = 0; iter < maxIterations; iter++) {
+      let changed = false;
+
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = sorted[i - 1];
+        const curr = sorted[i];
+        const desiredStart = prev.end + margin;
+        if (curr.start < desiredStart) {
+          const shift = adjustGroup(curr, desiredStart - curr.start);
+          if (Math.abs(shift) > 0.01) {
+            changed = true;
+          }
+        }
+      }
+
+      for (let i = sorted.length - 2; i >= 0; i--) {
+        const curr = sorted[i];
+        const next = sorted[i + 1];
+        const desiredEnd = next.start - margin;
+        if (curr.end > desiredEnd) {
+          const shift = adjustGroup(curr, desiredEnd - curr.end);
+          if (Math.abs(shift) > 0.01) {
+            changed = true;
+          }
+        }
+      }
+
+      const first = sorted[0];
+      if (first.start < baseLeft) {
+        const shift = adjustGroup(first, baseLeft - first.start);
+        if (Math.abs(shift) > 0.01) {
+          changed = true;
+        }
+      }
+      const last = sorted[sorted.length - 1];
+      if (last.end > baseRight) {
+        const shift = adjustGroup(last, baseRight - last.end);
+        if (Math.abs(shift) > 0.01) {
+          changed = true;
+        }
+      }
+
+      if (!changed) {
+        break;
+      }
+    }
+  } else if (finalGroups.length === 1) {
+    const singleGroup = finalGroups[0];
+    if (singleGroup.start < baseLeft) {
+      adjustGroup(singleGroup, baseLeft - singleGroup.start);
+    } else if (singleGroup.end > baseRight) {
+      adjustGroup(singleGroup, baseRight - singleGroup.end);
+    }
+  }
+
+  const positionLookup = new Map();
+  for (const info of finalGroups) {
+    for (let i = 0; i < info.children.length; i++) {
+      const amount = info.children[i];
+      const x = clamp(info.positions[i]);
+      positionLookup.set(amount, { x, y });
+    }
+  }
+
+  for (let i = 0; i < levelAmounts.length; i++) {
+    const amount = levelAmounts[i];
+    let pos = positionLookup.get(amount);
+    if (!pos) {
+      const fallbackX = clamp(
+        baseLeft +
+          ((i + 1) * (baseRight - baseLeft)) /
+            Math.max(levelAmounts.length + 1, 2)
+      );
+      pos = { x: fallbackX, y };
+      positionLookup.set(amount, pos);
+    }
+    positions.push(pos);
+    const node = this.treeNodes[amount];
+    if (node) {
+      this.cmd("Move", node.id, pos.x, pos.y);
+      if (node.labelID >= 0) {
+        this.cmd("Move", node.labelID, pos.x, pos.y + this.treeNodeLabelOffset);
+      }
+      node.x = pos.x;
+      node.y = pos.y;
+      if (
+        node.edgeLabelID !== undefined &&
+        node.edgeLabelID !== null &&
+        node.edgeLabelID >= 0
+      ) {
+        this.updateEdgeLabelPosition(amount);
+      }
+    }
+  }
+
+  return positions;
+};
+
+CoinChangeTopDown.prototype.resetTreeDisplay = function () {
+  const amounts = Object.keys(this.treeNodes || {}).map(Number);
+  amounts.sort((a, b) => {
+    const nodeA = this.treeNodes[a];
+    const nodeB = this.treeNodes[b];
+    const levelA = nodeA ? nodeA.level : 0;
+    const levelB = nodeB ? nodeB.level : 0;
+    if (levelA !== levelB) {
+      return levelB - levelA;
+    }
+    return b - a;
+  });
+
+  this.clearTreeEdgeHighlight();
+
+  this.treeDepthCapacity = Math.max(2, this.computeTreeDepthCapacity());
+
+  const baseDepth = Math.max(
+    2,
+    Math.min(
+      this.treeDepthCapacity || 2,
+      this.treeDepthBaseEstimate || this.treeDepthDenominator || 2
+    )
+  );
+  this.treeDepthDenominator = baseDepth;
+
+  for (const amount of amounts) {
+    const node = this.treeNodes[amount];
+    if (!node) {
+      continue;
+    }
+    if (node.parent !== null && this.treeNodes[node.parent]) {
+      this.cmd("Disconnect", this.treeNodes[node.parent].id, node.id);
+    }
+    if (node.labelID >= 0) {
+      this.cmd("Delete", node.labelID);
+    }
+    if (
+      node.edgeLabelID !== undefined &&
+      node.edgeLabelID !== null &&
+      node.edgeLabelID >= 0
+    ) {
+      this.cmd("Delete", node.edgeLabelID);
+    }
+    this.cmd("Delete", node.id);
+  }
+
+  this.treeLevels = [];
+  this.treeNodes = {};
+  this.treeHighlightAmount = null;
+  this.treePendingParents = {};
+  this.treeActiveEdge = null;
+
+  this.createTreeRoot();
+};
+
+CoinChangeTopDown.prototype.createTreeRoot = function () {
+  if (!this.treeArea) {
+    return;
+  }
+  this.treeLevels[0] = [0];
+  const positions = this.updateTreeLevelPositions(0);
+  const pos = positions[0] || {
+    x: this.treeArea.left + this.treeArea.width / 2,
+    y: this.getTreeLevelY(0),
+  };
 
   const nodeID = this.nextIndex++;
-  this.cmd("CreateCircle", nodeID, String(remain), x, y);
+  this.cmd("CreateCircle", nodeID, "0", pos.x, pos.y);
   this.cmd("SetBackgroundColor", nodeID, this.treeDefaultColor);
   this.cmd("SetForegroundColor", nodeID, "#000000");
 
@@ -613,374 +2384,1116 @@ CoinChangeTopDown.prototype.ensureTreeNode = function (
   this.cmd(
     "CreateLabel",
     labelID,
-    `i=${index}`,
-    x,
-    y + this.treeNodeLabelOffset,
+    this.formatTreeNodeLabel(0, null),
+    pos.x,
+    pos.y + this.treeNodeLabelOffset,
     1
   );
   this.cmd("SetTextStyle", labelID, "14");
 
-  node = {
+  this.treeNodes[0] = {
     id: nodeID,
     labelID,
-    x,
-    y,
-    index,
-    remain,
-    depth,
-    parentKey: parentKey || null,
-    branchType: branchType || null,
+    level: 0,
+    x: pos.x,
+    y: pos.y,
+    step: 0,
+    coin: null,
+    parent: null,
+    color: this.treeDefaultColor,
     edgeLabelID: -1,
   };
-  this.treeNodes[key] = node;
+};
 
-  if (parentKey && this.treeNodes[parentKey]) {
-    const parent = this.treeNodes[parentKey];
-    this.cmd("Connect", parent.id, nodeID);
-    if (branchLabel) {
-      const label = this.nextIndex++;
-      const labelX = (parent.x + node.x) / 2;
-      const labelY = (parent.y + node.y) / 2 - 16;
-      this.cmd("CreateLabel", label, branchLabel, labelX, labelY, 1);
-      this.cmd("SetTextStyle", label, "13");
-      node.edgeLabelID = label;
-      this.treeEdgeLabelIDs.push(label);
+CoinChangeTopDown.prototype.formatTreeNodeLabel = function () {
+  return "";
+};
+
+CoinChangeTopDown.prototype.updateTreeNodeLabel = function (amount, step, coin) {
+  const node = this.treeNodes[amount];
+  if (!node) {
+    return;
+  }
+  if (step !== undefined && step !== null) {
+    node.step = step;
+  }
+  if (coin !== undefined) {
+    node.coin = coin;
+  }
+  if (node.labelID >= 0) {
+    this.cmd(
+      "SetText",
+      node.labelID,
+      this.formatTreeNodeLabel(node.step, node.coin)
+    );
+  }
+};
+
+CoinChangeTopDown.prototype.ensureTreeNode = function (
+  amount,
+  level,
+  parentAmount,
+  step,
+  coin
+) {
+  const parent = parentAmount === undefined ? null : parentAmount;
+  const hasLevel = level !== undefined && level !== null;
+  let normalizedLevel = hasLevel ? level : 0;
+
+  if (this.treeNodes[amount]) {
+    const node = this.treeNodes[amount];
+    const levelForLayout = hasLevel ? normalizedLevel : node.level || 0;
+    this.ensureTreeDepthCapacity(levelForLayout);
+    this.updateTreeNodeLabel(amount, step, coin);
+    if (hasLevel) {
+      node.level = normalizedLevel;
+    }
+    if (parent !== undefined) {
+      node.parent = parent;
+    }
+    if (coin !== undefined && coin !== null) {
+      this.setEdgeLabel(amount, coin);
+    } else if (
+      node.edgeLabelID !== undefined &&
+      node.edgeLabelID !== null &&
+      node.edgeLabelID >= 0
+    ) {
+      this.updateEdgeLabelPosition(amount);
+    }
+    return node;
+  }
+
+  this.ensureTreeDepthCapacity(normalizedLevel);
+
+  this.treePendingParents[amount] = parent;
+  const index = this.insertIntoTreeLevel(normalizedLevel, amount, parent);
+  const positions = this.updateTreeLevelPositions(normalizedLevel);
+  const pos = positions[index] || {
+    x: this.treeArea.left + this.treeArea.width / 2,
+    y: this.getTreeLevelY(normalizedLevel),
+  };
+
+  const nodeID = this.nextIndex++;
+  this.cmd("CreateCircle", nodeID, String(amount), pos.x, pos.y);
+  this.cmd("SetBackgroundColor", nodeID, this.treeDefaultColor);
+  this.cmd("SetForegroundColor", nodeID, "#000000");
+
+  const labelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    labelID,
+    this.formatTreeNodeLabel(step, coin),
+    pos.x,
+    pos.y + this.treeNodeLabelOffset,
+    1
+  );
+  this.cmd("SetTextStyle", labelID, "14");
+
+  const nodeInfo = {
+    id: nodeID,
+    labelID,
+    level: normalizedLevel,
+    x: pos.x,
+    y: pos.y,
+    step: step === undefined ? null : step,
+    coin: coin === undefined ? null : coin,
+    parent,
+    color: this.treeDefaultColor,
+    edgeLabelID: -1,
+  };
+  this.treeNodes[amount] = nodeInfo;
+  delete this.treePendingParents[amount];
+
+  if (
+    parent !== undefined &&
+    parent !== null &&
+    this.treeNodes[parent]
+  ) {
+    this.cmd("Connect", this.treeNodes[parent].id, nodeID);
+    if (coin !== undefined && coin !== null) {
+      this.setEdgeLabel(amount, coin);
     }
   }
 
-  return node;
+  return nodeInfo;
 };
 
-CoinChangeTopDown.prototype.getMemoCell = function (row, col) {
+CoinChangeTopDown.prototype.setTreeNodeColor = function (amount, color) {
+  const node = this.treeNodes[amount];
+  if (!node) {
+    return;
+  }
+  const fill = color || this.treeDefaultColor;
+  this.cmd("SetBackgroundColor", node.id, fill);
+  node.color = fill;
+};
+
+CoinChangeTopDown.prototype.computeEdgeLabelPosition = function (parentNode, childNode) {
+  if (!parentNode || !childNode) {
+    return { x: 0, y: 0 };
+  }
+  const midX = (parentNode.x + childNode.x) / 2;
+  const midY = (parentNode.y + childNode.y) / 2;
+  const dx = childNode.x - parentNode.x;
+  const dy = childNode.y - parentNode.y;
+  const length = Math.sqrt(dx * dx + dy * dy);
+
+  if (!length || !Number.isFinite(length)) {
+    return { x: midX, y: midY };
+  }
+
+  const perpA = { x: -dy / length, y: dx / length };
+  const perpB = { x: dy / length, y: -dx / length };
+
+  const pickVector = (vec1, vec2) => {
+    const vec1Score = Number.isFinite(vec1.y) ? vec1.y : 0;
+    const vec2Score = Number.isFinite(vec2.y) ? vec2.y : 0;
+    if (vec1Score < 0 && vec2Score >= 0) {
+      return vec1;
+    }
+    if (vec2Score < 0 && vec1Score >= 0) {
+      return vec2;
+    }
+    return Math.abs(vec1Score) <= Math.abs(vec2Score) ? vec1 : vec2;
+  };
+
+  let offsetVec = pickVector(perpA, perpB);
+  if (!Number.isFinite(offsetVec.x) || !Number.isFinite(offsetVec.y)) {
+    offsetVec = { x: 0, y: -1 };
+  }
+
+  if (Math.abs(offsetVec.y) < 0.05) {
+    offsetVec = Math.abs(perpA.y) > Math.abs(perpB.y) ? perpA : perpB;
+    if (Math.abs(offsetVec.y) < 0.05) {
+      offsetVec = { x: 0, y: dy >= 0 ? -1 : 1 };
+    }
+  }
+
+  const offsetMagnitude = Math.max(
+    8,
+    Math.min(18, Math.max(this.treeNodeRadius * 0.6, length * 0.18))
+  );
+  let labelX = midX + offsetVec.x * offsetMagnitude;
+  let labelY = midY + offsetVec.y * offsetMagnitude;
+
+  if (this.treeArea) {
+    const margin = Math.max(12, this.treeNodeRadius * 0.75);
+    labelX = Math.max(this.treeArea.left + margin, Math.min(this.treeArea.right - margin, labelX));
+    labelY = Math.max(this.treeArea.top + margin, Math.min(this.treeArea.bottom - margin, labelY));
+  }
+
+  return { x: labelX, y: labelY };
+};
+
+CoinChangeTopDown.prototype.updateEdgeLabelPosition = function (amount) {
+  const node = this.treeNodes[amount];
   if (
-    !Array.isArray(this.memoCellIDs) ||
-    row < 0 ||
-    row >= this.memoCellIDs.length ||
-    col < 0 ||
-    col >= this.memoCellIDs[row].length
+    !node ||
+    node.edgeLabelID === undefined ||
+    node.edgeLabelID === null ||
+    node.edgeLabelID < 0
   ) {
-    return null;
-  }
-  return this.memoCellIDs[row][col];
-};
-
-CoinChangeTopDown.prototype.setMemoValue = function (row, col, value, options) {
-  const cell = this.getMemoCell(row, col);
-  if (!cell) {
     return;
   }
-  const text = this.formatCost(value, this.amount + 1);
-  const color = options && options.color ? options.color : this.memoCellColor;
-  this.cmd("SetText", cell.id, text);
-  this.cmd("SetBackgroundColor", cell.id, color);
-};
-
-CoinChangeTopDown.prototype.highlightMemoCell = function (row, col, highlight) {
-  const cell = this.getMemoCell(row, col);
-  if (!cell) {
+  const parentAmount = node.parent;
+  if (parentAmount === undefined || parentAmount === null) {
     return;
   }
-  this.cmd("SetHighlight", cell.id, highlight ? 1 : 0);
+  const parent = this.treeNodes[parentAmount];
+  if (!parent) {
+    return;
+  }
+  const pos = this.computeEdgeLabelPosition(parent, node);
+  this.cmd("Move", node.edgeLabelID, pos.x, pos.y);
 };
 
-CoinChangeTopDown.prototype.highlightTreeNode = function (key, highlight) {
-  const node = this.treeNodes[key];
+CoinChangeTopDown.prototype.setEdgeLabel = function (amount, coin) {
+  if (coin === undefined || coin === null) {
+    return;
+  }
+  const node = this.treeNodes[amount];
   if (!node) {
     return;
   }
-  const color = highlight ? this.treeActiveColor : this.treeDefaultColor;
-  this.cmd("SetBackgroundColor", node.id, color);
-};
-
-CoinChangeTopDown.prototype.colorTreeNode = function (key, color) {
-  const node = this.treeNodes[key];
-  if (!node) {
+  const parentAmount = node.parent;
+  if (parentAmount === undefined || parentAmount === null) {
     return;
   }
-  this.cmd("SetBackgroundColor", node.id, color || this.treeDefaultColor);
-};
-
-CoinChangeTopDown.prototype.updateTreeNodeLabel = function (key, index, best) {
-  const node = this.treeNodes[key];
-  if (!node || node.labelID < 0) {
+  const parent = this.treeNodes[parentAmount];
+  if (!parent) {
     return;
   }
-  const suffix = best === undefined ? "" : `, best=${this.formatCost(best, this.amount + 1)}`;
-  this.cmd("SetText", node.labelID, `i=${index}${suffix}`);
-};
-
-CoinChangeTopDown.prototype.updateStatePanel = function (index, remain, coin) {
-  if (this.stateValueID >= 0) {
-    this.cmd("SetText", this.stateValueID, `(i=${index}, remain=${remain})`);
-  }
-  if (this.coinValueID >= 0) {
-    const text = coin !== null && coin !== undefined ? String(coin) : "-";
-    this.cmd("SetText", this.coinValueID, text);
-  }
-};
-
-CoinChangeTopDown.prototype.updateTakePanel = function (value) {
-  if (this.takeValueID >= 0) {
-    this.cmd("SetText", this.takeValueID, this.formatCost(value, this.amount + 1));
-  }
-};
-
-CoinChangeTopDown.prototype.updateSkipPanel = function (value) {
-  if (this.skipValueID >= 0) {
-    this.cmd("SetText", this.skipValueID, this.formatCost(value, this.amount + 1));
+  const labelText = `+${coin}`;
+  const pos = this.computeEdgeLabelPosition(parent, node);
+  if (
+    node.edgeLabelID === undefined ||
+    node.edgeLabelID === null ||
+    node.edgeLabelID < 0
+  ) {
+    const labelID = this.nextIndex++;
+    this.cmd("CreateLabel", labelID, labelText, pos.x, pos.y, 0);
+    this.cmd("SetTextStyle", labelID, "bold 16");
+    this.cmd("SetForegroundColor", labelID, this.treeEdgeLabelColor);
+    node.edgeLabelID = labelID;
+  } else {
+    this.cmd("SetText", node.edgeLabelID, labelText);
+    this.cmd("SetTextStyle", node.edgeLabelID, "bold 16");
+    this.cmd("SetForegroundColor", node.edgeLabelID, this.treeEdgeLabelColor);
+    this.cmd("Move", node.edgeLabelID, pos.x, pos.y);
   }
 };
 
-CoinChangeTopDown.prototype.updateMemoPanel = function (value) {
-  if (this.memoValueID >= 0) {
-    this.cmd("SetText", this.memoValueID, this.formatCost(value, this.amount + 1));
-  }
+CoinChangeTopDown.prototype.markTreeNodeVisited = function (
+  amount,
+  step,
+  color,
+  coin,
+  parentAmount
+) {
+  const level = step === undefined || step === null ? 0 : step;
+  const parent = parentAmount === undefined ? null : parentAmount;
+  this.ensureTreeNode(amount, level, parent, step, coin);
+  this.updateTreeNodeLabel(amount, step, coin);
+  this.setTreeNodeColor(amount, color || this.treeVisitedColor);
 };
 
-CoinChangeTopDown.prototype.updateAnswerPanel = function (value) {
-  if (this.resultValueID >= 0) {
-    this.cmd("SetText", this.resultValueID, value);
-  }
-};
-
-CoinChangeTopDown.prototype.formatCost = function (value, INF) {
-  if (value === null || value === undefined) {
-    return "-";
-  }
-  if (value >= INF) {
-    return "\u221E";
-  }
-  return String(value);
-};
-
-CoinChangeTopDown.prototype.showMessage = function (text) {
-  if (this.messageID < 0) {
+CoinChangeTopDown.prototype.highlightTreeNode = function (amount) {
+  if (this.treeHighlightAmount === amount) {
     return;
   }
-  this.cmd("SetText", this.messageID, text || "");
-  this.cmd("SetAlpha", this.messageID, text ? 1 : 0);
+  if (
+    this.treeHighlightAmount !== null &&
+    this.treeNodes[this.treeHighlightAmount]
+  ) {
+    const prev = this.treeNodes[this.treeHighlightAmount];
+    this.cmd("SetBackgroundColor", prev.id, prev.color || this.treeDefaultColor);
+  }
+  if (this.treeNodes[amount]) {
+    this.cmd("SetBackgroundColor", this.treeNodes[amount].id, this.treeActiveColor);
+    this.treeHighlightAmount = amount;
+  } else {
+    this.treeHighlightAmount = null;
+  }
 };
 
-CoinChangeTopDown.prototype.clearMessage = function () {
-  if (this.messageID >= 0) {
-    this.cmd("SetAlpha", this.messageID, 0);
+CoinChangeTopDown.prototype.clearTreeHighlight = function () {
+  if (
+    this.treeHighlightAmount !== null &&
+    this.treeNodes[this.treeHighlightAmount]
+  ) {
+    const node = this.treeNodes[this.treeHighlightAmount];
+    this.cmd("SetBackgroundColor", node.id, node.color || this.treeDefaultColor);
   }
+  this.treeHighlightAmount = null;
+};
+
+CoinChangeTopDown.prototype.setTreeEdgeHighlight = function (fromAmount, toAmount, highlight) {
+  const fromNode = this.treeNodes[fromAmount];
+  const toNode = this.treeNodes[toAmount];
+  if (!fromNode || !toNode) {
+    return;
+  }
+  this.cmd("SetEdgeHighlight", fromNode.id, toNode.id, highlight ? 1 : 0);
+  if (highlight) {
+    this.treeActiveEdge = { from: fromAmount, to: toAmount };
+  } else if (
+    this.treeActiveEdge &&
+    this.treeActiveEdge.from === fromAmount &&
+    this.treeActiveEdge.to === toAmount
+  ) {
+    this.treeActiveEdge = null;
+  }
+};
+
+CoinChangeTopDown.prototype.clearTreeEdgeHighlight = function () {
+  if (!this.treeActiveEdge) {
+    return;
+  }
+  const { from, to } = this.treeActiveEdge;
+  const fromNode = this.treeNodes[from];
+  const toNode = this.treeNodes[to];
+  if (fromNode && toNode) {
+    this.cmd("SetEdgeHighlight", fromNode.id, toNode.id, 0);
+  }
+  this.treeActiveEdge = null;
+};
+
+CoinChangeTopDown.prototype.pulseTreeEdge = function (fromAmount, toAmount) {
+  const fromNode = this.treeNodes[fromAmount];
+  const toNode = this.treeNodes[toAmount];
+  if (!fromNode || !toNode) {
+    return;
+  }
+  this.clearTreeEdgeHighlight();
+  this.setTreeEdgeHighlight(fromAmount, toAmount, true);
+  let labelID = -1;
+  if (
+    toNode.edgeLabelID !== undefined &&
+    toNode.edgeLabelID !== null &&
+    toNode.edgeLabelID >= 0
+  ) {
+    labelID = toNode.edgeLabelID;
+    this.cmd("SetForegroundColor", labelID, "#d47f00");
+  }
+  this.cmd("Step");
+  this.setTreeEdgeHighlight(fromAmount, toAmount, false);
+  if (labelID >= 0) {
+    this.cmd("SetForegroundColor", labelID, this.treeEdgeLabelColor);
+  }
+};
+
+CoinChangeTopDown.prototype.resetQueueDisplay = function () {
+  this.queueValues = [];
+  this.queueHighlightIndex = -1;
+  for (let i = 0; i < this.queueSlotIDs.length; i++) {
+    this.cmd("SetText", this.queueSlotIDs[i], "");
+    this.cmd("SetBackgroundColor", this.queueSlotIDs[i], this.queueColor);
+  }
+};
+
+CoinChangeTopDown.prototype.refreshQueue = function (queue) {
+  this.queueValues = queue.slice();
+  for (let i = 0; i < this.queueSlotIDs.length; i++) {
+    const text = i < this.queueValues.length ? String(this.queueValues[i]) : "";
+    this.cmd("SetText", this.queueSlotIDs[i], text);
+    this.cmd("SetBackgroundColor", this.queueSlotIDs[i], this.queueColor);
+  }
+  this.queueHighlightIndex = -1;
+};
+
+CoinChangeTopDown.prototype.highlightQueueSlot = function (index, highlight) {
+  if (index < 0 || index >= this.queueSlotIDs.length) {
+    return;
+  }
+  const id = this.queueSlotIDs[index];
+  if (!id) {
+    return;
+  }
+  this.cmd("SetBackgroundColor", id, highlight ? this.queueHighlightColor : this.queueColor);
+  this.queueHighlightIndex = highlight ? index : -1;
+};
+
+CoinChangeTopDown.prototype.safeSetText = function (id, text) {
+  if (id === undefined || id === null) {
+    return;
+  }
+  if (id < 0) {
+    return;
+  }
+  this.cmd("SetText", id, text);
 };
 
 CoinChangeTopDown.prototype.highlightCode = function (lineIdx) {
-  if (!Array.isArray(this.codeIDs)) {
-    return;
-  }
-  if (this.currentCodeHighlight >= 0 && this.currentCodeHighlight < this.codeIDs.length) {
-    this.cmd("SetHighlight", this.codeIDs[this.currentCodeHighlight], 0);
-  }
-  if (lineIdx >= 0 && lineIdx < this.codeIDs.length) {
-    this.cmd("SetHighlight", this.codeIDs[lineIdx], 1);
-    this.currentCodeHighlight = lineIdx;
-  } else {
-    this.currentCodeHighlight = -1;
+  for (let i = 0; i < this.codeIDs.length; i++) {
+    this.cmd("SetHighlight", this.codeIDs[i], i === lineIdx ? 1 : 0);
   }
 };
 
-CoinChangeTopDown.prototype.knapsack = function (
-  coins,
-  index,
-  remain,
-  memo,
-  depth,
-  parentKey,
-  branchType,
-  branchLabel
-) {
-  const INF = this.amount + 1;
-  const key = this.makeStateKey(index, remain);
-  const node = this.ensureTreeNode(key, index, remain, depth, parentKey, branchType, branchLabel);
-  this.highlightTreeNode(key, true);
-  this.updateStatePanel(index, remain, index < coins.length ? coins[index] : null);
-  this.showMessage(`Exploring state (i=${index}, remain=${remain}).`);
-  this.cmd("Step");
+CoinChangeTopDown.prototype.highlightCoin = function (idx) {
+  if (this.coinHighlight === idx) {
+    return;
+  }
+  if (this.coinHighlight >= 0 && this.coinIDs[this.coinHighlight]) {
+    this.cmd("SetBackgroundColor", this.coinIDs[this.coinHighlight], this.coinColor);
+  }
+  if (this.coinIDs[idx]) {
+    this.cmd("SetBackgroundColor", this.coinIDs[idx], this.coinHighlightColor);
+  }
+  this.coinHighlight = idx;
+};
 
-  if (remain === 0) {
-    this.highlightCode(7);
-    this.showMessage("No amount remaining. Return 0 coins.");
-    this.cmd("Step");
-    memo[key] = 0;
-    this.updateTakePanel(0);
-    this.updateSkipPanel(0);
-    this.updateMemoPanel(0);
-    this.setMemoValue(index, remain, 0, { color: this.treeSolvedColor });
-    this.colorTreeNode(key, this.treeSolvedColor);
-    this.updateTreeNodeLabel(key, index, 0);
-    this.highlightTreeNode(key, false);
+CoinChangeTopDown.prototype.unhighlightCoin = function () {
+  if (this.coinHighlight >= 0 && this.coinIDs[this.coinHighlight]) {
+    this.cmd("SetBackgroundColor", this.coinIDs[this.coinHighlight], this.coinColor);
+  }
+  this.coinHighlight = -1;
+};
+
+CoinChangeTopDown.prototype.cmd = function () {
+  if (
+    arguments.length > 0 &&
+    arguments[0] === "Step" &&
+    this.narrationBudgetInitialized
+  ) {
+    this.totalStepCount = (this.totalStepCount || 0) + 1;
+    if (this._narrationStepContext) {
+      this.narrationBeatsUsed = (this.narrationBeatsUsed || 0) + 1;
+    } else {
+      this.structuralStepsUsed = (this.structuralStepsUsed || 0) + 1;
+    }
+  }
+  CoinChangeTopDown.superclass.cmd.apply(this, arguments);
+};
+
+CoinChangeTopDown.prototype.initializeNarrationBudget = function (coins, amount) {
+  const totalBudget = 510;
+  const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+  const coinCount = Array.isArray(coins) ? coins.length : 0;
+  const boundedCoinCount = Math.max(0, Math.min(8, coinCount));
+  const processedUpper = Math.max(1, safeAmount === 0 ? 1 : safeAmount);
+  const popUpper = processedUpper * 2;
+  const perCoinUpper = processedUpper * boundedCoinCount;
+  const highlightUpper = processedUpper * boundedCoinCount;
+  const newVisitedUpper = safeAmount * 2;
+  const finishingSteps = safeAmount > 0 ? 6 : 4;
+  let structuralAllowance =
+    2 + popUpper + perCoinUpper + highlightUpper + newVisitedUpper + finishingSteps;
+  structuralAllowance = Math.max(0, Math.min(structuralAllowance, totalBudget));
+  const narrationBudget = Math.max(0, totalBudget - structuralAllowance);
+
+  this.totalStepBudget = totalBudget;
+  this.structuralStepAllowance = structuralAllowance;
+  this.maxNarrationBudget = narrationBudget;
+  this.totalStepCount = 0;
+  this.narrationBeatsUsed = 0;
+  this.structuralStepsUsed = 0;
+  this._narrationStepContext = false;
+  this.narrationBudgetInitialized = true;
+};
+
+CoinChangeTopDown.prototype.getNarrationBudgetRemaining = function () {
+  if (!this.narrationBudgetInitialized) {
     return 0;
   }
+  const totalBudget = Number.isFinite(this.totalStepBudget) ? this.totalStepBudget : 0;
+  const structuralAllowance = Number.isFinite(this.structuralStepAllowance)
+    ? this.structuralStepAllowance
+    : 0;
+  const used = Number.isFinite(this.totalStepCount) ? this.totalStepCount : 0;
+  const structuralUsed = Number.isFinite(this.structuralStepsUsed)
+    ? this.structuralStepsUsed
+    : 0;
+  const structuralReserve = Math.max(0, structuralAllowance - structuralUsed);
+  const available = totalBudget - used - structuralReserve;
+  return Math.max(0, Math.floor(available));
+};
 
-  this.highlightCode(8);
-  this.cmd("Step");
-  if (index >= coins.length) {
-    this.showMessage("Out of coins, this branch fails (∞).");
-    memo[key] = INF;
-    this.updateTakePanel(INF);
-    this.updateSkipPanel(INF);
-    this.updateMemoPanel(INF);
-    this.setMemoValue(index, remain, INF, { color: this.treeFailColor });
-    this.colorTreeNode(key, this.treeFailColor);
-    this.updateTreeNodeLabel(key, index, INF);
-    this.highlightTreeNode(key, false);
-    return INF;
+CoinChangeTopDown.prototype.measureNarrationContent = function (lines) {
+  const summary = {
+    wordCount: 0,
+    sentenceCount: 0,
+    charCount: 0,
+    nonEmptyLines: 0,
+    longestLineLength: 0,
+  };
+  if (!lines || lines.length === 0) {
+    return summary;
+  }
+  for (let i = 0; i < lines.length; i++) {
+    const text = String(lines[i] || "").trim();
+    if (!text) {
+      continue;
+    }
+    summary.nonEmptyLines += 1;
+    summary.charCount += text.length;
+    if (text.length > summary.longestLineLength) {
+      summary.longestLineLength = text.length;
+    }
+    const parts = text.split(/\s+/).filter((token) => token.length > 0);
+    summary.wordCount += parts.length;
+    const sentences = text.match(/[.!?]/g);
+    if (sentences && sentences.length > 0) {
+      summary.sentenceCount += sentences.length;
+    }
+  }
+  return summary;
+};
+
+CoinChangeTopDown.prototype.estimateNarrationBeats = function (lines) {
+  if (!lines || lines.length === 0) {
+    const remaining = this.getNarrationBudgetRemaining();
+    return remaining > 0 ? Math.min(1, remaining) : 0;
+  }
+  const metrics = this.measureNarrationContent(lines);
+  const wordCount = metrics.wordCount;
+  const sentenceCount = metrics.sentenceCount;
+  const remainingBudget = this.getNarrationBudgetRemaining();
+  if (wordCount === 0 || remainingBudget <= 0) {
+    return Math.max(0, remainingBudget);
+  }
+  const readingSeconds = Math.ceil(wordCount / 3);
+  const structureBonus = Math.max(0, Math.ceil(sentenceCount / 2));
+  let estimate = Math.max(2, readingSeconds + structureBonus);
+  estimate += Math.max(0, Math.min(2, metrics.nonEmptyLines - 1));
+  estimate = Math.min(9, estimate);
+
+  const narrationBudget = this.maxNarrationBudget || 0;
+  const used = this.narrationBeatsUsed || 0;
+  if (narrationBudget > 0) {
+    const usageRatio = used / narrationBudget;
+    if (usageRatio >= 0.8) {
+      estimate = Math.min(estimate, Math.max(1, Math.ceil(estimate * 0.5)));
+    } else if (usageRatio >= 0.6) {
+      estimate = Math.min(estimate, Math.ceil(estimate * 0.7));
+    } else if (usageRatio >= 0.4) {
+      estimate = Math.min(estimate, Math.ceil(estimate * 0.85));
+    }
+  }
+  if (remainingBudget <= 3) {
+    return Math.max(0, Math.min(remainingBudget, estimate));
+  }
+  return Math.max(1, Math.min(estimate, remainingBudget));
+};
+
+CoinChangeTopDown.prototype.narrate = function (text, options) {
+  const lines = Array.isArray(text)
+    ? text.filter((line) => line !== undefined && line !== null).map((line) => String(line))
+    : text === undefined || text === null
+    ? []
+    : [String(text)];
+  if (lines.length === 0) {
+    return;
   }
 
-  this.highlightCode(9);
-  this.cmd("Step");
-  if (Object.prototype.hasOwnProperty.call(memo, key)) {
-    const cached = memo[key];
-    this.highlightMemoCell(index, remain, true);
-    this.showMessage("Memo hit: reuse cached value.");
-    this.cmd("Step");
-    this.highlightMemoCell(index, remain, false);
-    this.updateMemoPanel(cached);
-    this.colorTreeNode(key, this.treeMemoColor);
-    this.updateTreeNodeLabel(key, index, cached);
-    this.highlightTreeNode(key, false);
-    return cached;
+  let wait = this.estimateNarrationBeats(lines);
+  if (options && options.wait !== undefined && options.wait !== null) {
+    const parsed = Math.round(Number(options.wait));
+    if (!Number.isNaN(parsed) && parsed >= 0) {
+      wait = parsed;
+    }
+  }
+  if (options && options.waitSteps !== undefined && options.waitSteps !== null) {
+    const parsed = Math.round(Number(options.waitSteps));
+    if (!Number.isNaN(parsed) && parsed >= 0) {
+      wait = parsed;
+    }
   }
 
-  this.highlightCode(10);
-  this.cmd("Step");
-  let takeCost = INF;
-  const coinValue = coins[index];
-  if (coinValue <= remain) {
-    this.highlightCode(11);
-    this.showMessage(`Try taking coin ${coinValue}.`);
-    this.updateTakePanel(null);
-    this.cmd("Step");
-    this.highlightCode(12);
-    this.cmd("Step");
-    const takeResult = this.knapsack(
-      coins,
-      index,
-      remain - coinValue,
-      memo,
-      depth + 1,
-      key,
-      "take",
-      `-${coinValue}`
-    );
-    takeCost = takeResult >= INF ? INF : takeResult + 1;
-    this.highlightTreeNode(key, true);
-    this.updateStatePanel(index, remain, coinValue);
-    this.updateTakePanel(takeCost);
-    this.showMessage(
-      takeCost >= INF
-        ? `Taking coin ${coinValue} cannot reach the target.`
-        : `Taking coin ${coinValue} uses ${takeCost} coins in total.`
-    );
-    this.cmd("Step");
+  const budgetRemaining = this.getNarrationBudgetRemaining();
+  if (budgetRemaining <= 0) {
+    wait = 0;
   } else {
-    this.highlightCode(11);
-    this.showMessage(`Coin ${coinValue} is too large for remain ${remain}.`);
-    this.updateTakePanel(INF);
-    this.cmd("Step");
+    wait = Math.max(0, Math.min(wait, budgetRemaining));
   }
 
-  this.highlightCode(13);
-  this.showMessage(`Skip coin ${coinValue} and move to index ${index + 1}.`);
-  this.updateSkipPanel(null);
-  this.cmd("Step");
-  const skipCost = this.knapsack(
-    coins,
-    index + 1,
-    remain,
-    memo,
-    depth + 1,
-    key,
-    "skip",
-    "skip"
+  const highlightList =
+    options && Array.isArray(options.highlight) ? options.highlight : [];
+  const emphasized = this.applyNarrationHighlights(lines, highlightList);
+  const maxLines = Math.max(
+    1,
+    this.boardInfo && this.boardInfo.lineCount
+      ? this.boardInfo.lineCount
+      : this.boardLineIDs && this.boardLineIDs.length > 0
+      ? this.boardLineIDs.length
+      : emphasized.length
   );
-  this.highlightTreeNode(key, true);
-  this.updateStatePanel(index, remain, coinValue);
-  this.updateSkipPanel(skipCost);
-  this.showMessage(
-    skipCost >= INF
-      ? "Skipping runs out of coins."
-      : `Skipping keeps the best cost at ${skipCost}.`
-  );
-  this.cmd("Step");
-
-  this.highlightCode(14);
-  const best = Math.min(takeCost, skipCost);
-  this.updateMemoPanel(best);
-  this.showMessage(
-    best >= INF
-      ? "Neither branch worked, memoize ∞."
-      : `Memoize the better answer ${best}.`
-  );
-  this.cmd("Step");
-
-  memo[key] = best;
-  this.highlightCode(15);
-  this.setMemoValue(index, remain, best, {
-    color: best >= INF ? this.treeFailColor : this.treeSolvedColor,
-  });
-  this.cmd("Step");
-
-  this.highlightCode(16);
-  this.cmd("Step");
-
-  if (best >= INF) {
-    this.colorTreeNode(key, this.treeFailColor);
+  const charLimit =
+    this.boardInfo && this.boardInfo.charLimit ? this.boardInfo.charLimit : 48;
+  let wrapped = this.wrapNarrationLines(emphasized, charLimit, maxLines);
+  if (!wrapped || wrapped.length === 0) {
+    wrapped = [[]];
+  }
+  this.updateNarrationLines(wrapped);
+  const metrics = this.measureNarrationContent(lines);
+  const baseWordSeconds = metrics.wordCount > 0 ? Math.ceil(metrics.wordCount / 3) : 0;
+  const sentenceBonus = metrics.sentenceCount > 0 ? Math.ceil(metrics.sentenceCount * 0.5) : 0;
+  const lineBonus = metrics.nonEmptyLines > 1 ? Math.ceil((metrics.nonEmptyLines - 1) * 0.75) : 0;
+  const charBonus = metrics.charCount > 180 ? Math.ceil(metrics.charCount / 180) : 0;
+  let totalSeconds = baseWordSeconds + sentenceBonus + lineBonus + charBonus;
+  if (wait > 0) {
+    const approxSecondsBySteps = Math.max(1, Math.ceil(wait * 0.35));
+    totalSeconds = Math.max(2, Math.max(totalSeconds, approxSecondsBySteps));
   } else {
-    this.colorTreeNode(key, this.treeSolvedColor);
+    totalSeconds = 0;
   }
-  this.updateTreeNodeLabel(key, index, best);
-  this.highlightTreeNode(key, false);
-  return best;
+  const secondsPerBeat =
+    wait > 0
+      ? Math.max(totalSeconds / wait, 0.35)
+      : 1;
+  const timerMeta = {
+    totalSeconds,
+    secondsPerStep: secondsPerBeat,
+    label: metrics.wordCount > 0 ? "Reading" : "Hold",
+    completionLabel: "Next step ready",
+  };
+  const previousContext = this._narrationStepContext;
+  this._narrationStepContext = true;
+  for (let remaining = wait; remaining >= 0; remaining--) {
+    this.renderNarrationTimer(remaining, wait, timerMeta);
+    if (remaining > 0) {
+      this.cmd("Step");
+    }
+  }
+  this._narrationStepContext = previousContext;
 };
 
 CoinChangeTopDown.prototype.runCoinChange = function () {
   this.commands = [];
-  this.resetMemoTable();
-  this.resetVariablePanel();
-  this.resetTreeDisplay();
-  this.clearMessage();
+  this.clearCelebrationOverlay();
   this.highlightCode(-1);
-  this.updateAnswerPanel("?");
+  this.clearTreeHighlight();
+  this.unhighlightCoin();
+  this.clearCelebrationOverlay();
+  this.resetTreeDisplay();
+  this.resetQueueDisplay();
+  this.resetVisitedDisplay();
 
-  const coins = (this.coinValues || []).slice();
+  const coins = this.coinValues.slice().sort((a, b) => a - b);
   const amount = this.amount;
-  const INF = amount + 1;
-  const memo = Object.create(null);
+
+  this.safeSetText(this.amountValueID, String(amount));
+  this.safeSetText(this.depthValueID, "0");
+  this.safeSetText(this.currentValueID, "-");
+  this.safeSetText(this.coinValueID, "-");
+  this.safeSetText(this.childValueID, "-");
+  this.safeSetText(this.bestValueID, "∞");
+  this.safeSetText(this.memoValueID, "?");
+  this.safeSetText(this.resultValueID, "?");
+
+  this.initializeNarrationBudget(coins, amount);
 
   this.highlightCode(0);
-  this.showMessage("Start the memoized DFS over (index, remain) states.");
-  this.cmd("Step");
+  this.narrate(
+    [
+      "We solve Coin Change with a memoized depth-first search that starts at sum 0.",
+      "Every state tries all coins and remembers the minimum number of coins required from that sum.",
+    ],
+    {
+      highlight: ["memoized depth-first search", "remembers"],
+      wait: 6,
+    }
+  );
 
   this.highlightCode(1);
-  this.cmd("Step");
-  this.highlightCode(2);
-  this.cmd("Step");
-  this.highlightCode(3);
-  this.cmd("Step");
-  this.highlightCode(4);
-  this.cmd("Step");
-
-  this.highlightCode(6);
-  this.cmd("Step");
-
-  const result = this.knapsack(coins, 0, amount, memo, 0, null, null, null);
-  this.highlightCode(4);
-  this.cmd("Step");
-
-  const answer = result >= INF ? -1 : result;
-  if (answer === -1) {
-    this.showMessage("No combination of coins can reach the target amount.");
-  } else {
-    this.showMessage(`Optimal answer: use ${answer} coins.`);
+  if (amount === 0) {
+    this.narrate(
+      ["The target is already met, so no coins are needed.", "Return 0 immediately."],
+      { highlight: ["return 0"], wait: 4 }
+    );
+    this.setVisitedValue(0, 0, { background: this.treeVisitedColor });
+    this.highlightVisitedEntry(0, true);
+    this.setTreeNodeColor(0, this.treeVisitedColor);
+    this.highlightTreeNode(0);
+    this.safeSetText(this.memoValueID, "0");
+    this.safeSetText(this.resultValueID, "0");
+    this.cmd("Step");
+    this.highlightVisitedEntry(0, false);
+    this.highlightCode(-1);
+    return this.commands;
   }
-  this.updateAnswerPanel(String(answer));
+
+  this.highlightCode(2);
+  const UNKNOWN = -2;
+  const memo = new Array(amount + 1).fill(UNKNOWN);
+
+  this.highlightCode(3);
+  for (let i = 0; i <= amount; i++) {
+    this.setVisitedValue(i, null, { background: this.visitedFalseColor });
+  }
+  this.cmd("Step");
+
+  this.highlightCode(4);
+  const context = {
+    memo,
+    UNKNOWN,
+    coins,
+    amount,
+    INF: amount + 1,
+    stack: [],
+  };
+  this.memoInfinity = context.INF;
+
+  const result = this.runTopDownDFS(0, 0, null, null, context);
+  const finalResult = result >= context.INF ? -1 : result;
+  const resultText = finalResult === -1 ? "-1" : String(finalResult);
+  this.safeSetText(this.resultValueID, resultText);
+
+  if (finalResult === -1) {
+    this.narrate(
+      ["Every combination overshoots the target, so we return -1."],
+      { highlight: ["return -1"], wait: 5 }
+    );
+    this.setTreeNodeColor(0, this.treeFailColor);
+  } else {
+    this.narrate(
+      [
+        `The memoized search found a solution that uses ${finalResult} coin${finalResult === 1 ? "" : "s"}.`,
+        "That count is the optimal answer for the original amount.",
+      ],
+      { highlight: [`${finalResult} coin${finalResult === 1 ? "" : "s"}`], wait: 6 }
+    );
+    this.setTreeNodeColor(0, this.treeVisitedColor);
+    this.launchConfettiCelebration({ holdBeats: 2 });
+  }
+
+  this.highlightTreeNode(0);
+  this.cmd("Step");
   this.highlightCode(-1);
 
   return this.commands;
+};
+
+CoinChangeTopDown.prototype.runTopDownDFS = function (
+  curr,
+  depth,
+  parent,
+  viaCoin,
+  context
+) {
+  const { memo, UNKNOWN, coins, amount, INF, stack } = context;
+
+  if (curr !== 0 || depth !== 0) {
+    this.ensureTreeNode(curr, depth, parent, null, viaCoin);
+  }
+
+  this.highlightCode(6);
+  stack.push(curr);
+  this.refreshQueue(stack);
+  this.highlightQueueSlot(stack.length - 1, true);
+  this.highlightTreeNode(curr);
+
+  this.safeSetText(this.depthValueID, String(depth));
+  this.safeSetText(this.currentValueID, String(curr));
+  this.safeSetText(
+    this.coinValueID,
+    viaCoin !== undefined && viaCoin !== null ? String(viaCoin) : "-"
+  );
+  this.safeSetText(this.childValueID, "-");
+  this.safeSetText(this.bestValueID, "∞");
+
+  const memoEntry = curr <= amount ? memo[curr] : UNKNOWN;
+  const hasMemo = curr <= amount && memoEntry !== UNKNOWN;
+  this.safeSetText(
+    this.memoValueID,
+    this.formatMemoDisplay(hasMemo ? memoEntry : null)
+  );
+  this.cmd("Step");
+
+  if (curr === amount) {
+    this.highlightCode(7);
+    this.narrate(
+      ["We hit the target sum, so this branch contributes 0 additional coins."],
+      { highlight: ["curr == amount", "return 0"], wait: 4 }
+    );
+    memo[curr] = 0;
+    this.safeSetText(this.memoValueID, "0");
+    this.safeSetText(this.childValueID, "0");
+    this.safeSetText(this.bestValueID, "0");
+    if (curr <= amount) {
+      this.setVisitedValue(curr, 0, { background: this.treeVisitedColor });
+      this.highlightVisitedEntry(curr, true);
+    }
+    this.cmd("Step");
+    if (curr <= amount) {
+      this.highlightVisitedEntry(curr, false);
+    }
+    this.setTreeNodeColor(curr, this.treeFoundColor);
+    this.highlightQueueSlot(stack.length - 1, false);
+    stack.pop();
+    this.refreshQueue(stack);
+    if (stack.length > 0) {
+      this.highlightTreeNode(stack[stack.length - 1]);
+    } else {
+      this.clearTreeHighlight();
+    }
+    return 0;
+  }
+
+  if (curr > amount) {
+    this.highlightCode(8);
+    this.narrate(
+      ["The running sum exceeds the target, so this path is invalid."],
+      { highlight: ["curr > amount"], wait: 3 }
+    );
+    this.safeSetText(this.memoValueID, "∞");
+    this.safeSetText(this.childValueID, "∞");
+    this.safeSetText(this.bestValueID, "∞");
+    this.cmd("Step");
+    this.setTreeNodeColor(curr, this.treeFailColor);
+    this.highlightQueueSlot(stack.length - 1, false);
+    stack.pop();
+    this.refreshQueue(stack);
+    if (stack.length > 0) {
+      this.highlightTreeNode(stack[stack.length - 1]);
+    } else {
+      this.clearTreeHighlight();
+    }
+    return INF;
+  }
+
+  if (hasMemo) {
+    this.highlightCode(9);
+    this.highlightVisitedEntry(curr, true);
+    this.narrate(
+      ["This sum was solved earlier, so reuse the memoized result."],
+      { highlight: ["memo[curr]"], wait: 4 }
+    );
+    const display = this.formatMemoDisplay(memoEntry);
+    this.safeSetText(this.memoValueID, display);
+    this.safeSetText(this.childValueID, display);
+    this.safeSetText(this.bestValueID, display);
+    this.cmd("Step");
+    this.highlightVisitedEntry(curr, false);
+    this.setTreeNodeColor(curr, this.treeMemoColor);
+    this.highlightQueueSlot(stack.length - 1, false);
+    stack.pop();
+    this.refreshQueue(stack);
+    if (stack.length > 0) {
+      this.highlightTreeNode(stack[stack.length - 1]);
+    } else {
+      this.clearTreeHighlight();
+    }
+    return memoEntry;
+  }
+
+  this.highlightCode(10);
+  let best = INF;
+  this.safeSetText(this.bestValueID, this.formatMemoDisplay(best));
+  this.cmd("Step");
+
+  for (let i = 0; i < coins.length; i++) {
+    const coin = coins[i];
+    this.highlightCode(11);
+    this.highlightCoin(i);
+    this.safeSetText(this.coinValueID, String(coin));
+    this.cmd("Step");
+
+    const next = curr + coin;
+    this.highlightCode(12);
+    this.setTreeEdgeHighlight(curr, next, true);
+    const child = this.runTopDownDFS(next, depth + 1, curr, coin, context);
+    this.setTreeEdgeHighlight(curr, next, false);
+    this.safeSetText(
+      this.childValueID,
+      this.formatMemoDisplay(child)
+    );
+    this.cmd("Step");
+
+    this.highlightCode(13);
+    if (child < INF) {
+      const candidate = child + 1;
+      this.highlightCode(14);
+      if (candidate < best) {
+        best = candidate;
+        this.safeSetText(
+          this.bestValueID,
+          this.formatMemoDisplay(best)
+        );
+      }
+      this.cmd("Step");
+    } else {
+      this.cmd("Step");
+    }
+
+    this.unhighlightCoin();
+  }
+
+  this.highlightCode(16);
+  if (curr <= amount) {
+    memo[curr] = best;
+    const background = best >= INF ? this.treeFailColor : this.visitedTrueColor;
+    this.setVisitedValue(curr, best, { background });
+    this.highlightVisitedEntry(curr, true);
+  }
+  this.safeSetText(
+    this.memoValueID,
+    this.formatMemoDisplay(best)
+  );
+  this.safeSetText(this.bestValueID, this.formatMemoDisplay(best));
+  this.cmd("Step");
+  if (curr <= amount) {
+    this.highlightVisitedEntry(curr, false);
+  }
+
+  if (best >= INF) {
+    this.setTreeNodeColor(curr, this.treeFailColor);
+  } else {
+    this.setTreeNodeColor(curr, this.treeVisitedColor);
+  }
+
+  this.highlightQueueSlot(stack.length - 1, false);
+  stack.pop();
+  this.refreshQueue(stack);
+  if (stack.length > 0) {
+    this.highlightTreeNode(stack[stack.length - 1]);
+  } else {
+    this.clearTreeHighlight();
+  }
+
+  return best;
+};
+
+CoinChangeTopDown.prototype.launchConfettiCelebration = function (options) {
+  if (!Array.isArray(this.celebrationOverlayIDs)) {
+    this.celebrationOverlayIDs = [];
+  }
+  if (this.celebrationOverlayActive || this.celebrationOverlayIDs.length > 0) {
+    this.clearCelebrationOverlay();
+  }
+
+  const canvasW = this.canvasWidth || 720;
+  const canvasH = this.canvasHeight || 1280;
+
+  const palette =
+    options && Array.isArray(options.colors) && options.colors.length > 0
+      ? options.colors
+      : [
+          "#ff6b6b",
+          "#ffd166",
+          "#06d6a0",
+          "#118ab2",
+          "#9c89ff",
+          "#ff9f1c",
+          "#f15bb5",
+        ];
+
+  const clamp = function (value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  };
+
+  const requestedPieces =
+    options && Number.isFinite(options.count) ? Math.floor(options.count) : null;
+  const pieceCount = clamp(
+    requestedPieces === null
+      ? Math.round(canvasW / 24) + Math.round(canvasH / 140)
+      : requestedPieces,
+    18,
+    72
+  );
+
+  const baseWidth = Math.max(10, Math.round(canvasW * 0.018));
+  const baseHeight = Math.max(22, Math.round(canvasH * 0.025));
+  const horizontalSwing = Math.max(48, Math.round(canvasW * 0.16));
+  const verticalTravel = canvasH + Math.max(120, Math.round(canvasH * 0.2));
+
+  const overlayIDs = [];
+  const confettiPieces = [];
+
+  for (let i = 0; i < pieceCount; i++) {
+    const width = clamp(
+      baseWidth + ((i % 4) - 1) * Math.max(2, Math.round(baseWidth * 0.25)),
+      8,
+      Math.round(canvasW * 0.05)
+    );
+    const height = clamp(
+      baseHeight + ((i % 5) - 2) * Math.max(4, Math.round(baseHeight * 0.22)),
+      Math.round(baseHeight * 0.65),
+      Math.round(canvasH * 0.09)
+    );
+
+    const normalized = (i + 0.5) / pieceCount;
+    const jitterBand = ((i * 37) % 11) - 5;
+    const startX = clamp(
+      Math.round(normalized * canvasW + jitterBand * Math.max(6, canvasW * 0.016)),
+      width / 2,
+      canvasW - width / 2
+    );
+    const startYOffset = ((i * 53) % 7) * Math.max(18, Math.round(canvasH * 0.014));
+    const startY = -height - startYOffset;
+
+    const swingFactor = ((i * 29) % 13) / 12;
+    const swingDir = (i % 2 === 0 ? 1 : -1) * (i % 3 === 0 ? -1 : 1);
+    const targetX = clamp(
+      Math.round(startX + swingDir * swingFactor * horizontalSwing),
+      width / 2,
+      canvasW - width / 2
+    );
+    const depthOffset = ((i * 19) % 9) * Math.max(14, Math.round(canvasH * 0.012));
+    const targetY = startY + verticalTravel + depthOffset;
+
+    const id = this.nextIndex++;
+    overlayIDs.push(id);
+    confettiPieces.push({ id, targetX, targetY });
+
+    const color = palette[i % palette.length];
+    this.cmd("CreateRectangle", id, "", width, height, startX, startY);
+    this.cmd("SetForegroundColor", id, color);
+    this.cmd("SetBackgroundColor", id, color);
+    this.cmd("SetLayer", id, 10);
+    this.cmd("SetAlpha", id, 0);
+  }
+
+  if (confettiPieces.length === 0) {
+    this.celebrationOverlayIDs = [];
+    this.celebrationOverlayActive = false;
+    return;
+  }
+
+  this.celebrationOverlayIDs = overlayIDs;
+  this.celebrationOverlayActive = true;
+
+  for (let i = 0; i < confettiPieces.length; i++) {
+    const piece = confettiPieces[i];
+    this.cmd("SetAlpha", piece.id, 0.95);
+    this.cmd("Move", piece.id, piece.targetX, piece.targetY);
+  }
+  this.cmd("Step");
+
+  const holdBeats =
+    options && Number.isFinite(options.holdBeats)
+      ? Math.max(0, Math.floor(options.holdBeats))
+      : 1;
+  for (let i = 0; i < holdBeats; i++) {
+    this.cmd("Step");
+  }
+
+  for (let i = 0; i < confettiPieces.length; i++) {
+    this.cmd("SetAlpha", confettiPieces[i].id, 0);
+  }
+  this.cmd("Step");
+
+  this.clearCelebrationOverlay();
+};
+
+
+CoinChangeTopDown.prototype.clearCelebrationOverlay = function () {
+  if (!Array.isArray(this.celebrationOverlayIDs)) {
+    this.celebrationOverlayIDs = [];
+    this.celebrationOverlayActive = false;
+    return;
+  }
+
+  let removedAny = false;
+  for (let i = 0; i < this.celebrationOverlayIDs.length; i++) {
+    const id = this.celebrationOverlayIDs[i];
+    if (id !== undefined && id !== null && id >= 0) {
+      this.cmd("Delete", id);
+      removedAny = true;
+    }
+  }
+
+  if (removedAny && typeof objectManager !== "undefined" && objectManager) {
+    objectManager.draw();
+  }
+
+  this.celebrationOverlayIDs.length = 0;
+  this.celebrationOverlayActive = false;
+};
+
+CoinChangeTopDown.prototype.reset = function () {
+  this.clearCelebrationOverlay();
+  this.nextIndex = 0;
+  this.boardBackgroundID = -1;
+  this.boardTimerID = -1;
+  this.boardProgressTrackID = -1;
+  this.boardProgressFillID = -1;
+  this.boardLineIDs = [];
+  this.boardTextSegments = [];
+  this.boardInfo = null;
+  if (typeof animationManager !== "undefined" && animationManager.animatedObjects) {
+    animationManager.animatedObjects.clearAllObjects();
+  }
+  this.setup();
+};
+
+CoinChangeTopDown.prototype.disableUI = function () {
+  for (let i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = true;
+  }
+  if (this.buildButton) this.buildButton.disabled = true;
+  if (this.runButton) this.runButton.disabled = true;
+  if (this.pauseButton) this.pauseButton.disabled = false;
+  if (this.stepButton) this.stepButton.disabled = false;
+};
+
+CoinChangeTopDown.prototype.enableUI = function () {
+  for (let i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = false;
+  }
+  if (this.buildButton) this.buildButton.disabled = false;
+  if (this.runButton) this.runButton.disabled = false;
+  if (this.pauseButton) this.pauseButton.disabled = false;
+  if (this.stepButton) this.stepButton.disabled = false;
 };
 
 var currentAlg;
