@@ -142,6 +142,7 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.setup();
 };
 
+
 CoinChangeTopDown.prototype.addControls = function () {
   this.controls = [];
 
