@@ -71,6 +71,7 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.visitedValueHeaderID = -1;
   this.visitedSlotIDs = [];
   this.visitedIndexIDs = [];
+  this.visitedValueIDs = [];
   this.visitedStates = [];
   this.visitedHighlightIndex = -1;
   this.visitedArea = null;
@@ -263,12 +264,6 @@ CoinChangeTopDown.prototype.setup = function () {
   this.celebrationActive = false;
 
   const TITLE_Y = 48;
-  const CODE_START_X = 80;
-  const CODE_LINE_H = 17;
-  const CODE_FONT_SIZE = 16;
-  const VARIABLE_FONT_STYLE = "bold 17";
-  const RESULT_FONT_STYLE = "bold 21";
-  const VARIABLE_SPACING = 32;
 
   const coinLabelText = "coins array:";
   const coinLabelFontSize = 18;
@@ -293,6 +288,7 @@ CoinChangeTopDown.prototype.setup = function () {
   this.coinPositions = [];
   this.visitedSlotIDs = [];
   this.visitedIndexIDs = [];
+  this.visitedValueIDs = [];
   this.visitedStates = [];
   this.visitedHighlightIndex = -1;
 
@@ -348,74 +344,73 @@ CoinChangeTopDown.prototype.setup = function () {
     Math.floor((this.boardReservedHeight || 0) * 0.06)
   );
   const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
-  const totalCodeHeight = (CoinChangeTopDown.CODE.length - 1) * CODE_LINE_H;
-  const maxCodeStartY = canvasH - totalCodeHeight - 32;
-  const maxQueueBottom = maxCodeStartY - 40;
-  const queueGapFromTree = Math.max(32, Math.floor(canvasH * 0.025));
-  const estimatedQueueHalf = Math.max(24, Math.floor(canvasH * 0.018));
-  const baseTreeHeight = Math.floor(canvasH * 0.4);
-  const rawTreeLimit =
-    maxQueueBottom - treeTopY - queueGapFromTree - estimatedQueueHalf;
-  const treeHeightLimit = Math.max(220, rawTreeLimit);
-  const minTreeHeight = Math.min(
-    treeHeightLimit,
-    Math.max(260, Math.floor(canvasH * 0.28))
-  );
+  const memoReservedHeight = Math.max(240, Math.floor(canvasH * 0.23));
+  const bottomMargin = Math.max(24, Math.floor(canvasH * 0.02));
+  const queueGapFromTree = Math.max(36, Math.floor(canvasH * 0.03));
+  const memoGapFromQueue = Math.max(32, Math.floor(canvasH * 0.025));
+  const baseTreeHeight = Math.floor(canvasH * 0.52);
+  const queueMetrics = this.measureQueueMetrics(canvasW, null, null);
+  const estimatedSlotHeight =
+    queueMetrics && queueMetrics.slotHeight
+      ? queueMetrics.slotHeight
+      : Math.max(28, Math.floor(canvasH * 0.04));
+  const estimatedLabelOffset =
+    queueMetrics && queueMetrics.labelOffset
+      ? queueMetrics.labelOffset
+      : Math.max(22, Math.floor(estimatedSlotHeight * 0.85));
+  const estimatedQueueBlock = estimatedSlotHeight + estimatedLabelOffset;
+
+  const minTreeHeight = Math.max(320, Math.floor(canvasH * 0.3));
+  let treeHeightLimit =
+    canvasH -
+    memoReservedHeight -
+    memoGapFromQueue -
+    bottomMargin -
+    treeTopY -
+    queueGapFromTree -
+    estimatedQueueBlock;
+  if (!Number.isFinite(treeHeightLimit) || treeHeightLimit < minTreeHeight) {
+    treeHeightLimit = minTreeHeight;
+  }
   let treeHeight = Math.min(baseTreeHeight, treeHeightLimit);
-  if (!Number.isFinite(treeHeight) || treeHeight <= 0) {
-    treeHeight =
-      minTreeHeight > 0
-        ? minTreeHeight
-        : Math.max(220, Math.floor(canvasH * 0.32));
-  } else if (treeHeight < minTreeHeight) {
+  if (!Number.isFinite(treeHeight) || treeHeight < minTreeHeight) {
     treeHeight = minTreeHeight;
   }
   const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
 
-  const actualTreeTop = this.treeArea ? this.treeArea.top : treeTopY;
-  const queueY = treeLayout.bottomY + queueGapFromTree;
-  const queueLayout = this.buildQueueDisplay(canvasW, queueY, null, null);
-  const queueTop = queueY - queueLayout.slotHeight / 2;
-  const visitedTopOffset = Math.max(
-    10,
-    Math.min(
-      Math.floor((this.boardReservedHeight || 0) * 0.18),
-      Math.floor((this.treeNodeRadius || 24) * 1.15)
-    )
-  );
-  const visitedTop = actualTreeTop + visitedTopOffset;
-  let visitedBottom = Math.max(
-    treeLayout.bottomY,
-    queueTop - Math.max(16, Math.floor(queueLayout.slotHeight * 0.4))
-  );
-  const minVisitedHeight = Math.max(140, Math.floor(canvasH * 0.14));
-  if (visitedBottom - visitedTop < minVisitedHeight) {
-    visitedBottom = visitedTop + minVisitedHeight;
+  const queueBottomLimit =
+    canvasH - memoReservedHeight - memoGapFromQueue - bottomMargin;
+  const preferredQueueY =
+    treeLayout.bottomY + queueGapFromTree + estimatedSlotHeight / 2;
+  const maxQueueCenter = queueBottomLimit - estimatedSlotHeight / 2;
+  let queueY = Math.min(preferredQueueY, maxQueueCenter);
+  const minQueueCenter =
+    treeLayout.bottomY + queueGapFromTree + estimatedSlotHeight / 2;
+  if (queueY < minQueueCenter) {
+    queueY = minQueueCenter;
   }
-  this.buildVisitedDisplay(visitedTop, visitedBottom, this.amount);
-
-  const codeStartPreferred = queueLayout.bottomY + 64;
-  const codeStartY = Math.min(
-    Math.max(codeStartPreferred, messageY + 140),
-    maxCodeStartY
-  );
-  const codeBottomY = codeStartY + totalCodeHeight;
-  this.buildCodeDisplay(CODE_START_X, codeStartY, CODE_LINE_H, CODE_FONT_SIZE);
-  this.buildVariablePanel({
+  const queueLayout = this.buildQueueDisplay(
     canvasW,
-    canvasH,
-    codeStartX: CODE_START_X,
-    codeStartY,
-    codeBottomY,
-    variableFont: VARIABLE_FONT_STYLE,
-    resultFont: RESULT_FONT_STYLE,
-    spacing: VARIABLE_SPACING,
-  });
+    queueY,
+    queueMetrics ? queueMetrics.slotWidth : null,
+    queueMetrics ? queueMetrics.gap : null
+  );
+
+  let memoTop = queueLayout.bottomY + memoGapFromQueue;
+  const memoBottom = canvasH - bottomMargin;
+  const minMemoHeight = Math.max(220, Math.floor(canvasH * 0.22));
+  if (memoBottom - memoTop < minMemoHeight) {
+    memoTop = Math.max(
+      queueLayout.bottomY + memoGapFromQueue,
+      memoBottom - minMemoHeight
+    );
+  }
+  this.buildVisitedDisplay(memoTop, memoBottom, this.amount);
 
   this.resetTreeDisplay();
   this.resetQueueDisplay();
   this.resetVisitedDisplay();
-  this.cmd("SetText", this.amountValueID, String(this.amount));
+  this.safeSetText(this.amountValueID, String(this.amount));
 
   animationManager.StartNewAnimation(this.commands);
   animationManager.skipForward();
@@ -1396,85 +1391,51 @@ CoinChangeTopDown.prototype.buildCoinsRow = function (layout) {
 };
 
 CoinChangeTopDown.prototype.buildTreeDisplay = function (canvasW, topY, height) {
-  const marginLeft = Math.max(60, Math.floor(canvasW * 0.08));
-  let marginRight = Math.max(60, Math.floor(canvasW * 0.08));
-  let panelGap = Math.max(30, Math.floor(canvasW * 0.045));
-  let panelWidth = Math.max(160, Math.floor(canvasW * 0.22));
-
-  let treeRight = canvasW - marginRight - panelGap - panelWidth;
-  let areaWidth = treeRight - marginLeft;
-
-  if (areaWidth < 320) {
-    const deficit = 320 - areaWidth;
-    const reduciblePanel = Math.max(0, panelWidth - 140);
-    const reducePanel = Math.min(deficit, reduciblePanel);
-    panelWidth -= reducePanel;
-    const remaining = deficit - reducePanel;
-    if (remaining > 0) {
-      const reducibleMargin = Math.max(0, marginRight - 40);
-      const reduceMargin = Math.min(remaining, reducibleMargin);
-      marginRight -= reduceMargin;
-    }
-    treeRight = canvasW - marginRight - panelGap - panelWidth;
-    areaWidth = treeRight - marginLeft;
+  const margin = Math.max(50, Math.floor(canvasW * 0.08));
+  let areaWidth = Math.max(320, canvasW - margin * 2);
+  if (areaWidth > canvasW - 16) {
+    areaWidth = canvasW - 16;
   }
-
-  if (areaWidth < 260) {
-    areaWidth = 260;
-    treeRight = marginLeft + areaWidth;
-    marginRight = Math.max(30, canvasW - treeRight - panelGap - panelWidth);
-    if (marginRight < 30) {
-      marginRight = 30;
-    }
-  }
-
-  const areaHeight = Math.max(240, height || 260);
+  const areaLeft = (canvasW - areaWidth) / 2;
+  const areaHeight = Math.max(300, height || 320);
   let areaTop = topY;
 
-  this.visitedPanelWidth = panelWidth;
-  this.visitedPanelGap = panelGap;
   const reservedForLabel = this.boardReservedHeight || 0;
   const labelOffsetBase =
-    reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.35) : 36;
-  const labelOffset = Math.max(20, Math.min(34, Math.floor(labelOffsetBase * 0.75)));
+    reservedForLabel > 0 ? Math.floor(reservedForLabel * 0.32) : 42;
+  let labelOffset = Math.max(26, Math.min(52, labelOffsetBase));
   if (this.boardInfo) {
     const boardBottom = this.boardInfo.bottom || 0;
     const minGap = Math.max(18, Math.floor(reservedForLabel * 0.08));
     const expectedLabelY = areaTop - labelOffset;
     const requiredLabelY = boardBottom + minGap;
     if (expectedLabelY < requiredLabelY) {
-      areaTop += requiredLabelY - expectedLabelY;
+      const adjustment = requiredLabelY - expectedLabelY;
+      areaTop += adjustment;
     }
   }
 
+  if (areaTop < topY) {
+    areaTop = topY;
+  }
+
   this.treeArea = {
-    left: marginLeft,
-    right: marginLeft + areaWidth,
+    left: areaLeft,
+    right: areaLeft + areaWidth,
     width: areaWidth,
     top: areaTop,
     height: areaHeight,
     bottom: areaTop + areaHeight,
   };
 
-  const visitedLeft = this.treeArea.right + panelGap;
-  const visitedRight = Math.min(
-    canvasW - marginRight,
-    visitedLeft + this.visitedPanelWidth
-  );
-  this.visitedArea = {
-    left: visitedLeft,
-    right: visitedRight,
-    width: visitedRight - visitedLeft,
-    top: areaTop,
-    bottom: areaTop + areaHeight,
-    height: areaHeight,
-  };
-  this.visitedPanelWidth = this.visitedArea.width;
+  this.visitedArea = null;
+  this.visitedPanelWidth = this.treeArea.width;
+  this.visitedPanelGap = 0;
 
   this.treeDepthDenominator = 1;
   const dynamicRadius =
     Math.floor(this.treeArea.width / Math.max(6, this.amount + 2)) + 6;
-  this.treeNodeRadius = Math.max(22, Math.min(32, dynamicRadius));
+  this.treeNodeRadius = Math.max(24, Math.min(34, dynamicRadius));
   this.treeNodeLabelOffset = this.treeNodeRadius + 16;
 
   const coinValuesForDepth =
@@ -1495,7 +1456,7 @@ CoinChangeTopDown.prototype.buildTreeDisplay = function (canvasW, topY, height) 
   this.cmd(
     "CreateLabel",
     this.treeLabelID,
-    "BFS exploration tree",
+    "Recursion tree",
     treeCenterX,
     treeLabelY,
     1
@@ -1527,117 +1488,144 @@ CoinChangeTopDown.prototype.computeTreeDepthCapacity = function () {
 };
 
 CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amount) {
-  if (!this.visitedArea) {
-    this.visitedArea = {
-      left: this.treeArea ? this.treeArea.right + 30 : 520,
-      right: this.treeArea ? this.treeArea.right + 190 : 680,
-      width: 160,
-      top: topY,
-      bottom: bottomY,
-      height: bottomY - topY,
-    };
-    this.visitedPanelWidth = this.visitedArea.width;
-    this.visitedPanelGap = 30;
+  const canvasW = this.canvasWidth || 720;
+  const areaTop = Math.max(0, topY);
+  const areaBottom = Math.max(areaTop + 80, bottomY);
+  const areaHeight = Math.max(160, areaBottom - areaTop);
+  let areaWidth = Math.max(240, Math.floor(canvasW * 0.8));
+  if (areaWidth > canvasW - 24) {
+    areaWidth = canvasW - 24;
   }
+  const areaLeft = (canvasW - areaWidth) / 2;
 
-  this.visitedArea.top = topY;
-  this.visitedArea.bottom = bottomY;
-  this.visitedArea.height = Math.max(40, bottomY - topY);
+  this.visitedArea = {
+    left: areaLeft,
+    right: areaLeft + areaWidth,
+    width: areaWidth,
+    top: areaTop,
+    bottom: areaTop + areaHeight,
+    height: areaHeight,
+  };
+  this.visitedPanelWidth = this.visitedArea.width;
+  this.visitedPanelGap = 0;
 
-  const panelLeft = this.visitedArea.left;
-  const panelRight = this.visitedArea.right;
-  const centerX = panelLeft + this.visitedArea.width / 2;
-
-  const visitedLabelBase =
-    this.boardReservedHeight && this.boardReservedHeight > 0
-      ? Math.floor(this.boardReservedHeight * 0.28)
-      : 32;
-  const desiredOffset =
-    this.treeLabelOffset !== undefined && this.treeLabelOffset !== null
-      ? this.treeLabelOffset
-      : visitedLabelBase;
-  const visitedLabelOffset = Math.max(20, Math.min(40, desiredOffset));
-  const visitedLabelY =
-    this.treeLabelYCoord !== undefined && this.treeLabelYCoord !== null
-      ? this.treeLabelYCoord
-      : topY - visitedLabelOffset;
+  const slotCount = Math.max(1, (amount || 0) + 1);
+  const labelOffset = Math.max(26, Math.floor(areaHeight * 0.16));
+  let labelY = areaTop - labelOffset;
+  if (labelY < 60) {
+    labelY = Math.max(36, labelY);
+  }
   this.visitedLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.visitedLabelID,
     "Memo table",
-    centerX,
-    visitedLabelY,
+    canvasW / 2,
+    labelY,
     1
   );
   this.cmd("SetTextStyle", this.visitedLabelID, "bold 18");
 
-  const slotCount = Math.max(1, (amount || 0) + 1);
-  const availableHeight = this.visitedArea.height;
-  const minSlotHeight = 18;
-  const maxSlotHeight = 34;
-
-  let spacing = Math.max(3, Math.floor(availableHeight * 0.02));
-  let slotHeight = Math.floor((availableHeight - (slotCount - 1) * spacing) / slotCount);
-  if (slotHeight > maxSlotHeight) {
-    slotHeight = maxSlotHeight;
-  }
-  if (slotHeight < minSlotHeight) {
-    slotHeight = minSlotHeight;
-    spacing = Math.max(
-      2,
-      Math.floor(
-        (availableHeight - slotCount * slotHeight) / Math.max(slotCount - 1, 1)
-      )
-    );
-  }
-
-  let totalHeight = slotCount * slotHeight + (slotCount - 1) * spacing;
-  if (totalHeight > availableHeight) {
-    const extra = totalHeight - availableHeight;
-    const reducePerGap = Math.ceil(extra / Math.max(slotCount - 1, 1));
-    spacing = Math.max(2, spacing - reducePerGap);
-    totalHeight = slotCount * slotHeight + (slotCount - 1) * spacing;
-  }
-
-  let startY = topY;
-  if (totalHeight < availableHeight) {
-    startY = topY + (availableHeight - totalHeight) / 2;
-  }
-
-  const headerY = Math.max(topY - 12, startY - Math.max(18, spacing));
-  const indexX = panelLeft + 18;
-  const slotWidth = Math.min(
-    92,
-    Math.max(58, Math.floor(this.visitedPanelWidth * 0.6))
+  const minCellWidth = 64;
+  const minCellHeight = 56;
+  const gapXBase = Math.max(8, Math.floor(this.visitedArea.width * 0.012));
+  const gapYBase = Math.max(10, Math.floor(areaHeight * 0.08));
+  let bestLayout = null;
+  const maxColumns = Math.min(
+    slotCount,
+    Math.max(4, Math.floor(this.visitedArea.width / (minCellWidth + gapXBase)))
   );
-  const slotX = panelRight - slotWidth / 2 - 8;
 
-  this.visitedIndexHeaderID = this.nextIndex++;
-  this.cmd("CreateLabel", this.visitedIndexHeaderID, "sum", indexX, headerY, 1);
-  this.cmd("SetTextStyle", this.visitedIndexHeaderID, "bold 12");
+  for (let cols = maxColumns; cols >= 1; cols--) {
+    const rows = Math.ceil(slotCount / cols);
+    const gapX = Math.max(gapXBase, Math.floor(this.visitedArea.width * 0.01));
+    const gapY = Math.max(gapYBase, Math.floor(areaHeight * 0.06));
+    const usableWidth = this.visitedArea.width - gapX * (cols - 1);
+    const usableHeight = areaHeight - gapY * (rows - 1);
+    if (usableWidth <= 0 || usableHeight <= 0) {
+      continue;
+    }
+    const cellWidth = usableWidth / cols;
+    const cellHeight = usableHeight / rows;
+    if (cellWidth < minCellWidth || cellHeight < minCellHeight) {
+      continue;
+    }
+    const score = Math.min(cellWidth, cellHeight);
+    if (!bestLayout || score > bestLayout.score) {
+      bestLayout = {
+        cols,
+        rows,
+        cellWidth,
+        cellHeight,
+        gapX,
+        gapY,
+        score,
+      };
+    }
+  }
 
-  this.visitedValueHeaderID = this.nextIndex++;
-  this.cmd("CreateLabel", this.visitedValueHeaderID, "min coins", slotX, headerY, 1);
-  this.cmd("SetTextStyle", this.visitedValueHeaderID, "bold 12");
+  if (!bestLayout) {
+    const cols = Math.max(1, Math.min(slotCount, Math.floor(this.visitedArea.width / minCellWidth)));
+    const rows = Math.max(1, Math.ceil(slotCount / cols));
+    bestLayout = {
+      cols,
+      rows,
+      cellWidth: Math.max(
+        minCellWidth,
+        (this.visitedArea.width - gapXBase * (cols - 1)) / cols
+      ),
+      cellHeight: Math.max(
+        minCellHeight,
+        (areaHeight - gapYBase * (rows - 1)) / rows
+      ),
+      gapX: gapXBase,
+      gapY: gapYBase,
+      score: 0,
+    };
+  }
+
+  const { cols, rows, cellWidth, cellHeight, gapX, gapY } = bestLayout;
+  const gridWidth = cols * cellWidth + (cols - 1) * gapX;
+  const gridHeight = rows * cellHeight + (rows - 1) * gapY;
+  const startX =
+    this.visitedArea.left + (this.visitedArea.width - gridWidth) / 2 + cellWidth / 2;
+  const startY =
+    this.visitedArea.top + (areaHeight - gridHeight) / 2 + cellHeight / 2;
 
   this.visitedSlotIDs = [];
   this.visitedIndexIDs = [];
+  this.visitedValueIDs = [];
   this.visitedStates = [];
   this.visitedHighlightIndex = -1;
 
   for (let i = 0; i < slotCount; i++) {
-    const centerY = startY + i * (slotHeight + spacing) + slotHeight / 2;
-    const indexId = this.nextIndex++;
-    this.cmd("CreateLabel", indexId, String(i), indexX, centerY, 1);
-    this.cmd("SetTextStyle", indexId, "14");
-    this.visitedIndexIDs.push(indexId);
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const x = startX + col * (cellWidth + gapX);
+    const y = startY + row * (cellHeight + gapY);
 
-    const slotId = this.nextIndex++;
-    this.cmd("CreateRectangle", slotId, "0", slotWidth, slotHeight, slotX, centerY);
-    this.cmd("SetBackgroundColor", slotId, this.visitedFalseColor);
-    this.cmd("SetForegroundColor", slotId, "#000000");
-    this.visitedSlotIDs.push(slotId);
+    const rectId = this.nextIndex++;
+    this.visitedSlotIDs.push(rectId);
+    this.cmd("CreateRectangle", rectId, "", cellWidth, cellHeight, x, y);
+    this.cmd("SetBackgroundColor", rectId, this.visitedFalseColor);
+    this.cmd("SetForegroundColor", rectId, "#1d3f72");
+
+    const indexId = this.nextIndex++;
+    this.visitedIndexIDs.push(indexId);
+    const indexOffset = Math.max(12, Math.floor(cellHeight * 0.2));
+    this.cmd("CreateLabel", indexId, String(i), x, y - cellHeight / 2 + indexOffset, 1);
+    this.cmd("SetTextStyle", indexId, "bold 12");
+    this.cmd("SetForegroundColor", indexId, "#1d3f72");
+
+    const valueId = this.nextIndex++;
+    this.visitedValueIDs.push(valueId);
+    const valueOffset = Math.max(
+      0,
+      Math.min(Math.floor(cellHeight * 0.22), Math.floor(cellHeight / 2) - 12)
+    );
+    this.cmd("CreateLabel", valueId, "?", x, y + valueOffset, 1);
+    this.cmd("SetTextStyle", valueId, "bold 18");
+    this.cmd("SetForegroundColor", valueId, "#0a223f");
   }
 };
 
@@ -1645,12 +1633,20 @@ CoinChangeTopDown.prototype.resetVisitedDisplay = function () {
   if (!this.visitedSlotIDs) {
     this.visitedSlotIDs = [];
   }
+  if (!this.visitedValueIDs) {
+    this.visitedValueIDs = [];
+  }
   this.visitedStates = new Array(this.visitedSlotIDs.length).fill(null);
   for (let i = 0; i < this.visitedSlotIDs.length; i++) {
     const id = this.visitedSlotIDs[i];
-    this.cmd("SetText", id, "?");
-    this.cmd("SetBackgroundColor", id, this.visitedFalseColor);
-    this.cmd("SetHighlight", id, 0);
+    if (id !== undefined && id !== null) {
+      this.cmd("SetBackgroundColor", id, this.visitedFalseColor);
+      this.cmd("SetHighlight", id, 0);
+    }
+    const valueId = this.visitedValueIDs[i];
+    if (valueId !== undefined && valueId !== null) {
+      this.cmd("SetText", valueId, "?");
+    }
   }
   this.visitedHighlightIndex = -1;
 };
@@ -1660,6 +1656,10 @@ CoinChangeTopDown.prototype.setVisitedValue = function (index, value, options) {
     return;
   }
   const id = this.visitedSlotIDs[index];
+  const valueId =
+    this.visitedValueIDs && index < this.visitedValueIDs.length
+      ? this.visitedValueIDs[index]
+      : null;
   this.visitedStates[index] = value;
   let text = "?";
   if (value !== undefined && value !== null) {
@@ -1673,14 +1673,18 @@ CoinChangeTopDown.prototype.setVisitedValue = function (index, value, options) {
       text = String(value);
     }
   }
-  this.cmd("SetText", id, text);
+  if (valueId !== undefined && valueId !== null) {
+    this.cmd("SetText", valueId, text);
+  }
   let background = this.visitedFalseColor;
   if (options && options.background) {
     background = options.background;
   } else if (value !== undefined && value !== null) {
     background = this.visitedTrueColor;
   }
-  this.cmd("SetBackgroundColor", id, background);
+  if (id !== undefined && id !== null) {
+    this.cmd("SetBackgroundColor", id, background);
+  }
 };
 
 CoinChangeTopDown.prototype.formatMemoDisplay = function (value) {
@@ -1701,6 +1705,7 @@ CoinChangeTopDown.prototype.highlightVisitedEntry = function (index, highlight) 
   if (index < 0 || index >= this.visitedSlotIDs.length) {
     return;
   }
+  const slotId = this.visitedSlotIDs[index];
   if (highlight) {
     if (
       this.visitedHighlightIndex !== -1 &&
@@ -1713,14 +1718,68 @@ CoinChangeTopDown.prototype.highlightVisitedEntry = function (index, highlight) 
         0
       );
     }
-    this.cmd("SetHighlight", this.visitedSlotIDs[index], 1);
+    if (slotId !== undefined && slotId !== null) {
+      this.cmd("SetHighlight", slotId, 1);
+    }
     this.visitedHighlightIndex = index;
   } else {
-    this.cmd("SetHighlight", this.visitedSlotIDs[index], 0);
+    if (slotId !== undefined && slotId !== null) {
+      this.cmd("SetHighlight", slotId, 0);
+    }
     if (this.visitedHighlightIndex === index) {
       this.visitedHighlightIndex = -1;
     }
   }
+};
+
+CoinChangeTopDown.prototype.measureQueueMetrics = function (
+  canvasW,
+  baseCellWidth,
+  baseGap
+) {
+  const amount = this.amount;
+  const slotCount = Math.max(3, amount + 1);
+  const margin = 40;
+  const baseWidth =
+    baseCellWidth && baseCellWidth >= 0
+      ? baseCellWidth
+      : this.coinCellWidth && this.coinCellWidth > 0
+      ? this.coinCellWidth
+      : 40;
+  const rawBaseHeight =
+    this.coinCellHeight && this.coinCellHeight > 0
+      ? this.coinCellHeight
+      : Math.max(26, Math.min(60, baseWidth + 6));
+  const aspect = baseWidth > 0 ? rawBaseHeight / baseWidth : 0.8;
+  const spacingSeed =
+    baseGap !== undefined && baseGap !== null
+      ? baseGap
+      : this.coinCellSpacing !== undefined && this.coinCellSpacing !== null
+      ? this.coinCellSpacing * 0.6
+      : 10;
+  const gap = Math.max(6, Math.floor(spacingSeed));
+  let slotWidth = Math.max(22, Math.floor(baseWidth));
+  let totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
+  const areaWidth = canvasW - 2 * margin;
+  if (totalWidth > areaWidth) {
+    slotWidth = Math.max(
+      22,
+      Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount)
+    );
+    totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
+  }
+  let slotHeight = Math.max(
+    24,
+    Math.round(slotWidth * (aspect > 0 ? aspect : 0.8))
+  );
+  if (slotWidth >= baseWidth && rawBaseHeight > 0) {
+    slotHeight = Math.max(
+      24,
+      Math.min(slotHeight, Math.round(rawBaseHeight))
+    );
+  }
+  const labelOffset = Math.max(20, Math.floor(slotHeight * 0.85));
+  return { slotWidth, slotHeight, gap, labelOffset };
 };
 
 CoinChangeTopDown.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellWidth, baseGap) {
@@ -2713,6 +2772,16 @@ CoinChangeTopDown.prototype.highlightQueueSlot = function (index, highlight) {
   this.queueHighlightIndex = highlight ? index : -1;
 };
 
+CoinChangeTopDown.prototype.safeSetText = function (id, text) {
+  if (id === undefined || id === null) {
+    return;
+  }
+  if (id < 0) {
+    return;
+  }
+  this.cmd("SetText", id, text);
+};
+
 CoinChangeTopDown.prototype.highlightCode = function (lineIdx) {
   for (let i = 0; i < this.codeIDs.length; i++) {
     this.cmd("SetHighlight", this.codeIDs[i], i === lineIdx ? 1 : 0);
@@ -2961,14 +3030,14 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   const coins = this.coinValues.slice().sort((a, b) => a - b);
   const amount = this.amount;
 
-  this.cmd("SetText", this.amountValueID, String(amount));
-  this.cmd("SetText", this.depthValueID, "0");
-  this.cmd("SetText", this.currentValueID, "-");
-  this.cmd("SetText", this.coinValueID, "-");
-  this.cmd("SetText", this.childValueID, "-");
-  this.cmd("SetText", this.bestValueID, "∞");
-  this.cmd("SetText", this.memoValueID, "?");
-  this.cmd("SetText", this.resultValueID, "?");
+  this.safeSetText(this.amountValueID, String(amount));
+  this.safeSetText(this.depthValueID, "0");
+  this.safeSetText(this.currentValueID, "-");
+  this.safeSetText(this.coinValueID, "-");
+  this.safeSetText(this.childValueID, "-");
+  this.safeSetText(this.bestValueID, "∞");
+  this.safeSetText(this.memoValueID, "?");
+  this.safeSetText(this.resultValueID, "?");
 
   this.initializeNarrationBudget(coins, amount);
 
@@ -2994,8 +3063,8 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
     this.highlightVisitedEntry(0, true);
     this.setTreeNodeColor(0, this.treeVisitedColor);
     this.highlightTreeNode(0);
-    this.cmd("SetText", this.memoValueID, "0");
-    this.cmd("SetText", this.resultValueID, "0");
+    this.safeSetText(this.memoValueID, "0");
+    this.safeSetText(this.resultValueID, "0");
     this.cmd("Step");
     this.highlightVisitedEntry(0, false);
     this.highlightCode(-1);
@@ -3026,7 +3095,7 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   const result = this.runTopDownDFS(0, 0, null, null, context);
   const finalResult = result >= context.INF ? -1 : result;
   const resultText = finalResult === -1 ? "-1" : String(finalResult);
-  this.cmd("SetText", this.resultValueID, resultText);
+  this.safeSetText(this.resultValueID, resultText);
 
   if (finalResult === -1) {
     this.narrate(
@@ -3072,19 +3141,21 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
   this.highlightQueueSlot(stack.length - 1, true);
   this.highlightTreeNode(curr);
 
-  this.cmd("SetText", this.depthValueID, String(depth));
-  this.cmd("SetText", this.currentValueID, String(curr));
-  this.cmd(
-    "SetText",
+  this.safeSetText(this.depthValueID, String(depth));
+  this.safeSetText(this.currentValueID, String(curr));
+  this.safeSetText(
     this.coinValueID,
     viaCoin !== undefined && viaCoin !== null ? String(viaCoin) : "-"
   );
-  this.cmd("SetText", this.childValueID, "-");
-  this.cmd("SetText", this.bestValueID, "∞");
+  this.safeSetText(this.childValueID, "-");
+  this.safeSetText(this.bestValueID, "∞");
 
   const memoEntry = curr <= amount ? memo[curr] : UNKNOWN;
   const hasMemo = curr <= amount && memoEntry !== UNKNOWN;
-  this.cmd("SetText", this.memoValueID, this.formatMemoDisplay(hasMemo ? memoEntry : null));
+  this.safeSetText(
+    this.memoValueID,
+    this.formatMemoDisplay(hasMemo ? memoEntry : null)
+  );
   this.cmd("Step");
 
   if (curr === amount) {
@@ -3094,9 +3165,9 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       { highlight: ["curr == amount", "return 0"], wait: 4 }
     );
     memo[curr] = 0;
-    this.cmd("SetText", this.memoValueID, "0");
-    this.cmd("SetText", this.childValueID, "0");
-    this.cmd("SetText", this.bestValueID, "0");
+    this.safeSetText(this.memoValueID, "0");
+    this.safeSetText(this.childValueID, "0");
+    this.safeSetText(this.bestValueID, "0");
     if (curr <= amount) {
       this.setVisitedValue(curr, 0, { background: this.treeVisitedColor });
       this.highlightVisitedEntry(curr, true);
@@ -3123,9 +3194,9 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       ["The running sum exceeds the target, so this path is invalid."],
       { highlight: ["curr > amount"], wait: 3 }
     );
-    this.cmd("SetText", this.memoValueID, "∞");
-    this.cmd("SetText", this.childValueID, "∞");
-    this.cmd("SetText", this.bestValueID, "∞");
+    this.safeSetText(this.memoValueID, "∞");
+    this.safeSetText(this.childValueID, "∞");
+    this.safeSetText(this.bestValueID, "∞");
     this.cmd("Step");
     this.setTreeNodeColor(curr, this.treeFailColor);
     this.highlightQueueSlot(stack.length - 1, false);
@@ -3147,9 +3218,9 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       { highlight: ["memo[curr]"], wait: 4 }
     );
     const display = this.formatMemoDisplay(memoEntry);
-    this.cmd("SetText", this.memoValueID, display);
-    this.cmd("SetText", this.childValueID, display);
-    this.cmd("SetText", this.bestValueID, display);
+    this.safeSetText(this.memoValueID, display);
+    this.safeSetText(this.childValueID, display);
+    this.safeSetText(this.bestValueID, display);
     this.cmd("Step");
     this.highlightVisitedEntry(curr, false);
     this.setTreeNodeColor(curr, this.treeMemoColor);
@@ -3166,14 +3237,14 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
 
   this.highlightCode(10);
   let best = INF;
-  this.cmd("SetText", this.bestValueID, this.formatMemoDisplay(best));
+  this.safeSetText(this.bestValueID, this.formatMemoDisplay(best));
   this.cmd("Step");
 
   for (let i = 0; i < coins.length; i++) {
     const coin = coins[i];
     this.highlightCode(11);
     this.highlightCoin(i);
-    this.cmd("SetText", this.coinValueID, String(coin));
+    this.safeSetText(this.coinValueID, String(coin));
     this.cmd("Step");
 
     const next = curr + coin;
@@ -3181,7 +3252,10 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
     this.setTreeEdgeHighlight(curr, next, true);
     const child = this.runTopDownDFS(next, depth + 1, curr, coin, context);
     this.setTreeEdgeHighlight(curr, next, false);
-    this.cmd("SetText", this.childValueID, this.formatMemoDisplay(child));
+    this.safeSetText(
+      this.childValueID,
+      this.formatMemoDisplay(child)
+    );
     this.cmd("Step");
 
     this.highlightCode(13);
@@ -3190,7 +3264,10 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       this.highlightCode(14);
       if (candidate < best) {
         best = candidate;
-        this.cmd("SetText", this.bestValueID, this.formatMemoDisplay(best));
+        this.safeSetText(
+          this.bestValueID,
+          this.formatMemoDisplay(best)
+        );
       }
       this.cmd("Step");
     } else {
@@ -3207,8 +3284,11 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
     this.setVisitedValue(curr, best, { background });
     this.highlightVisitedEntry(curr, true);
   }
-  this.cmd("SetText", this.memoValueID, this.formatMemoDisplay(best));
-  this.cmd("SetText", this.bestValueID, this.formatMemoDisplay(best));
+  this.safeSetText(
+    this.memoValueID,
+    this.formatMemoDisplay(best)
+  );
+  this.safeSetText(this.bestValueID, this.formatMemoDisplay(best));
   this.cmd("Step");
   if (curr <= amount) {
     this.highlightVisitedEntry(curr, false);
