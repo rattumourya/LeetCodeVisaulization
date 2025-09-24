@@ -1315,4 +1315,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new CoinChangeTopDown(animManag, canvas.width, canvas.height);
 }
-
