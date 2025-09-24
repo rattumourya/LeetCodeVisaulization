@@ -33,8 +33,8 @@ CoinChangeTopDown.CODE = [
 CoinChangeTopDown.prototype.init = function (am, w, h) {
   CoinChangeTopDown.superclass.init.call(this, am, w, h);
 
-  this.canvasWidth = w || 720;
-  this.canvasHeight = h || 1280;
+  this.canvasWidth = w || 1080;
+  this.canvasHeight = h || 1920;
 
   this.coinValues = [1, 2, 5];
   this.amount = 11;
@@ -88,7 +88,6 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
 
   this.addControls();
   this.reset();
-
 };
 
 CoinChangeTopDown.prototype.addControls = function () {
@@ -1008,19 +1007,9 @@ CoinChangeTopDown.prototype.setup = function () {
     memoTop = treeBottom + treeGap;
   }
 
-  const codeStartX = Math.max(70, Math.floor(canvasW * 0.1));
-  const codeStartY = treeTop;
-  const codeLineHeight = 20;
-  this.buildCodeDisplay(codeStartX, codeStartY, codeLineHeight);
-  const codeBottomY =
-    codeStartY + codeLineHeight * (CoinChangeTopDown.CODE.length - 1);
-
-  const variableStartY =
-    codeBottomY + Math.max(24, Math.floor(canvasH * 0.02));
-  this.buildVariablePanel(codeStartX, variableStartY);
-
-  const treeLeft = Math.max(codeStartX + 200, Math.floor(canvasW * 0.2));
-  const treeRight = canvasW - Math.max(70, Math.floor(canvasW * 0.08));
+  const sideMargin = Math.max(80, Math.floor(canvasW * 0.08));
+  const treeLeft = sideMargin;
+  const treeRight = canvasW - sideMargin;
   this.treeArea = {
     left: treeLeft,
     right: treeRight,
