@@ -88,6 +88,7 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
 
   this.addControls();
   this.reset();
+
 };
 
 CoinChangeTopDown.prototype.addControls = function () {
@@ -1325,4 +1326,3 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new CoinChangeTopDown(animManag, canvas.width, canvas.height);
 }
-
