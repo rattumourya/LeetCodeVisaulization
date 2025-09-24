@@ -61,11 +61,6 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.treeEdgeLabelColor = "#1d3f72";
   this.boardReservedHeight = 0;
 
-  this.queueSlotIDs = [];
-  this.queueValues = [];
-  this.queueLabelID = -1;
-  this.queueHighlightIndex = -1;
-
   this.visitedLabelID = -1;
   this.visitedIndexHeaderID = -1;
   this.visitedValueHeaderID = -1;
@@ -120,9 +115,6 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.coinColor = "#f0f7ff";
   this.coinHighlightColor = "#ffef9c";
 
-  this.queueColor = "#edf3ff";
-  this.queueHighlightColor = "#ffd27f";
-
   this.visitedFalseColor = "#f5f7fb";
   this.visitedTrueColor = "#dff7df";
   this.memoInfinity = Number.POSITIVE_INFINITY;
@@ -141,7 +133,6 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
 
   this.setup();
 };
-
 
 CoinChangeTopDown.prototype.addControls = function () {
   this.controls = [];
@@ -282,9 +273,7 @@ CoinChangeTopDown.prototype.setup = function () {
 
   this.commands = [];
   this.codeIDs = [];
-  this.queueSlotIDs = [];
-  this.queueValues = [];
-  this.queueHighlightIndex = -1;
+
   this.coinIDs = [];
   this.coinPositions = [];
   this.visitedSlotIDs = [];
@@ -329,8 +318,8 @@ CoinChangeTopDown.prototype.setup = function () {
   this.cmd("SetAlpha", this.messageID, 0);
 
   const boardReservedHeight = Math.max(
-    170,
-    Math.min(240, Math.floor(canvasH * 0.18))
+    110,
+    Math.min(180, Math.floor(canvasH * 0.12))
   );
   this.boardReservedHeight = boardReservedHeight;
   this.boardLineIDs = [];
@@ -340,76 +329,34 @@ CoinChangeTopDown.prototype.setup = function () {
     messageY,
     reservedHeight: boardReservedHeight,
   });
-  const boardToTreeGap = Math.max(
-    16,
-    Math.floor((this.boardReservedHeight || 0) * 0.06)
-  );
+
+  const boardToTreeGap = Math.max(18, Math.floor(canvasH * 0.015));
   const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
-  const memoReservedHeight = Math.max(240, Math.floor(canvasH * 0.23));
-  const bottomMargin = Math.max(24, Math.floor(canvasH * 0.02));
-  const queueGapFromTree = Math.max(36, Math.floor(canvasH * 0.03));
-  const memoGapFromQueue = Math.max(32, Math.floor(canvasH * 0.025));
-  const baseTreeHeight = Math.floor(canvasH * 0.52);
-  const queueMetrics = this.measureQueueMetrics(canvasW, null, null);
-  const estimatedSlotHeight =
-    queueMetrics && queueMetrics.slotHeight
-      ? queueMetrics.slotHeight
-      : Math.max(28, Math.floor(canvasH * 0.04));
-  const estimatedLabelOffset =
-    queueMetrics && queueMetrics.labelOffset
-      ? queueMetrics.labelOffset
-      : Math.max(22, Math.floor(estimatedSlotHeight * 0.85));
-  const estimatedQueueBlock = estimatedSlotHeight + estimatedLabelOffset;
-
-  const minTreeHeight = Math.max(320, Math.floor(canvasH * 0.3));
-  let treeHeightLimit =
-    canvasH -
-    memoReservedHeight -
-    memoGapFromQueue -
-    bottomMargin -
-    treeTopY -
-    queueGapFromTree -
-    estimatedQueueBlock;
-  if (!Number.isFinite(treeHeightLimit) || treeHeightLimit < minTreeHeight) {
-    treeHeightLimit = minTreeHeight;
-  }
-  let treeHeight = Math.min(baseTreeHeight, treeHeightLimit);
-  if (!Number.isFinite(treeHeight) || treeHeight < minTreeHeight) {
-    treeHeight = minTreeHeight;
-  }
-  const treeLayout = this.buildTreeDisplay(canvasW, treeTopY, treeHeight);
-
-  const queueBottomLimit =
-    canvasH - memoReservedHeight - memoGapFromQueue - bottomMargin;
-  const preferredQueueY =
-    treeLayout.bottomY + queueGapFromTree + estimatedSlotHeight / 2;
-  const maxQueueCenter = queueBottomLimit - estimatedSlotHeight / 2;
-  let queueY = Math.min(preferredQueueY, maxQueueCenter);
-  const minQueueCenter =
-    treeLayout.bottomY + queueGapFromTree + estimatedSlotHeight / 2;
-  if (queueY < minQueueCenter) {
-    queueY = minQueueCenter;
-  }
-  const queueLayout = this.buildQueueDisplay(
+  const bottomMargin = Math.max(32, Math.floor(canvasH * 0.025));
+  const memoReservedHeight = Math.max(150, Math.floor(canvasH * 0.16));
+  const treeAvailableHeight = Math.max(
+    Math.floor(canvasH * 0.4),
+    canvasH - treeTopY - memoReservedHeight - bottomMargin
+  );
+  const treeLayout = this.buildTreeDisplay(
     canvasW,
-    queueY,
-    queueMetrics ? queueMetrics.slotWidth : null,
-    queueMetrics ? queueMetrics.gap : null
+    treeTopY,
+    treeAvailableHeight
   );
 
-  let memoTop = queueLayout.bottomY + memoGapFromQueue;
+  const memoGapFromTree = Math.max(28, Math.floor(canvasH * 0.02));
+  let memoTop = treeLayout.bottomY + memoGapFromTree;
   const memoBottom = canvasH - bottomMargin;
-  const minMemoHeight = Math.max(220, Math.floor(canvasH * 0.22));
+  const minMemoHeight = Math.max(140, Math.floor(canvasH * 0.14));
   if (memoBottom - memoTop < minMemoHeight) {
     memoTop = Math.max(
-      queueLayout.bottomY + memoGapFromQueue,
+      treeLayout.bottomY + memoGapFromTree,
       memoBottom - minMemoHeight
     );
   }
   this.buildVisitedDisplay(memoTop, memoBottom, this.amount);
 
   this.resetTreeDisplay();
-  this.resetQueueDisplay();
   this.resetVisitedDisplay();
   this.safeSetText(this.amountValueID, String(this.amount));
 
@@ -1392,7 +1339,7 @@ CoinChangeTopDown.prototype.buildCoinsRow = function (layout) {
 };
 
 CoinChangeTopDown.prototype.buildTreeDisplay = function (canvasW, topY, height) {
-  const margin = Math.max(50, Math.floor(canvasW * 0.08));
+  const margin = Math.max(40, Math.floor(canvasW * 0.06));
   let areaWidth = Math.max(320, canvasW - margin * 2);
   if (areaWidth > canvasW - 16) {
     areaWidth = canvasW - 16;
@@ -1492,8 +1439,8 @@ CoinChangeTopDown.prototype.buildVisitedDisplay = function (topY, bottomY, amoun
   const canvasW = this.canvasWidth || 720;
   const areaTop = Math.max(0, topY);
   const areaBottom = Math.max(areaTop + 80, bottomY);
-  const areaHeight = Math.max(160, areaBottom - areaTop);
-  let areaWidth = Math.max(240, Math.floor(canvasW * 0.8));
+  const areaHeight = Math.max(130, areaBottom - areaTop);
+  let areaWidth = Math.max(220, Math.floor(canvasW * 0.7));
   if (areaWidth > canvasW - 24) {
     areaWidth = canvasW - 24;
   }
@@ -1733,121 +1680,6 @@ CoinChangeTopDown.prototype.highlightVisitedEntry = function (index, highlight) 
   }
 };
 
-CoinChangeTopDown.prototype.measureQueueMetrics = function (
-  canvasW,
-  baseCellWidth,
-  baseGap
-) {
-  const amount = this.amount;
-  const slotCount = Math.max(3, amount + 1);
-  const margin = 40;
-  const baseWidth =
-    baseCellWidth && baseCellWidth >= 0
-      ? baseCellWidth
-      : this.coinCellWidth && this.coinCellWidth > 0
-      ? this.coinCellWidth
-      : 40;
-  const rawBaseHeight =
-    this.coinCellHeight && this.coinCellHeight > 0
-      ? this.coinCellHeight
-      : Math.max(26, Math.min(60, baseWidth + 6));
-  const aspect = baseWidth > 0 ? rawBaseHeight / baseWidth : 0.8;
-  const spacingSeed =
-    baseGap !== undefined && baseGap !== null
-      ? baseGap
-      : this.coinCellSpacing !== undefined && this.coinCellSpacing !== null
-      ? this.coinCellSpacing * 0.6
-      : 10;
-  const gap = Math.max(6, Math.floor(spacingSeed));
-  let slotWidth = Math.max(22, Math.floor(baseWidth));
-  let totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
-  const areaWidth = canvasW - 2 * margin;
-  if (totalWidth > areaWidth) {
-    slotWidth = Math.max(
-      22,
-      Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount)
-    );
-    totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
-  }
-  let slotHeight = Math.max(
-    24,
-    Math.round(slotWidth * (aspect > 0 ? aspect : 0.8))
-  );
-  if (slotWidth >= baseWidth && rawBaseHeight > 0) {
-    slotHeight = Math.max(
-      24,
-      Math.min(slotHeight, Math.round(rawBaseHeight))
-    );
-  }
-  const labelOffset = Math.max(20, Math.floor(slotHeight * 0.85));
-  return { slotWidth, slotHeight, gap, labelOffset };
-};
-
-CoinChangeTopDown.prototype.buildQueueDisplay = function (canvasW, queueY, baseCellWidth, baseGap) {
-  const amount = this.amount;
-  const slotCount = Math.max(3, amount + 1);
-  const margin = 40;
-  const baseWidth =
-    baseCellWidth && baseCellWidth >= 0
-      ? baseCellWidth
-      : this.coinCellWidth && this.coinCellWidth > 0
-      ? this.coinCellWidth
-      : 40;
-  const rawBaseHeight =
-    this.coinCellHeight && this.coinCellHeight > 0
-      ? this.coinCellHeight
-      : Math.max(26, Math.min(60, baseWidth + 6));
-  const aspect = baseWidth > 0 ? rawBaseHeight / baseWidth : 0.8;
-  const spacingSeed =
-    baseGap !== undefined && baseGap !== null
-      ? baseGap
-      : this.coinCellSpacing !== undefined && this.coinCellSpacing !== null
-      ? this.coinCellSpacing * 0.6
-      : 10;
-  const gap = Math.max(6, Math.floor(spacingSeed));
-  let slotWidth = Math.max(22, Math.floor(baseWidth));
-  let totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
-  const areaWidth = canvasW - 2 * margin;
-  if (totalWidth > areaWidth) {
-    slotWidth = Math.max(22, Math.floor((areaWidth - (slotCount - 1) * gap) / slotCount));
-    totalWidth = slotCount * slotWidth + (slotCount - 1) * gap;
-  }
-  let slotHeight = Math.max(24, Math.round(slotWidth * (aspect > 0 ? aspect : 0.8)));
-  if (slotWidth >= baseWidth && rawBaseHeight > 0) {
-    slotHeight = Math.max(24, Math.min(slotHeight, Math.round(rawBaseHeight)));
-  }
-  const startX = Math.floor((canvasW - totalWidth) / 2) + slotWidth / 2;
-  const labelOffset = Math.max(20, Math.floor(slotHeight * 0.85));
-
-  this.queueLabelID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.queueLabelID,
-    "Call stack",
-    canvasW / 2,
-    queueY - slotHeight / 2 - labelOffset,
-    1
-  );
-  this.cmd("SetTextStyle", this.queueLabelID, "bold 18");
-
-  this.queueSlotIDs = [];
-  this.queueValues = [];
-  for (let i = 0; i < slotCount; i++) {
-    const x = startX + i * (slotWidth + gap);
-    const id = this.nextIndex++;
-    this.queueSlotIDs.push(id);
-    this.cmd("CreateRectangle", id, "", slotWidth, slotHeight, x, queueY);
-    this.cmd("SetBackgroundColor", id, this.queueColor);
-    this.cmd("SetForegroundColor", id, "#000000");
-  }
-
-  return {
-    slotWidth,
-    slotHeight,
-    gap,
-    bottomY: queueY + slotHeight / 2,
-  };
-};
 
 CoinChangeTopDown.prototype.getTreeLevelY = function (level) {
   if (!this.treeArea) {
@@ -2381,10 +2213,11 @@ CoinChangeTopDown.prototype.createTreeRoot = function () {
   this.cmd("SetForegroundColor", nodeID, "#000000");
 
   const labelID = this.nextIndex++;
+  const rootMeta = { status: "pending" };
   this.cmd(
     "CreateLabel",
     labelID,
-    this.formatTreeNodeLabel(0, null),
+    this.composeTreeLabel(0, rootMeta),
     pos.x,
     pos.y + this.treeNodeLabelOffset,
     1
@@ -2397,43 +2230,79 @@ CoinChangeTopDown.prototype.createTreeRoot = function () {
     level: 0,
     x: pos.x,
     y: pos.y,
-    step: 0,
-    coin: null,
     parent: null,
     color: this.treeDefaultColor,
     edgeLabelID: -1,
+    meta: rootMeta,
   };
 };
 
-CoinChangeTopDown.prototype.formatTreeNodeLabel = function () {
-  return "";
+CoinChangeTopDown.prototype.composeTreeLabel = function (amount, meta) {
+  const remain = this.amount - amount;
+  let remainText;
+  if (remain === undefined || remain === null) {
+    remainText = "?";
+  } else if (!Number.isFinite(remain)) {
+    remainText = "∞";
+  } else {
+    remainText = String(remain);
+  }
+
+  let text = `f(rem=${remainText})`;
+  const status = meta && meta.status ? meta.status : null;
+  if (status === "memo") {
+    text += " (memo)";
+  }
+
+  const formatValue = (value) => this.formatMemoDisplay(value);
+  if (meta) {
+    if (status === "active" && meta.best !== undefined && meta.best !== null) {
+      text += ` best=${formatValue(meta.best)}`;
+    } else if (meta.result !== undefined && meta.result !== null) {
+      text += ` = ${formatValue(meta.result)}`;
+    }
+  }
+
+  return text;
 };
 
-CoinChangeTopDown.prototype.updateTreeNodeLabel = function (amount, step, coin) {
+CoinChangeTopDown.prototype.refreshTreeNodeLabel = function (amount) {
+  const node = this.treeNodes[amount];
+  if (!node || node.labelID === undefined || node.labelID < 0) {
+    return;
+  }
+  const meta = node.meta || {};
+  this.cmd("SetText", node.labelID, this.composeTreeLabel(amount, meta));
+};
+
+CoinChangeTopDown.prototype.updateTreeNodeMeta = function (amount, updates) {
   const node = this.treeNodes[amount];
   if (!node) {
     return;
   }
-  if (step !== undefined && step !== null) {
-    node.step = step;
+  if (!node.meta) {
+    node.meta = {};
   }
-  if (coin !== undefined) {
-    node.coin = coin;
+  if (updates && typeof updates === "object") {
+    const nextMeta = Object.assign({}, node.meta);
+    Object.keys(updates).forEach((key) => {
+      const value = updates[key];
+      if (value === undefined || value === null) {
+        delete nextMeta[key];
+      } else {
+        nextMeta[key] = value;
+      }
+    });
+    node.meta = nextMeta;
   }
-  if (node.labelID >= 0) {
-    this.cmd(
-      "SetText",
-      node.labelID,
-      this.formatTreeNodeLabel(node.step, node.coin)
-    );
-  }
+  this.refreshTreeNodeLabel(amount);
 };
 
 CoinChangeTopDown.prototype.ensureTreeNode = function (
   amount,
   level,
   parentAmount,
-  step,
+  meta,
   coin
 ) {
   const parent = parentAmount === undefined ? null : parentAmount;
@@ -2444,7 +2313,10 @@ CoinChangeTopDown.prototype.ensureTreeNode = function (
     const node = this.treeNodes[amount];
     const levelForLayout = hasLevel ? normalizedLevel : node.level || 0;
     this.ensureTreeDepthCapacity(levelForLayout);
-    this.updateTreeNodeLabel(amount, step, coin);
+    if (meta && typeof meta === "object") {
+      node.meta = Object.assign({}, node.meta || {}, meta);
+      this.refreshTreeNodeLabel(amount);
+    }
     if (hasLevel) {
       node.level = normalizedLevel;
     }
@@ -2479,10 +2351,14 @@ CoinChangeTopDown.prototype.ensureTreeNode = function (
   this.cmd("SetForegroundColor", nodeID, "#000000");
 
   const labelID = this.nextIndex++;
+  const initialMeta =
+    meta && typeof meta === "object"
+      ? Object.assign({}, meta)
+      : { status: "pending" };
   this.cmd(
     "CreateLabel",
     labelID,
-    this.formatTreeNodeLabel(step, coin),
+    this.composeTreeLabel(amount, initialMeta),
     pos.x,
     pos.y + this.treeNodeLabelOffset,
     1
@@ -2495,11 +2371,11 @@ CoinChangeTopDown.prototype.ensureTreeNode = function (
     level: normalizedLevel,
     x: pos.x,
     y: pos.y,
-    step: step === undefined ? null : step,
     coin: coin === undefined ? null : coin,
     parent,
     color: this.treeDefaultColor,
     edgeLabelID: -1,
+    meta: initialMeta,
   };
   this.treeNodes[amount] = nodeInfo;
   delete this.treePendingParents[amount];
@@ -2643,20 +2519,6 @@ CoinChangeTopDown.prototype.setEdgeLabel = function (amount, coin) {
   }
 };
 
-CoinChangeTopDown.prototype.markTreeNodeVisited = function (
-  amount,
-  step,
-  color,
-  coin,
-  parentAmount
-) {
-  const level = step === undefined || step === null ? 0 : step;
-  const parent = parentAmount === undefined ? null : parentAmount;
-  this.ensureTreeNode(amount, level, parent, step, coin);
-  this.updateTreeNodeLabel(amount, step, coin);
-  this.setTreeNodeColor(amount, color || this.treeVisitedColor);
-};
-
 CoinChangeTopDown.prototype.highlightTreeNode = function (amount) {
   if (this.treeHighlightAmount === amount) {
     return;
@@ -2740,37 +2602,6 @@ CoinChangeTopDown.prototype.pulseTreeEdge = function (fromAmount, toAmount) {
   if (labelID >= 0) {
     this.cmd("SetForegroundColor", labelID, this.treeEdgeLabelColor);
   }
-};
-
-CoinChangeTopDown.prototype.resetQueueDisplay = function () {
-  this.queueValues = [];
-  this.queueHighlightIndex = -1;
-  for (let i = 0; i < this.queueSlotIDs.length; i++) {
-    this.cmd("SetText", this.queueSlotIDs[i], "");
-    this.cmd("SetBackgroundColor", this.queueSlotIDs[i], this.queueColor);
-  }
-};
-
-CoinChangeTopDown.prototype.refreshQueue = function (queue) {
-  this.queueValues = queue.slice();
-  for (let i = 0; i < this.queueSlotIDs.length; i++) {
-    const text = i < this.queueValues.length ? String(this.queueValues[i]) : "";
-    this.cmd("SetText", this.queueSlotIDs[i], text);
-    this.cmd("SetBackgroundColor", this.queueSlotIDs[i], this.queueColor);
-  }
-  this.queueHighlightIndex = -1;
-};
-
-CoinChangeTopDown.prototype.highlightQueueSlot = function (index, highlight) {
-  if (index < 0 || index >= this.queueSlotIDs.length) {
-    return;
-  }
-  const id = this.queueSlotIDs[index];
-  if (!id) {
-    return;
-  }
-  this.cmd("SetBackgroundColor", id, highlight ? this.queueHighlightColor : this.queueColor);
-  this.queueHighlightIndex = highlight ? index : -1;
 };
 
 CoinChangeTopDown.prototype.safeSetText = function (id, text) {
@@ -3089,7 +2920,6 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
     coins,
     amount,
     INF: amount + 1,
-    stack: [],
   };
   this.memoInfinity = context.INF;
 
@@ -3130,17 +2960,15 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
   viaCoin,
   context
 ) {
-  const { memo, UNKNOWN, coins, amount, INF, stack } = context;
+  const { memo, UNKNOWN, coins, amount, INF } = context;
 
   if (curr !== 0 || depth !== 0) {
-    this.ensureTreeNode(curr, depth, parent, null, viaCoin);
+    this.ensureTreeNode(curr, depth, parent, { status: "pending" }, viaCoin);
   }
 
   this.highlightCode(6);
-  stack.push(curr);
-  this.refreshQueue(stack);
-  this.highlightQueueSlot(stack.length - 1, true);
   this.highlightTreeNode(curr);
+  this.updateTreeNodeMeta(curr, { status: "active", result: null });
 
   this.safeSetText(this.depthValueID, String(depth));
   this.safeSetText(this.currentValueID, String(curr));
@@ -3166,6 +2994,7 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       { highlight: ["curr == amount", "return 0"], wait: 4 }
     );
     memo[curr] = 0;
+    this.updateTreeNodeMeta(curr, { status: "base", result: 0, best: null });
     this.safeSetText(this.memoValueID, "0");
     this.safeSetText(this.childValueID, "0");
     this.safeSetText(this.bestValueID, "0");
@@ -3178,11 +3007,8 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       this.highlightVisitedEntry(curr, false);
     }
     this.setTreeNodeColor(curr, this.treeFoundColor);
-    this.highlightQueueSlot(stack.length - 1, false);
-    stack.pop();
-    this.refreshQueue(stack);
-    if (stack.length > 0) {
-      this.highlightTreeNode(stack[stack.length - 1]);
+    if (parent !== undefined && parent !== null) {
+      this.highlightTreeNode(parent);
     } else {
       this.clearTreeHighlight();
     }
@@ -3195,16 +3021,14 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       ["The running sum exceeds the target, so this path is invalid."],
       { highlight: ["curr > amount"], wait: 3 }
     );
+    this.updateTreeNodeMeta(curr, { status: "base", result: INF, best: null });
     this.safeSetText(this.memoValueID, "∞");
     this.safeSetText(this.childValueID, "∞");
     this.safeSetText(this.bestValueID, "∞");
     this.cmd("Step");
     this.setTreeNodeColor(curr, this.treeFailColor);
-    this.highlightQueueSlot(stack.length - 1, false);
-    stack.pop();
-    this.refreshQueue(stack);
-    if (stack.length > 0) {
-      this.highlightTreeNode(stack[stack.length - 1]);
+    if (parent !== undefined && parent !== null) {
+      this.highlightTreeNode(parent);
     } else {
       this.clearTreeHighlight();
     }
@@ -3219,17 +3043,15 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       { highlight: ["memo[curr]"], wait: 4 }
     );
     const display = this.formatMemoDisplay(memoEntry);
+    this.updateTreeNodeMeta(curr, { status: "memo", result: memoEntry, best: null });
     this.safeSetText(this.memoValueID, display);
     this.safeSetText(this.childValueID, display);
     this.safeSetText(this.bestValueID, display);
     this.cmd("Step");
     this.highlightVisitedEntry(curr, false);
     this.setTreeNodeColor(curr, this.treeMemoColor);
-    this.highlightQueueSlot(stack.length - 1, false);
-    stack.pop();
-    this.refreshQueue(stack);
-    if (stack.length > 0) {
-      this.highlightTreeNode(stack[stack.length - 1]);
+    if (parent !== undefined && parent !== null) {
+      this.highlightTreeNode(parent);
     } else {
       this.clearTreeHighlight();
     }
@@ -3238,6 +3060,7 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
 
   this.highlightCode(10);
   let best = INF;
+  this.updateTreeNodeMeta(curr, { status: "active", best, result: null });
   this.safeSetText(this.bestValueID, this.formatMemoDisplay(best));
   this.cmd("Step");
 
@@ -3253,6 +3076,7 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
     this.setTreeEdgeHighlight(curr, next, true);
     const child = this.runTopDownDFS(next, depth + 1, curr, coin, context);
     this.setTreeEdgeHighlight(curr, next, false);
+    this.highlightTreeNode(curr);
     this.safeSetText(
       this.childValueID,
       this.formatMemoDisplay(child)
@@ -3265,6 +3089,7 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
       this.highlightCode(14);
       if (candidate < best) {
         best = candidate;
+        this.updateTreeNodeMeta(curr, { status: "active", best });
         this.safeSetText(
           this.bestValueID,
           this.formatMemoDisplay(best)
@@ -3285,6 +3110,7 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
     this.setVisitedValue(curr, best, { background });
     this.highlightVisitedEntry(curr, true);
   }
+  this.updateTreeNodeMeta(curr, { status: "done", result: best, best: null });
   this.safeSetText(
     this.memoValueID,
     this.formatMemoDisplay(best)
@@ -3301,11 +3127,8 @@ CoinChangeTopDown.prototype.runTopDownDFS = function (
     this.setTreeNodeColor(curr, this.treeVisitedColor);
   }
 
-  this.highlightQueueSlot(stack.length - 1, false);
-  stack.pop();
-  this.refreshQueue(stack);
-  if (stack.length > 0) {
-    this.highlightTreeNode(stack[stack.length - 1]);
+  if (parent !== undefined && parent !== null) {
+    this.highlightTreeNode(parent);
   } else {
     this.clearTreeHighlight();
   }
