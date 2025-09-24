@@ -10,18 +10,20 @@ CoinChangeTopDown.MAX_COINS = 6;
 CoinChangeTopDown.MAX_AMOUNT = 15;
 CoinChangeTopDown.CODE = [
   "int coinChange(int[] coins, int amount) {",
+  "    final int INF = 1_000_000;",
+  "    if (amount == 0) return 0;",
   "    int[][] memo = new int[coins.length][amount + 1];",
   "    for (int[] row : memo) Arrays.fill(row, -2);",
-  "    int ans = dfs(0, amount, coins, memo);",
+  "    int ans = dfs(0, amount, coins, memo, INF);",
   "    return ans >= INF ? -1 : ans;",
   "}",
   "",
-  "int dfs(int i, int remain, int[] coins, int[][] memo) {",
+  "int dfs(int i, int remain, int[] coins, int[][] memo, int INF) {",
   "    if (remain == 0) return 0;",
   "    if (i == coins.length || remain < 0) return INF;",
   "    if (memo[i][remain] != -2) return memo[i][remain];",
-  "    int take = 1 + dfs(i, remain - coins[i], coins, memo);",
-  "    int skip = dfs(i + 1, remain, coins, memo);",
+  "    int take = 1 + dfs(i, remain - coins[i], coins, memo, INF);",
+  "    int skip = dfs(i + 1, remain, coins, memo, INF);",
   "    int best = Math.min(take, skip);",
   "    memo[i][remain] = best;",
   "    return memo[i][remain];",
@@ -67,6 +69,13 @@ CoinChangeTopDown.prototype.init = function (am, w, h) {
   this.codeIDs = [];
   this.variableIDs = {};
   this.variableValues = {};
+
+  this.messageText = "";
+  this.boardReservedHeight = 0;
+  this.boardBackgroundID = -1;
+  this.boardLineIDs = [];
+  this.boardTextCache = [];
+  this.boardInfo = null;
 
   this.titleID = -1;
   this.coinLabelID = -1;
@@ -175,6 +184,10 @@ CoinChangeTopDown.prototype.reset = function () {
   this.codeIDs = [];
   this.variableIDs = {};
   this.variableValues = {};
+  this.boardBackgroundID = -1;
+  this.boardLineIDs = [];
+  this.boardTextCache = [];
+  this.boardInfo = null;
 
   if (
     typeof animationManager !== "undefined" &&
@@ -394,6 +407,184 @@ CoinChangeTopDown.prototype.resetMemoGrid = function () {
   this.memoHighlighted = null;
 };
 
+CoinChangeTopDown.prototype.buildNarrationBoard = function (options) {
+  const settings = options || {};
+  const canvasW = settings.canvasW || this.canvasWidth || 720;
+  const messageY = settings.messageY || 0;
+  const reservedHeight = Math.max(150, settings.reservedHeight || 180);
+
+  const topGap = Math.max(12, Math.floor(reservedHeight * 0.1));
+  let boardHeight = Math.max(140, Math.floor(reservedHeight * 0.78));
+  const boardTopMin = messageY + Math.max(6, Math.floor(reservedHeight * 0.04));
+  let boardTop = messageY + topGap;
+  const boardBottomLimit = messageY + reservedHeight;
+  if (boardTop < boardTopMin) {
+    boardTop = boardTopMin;
+  }
+  if (boardTop + boardHeight > boardBottomLimit) {
+    boardHeight = Math.max(140, boardBottomLimit - boardTop);
+  }
+  if (boardHeight <= 0) {
+    boardHeight = Math.max(140, Math.floor(reservedHeight * 0.78));
+  }
+
+  const centerX = canvasW / 2;
+  const centerY = boardTop + boardHeight / 2;
+  let boardWidth = Math.max(260, Math.floor(canvasW * 0.9));
+  if (boardWidth > canvasW - 24) {
+    boardWidth = canvasW - 24;
+  }
+
+  this.boardBackgroundID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.boardBackgroundID,
+    "",
+    boardWidth,
+    boardHeight,
+    centerX,
+    centerY
+  );
+  this.cmd("SetForegroundColor", this.boardBackgroundID, "#324d7a");
+  this.cmd("SetBackgroundColor", this.boardBackgroundID, "#f5f7ff");
+
+  const lineCount = 4;
+  const textPadding = Math.max(24, Math.floor(boardWidth * 0.08));
+  const textAreaWidth = Math.max(200, boardWidth - textPadding * 2);
+  const approxCharWidth = Math.max(7, Math.floor(boardWidth * 0.02));
+  const charLimit = Math.max(18, Math.floor(textAreaWidth / approxCharWidth));
+  const firstLineY = boardTop + Math.max(28, Math.floor(boardHeight * 0.24));
+  const lineSpacing = Math.max(26, Math.floor(boardHeight * 0.2));
+
+  this.boardLineIDs = [];
+  this.boardTextCache = [];
+  for (let i = 0; i < lineCount; i++) {
+    const lineId = this.nextIndex++;
+    const lineY = firstLineY + i * lineSpacing;
+    this.cmd("CreateLabel", lineId, "", centerX, lineY, 1);
+    this.cmd("SetTextStyle", lineId, "bold 17");
+    this.cmd("SetForegroundColor", lineId, "#1f2a44");
+    this.boardLineIDs.push(lineId);
+    this.boardTextCache.push("");
+  }
+
+  this.boardInfo = {
+    top: boardTop,
+    bottom: boardTop + boardHeight,
+    left: centerX - boardWidth / 2,
+    right: centerX + boardWidth / 2,
+    width: boardWidth,
+    height: boardHeight,
+    lineCount,
+    charLimit,
+  };
+
+  this.setBoardText([""]);
+
+  return {
+    top: boardTop,
+    bottom: boardTop + boardHeight,
+  };
+};
+
+CoinChangeTopDown.prototype.wrapBoardLines = function (lines, limit, maxLines) {
+  const charLimit = Math.max(12, limit || 42);
+  const totalLines = Math.max(
+    1,
+    maxLines || (this.boardLineIDs ? this.boardLineIDs.length : 1)
+  );
+
+  const source = [];
+  if (Array.isArray(lines)) {
+    for (let i = 0; i < lines.length; i++) {
+      const entry = lines[i];
+      if (entry === null || entry === undefined) {
+        continue;
+      }
+      source.push(String(entry));
+    }
+  } else if (lines !== undefined && lines !== null) {
+    source.push(String(lines));
+  }
+  if (source.length === 0) {
+    source.push("");
+  }
+
+  const wrapped = [];
+  outer: for (let i = 0; i < source.length; i++) {
+    const text = source[i];
+    const trimmed = text.trim();
+    if (trimmed.length === 0) {
+      if (wrapped.length < totalLines) {
+        wrapped.push("");
+      }
+      continue;
+    }
+    const words = trimmed.split(/\s+/);
+    let current = "";
+    for (let j = 0; j < words.length; j++) {
+      const word = words[j];
+      if (!word) {
+        continue;
+      }
+      if (current.length === 0) {
+        if (word.length > charLimit && wrapped.length < totalLines) {
+          wrapped.push(word.substring(0, charLimit));
+          current = word.substring(charLimit);
+        } else {
+          current = word;
+        }
+      } else if ((current + " " + word).length <= charLimit) {
+        current += " " + word;
+      } else {
+        wrapped.push(current);
+        if (wrapped.length >= totalLines) {
+          break outer;
+        }
+        current = word.length > charLimit ? word.substring(0, charLimit) : word;
+      }
+      if (wrapped.length >= totalLines) {
+        break outer;
+      }
+    }
+    if (current && wrapped.length < totalLines) {
+      wrapped.push(current);
+    }
+    if (wrapped.length >= totalLines) {
+      break;
+    }
+  }
+
+  while (wrapped.length < totalLines) {
+    wrapped.push("");
+  }
+
+  return wrapped.slice(0, totalLines);
+};
+
+CoinChangeTopDown.prototype.setBoardText = function (content) {
+  if (!this.boardLineIDs || this.boardLineIDs.length === 0) {
+    return;
+  }
+  const charLimit =
+    this.boardInfo && this.boardInfo.charLimit
+      ? this.boardInfo.charLimit
+      : 48;
+  const lineCount =
+    this.boardInfo && this.boardInfo.lineCount
+      ? this.boardInfo.lineCount
+      : this.boardLineIDs.length;
+  const lines = this.wrapBoardLines(content, charLimit, lineCount);
+  for (let i = 0; i < this.boardLineIDs.length; i++) {
+    const text = i < lines.length ? lines[i] : "";
+    if (this.boardTextCache[i] === text) {
+      continue;
+    }
+    this.boardTextCache[i] = text;
+    this.cmd("SetText", this.boardLineIDs[i], text);
+  }
+};
+
 CoinChangeTopDown.prototype.highlightCode = function (lineIdx) {
   for (let i = 0; i < this.codeIDs.length; i++) {
     this.cmd("SetHighlight", this.codeIDs[i], i === lineIdx ? 1 : 0);
@@ -401,12 +592,20 @@ CoinChangeTopDown.prototype.highlightCode = function (lineIdx) {
 };
 
 CoinChangeTopDown.prototype.narrate = function (text) {
-  if (this.messageID < 0) {
+  if (!this.boardLineIDs || this.boardLineIDs.length === 0) {
     return;
   }
-  const content = text || "";
-  this.cmd("SetText", this.messageID, content);
-  this.cmd("SetAlpha", this.messageID, content ? 1 : 0);
+  if (Array.isArray(text)) {
+    this.messageText = text.join(" ");
+    this.setBoardText(text);
+  } else if (text === undefined || text === null || text === "") {
+    this.messageText = "";
+    this.setBoardText([""]);
+  } else {
+    const content = String(text);
+    this.messageText = content;
+    this.setBoardText([content]);
+  }
 };
 
 CoinChangeTopDown.prototype.formatValue = function (value) {
@@ -500,41 +699,31 @@ CoinChangeTopDown.prototype.computeTreePosition = function (
   };
   const centerX = (area.left + area.right) / 2;
   const levelHeight = this.treeLevelHeight || 110;
-  const y = area.top + depth * levelHeight;
+  let y = area.top + depth * levelHeight;
+  const bottomLimit = area.bottom - this.treeNodeHeight / 2;
+  if (y > bottomLimit) {
+    y = bottomLimit;
+  }
 
   if (!parentNode) {
     return { x: centerX, y };
   }
 
   const span = Math.max(120, area.right - area.left);
-  const depthScale = Math.pow(1.8, depth + 1);
-  let offset = span / depthScale;
-  const minOffset =
-    (this.treeNodeWidth + 20) / Math.pow(1.4, Math.max(depth, 1));
-  if (!Number.isFinite(offset) || offset <= 0) {
-    offset = this.treeNodeWidth + 40;
-  }
-  offset = Math.max(minOffset, offset);
   const direction = branchDir < 0 ? -1 : 1;
-
+  const baseOffset = span / Math.pow(2, depth + 1);
+  const minOffset = Math.max(this.treeNodeWidth * 0.75, 70);
+  const offset = Math.max(minOffset, baseOffset);
   let x = parentNode.x + direction * offset;
-  const minX = Math.max(
-    this.treeNodeWidth / 2 + 20,
-    area.left + this.treeNodeWidth / 2 - this.treeNodeWidth
-  );
-  const maxX = Math.min(
-    this.canvasWidth - this.treeNodeWidth / 2 - 20,
-    area.right - this.treeNodeWidth / 2 + this.treeNodeWidth
-  );
+  const minX = area.left + this.treeNodeWidth / 2;
+  const maxX = area.right - this.treeNodeWidth / 2;
   if (x < minX) {
     x = minX;
   }
   if (x > maxX) {
     x = maxX;
   }
-
-  const clampedY = Math.min(y, area.bottom - this.treeNodeHeight / 2);
-  return { x, y: clampedY };
+  return { x, y };
 };
 
 CoinChangeTopDown.prototype.createTreeNode = function (
@@ -563,6 +752,7 @@ CoinChangeTopDown.prototype.createTreeNode = function (
   let edgeLabelId = -1;
   if (parentNode) {
     this.cmd("Connect", parentNode.id, nodeId);
+    this.cmd("SetEdgeColor", parentNode.id, nodeId, this.treeEdgeColor);
     if (edgeLabelText) {
       edgeLabelId = this.nextIndex++;
       const labelX = (parentNode.x + position.x) / 2;
@@ -711,7 +901,7 @@ CoinChangeTopDown.prototype.setup = function () {
   const canvasW = this.canvasWidth || 720;
   const canvasH = this.canvasHeight || 1280;
 
-  const titleY = 40;
+  const titleY = Math.max(38, Math.floor(canvasH * 0.03));
   this.titleID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
@@ -723,52 +913,95 @@ CoinChangeTopDown.prototype.setup = function () {
   );
   this.cmd("SetTextStyle", this.titleID, "bold 26");
 
-  const coinRowY = titleY + 60;
+  const coinRowY = titleY + Math.max(60, Math.floor(canvasH * 0.06));
   const coinLayout = this.computeCoinRowLayout(canvasW, coinRowY);
   this.drawCoinRow(coinLayout);
 
-  const messageY = coinRowY + coinLayout.coinHeight + 30;
-  this.messageID = this.nextIndex++;
-  this.cmd("CreateLabel", this.messageID, "", canvasW / 2, messageY, 1);
-  this.cmd("SetTextStyle", this.messageID, "bold 18");
-  this.cmd("SetForegroundColor", this.messageID, "#1d3557");
-  this.cmd("SetAlpha", this.messageID, 0);
+  const boardAnchorY =
+    coinRowY + Math.floor(coinLayout.coinHeight / 2) + Math.max(24, Math.floor(canvasH * 0.02));
+  const reservedHeight = Math.max(180, Math.floor(canvasH * 0.18));
+  this.boardReservedHeight = reservedHeight;
+  const boardLayout = this.buildNarrationBoard({
+    canvasW,
+    messageY: boardAnchorY,
+    reservedHeight,
+  });
 
   const rows = this.coinValues.length;
   const cols = this.amount + 1;
   const memoLayout = this.computeMemoLayout(rows, cols);
-  const memoBottomMargin = 60;
+  const memoBottomMargin = Math.max(44, Math.floor(canvasH * 0.04));
+  const treeGap = Math.max(24, Math.floor(canvasH * 0.03));
+  let treeTop = boardLayout.bottom + treeGap;
   let memoTop = canvasH - memoLayout.totalHeight - memoBottomMargin;
-  const minTreeHeight = 260;
-  const treeTop = messageY + 40;
-  if (memoTop - treeTop < minTreeHeight) {
-    memoTop = treeTop + minTreeHeight;
+  const minTreeHeight = Math.max(260, Math.floor(canvasH * 0.32));
+  if (memoTop < treeTop + minTreeHeight + treeGap) {
+    memoTop = treeTop + minTreeHeight + treeGap;
   }
-  const treeBottom = memoTop - 24;
+  if (memoTop + memoLayout.totalHeight + memoBottomMargin > canvasH) {
+    memoTop = canvasH - memoLayout.totalHeight - memoBottomMargin;
+    if (memoTop < treeTop + minTreeHeight + treeGap) {
+      treeTop = Math.max(boardLayout.bottom + treeGap, memoTop - treeGap - minTreeHeight);
+    }
+  }
+  let treeBottom = memoTop - treeGap;
+  if (treeBottom <= treeTop) {
+    treeBottom = treeTop + minTreeHeight;
+    memoTop = treeBottom + treeGap;
+  }
+  let treeHeight = treeBottom - treeTop;
+  if (treeHeight < minTreeHeight) {
+    treeHeight = minTreeHeight;
+    treeBottom = treeTop + treeHeight;
+    memoTop = treeBottom + treeGap;
+  }
 
-  const codeStartX = 70;
+  const codeStartX = Math.max(70, Math.floor(canvasW * 0.1));
   const codeStartY = treeTop;
   const codeLineHeight = 20;
   this.buildCodeDisplay(codeStartX, codeStartY, codeLineHeight);
-  const codeBottomY = codeStartY + codeLineHeight * (CoinChangeTopDown.CODE.length - 1);
+  const codeBottomY =
+    codeStartY + codeLineHeight * (CoinChangeTopDown.CODE.length - 1);
 
-  const variableStartY = codeBottomY + 24;
+  const variableStartY =
+    codeBottomY + Math.max(24, Math.floor(canvasH * 0.02));
   this.buildVariablePanel(codeStartX, variableStartY);
 
-  const treeLeft = Math.max(140, codeStartX + 150);
-  const treeRight = canvasW - 80;
+  const treeLeft = Math.max(codeStartX + 220, Math.floor(canvasW * 0.22));
+  const treeRight = canvasW - Math.max(70, Math.floor(canvasW * 0.08));
   this.treeArea = {
     left: treeLeft,
     right: treeRight,
     top: treeTop,
     bottom: treeBottom,
   };
-  const availableTreeHeight = treeBottom - treeTop;
-  const depthEstimate = Math.max(4, Math.min(10, this.amount + 2));
-  this.treeLevelHeight = Math.max(90, Math.min(150, availableTreeHeight / depthEstimate));
+  const treeWidth = Math.max(260, treeRight - treeLeft);
+  const smallestCoin =
+    this.coinValues && this.coinValues.length > 0 ? this.coinValues[0] : 1;
+  const estimatedDepth =
+    smallestCoin > 0
+      ? Math.min(9, Math.floor(this.amount / smallestCoin) + 2)
+      : 6;
+  const availableTreeHeight = Math.max(200, treeBottom - treeTop);
+  this.treeLevelHeight = Math.max(
+    96,
+    Math.min(
+      150,
+      Math.floor(availableTreeHeight / Math.max(estimatedDepth, 2))
+    )
+  );
+  const idealNodeWidth = Math.max(
+    110,
+    Math.floor(treeWidth / Math.min(6, Math.max(3, this.amount + 2))) - 8
+  );
+  this.treeNodeWidth = Math.max(90, Math.min(160, idealNodeWidth));
+  this.treeNodeHeight = Math.max(54, Math.floor(this.treeNodeWidth * 0.45));
 
   this.buildMemoGrid(memoTop, memoLayout);
   this.resetMemoGrid();
+  this.setBoardText([
+    'Press "Run Top-Down Memo" to watch the recursion unfold.',
+  ]);
 
   animationManager.StartNewAnimation(this.commands);
   animationManager.skipForward();
@@ -787,7 +1020,10 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   const rows = coins.length;
 
   if (rows === 0) {
-    this.narrate("Please provide at least one coin value.");
+    this.narrate([
+      "Please enter at least one coin value before running the visualization.",
+    ]);
+    this.highlightCode(-1);
     return this.commands;
   }
 
@@ -795,8 +1031,6 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
     this.memoValues[r] = Array(this.amount + 1).fill(null);
   }
 
-  this.highlightCode(0);
-  this.narrate("Solve coin change using top-down recursion with memoization.");
   this.updateVariables({
     amount,
     index: "-",
@@ -808,10 +1042,34 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
     memo: "-",
     result: "-",
   });
+  this.highlightCode(2);
+  this.narrate([
+    "First check whether the target amount is already zero.",
+  ]);
   this.cmd("Step");
+  if (amount === 0) {
+    this.narrate([
+      "Amount is zero, so we can return 0 immediately.",
+      "No recursion is required.",
+    ]);
+    this.updateVariables({ remain: 0, result: 0, best: 0, memo: 0 });
+    this.cmd("Step");
+    this.highlightCode(-1);
+    return this.commands;
+  }
 
   this.highlightCode(3);
-  this.narrate(`Start with dfs(0, ${amount}).`);
+  this.narrate(["Allocate the memo table for every (index, remain) pair."]);
+  this.cmd("Step");
+
+  this.highlightCode(4);
+  this.narrate([
+    "Fill the memo table with -2 so we can detect when a result is cached.",
+  ]);
+  this.cmd("Step");
+
+  this.highlightCode(5);
+  this.narrate([`Begin the recursion with dfs(0, ${amount}).`]);
   this.cmd("Step");
   this.highlightCode(-1);
 
@@ -821,8 +1079,11 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   function dfs(index, remain, parentNode, depth, branchDir, edgeLabel) {
     const node = self.createTreeNode(index, remain, depth, parentNode, edgeLabel, branchDir);
     self.highlightNode(node);
-    self.highlightCode(7);
-    self.narrate(`Visiting dfs(${index}, ${remain}).`);
+    self.highlightCode(9);
+    self.narrate([
+      `dfs(${index}, ${remain})`,
+      "Decide whether to take the current coin or move to the next one.",
+    ]);
     self.updateVariables({
       index,
       coin: index < coins.length ? coins[index] : "-",
@@ -835,11 +1096,14 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
     self.cmd("Step");
 
     if (remain === 0) {
-      self.highlightCode(8);
-      self.narrate("Remaining amount is 0, so no more coins are needed.");
+      self.highlightCode(10);
+      self.narrate([
+        "remain is 0, so this branch used the exact amount.",
+        "Return 0 coins from this call.",
+      ]);
       self.updateVariables({ best: 0, memo: 0 });
       self.setNodeColor(node, self.treeSuccessColor);
-      if (index < rows) {
+      if (index < rows && remain <= amount) {
         self.setMemoValue(index, remain, 0, true);
         self.cmd("Step");
         self.highlightMemoCell(index, remain, false);
@@ -851,12 +1115,18 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
     }
 
     if (remain < 0 || index >= rows) {
-      self.highlightCode(9);
-      if (remain < 0) {
-        self.narrate("We overshot the amount; treat this path as impossible.");
-      } else {
-        self.narrate("No coins left to use, so this path fails.");
-      }
+      self.highlightCode(11);
+      self.narrate(
+        remain < 0
+          ? [
+              "remain dropped below 0, so this path overshoots the amount.",
+              "Return INF to mark it as impossible.",
+            ]
+          : [
+              "We are out of coin denominations.",
+              "Return INF because we cannot build the amount.",
+            ]
+      );
       self.updateVariables({ best: "INF" });
       self.setNodeColor(node, self.treeFailColor);
       self.cmd("Step");
@@ -864,10 +1134,16 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
       return INF;
     }
 
-    const memoVal = self.memoValues[index][remain];
+    const memoVal =
+      index < rows && remain >= 0 && remain <= amount
+        ? self.memoValues[index][remain]
+        : null;
     if (memoVal !== null && memoVal !== undefined) {
-      self.highlightCode(10);
-      self.narrate("Memo table already has this state.");
+      self.highlightCode(12);
+      self.narrate([
+        `memo[${index}][${remain}] = ${self.formatValue(memoVal)} is already known.`,
+        "Reuse the cached value without more recursion.",
+      ]);
       self.highlightMemoCell(index, remain, true);
       self.updateVariables({ memo: memoVal, best: memoVal });
       self.cmd("Step");
@@ -877,46 +1153,58 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
       return memoVal;
     }
 
-    self.highlightCode(11);
-    self.narrate(`Take coin ${coins[index]} and stay on the same index.`);
+    const coinValue = coins[index];
+    self.highlightCode(13);
+    self.narrate([
+      `Take coin ${coinValue} and stay at index ${index}.`,
+      `The remaining amount becomes ${remain - coinValue}.`,
+    ]);
     self.highlightCoin(index);
     self.cmd("Step");
     const takeChild = dfs(
       index,
-      remain - coins[index],
+      remain - coinValue,
       node,
       depth + 1,
       -1,
-      `take ${coins[index]}`
+      `+${coinValue}`
     );
-    let takeResult = takeChild >= INF ? INF : takeChild + 1;
+    const takeResult = takeChild >= INF ? INF : takeChild + 1;
     self.clearCoinHighlight();
     self.updateVariables({ take: takeResult });
     self.cmd("Step");
 
-    self.highlightCode(12);
-    self.narrate("Skip this coin and move to the next index.");
+    self.highlightCode(14);
+    self.narrate([
+      `Skip coin ${coinValue} and move to dfs(${index + 1}, ${remain}).`,
+    ]);
     self.cmd("Step");
     const skipResult = dfs(index + 1, remain, node, depth + 1, 1, "skip");
     self.updateVariables({ skip: skipResult });
     self.cmd("Step");
 
     const best = Math.min(takeResult, skipResult);
-    self.highlightCode(13);
-    self.narrate(
-      `Choose the better of take (${self.formatValue(takeResult)}) and skip (${self.formatValue(
+    self.highlightCode(15);
+    self.narrate([
+      `Choose the smaller of take (${self.formatValue(takeResult)}) and skip (${self.formatValue(
         skipResult
-      )}).`
-    );
+      )}).`,
+    ]);
     self.updateVariables({ best });
     self.cmd("Step");
 
-    self.highlightCode(14);
-    self.narrate("Store the result in the memo table.");
-    self.setMemoValue(index, remain, best, true);
+    self.highlightCode(16);
+    self.narrate([
+      `Store ${self.formatValue(best)} into memo[${index}][${remain}] for reuse.`,
+    ]);
+    if (index < rows && remain >= 0 && remain <= amount) {
+      self.setMemoValue(index, remain, best, true);
+    }
     self.updateVariables({ memo: best });
     self.cmd("Step");
-    self.highlightMemoCell(index, remain, false);
+    if (index < rows && remain >= 0 && remain <= amount) {
+      self.highlightMemoCell(index, remain, false);
+    }
 
     if (best >= INF) {
       self.setNodeColor(node, self.treeFailColor);
@@ -928,19 +1216,23 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
   }
 
   const answer = dfs(0, amount, null, 0, 0, null);
-
   const finalAnswer = answer >= INF ? -1 : answer;
-  this.highlightCode(4);
+
+  this.highlightCode(6);
   if (finalAnswer === -1) {
-    this.narrate("No combination of coins makes the target. Return -1.");
+    this.narrate([
+      "No combination of coins reaches the target amount.",
+      "Return -1 to signal the amount cannot be formed.",
+    ]);
   } else {
-    this.narrate(`Minimum coins needed: ${finalAnswer}.`);
+    this.narrate([
+      `Minimum coins needed: ${finalAnswer}.`,
+      "Return this value from coinChange.",
+    ]);
   }
   this.updateVariables({ result: finalAnswer });
   this.cmd("Step");
 
-  this.highlightCode(5);
-  this.cmd("Step");
   this.highlightCode(-1);
   this.clearNodeHighlight();
   this.clearCoinHighlight();
