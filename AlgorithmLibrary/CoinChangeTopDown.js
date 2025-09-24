@@ -711,9 +711,10 @@ CoinChangeTopDown.prototype.computeTreePosition = function (
 
   const span = Math.max(120, area.right - area.left);
   const direction = branchDir < 0 ? -1 : 1;
-  const baseOffset = span / Math.pow(2, depth + 1);
-  const minOffset = Math.max(this.treeNodeWidth * 0.75, 70);
-  const offset = Math.max(minOffset, baseOffset);
+  const baseOffset = span / Math.pow(2, depth + 2);
+  const minOffset = Math.max(this.treeNodeWidth * 0.6, 45);
+  const maxOffset = Math.max(this.treeNodeWidth * 1.4, minOffset);
+  const offset = Math.min(maxOffset, Math.max(minOffset, baseOffset));
   let x = parentNode.x + direction * offset;
   const minX = area.left + this.treeNodeWidth / 2;
   const maxX = area.right - this.treeNodeWidth / 2;
@@ -780,9 +781,59 @@ CoinChangeTopDown.prototype.createTreeNode = function (
     color: this.treeDefaultColor,
     parent: parentNode,
     edgeLabelId,
+    labelData: {
+      decision: "",
+      take: null,
+      skip: null,
+      best: null,
+      result: null,
+    },
   };
+  this.updateNodeLabel(nodeInfo, {});
   this.treeNodes.push(nodeInfo);
   return nodeInfo;
+};
+
+CoinChangeTopDown.prototype.composeNodeLabel = function (node) {
+  if (!node) {
+    return "";
+  }
+  const parts = [`dfs(${node.index}, ${node.remain})`];
+  const data = node.labelData || {};
+  if (data.decision) {
+    parts.push(data.decision);
+  }
+  if (data.take !== null && data.take !== undefined) {
+    parts.push(`take: ${this.formatValue(data.take)}`);
+  }
+  if (data.skip !== null && data.skip !== undefined) {
+    parts.push(`skip: ${this.formatValue(data.skip)}`);
+  }
+  if (data.best !== null && data.best !== undefined) {
+    parts.push(`best: ${this.formatValue(data.best)}`);
+  }
+  if (data.result !== null && data.result !== undefined) {
+    parts.push(`return ${this.formatValue(data.result)}`);
+  }
+  return parts.join("\n");
+};
+
+CoinChangeTopDown.prototype.updateNodeLabel = function (node, updates) {
+  if (!node) {
+    return;
+  }
+  if (!node.labelData) {
+    node.labelData = {};
+  }
+  if (updates) {
+    const keys = Object.keys(updates);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      node.labelData[key] = updates[key];
+    }
+  }
+  const text = this.composeNodeLabel(node);
+  this.cmd("SetText", node.id, text);
 };
 
 CoinChangeTopDown.prototype.setNodeColor = function (node, color) {
@@ -919,7 +970,7 @@ CoinChangeTopDown.prototype.setup = function () {
 
   const boardAnchorY =
     coinRowY + Math.floor(coinLayout.coinHeight / 2) + Math.max(24, Math.floor(canvasH * 0.02));
-  const reservedHeight = Math.max(180, Math.floor(canvasH * 0.18));
+  const reservedHeight = Math.max(150, Math.floor(canvasH * 0.14));
   this.boardReservedHeight = reservedHeight;
   const boardLayout = this.buildNarrationBoard({
     canvasW,
@@ -967,7 +1018,7 @@ CoinChangeTopDown.prototype.setup = function () {
     codeBottomY + Math.max(24, Math.floor(canvasH * 0.02));
   this.buildVariablePanel(codeStartX, variableStartY);
 
-  const treeLeft = Math.max(codeStartX + 220, Math.floor(canvasW * 0.22));
+  const treeLeft = Math.max(codeStartX + 200, Math.floor(canvasW * 0.2));
   const treeRight = canvasW - Math.max(70, Math.floor(canvasW * 0.08));
   this.treeArea = {
     left: treeLeft,
@@ -991,11 +1042,11 @@ CoinChangeTopDown.prototype.setup = function () {
     )
   );
   const idealNodeWidth = Math.max(
-    110,
-    Math.floor(treeWidth / Math.min(6, Math.max(3, this.amount + 2))) - 8
+    100,
+    Math.floor(treeWidth / Math.min(6, Math.max(3, this.amount + 2))) - 10
   );
-  this.treeNodeWidth = Math.max(90, Math.min(160, idealNodeWidth));
-  this.treeNodeHeight = Math.max(54, Math.floor(this.treeNodeWidth * 0.45));
+  this.treeNodeWidth = Math.max(88, Math.min(150, idealNodeWidth));
+  this.treeNodeHeight = Math.max(50, Math.floor(this.treeNodeWidth * 0.44));
 
   this.buildMemoGrid(memoTop, memoLayout);
   this.resetMemoGrid();
@@ -1084,6 +1135,7 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
       `dfs(${index}, ${remain})`,
       "Decide whether to take the current coin or move to the next one.",
     ]);
+    self.updateNodeLabel(node, { decision: "explore" });
     self.updateVariables({
       index,
       coin: index < coins.length ? coins[index] : "-",
@@ -1102,6 +1154,13 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
         "Return 0 coins from this call.",
       ]);
       self.updateVariables({ best: 0, memo: 0 });
+      self.updateNodeLabel(node, {
+        decision: "exact match",
+        best: 0,
+        result: 0,
+        take: null,
+        skip: null,
+      });
       self.setNodeColor(node, self.treeSuccessColor);
       if (index < rows && remain <= amount) {
         self.setMemoValue(index, remain, 0, true);
@@ -1128,6 +1187,13 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
             ]
       );
       self.updateVariables({ best: "INF" });
+      self.updateNodeLabel(node, {
+        decision: "no solution",
+        best: "INF",
+        result: "INF",
+        take: null,
+        skip: null,
+      });
       self.setNodeColor(node, self.treeFailColor);
       self.cmd("Step");
       self.clearNodeHighlight();
@@ -1146,6 +1212,13 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
       ]);
       self.highlightMemoCell(index, remain, true);
       self.updateVariables({ memo: memoVal, best: memoVal });
+      self.updateNodeLabel(node, {
+        decision: "memo hit",
+        best: memoVal,
+        result: memoVal,
+        take: null,
+        skip: null,
+      });
       self.cmd("Step");
       self.highlightMemoCell(index, remain, false);
       self.setNodeColor(node, self.treeMemoColor);
@@ -1160,6 +1233,7 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
       `The remaining amount becomes ${remain - coinValue}.`,
     ]);
     self.highlightCoin(index);
+    self.updateNodeLabel(node, { decision: `take ${coinValue}` });
     self.cmd("Step");
     const takeChild = dfs(
       index,
@@ -1172,15 +1246,18 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
     const takeResult = takeChild >= INF ? INF : takeChild + 1;
     self.clearCoinHighlight();
     self.updateVariables({ take: takeResult });
+    self.updateNodeLabel(node, { take: takeResult });
     self.cmd("Step");
 
     self.highlightCode(14);
     self.narrate([
       `Skip coin ${coinValue} and move to dfs(${index + 1}, ${remain}).`,
     ]);
+    self.updateNodeLabel(node, { decision: "skip coin" });
     self.cmd("Step");
     const skipResult = dfs(index + 1, remain, node, depth + 1, 1, "skip");
     self.updateVariables({ skip: skipResult });
+    self.updateNodeLabel(node, { skip: skipResult });
     self.cmd("Step");
 
     const best = Math.min(takeResult, skipResult);
@@ -1191,6 +1268,7 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
       )}).`,
     ]);
     self.updateVariables({ best });
+    self.updateNodeLabel(node, { decision: "choose best", best });
     self.cmd("Step");
 
     self.highlightCode(16);
@@ -1201,6 +1279,7 @@ CoinChangeTopDown.prototype.runCoinChange = function () {
       self.setMemoValue(index, remain, best, true);
     }
     self.updateVariables({ memo: best });
+    self.updateNodeLabel(node, { decision: "return", result: best });
     self.cmd("Step");
     if (index < rows && remain >= 0 && remain <= amount) {
       self.highlightMemoCell(index, remain, false);
