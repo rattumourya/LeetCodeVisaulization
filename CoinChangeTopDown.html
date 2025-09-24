@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Coin Change Top-Down Memo</title>
+    <title>Coin Change Top-Down Memoized DFS</title>
 
     <link rel="stylesheet" href="visualizationPageStyle.css" />
     <link rel="stylesheet" href="ThirdParty/jquery-ui-1.8.11.custom.css" />
@@ -27,15 +27,16 @@
   <body onload="init();" class="VisualizationMainPage">
     <div id="container">
       <div id="header">
-        <h1 style="text-align: center; font-weight: bold;">Coin Change Top-Down Memo</h1>
+        <h1 style="text-align: center; font-weight: bold;">
+          Coin Change Top-Down Memoized DFS
+        </h1>
       </div>
 
       <div id="mainContent">
         <div id="algoControlSection">
           <table id="AlgorithmSpecificControls"></table>
         </div>
-
-        <canvas id="canvas" width="1080" height="1920"></canvas>
+        <canvas id="canvas" width="720" height="1280"></canvas>
 
         <div id="generalAnimationControlSection">
           <table id="GeneralAnimationControls"></table>
