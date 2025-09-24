@@ -273,6 +273,7 @@ CoinChangeTopDown.prototype.setup = function () {
 
   this.commands = [];
   this.codeIDs = [];
+
   this.coinIDs = [];
   this.coinPositions = [];
   this.visitedSlotIDs = [];
@@ -328,6 +329,7 @@ CoinChangeTopDown.prototype.setup = function () {
     messageY,
     reservedHeight: boardReservedHeight,
   });
+
   const boardToTreeGap = Math.max(18, Math.floor(canvasH * 0.015));
   const treeTopY = messageY + boardReservedHeight + boardToTreeGap;
   const bottomMargin = Math.max(32, Math.floor(canvasH * 0.025));
@@ -1677,6 +1679,7 @@ CoinChangeTopDown.prototype.highlightVisitedEntry = function (index, highlight) 
     }
   }
 };
+
 
 CoinChangeTopDown.prototype.getTreeLevelY = function (level) {
   if (!this.treeArea) {
