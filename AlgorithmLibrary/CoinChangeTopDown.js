@@ -1599,6 +1599,11 @@ CoinChangeTopDown.prototype.resetVisitedDisplay = function () {
   this.visitedHighlightIndex = -1;
 };
 
+CoinChangeTopDown.prototype.resetQueueDisplay = function () {
+  this.queueValues = [];
+  this.queueHighlightIndex = -1;
+};
+
 CoinChangeTopDown.prototype.setVisitedValue = function (index, value, options) {
   if (index < 0 || index >= this.visitedSlotIDs.length) {
     return;
@@ -1679,7 +1684,6 @@ CoinChangeTopDown.prototype.highlightVisitedEntry = function (index, highlight) 
     }
   }
 };
-
 
 CoinChangeTopDown.prototype.getTreeLevelY = function (level) {
   if (!this.treeArea) {
