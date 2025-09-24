@@ -25,12 +25,13 @@ BubbleSort.VALUE_MIN = 20;
 BubbleSort.VALUE_MAX = 100;
 BubbleSort.SCALE_FACTOR = 4;
 
-BubbleSort.TITLE_Y = 90;
-BubbleSort.INFO_Y = 470;
-BubbleSort.LEGEND_Y = BubbleSort.BAR_LABEL_Y + 28;
+BubbleSort.TITLE_Y = 60;
+BubbleSort.INFO_Y = 520;
+BubbleSort.LEGEND_Y = BubbleSort.INFO_Y + 80;
 
 BubbleSort.CODE_START_X = 140;
-BubbleSort.CODE_START_Y = 200;
+BubbleSort.CODE_START_Y = 160;
+
 BubbleSort.CODE_LINE_HEIGHT = 34;
 BubbleSort.CODE_STANDARD_COLOR = "#1f3d7a";
 BubbleSort.CODE_HIGHLIGHT_COLOR = "#d62828";
@@ -58,6 +59,15 @@ BubbleSort.CODE = [
 
 BubbleSort.prototype.init = function (am, w, h) {
   BubbleSort.superclass.init.call(this, am, w, h);
+
+  if (
+    typeof objectManager !== "undefined" &&
+    objectManager &&
+    objectManager.statusReport
+  ) {
+    objectManager.statusReport.setText("");
+    objectManager.statusReport.addedToScene = false;
+  }
 
   this.addControls();
   this.nextIndex = 0;
@@ -91,6 +101,7 @@ BubbleSort.prototype.addControls = function () {
   this.sortButton = addControlToAlgorithmBar("Button", "Bubble Sort");
   this.sortButton.onclick = this.sortCallback.bind(this);
 };
+
 BubbleSort.prototype.createTitle = function () {
   this.titleLabelID = this.nextIndex++;
   this.cmd(
@@ -148,8 +159,9 @@ BubbleSort.prototype.createInfoPanel = function () {
     BubbleSort.INFO_Y,
     0
   );
-  this.cmd("SetTextStyle", this.infoLabelID, "20");
-  this.cmd("SetForegroundColor", this.infoLabelID, BubbleSort.BORDER_COLOR);
+
+  this.cmd("SetTextStyle", this.infoLabelID, "bold 22");
+  this.cmd("SetForegroundColor", this.infoLabelID, "#3c096c");
 };
 
 BubbleSort.prototype.createLegend = function () {
@@ -158,9 +170,10 @@ BubbleSort.prototype.createLegend = function () {
     { label: "Comparing", color: BubbleSort.ACTIVE_COLOR },
     { label: "Sorted", color: BubbleSort.SORTED_COLOR },
   ];
-  var baseX = BubbleSort.BAR_START_X + 60;
+  var centerX = BubbleSort.CANVAS_WIDTH / 2;
+  var spacing = 170;
   for (var i = 0; i < entries.length; i++) {
-    var x = baseX + i * 200;
+    var x = centerX + (i - 1) * spacing;
     var boxID = this.nextIndex++;
     var labelID = this.nextIndex++;
     this.cmd("CreateRectangle", boxID, "", 36, 20, x, BubbleSort.LEGEND_Y, "center", "center");
