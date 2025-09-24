@@ -18,7 +18,7 @@ BubbleSort.BAR_COUNT = 12;
 BubbleSort.BAR_WIDTH = 42;
 BubbleSort.BAR_SPACING = 52;
 BubbleSort.BAR_START_X = 80;
-BubbleSort.BAR_BASE_Y = 900;
+BubbleSort.BAR_BASE_Y = 980;
 BubbleSort.BAR_LABEL_OFFSET = 36;
 BubbleSort.BAR_LABEL_Y = BubbleSort.BAR_BASE_Y + BubbleSort.BAR_LABEL_OFFSET;
 BubbleSort.VALUE_MIN = 20;
@@ -27,9 +27,13 @@ BubbleSort.SCALE_FACTOR = 4;
 
 BubbleSort.TITLE_Y = 60;
 BubbleSort.INFO_Y = 520;
-BubbleSort.LEGEND_Y = BubbleSort.INFO_Y + 80;
+BubbleSort.LEGEND_Y = BubbleSort.BAR_BASE_Y + 70;
+BubbleSort.LEGEND_SPACING = 200;
+BubbleSort.LEGEND_BOX_WIDTH = 42;
+BubbleSort.LEGEND_BOX_HEIGHT = 24;
+BubbleSort.LEGEND_LABEL_OFFSET = 70;
 
-BubbleSort.CODE_START_X = 140;
+BubbleSort.CODE_START_X = BubbleSort.CANVAS_WIDTH / 2;
 BubbleSort.CODE_START_Y = 160;
 
 BubbleSort.CODE_LINE_HEIGHT = 34;
@@ -110,7 +114,7 @@ BubbleSort.prototype.createTitle = function () {
     "Bubble Sort",
     BubbleSort.CANVAS_WIDTH / 2,
     BubbleSort.TITLE_Y,
-    0
+    1
   );
   this.cmd("SetTextStyle", this.titleLabelID, "bold 32");
   this.cmd("SetForegroundColor", this.titleLabelID, BubbleSort.BORDER_COLOR);
@@ -157,9 +161,8 @@ BubbleSort.prototype.createInfoPanel = function () {
     "",
     BubbleSort.CANVAS_WIDTH / 2,
     BubbleSort.INFO_Y,
-    0
+    1
   );
-
   this.cmd("SetTextStyle", this.infoLabelID, "bold 22");
   this.cmd("SetForegroundColor", this.infoLabelID, "#3c096c");
 };
@@ -171,17 +174,28 @@ BubbleSort.prototype.createLegend = function () {
     { label: "Sorted", color: BubbleSort.SORTED_COLOR },
   ];
   var centerX = BubbleSort.CANVAS_WIDTH / 2;
-  var spacing = 170;
+  var spacing = BubbleSort.LEGEND_SPACING;
   for (var i = 0; i < entries.length; i++) {
-    var x = centerX + (i - 1) * spacing;
+    var groupCenter = centerX + (i - 1) * spacing;
     var boxID = this.nextIndex++;
     var labelID = this.nextIndex++;
-    this.cmd("CreateRectangle", boxID, "", 36, 20, x, BubbleSort.LEGEND_Y, "center", "center");
+    this.cmd(
+      "CreateRectangle",
+      boxID,
+      "",
+      BubbleSort.LEGEND_BOX_WIDTH,
+      BubbleSort.LEGEND_BOX_HEIGHT,
+      groupCenter,
+      BubbleSort.LEGEND_Y,
+      "center",
+      "center"
+    );
     this.cmd("SetBackgroundColor", boxID, entries[i].color);
     this.cmd("SetForegroundColor", boxID, BubbleSort.BORDER_COLOR);
-    this.cmd("CreateLabel", labelID, entries[i].label, x, BubbleSort.LEGEND_Y + 24, 0);
+    var labelX = groupCenter + BubbleSort.LEGEND_LABEL_OFFSET;
+    this.cmd("CreateLabel", labelID, entries[i].label, labelX, BubbleSort.LEGEND_Y, 0);
     this.cmd("SetForegroundColor", labelID, BubbleSort.BORDER_COLOR);
-    this.cmd("SetTextStyle", labelID, "16");
+    this.cmd("SetTextStyle", labelID, "bold 18");
     this.legendIDs.push({ box: boxID, label: labelID });
   }
 };
@@ -192,7 +206,9 @@ BubbleSort.prototype.createCodeDisplay = function () {
     BubbleSort.CODE_START_X,
     BubbleSort.CODE_START_Y,
     BubbleSort.CODE_LINE_HEIGHT,
-    BubbleSort.CODE_STANDARD_COLOR
+    BubbleSort.CODE_STANDARD_COLOR,
+    0,
+    1
   );
   for (var i = 0; i < this.codeID.length; i++) {
     for (var j = 0; j < this.codeID[i].length; j++) {
