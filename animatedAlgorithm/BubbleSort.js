@@ -31,9 +31,9 @@ BubbleSort.LEGEND_Y = BubbleSort.BAR_BASE_Y + 70;
 BubbleSort.LEGEND_SPACING = 200;
 BubbleSort.LEGEND_BOX_WIDTH = 42;
 BubbleSort.LEGEND_BOX_HEIGHT = 24;
-BubbleSort.LEGEND_LABEL_OFFSET = 70;
+BubbleSort.LEGEND_LABEL_GAP = 12;
 
-BubbleSort.CODE_START_X = BubbleSort.CANVAS_WIDTH / 2;
+BubbleSort.CODE_START_X = 140;
 BubbleSort.CODE_START_Y = 160;
 
 BubbleSort.CODE_LINE_HEIGHT = 34;
@@ -147,7 +147,7 @@ BubbleSort.prototype.createBars = function () {
     this.cmd("SetForegroundColor", rectID, BubbleSort.BORDER_COLOR);
     this.cmd("SetBackgroundColor", rectID, BubbleSort.DEFAULT_COLOR);
 
-    this.cmd("CreateLabel", labelID, value, xPos, BubbleSort.BAR_LABEL_Y, 0);
+    this.cmd("CreateLabel", labelID, value, xPos, BubbleSort.BAR_LABEL_Y, 1);
     this.cmd("SetForegroundColor", labelID, BubbleSort.LABEL_COLOR);
     this.cmd("SetTextStyle", labelID, "bold 16");
   }
@@ -192,7 +192,10 @@ BubbleSort.prototype.createLegend = function () {
     );
     this.cmd("SetBackgroundColor", boxID, entries[i].color);
     this.cmd("SetForegroundColor", boxID, BubbleSort.BORDER_COLOR);
-    var labelX = groupCenter + BubbleSort.LEGEND_LABEL_OFFSET;
+    var labelX =
+      groupCenter +
+      BubbleSort.LEGEND_BOX_WIDTH / 2 +
+      BubbleSort.LEGEND_LABEL_GAP;
     this.cmd("CreateLabel", labelID, entries[i].label, labelX, BubbleSort.LEGEND_Y, 0);
     this.cmd("SetForegroundColor", labelID, BubbleSort.BORDER_COLOR);
     this.cmd("SetTextStyle", labelID, "bold 18");
@@ -208,7 +211,7 @@ BubbleSort.prototype.createCodeDisplay = function () {
     BubbleSort.CODE_LINE_HEIGHT,
     BubbleSort.CODE_STANDARD_COLOR,
     0,
-    1
+    0
   );
   for (var i = 0; i < this.codeID.length; i++) {
     for (var j = 0; j < this.codeID[i].length; j++) {
