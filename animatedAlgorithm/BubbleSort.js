@@ -31,6 +31,7 @@ BubbleSort.LEGEND_Y = BubbleSort.INFO_Y + 80;
 
 BubbleSort.CODE_START_X = 140;
 BubbleSort.CODE_START_Y = 160;
+
 BubbleSort.CODE_LINE_HEIGHT = 34;
 BubbleSort.CODE_STANDARD_COLOR = "#1f3d7a";
 BubbleSort.CODE_HIGHLIGHT_COLOR = "#d62828";
@@ -158,6 +159,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     BubbleSort.INFO_Y,
     0
   );
+
   this.cmd("SetTextStyle", this.infoLabelID, "bold 22");
   this.cmd("SetForegroundColor", this.infoLabelID, "#3c096c");
 };
