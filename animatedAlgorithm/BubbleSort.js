@@ -91,7 +91,6 @@ BubbleSort.prototype.addControls = function () {
   this.sortButton = addControlToAlgorithmBar("Button", "Bubble Sort");
   this.sortButton.onclick = this.sortCallback.bind(this);
 };
-
 BubbleSort.prototype.createTitle = function () {
   this.titleLabelID = this.nextIndex++;
   this.cmd(
