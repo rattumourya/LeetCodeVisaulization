@@ -14,25 +14,27 @@ BubbleSort.superclass = Algorithm.prototype;
 BubbleSort.CANVAS_WIDTH = 720;
 BubbleSort.CANVAS_HEIGHT = 1080;
 
-BubbleSort.BAR_COUNT = 8;
-BubbleSort.BAR_WIDTH = 48;
-BubbleSort.BAR_SPACING = 55;
-BubbleSort.BAR_START_X = 120;
-BubbleSort.BAR_BASE_Y = 760;
-BubbleSort.BAR_LABEL_Y = BubbleSort.BAR_BASE_Y + 30;
-BubbleSort.VALUE_MIN = 15;
-BubbleSort.VALUE_MAX = 90;
-BubbleSort.SCALE_FACTOR = 6;
+BubbleSort.BAR_COUNT = 12;
+BubbleSort.BAR_WIDTH = 42;
+BubbleSort.BAR_SPACING = 52;
+BubbleSort.BAR_START_X = 80;
+BubbleSort.BAR_BASE_Y = 900;
+BubbleSort.BAR_LABEL_OFFSET = 36;
+BubbleSort.BAR_LABEL_Y = BubbleSort.BAR_BASE_Y + BubbleSort.BAR_LABEL_OFFSET;
+BubbleSort.VALUE_MIN = 20;
+BubbleSort.VALUE_MAX = 100;
+BubbleSort.SCALE_FACTOR = 4;
 
-BubbleSort.INFO_X = 120;
-BubbleSort.INFO_Y = 120;
-BubbleSort.INFO_LINE_HEIGHT = 28;
-BubbleSort.STATUS_Y = 70;
-BubbleSort.LEGEND_Y = 910;
+BubbleSort.INFO_X = 160;
+BubbleSort.INFO_Y = 420;
+BubbleSort.INFO_LINE_HEIGHT = 32;
+BubbleSort.STATUS_Y = 140;
+BubbleSort.LEGEND_Y = BubbleSort.BAR_LABEL_Y + 40;
 
-BubbleSort.CODE_START_X = 540;
-BubbleSort.CODE_START_Y = 160;
-BubbleSort.CODE_LINE_HEIGHT = 26;
+BubbleSort.CODE_START_X = 470;
+BubbleSort.CODE_START_Y = BubbleSort.INFO_Y;
+BubbleSort.CODE_LINE_HEIGHT = 28;
+
 BubbleSort.CODE_STANDARD_COLOR = "#1f3d7a";
 BubbleSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 BubbleSort.CODE_FONT = "16";
@@ -133,7 +135,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     0
   );
   this.cmd("SetForegroundColor", this.statusLabelID, BubbleSort.BORDER_COLOR);
-  this.cmd("SetTextStyle", this.statusLabelID, "bold 20");
+  this.cmd("SetTextStyle", this.statusLabelID, "bold 22");
 
   this.infoHeaderID = this.nextIndex++;
   this.cmd(
@@ -144,7 +146,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     BubbleSort.INFO_Y,
     0
   );
-  this.cmd("SetTextStyle", this.infoHeaderID, "bold 18");
+  this.cmd("SetTextStyle", this.infoHeaderID, "bold 20");
   this.cmd("SetForegroundColor", this.infoHeaderID, BubbleSort.BORDER_COLOR);
 
   this.passLabelID = this.nextIndex++;
@@ -157,7 +159,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     0
   );
   this.cmd("SetForegroundColor", this.passLabelID, BubbleSort.BORDER_COLOR);
-  this.cmd("SetTextStyle", this.passLabelID, "16");
+  this.cmd("SetTextStyle", this.passLabelID, "18");
 
   this.comparisonLabelID = this.nextIndex++;
   this.cmd(
@@ -169,7 +171,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     0
   );
   this.cmd("SetForegroundColor", this.comparisonLabelID, BubbleSort.BORDER_COLOR);
-  this.cmd("SetTextStyle", this.comparisonLabelID, "16");
+  this.cmd("SetTextStyle", this.comparisonLabelID, "18");
 
   this.swapLabelID = this.nextIndex++;
   this.cmd(
@@ -181,7 +183,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     0
   );
   this.cmd("SetForegroundColor", this.swapLabelID, BubbleSort.BORDER_COLOR);
-  this.cmd("SetTextStyle", this.swapLabelID, "16");
+  this.cmd("SetTextStyle", this.swapLabelID, "18");
 };
 
 BubbleSort.prototype.createLegend = function () {
@@ -190,17 +192,17 @@ BubbleSort.prototype.createLegend = function () {
     { label: "Comparing", color: BubbleSort.ACTIVE_COLOR },
     { label: "Sorted", color: BubbleSort.SORTED_COLOR },
   ];
-  var baseX = BubbleSort.INFO_X;
+  var baseX = BubbleSort.BAR_START_X + 60;
   for (var i = 0; i < entries.length; i++) {
-    var x = baseX + i * 190;
+    var x = baseX + i * 200;
     var boxID = this.nextIndex++;
     var labelID = this.nextIndex++;
     this.cmd("CreateRectangle", boxID, "", 36, 20, x, BubbleSort.LEGEND_Y, "center", "center");
     this.cmd("SetBackgroundColor", boxID, entries[i].color);
     this.cmd("SetForegroundColor", boxID, BubbleSort.BORDER_COLOR);
-    this.cmd("CreateLabel", labelID, entries[i].label, x, BubbleSort.LEGEND_Y + 26, 0);
+    this.cmd("CreateLabel", labelID, entries[i].label, x, BubbleSort.LEGEND_Y + 24, 0);
     this.cmd("SetForegroundColor", labelID, BubbleSort.BORDER_COLOR);
-    this.cmd("SetTextStyle", labelID, "14");
+    this.cmd("SetTextStyle", labelID, "16");
     this.legendIDs.push({ box: boxID, label: labelID });
   }
 };
@@ -244,6 +246,7 @@ BubbleSort.prototype.randomizeArray = function () {
   this.cmd("SetText", this.passLabelID, "Pass: -");
   this.cmd("SetText", this.comparisonLabelID, "Comparisons: 0");
   this.cmd("SetText", this.swapLabelID, "Swaps: 0");
+  this.cmd("Step");
   return this.commands;
 };
 
@@ -301,6 +304,7 @@ BubbleSort.prototype.runBubbleSort = function () {
   }
   this.highlightCodeLine(-1);
   this.cmd("SetText", this.statusLabelID, "Bubble sort complete in " + executedPasses + " pass(es).");
+  this.cmd("Step");
   return this.commands;
 };
 
@@ -353,6 +357,7 @@ BubbleSort.prototype.markSorted = function (index) {
   this.sorted[index] = true;
   this.cmd("SetBackgroundColor", this.barObjects[index], BubbleSort.SORTED_COLOR);
   this.cmd("SetForegroundColor", this.barLabels[index], BubbleSort.LABEL_COLOR);
+  this.cmd("Step");
 };
 
 BubbleSort.prototype.highlightCodeLine = function (line) {
