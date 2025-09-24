@@ -35,6 +35,7 @@ BubbleSort.LEGEND_LABEL_GAP = 12;
 
 BubbleSort.CODE_START_X = 140;
 BubbleSort.CODE_START_Y = 160;
+
 BubbleSort.CODE_LINE_HEIGHT = 34;
 BubbleSort.CODE_STANDARD_COLOR = "#1f3d7a";
 BubbleSort.CODE_HIGHLIGHT_COLOR = "#d62828";
