@@ -26,18 +26,19 @@ BubbleSort.VALUE_MAX = 100;
 BubbleSort.SCALE_FACTOR = 4;
 
 BubbleSort.INFO_X = 160;
-BubbleSort.INFO_Y = 420;
+BubbleSort.INFO_Y = 320;
 BubbleSort.INFO_LINE_HEIGHT = 32;
 BubbleSort.STATUS_Y = 140;
 BubbleSort.LEGEND_Y = BubbleSort.BAR_LABEL_Y + 40;
 
-BubbleSort.CODE_START_X = 470;
+BubbleSort.CODE_START_X = 520;
 BubbleSort.CODE_START_Y = BubbleSort.INFO_Y;
 BubbleSort.CODE_LINE_HEIGHT = 28;
-
 BubbleSort.CODE_STANDARD_COLOR = "#1f3d7a";
 BubbleSort.CODE_HIGHLIGHT_COLOR = "#d62828";
-BubbleSort.CODE_FONT = "16";
+BubbleSort.CODE_FONT = "18";
+
+BubbleSort.EXPLANATION_Y = 470;
 
 BubbleSort.DEFAULT_COLOR = "#8fb8ff";
 BubbleSort.ACTIVE_COLOR = "#ffb703";
@@ -75,6 +76,7 @@ BubbleSort.prototype.init = function (am, w, h) {
   this.createBars();
   this.createInfoPanel();
   this.createLegend();
+  this.createExplanationText();
   this.createCodeDisplay();
 
   this.animationManager.StartNewAnimation(this.commands);
@@ -146,7 +148,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     BubbleSort.INFO_Y,
     0
   );
-  this.cmd("SetTextStyle", this.infoHeaderID, "bold 20");
+  this.cmd("SetTextStyle", this.infoHeaderID, "bold 22");
   this.cmd("SetForegroundColor", this.infoHeaderID, BubbleSort.BORDER_COLOR);
 
   this.passLabelID = this.nextIndex++;
@@ -159,7 +161,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     0
   );
   this.cmd("SetForegroundColor", this.passLabelID, BubbleSort.BORDER_COLOR);
-  this.cmd("SetTextStyle", this.passLabelID, "18");
+  this.cmd("SetTextStyle", this.passLabelID, "20");
 
   this.comparisonLabelID = this.nextIndex++;
   this.cmd(
@@ -171,7 +173,7 @@ BubbleSort.prototype.createInfoPanel = function () {
     0
   );
   this.cmd("SetForegroundColor", this.comparisonLabelID, BubbleSort.BORDER_COLOR);
-  this.cmd("SetTextStyle", this.comparisonLabelID, "18");
+  this.cmd("SetTextStyle", this.comparisonLabelID, "20");
 
   this.swapLabelID = this.nextIndex++;
   this.cmd(
@@ -183,7 +185,21 @@ BubbleSort.prototype.createInfoPanel = function () {
     0
   );
   this.cmd("SetForegroundColor", this.swapLabelID, BubbleSort.BORDER_COLOR);
-  this.cmd("SetTextStyle", this.swapLabelID, "18");
+  this.cmd("SetTextStyle", this.swapLabelID, "20");
+};
+
+BubbleSort.prototype.createExplanationText = function () {
+  this.explanationLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.explanationLabelID,
+    "Bubble sort compares adjacent bars and swaps when they are out of order,\nletting the heaviest values bubble toward the end each pass.",
+    BubbleSort.CANVAS_WIDTH / 2,
+    BubbleSort.EXPLANATION_Y,
+    0
+  );
+  this.cmd("SetTextStyle", this.explanationLabelID, "18");
+  this.cmd("SetForegroundColor", this.explanationLabelID, BubbleSort.BORDER_COLOR);
 };
 
 BubbleSort.prototype.createLegend = function () {
