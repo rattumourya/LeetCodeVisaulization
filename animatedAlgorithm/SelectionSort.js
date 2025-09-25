@@ -35,7 +35,7 @@ SelectionSort.TITLE_Y = 36;
 SelectionSort.INFO_Y = 140;
 SelectionSort.LEGEND_Y =
   SelectionSort.BAR_LABEL_Y + SelectionSort.LEGEND_OFFSET;
-SelectionSort.LEGEND_SPACING = 160;
+SelectionSort.LEGEND_SPACING = 200;
 SelectionSort.LEGEND_BOX_WIDTH = 42;
 SelectionSort.LEGEND_BOX_HEIGHT = 24;
 SelectionSort.LEGEND_LABEL_GAP = 12;
