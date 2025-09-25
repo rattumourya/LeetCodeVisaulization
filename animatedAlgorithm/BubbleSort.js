@@ -47,6 +47,7 @@ BubbleSort.BORDER_COLOR = "#1d3557";
 BubbleSort.LABEL_COLOR = "#0b2545";
 BubbleSort.ACTIVE_TEXT_COLOR = "#9c2a2a";
 
+
 BubbleSort.prototype.getCodeDefinition = function () {
   return [
     ["for (int pass = 0; pass < n - 1; pass++) {"],
@@ -207,6 +208,7 @@ BubbleSort.prototype.createLegend = function () {
 BubbleSort.prototype.createCodeDisplay = function () {
   this.codeID = this.addCodeToCanvasBase(
     this.getCodeDefinition(),
+
     BubbleSort.CODE_START_X,
     BubbleSort.CODE_START_Y,
     BubbleSort.CODE_LINE_HEIGHT,
@@ -279,6 +281,7 @@ BubbleSort.prototype.runBubbleSort = function () {
     if (!swapped) {
       this.cmd("SetText", this.infoLabelID, "No swaps needed. Array sorted early!");
       this.cmd("Step");
+
       break;
     }
   }
@@ -287,6 +290,7 @@ BubbleSort.prototype.runBubbleSort = function () {
       this.markSorted(i);
     }
   }
+
   this.highlightCodeLine(9, true);
   this.highlightCodeLine(-1, false);
   this.cmd("SetText", this.infoLabelID, "Bubble sort complete.");
@@ -369,6 +373,7 @@ BubbleSort.prototype.highlightCodeLine = function (line, stepAfter) {
   if (stepAfter) {
     this.cmd("Step");
   }
+
 };
 
 BubbleSort.prototype.clearCodeHighlights = function () {
