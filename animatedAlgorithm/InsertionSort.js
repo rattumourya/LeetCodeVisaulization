@@ -23,6 +23,7 @@ InsertionSort.BAR_BASE_Y = 640;
 InsertionSort.BAR_LABEL_OFFSET = 32;
 InsertionSort.BAR_LABEL_Y = InsertionSort.BAR_BASE_Y + InsertionSort.BAR_LABEL_OFFSET;
 InsertionSort.LEGEND_OFFSET = 56;
+
 InsertionSort.VALUE_MIN = 20;
 InsertionSort.VALUE_MAX = 100;
 InsertionSort.SCALE_FACTOR = 4;
