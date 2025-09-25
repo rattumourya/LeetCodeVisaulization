@@ -30,6 +30,7 @@ InsertionSort.KEY_LIFT = 160;
 
 InsertionSort.TITLE_Y = 36;
 InsertionSort.INFO_Y = 140;
+
 InsertionSort.LEGEND_Y = InsertionSort.BAR_LABEL_Y + InsertionSort.LEGEND_OFFSET;
 InsertionSort.LEGEND_SPACING = 160;
 InsertionSort.LEGEND_BOX_WIDTH = 42;
