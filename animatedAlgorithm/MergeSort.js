@@ -14,11 +14,12 @@ MergeSort.CANVAS_WIDTH = 720;
 MergeSort.CANVAS_HEIGHT = 1080;
 
 MergeSort.BAR_COUNT = 12;
-MergeSort.BAR_WIDTH = 42;
+MergeSort.BAR_WIDTH = 32;
 MergeSort.BAR_SPACING = 52;
 MergeSort.BAR_START_X = 80;
 MergeSort.BAR_BASE_Y = 760;
-MergeSort.BAR_LABEL_OFFSET = 34;
+MergeSort.BAR_LABEL_OFFSET = 32;
+
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
 MergeSort.TEMP_BASE_Y = 440;
@@ -30,18 +31,21 @@ MergeSort.SCALE_FACTOR = 4;
 
 MergeSort.TITLE_Y = 60;
 MergeSort.INFO_Y = 140;
-MergeSort.LEGEND_Y = MergeSort.BAR_LABEL_Y + 70;
-MergeSort.LEGEND_SPACING = 180;
+MergeSort.LEGEND_Y = MergeSort.BAR_LABEL_Y + 40;
+MergeSort.LEGEND_SPACING = 170;
 MergeSort.LEGEND_BOX_WIDTH = 42;
 MergeSort.LEGEND_BOX_HEIGHT = 24;
 MergeSort.LEGEND_LABEL_GAP = 10;
 
-MergeSort.CODE_START_X = MergeSort.CANVAS_WIDTH / 2 - 220;
-MergeSort.CODE_START_Y = 820;
-MergeSort.CODE_LINE_HEIGHT = 32;
+MergeSort.CODE_TITLE_Y = MergeSort.LEGEND_Y + 28;
+MergeSort.CODE_START_Y = MergeSort.CODE_TITLE_Y + 20;
+MergeSort.CODE_LINE_HEIGHT = 20;
 MergeSort.CODE_STANDARD_COLOR = "#1f3d7a";
 MergeSort.CODE_HIGHLIGHT_COLOR = "#d62828";
-MergeSort.CODE_FONT = "bold 20";
+MergeSort.CODE_FONT = "bold 18";
+MergeSort.CODE_TITLE_FONT = "bold 20";
+MergeSort.CODE_LEFT_X = MergeSort.CANVAS_WIDTH / 2 - 210;
+MergeSort.CODE_RIGHT_X = MergeSort.CANVAS_WIDTH / 2 + 210;
 
 MergeSort.DEFAULT_COLOR = "#8fb8ff";
 MergeSort.ACTIVE_SPLIT_COLOR = "#ffd166";
@@ -53,25 +57,37 @@ MergeSort.BORDER_COLOR = "#1d3557";
 MergeSort.LABEL_COLOR = "#0b2545";
 MergeSort.ACTIVE_TEXT_COLOR = "#3a0f0f";
 
-MergeSort.prototype.getCodeDefinition = function () {
-  return [
-    ["mergeSort(a, left, right):"],
-    ["    if left >= right: return"],
-    ["    mid = (left + right) / 2"],
-    ["    mergeSort(a, left, mid)"],
-    ["    mergeSort(a, mid + 1, right)"],
-    ["    merge(a, left, mid, right)"],
-    [""],
-    ["merge(a, left, mid, right):"],
-    ["    i = left, j = mid + 1"],
-    ["    temp = []"],
-    ["    while i <= mid and j <= right:"],
-    ["        if a[i] <= a[j]: temp.append(a[i++])"],
-    ["        else: temp.append(a[j++])"],
-    ["    append remaining elements"],
-    ["    copy temp back into a[left..right]"],
-  ];
-};
+MergeSort.CODE_SECTIONS = [
+  {
+    title: "mergeSort (Java)",
+    lines: [
+      "void mergeSort(int[] arr, int left, int right) {",
+      "    if (left >= right) return;",
+      "    int mid = left + (right - left) / 2;",
+      "    mergeSort(arr, left, mid);",
+      "    mergeSort(arr, mid + 1, right);",
+      "    merge(arr, left, mid, right);",
+      "}",
+    ],
+  },
+  {
+    title: "merge (Java)",
+    lines: [
+      "void merge(int[] arr, int left, int mid, int right) {",
+      "    int i = left, j = mid + 1, k = 0;",
+      "    int[] temp = new int[right - left + 1];",
+      "    while (i <= mid && j <= right) {",
+      "        if (arr[i] <= arr[j]) temp[k++] = arr[i++];",
+      "        else temp[k++] = arr[j++];",
+      "    }",
+      "    while (i <= mid) temp[k++] = arr[i++];",
+      "    while (j <= right) temp[k++] = arr[j++];",
+      "    for (int t = 0; t < temp.length; t++) arr[left + t] = temp[t];",
+      "}",
+    ],
+  },
+];
+
 
 MergeSort.prototype.init = function (am, w, h) {
   MergeSort.superclass.init.call(this, am, w, h);
@@ -212,19 +228,37 @@ MergeSort.prototype.createBars = function () {
 };
 
 MergeSort.prototype.createCodeDisplay = function () {
-  var code = this.getCodeDefinition();
-  this.codeID = this.addCodeToCanvasBase(
-    code,
-    MergeSort.CODE_START_X,
-    MergeSort.CODE_START_Y,
-    MergeSort.CODE_LINE_HEIGHT,
-    MergeSort.CODE_STANDARD_COLOR,
-    0,
-    0
-  );
-  for (var i = 0; i < this.codeID.length; i++) {
-    for (var j = 0; j < this.codeID[i].length; j++) {
-      this.cmd("SetTextStyle", this.codeID[i][j], MergeSort.CODE_FONT);
+  this.codeID = [];
+  var columns = [MergeSort.CODE_LEFT_X, MergeSort.CODE_RIGHT_X];
+  for (var col = 0; col < MergeSort.CODE_SECTIONS.length; col++) {
+    var section = MergeSort.CODE_SECTIONS[col];
+    var titleID = this.nextIndex++;
+    this.cmd(
+      "CreateLabel",
+      titleID,
+      section.title,
+      columns[col],
+      MergeSort.CODE_TITLE_Y,
+      0
+    );
+    this.cmd("SetTextStyle", titleID, MergeSort.CODE_TITLE_FONT);
+    this.cmd("SetForegroundColor", titleID, MergeSort.CODE_STANDARD_COLOR);
+
+    var lineY = MergeSort.CODE_START_Y;
+    for (var line = 0; line < section.lines.length; line++) {
+      var labelID = this.nextIndex++;
+      this.cmd(
+        "CreateLabel",
+        labelID,
+        section.lines[line],
+        columns[col],
+        lineY,
+        0
+      );
+      this.cmd("SetTextStyle", labelID, MergeSort.CODE_FONT);
+      this.cmd("SetForegroundColor", labelID, MergeSort.CODE_STANDARD_COLOR);
+      this.codeID.push([labelID]);
+      lineY += MergeSort.CODE_LINE_HEIGHT;
     }
   }
 };
@@ -368,7 +402,7 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
   }
 
   if (leftIndex < leftItems.length) {
-    this.highlightCodeLine(13, true);
+    this.highlightCodeLine(14, true);
   }
   while (leftIndex < leftItems.length) {
     var remainingLeft = leftItems[leftIndex];
@@ -384,7 +418,7 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
   }
 
   if (rightIndex < rightItems.length) {
-    this.highlightCodeLine(13, true);
+    this.highlightCodeLine(15, true);
   }
   while (rightIndex < rightItems.length) {
     var remainingRight = rightItems[rightIndex];
@@ -399,7 +433,7 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
     this.placeMergedItem(remainingRight, left + merged.length - 1, depth === 0);
   }
 
-  this.highlightCodeLine(14, true);
+  this.highlightCodeLine(16, true);
   this.cmd(
     "SetText",
     this.infoLabelID,
