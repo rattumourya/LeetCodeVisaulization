@@ -19,9 +19,11 @@ InsertionSort.BAR_COUNT = 12;
 InsertionSort.BAR_WIDTH = 42;
 InsertionSort.BAR_SPACING = 52;
 InsertionSort.BAR_START_X = 80;
-InsertionSort.BAR_BASE_Y = 680;
+InsertionSort.BAR_BASE_Y = 640;
 InsertionSort.BAR_LABEL_OFFSET = 32;
 InsertionSort.BAR_LABEL_Y = InsertionSort.BAR_BASE_Y + InsertionSort.BAR_LABEL_OFFSET;
+InsertionSort.LEGEND_OFFSET = 56;
+
 InsertionSort.VALUE_MIN = 20;
 InsertionSort.VALUE_MAX = 100;
 InsertionSort.SCALE_FACTOR = 4;
@@ -29,7 +31,7 @@ InsertionSort.KEY_LIFT = 160;
 
 InsertionSort.TITLE_Y = 60;
 InsertionSort.INFO_Y = 200;
-InsertionSort.LEGEND_Y = 320;
+InsertionSort.LEGEND_Y = InsertionSort.BAR_LABEL_Y + InsertionSort.LEGEND_OFFSET;
 InsertionSort.LEGEND_SPACING = 160;
 InsertionSort.LEGEND_BOX_WIDTH = 42;
 InsertionSort.LEGEND_BOX_HEIGHT = 24;
