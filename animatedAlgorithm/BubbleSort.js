@@ -35,7 +35,6 @@ BubbleSort.LEGEND_LABEL_GAP = 12;
 
 BubbleSort.CODE_START_X = 140;
 BubbleSort.CODE_START_Y = 160;
-
 BubbleSort.CODE_LINE_HEIGHT = 34;
 BubbleSort.CODE_STANDARD_COLOR = "#1f3d7a";
 BubbleSort.CODE_HIGHLIGHT_COLOR = "#d62828";
@@ -48,18 +47,21 @@ BubbleSort.BORDER_COLOR = "#1d3557";
 BubbleSort.LABEL_COLOR = "#0b2545";
 BubbleSort.ACTIVE_TEXT_COLOR = "#9c2a2a";
 
-BubbleSort.CODE = [
-  ["for (int pass = 0; pass < n - 1; pass++) {"],
-  ["    boolean swapped = false;"],
-  ["    for (int j = 0; j < n - pass - 1; j++) {"],
-  ["        if (a[j] > a[j + 1]) {"],
-  ["            swap(a, j, j + 1);"],
-  ["            swapped = true;"],
-  ["        }"],
-  ["    }"],
-  ["    if (!swapped) { break; }"],
-  ["}"],
-];
+
+BubbleSort.prototype.getCodeDefinition = function () {
+  return [
+    ["for (int pass = 0; pass < n - 1; pass++) {"],
+    ["    boolean swapped = false;"],
+    ["    for (int j = 0; j < n - pass - 1; j++) {"],
+    ["        if (a[j] > a[j + 1]) {"],
+    ["            swap(a, j, j + 1);"],
+    ["            swapped = true;"],
+    ["        }"],
+    ["    }"],
+    ["    if (!swapped) { break; }"],
+    ["}"],
+  ];
+};
 
 BubbleSort.prototype.init = function (am, w, h) {
   BubbleSort.superclass.init.call(this, am, w, h);
@@ -205,7 +207,8 @@ BubbleSort.prototype.createLegend = function () {
 
 BubbleSort.prototype.createCodeDisplay = function () {
   this.codeID = this.addCodeToCanvasBase(
-    BubbleSort.CODE,
+    this.getCodeDefinition(),
+
     BubbleSort.CODE_START_X,
     BubbleSort.CODE_START_Y,
     BubbleSort.CODE_LINE_HEIGHT,
@@ -250,16 +253,16 @@ BubbleSort.prototype.runBubbleSort = function () {
   this.clearCodeHighlights();
   var n = this.arrayData.length;
   for (var pass = 0; pass < n - 1; pass++) {
-    this.highlightCodeLine(0);
+    this.highlightCodeLine(0, true);
     var swapped = false;
-    this.highlightCodeLine(1);
+    this.highlightCodeLine(1, true);
     for (var j = 0; j < n - pass - 1; j++) {
-      this.highlightCodeLine(2);
+      this.highlightCodeLine(2, true);
       this.highlightPair(j, j + 1);
       this.cmd("SetText", this.infoLabelID, "Comparing index " + j + " and " + (j + 1));
-      this.highlightCodeLine(3);
+      this.highlightCodeLine(3, true);
       if (this.arrayData[j] > this.arrayData[j + 1]) {
-        this.highlightCodeLine(4);
+        this.highlightCodeLine(4, true);
         this.cmd(
           "SetText",
           this.infoLabelID,
@@ -267,14 +270,18 @@ BubbleSort.prototype.runBubbleSort = function () {
         );
         this.swapBars(j, j + 1);
         swapped = true;
-        this.highlightCodeLine(5);
+        this.highlightCodeLine(5, true);
       }
+      this.highlightCodeLine(6, true);
       this.unhighlightPair(j, j + 1);
     }
+    this.highlightCodeLine(7, true);
     this.markSorted(n - pass - 1);
+    this.highlightCodeLine(8, true);
     if (!swapped) {
-      this.highlightCodeLine(8);
       this.cmd("SetText", this.infoLabelID, "No swaps needed. Array sorted early!");
+      this.cmd("Step");
+
       break;
     }
   }
@@ -283,7 +290,9 @@ BubbleSort.prototype.runBubbleSort = function () {
       this.markSorted(i);
     }
   }
-  this.highlightCodeLine(-1);
+
+  this.highlightCodeLine(9, true);
+  this.highlightCodeLine(-1, false);
   this.cmd("SetText", this.infoLabelID, "Bubble sort complete.");
   this.cmd("Step");
   return this.commands;
@@ -341,28 +350,42 @@ BubbleSort.prototype.markSorted = function (index) {
   this.cmd("Step");
 };
 
-BubbleSort.prototype.highlightCodeLine = function (line) {
+BubbleSort.prototype.highlightCodeLine = function (line, stepAfter) {
   if (this.highlightedLine >= 0 && this.codeID[this.highlightedLine]) {
-    this.cmd(
-      "SetForegroundColor",
-      this.codeID[this.highlightedLine][0],
-      BubbleSort.CODE_STANDARD_COLOR
-    );
+    for (var i = 0; i < this.codeID[this.highlightedLine].length; i++) {
+      this.cmd(
+        "SetForegroundColor",
+        this.codeID[this.highlightedLine][i],
+        BubbleSort.CODE_STANDARD_COLOR
+      );
+    }
   }
   if (line >= 0 && this.codeID[line]) {
-    this.cmd(
-      "SetForegroundColor",
-      this.codeID[line][0],
-      BubbleSort.CODE_HIGHLIGHT_COLOR
-    );
+    for (var j = 0; j < this.codeID[line].length; j++) {
+      this.cmd(
+        "SetForegroundColor",
+        this.codeID[line][j],
+        BubbleSort.CODE_HIGHLIGHT_COLOR
+      );
+    }
   }
   this.highlightedLine = line;
+  if (stepAfter) {
+    this.cmd("Step");
+  }
+
 };
 
 BubbleSort.prototype.clearCodeHighlights = function () {
   for (var i = 0; i < this.codeID.length; i++) {
-    if (this.codeID[i] && this.codeID[i][0]) {
-      this.cmd("SetForegroundColor", this.codeID[i][0], BubbleSort.CODE_STANDARD_COLOR);
+    if (this.codeID[i]) {
+      for (var j = 0; j < this.codeID[i].length; j++) {
+        this.cmd(
+          "SetForegroundColor",
+          this.codeID[i][j],
+          BubbleSort.CODE_STANDARD_COLOR
+        );
+      }
     }
   }
   this.highlightedLine = -1;
