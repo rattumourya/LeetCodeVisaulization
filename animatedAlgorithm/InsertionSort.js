@@ -22,6 +22,10 @@ InsertionSort.BAR_START_X = 80;
 InsertionSort.BAR_BASE_Y = 560;
 InsertionSort.BAR_LABEL_OFFSET = 32;
 InsertionSort.BAR_LABEL_Y = InsertionSort.BAR_BASE_Y + InsertionSort.BAR_LABEL_OFFSET;
+InsertionSort.BAR_LAYER = 0;
+InsertionSort.BAR_LABEL_LAYER = 1;
+InsertionSort.KEY_LAYER = 2;
+InsertionSort.KEY_LABEL_LAYER = 3;
 InsertionSort.LEGEND_OFFSET = 48;
 InsertionSort.VALUE_MIN = 20;
 InsertionSort.VALUE_MAX = 100;
@@ -213,7 +217,7 @@ InsertionSort.prototype.createBars = function () {
     );
     this.cmd("SetForegroundColor", rectID, InsertionSort.BORDER_COLOR);
     this.cmd("SetBackgroundColor", rectID, InsertionSort.DEFAULT_COLOR);
-
+    this.cmd("SetLayer", rectID, InsertionSort.BAR_LAYER);
     this.cmd(
       "CreateLabel",
       labelID,
@@ -224,6 +228,7 @@ InsertionSort.prototype.createBars = function () {
     );
     this.cmd("SetForegroundColor", labelID, InsertionSort.LABEL_COLOR);
     this.cmd("SetTextStyle", labelID, "bold 16");
+    this.cmd("SetLayer", labelID, InsertionSort.BAR_LABEL_LAYER);
   }
 };
 
@@ -272,6 +277,8 @@ InsertionSort.prototype.randomizeArray = function () {
       InsertionSort.DEFAULT_COLOR
     );
     this.cmd("SetForegroundColor", this.barLabels[i], InsertionSort.LABEL_COLOR);
+    this.cmd("SetLayer", this.barObjects[i], InsertionSort.BAR_LAYER);
+    this.cmd("SetLayer", this.barLabels[i], InsertionSort.BAR_LABEL_LAYER);
     this.cmd(
       "Move",
       this.barObjects[i],
@@ -456,6 +463,16 @@ InsertionSort.prototype.setKeyAppearance = function (rectID, labelID, isKey) {
     "SetForegroundColor",
     labelID,
     isKey ? InsertionSort.KEY_TEXT_COLOR : InsertionSort.LABEL_COLOR
+  );
+  this.cmd(
+    "SetLayer",
+    rectID,
+    isKey ? InsertionSort.KEY_LAYER : InsertionSort.BAR_LAYER
+  );
+  this.cmd(
+    "SetLayer",
+    labelID,
+    isKey ? InsertionSort.KEY_LABEL_LAYER : InsertionSort.BAR_LABEL_LAYER
   );
 };
 
