@@ -19,6 +19,7 @@ MergeSort.BAR_SPACING = 52;
 MergeSort.BAR_START_X = 80;
 MergeSort.BAR_BASE_Y = 760;
 MergeSort.BAR_LABEL_OFFSET = 32;
+
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
 MergeSort.TEMP_BASE_Y = 440;
@@ -86,6 +87,7 @@ MergeSort.CODE_SECTIONS = [
     ],
   },
 ];
+
 
 MergeSort.prototype.init = function (am, w, h) {
   MergeSort.superclass.init.call(this, am, w, h);
