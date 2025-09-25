@@ -38,7 +38,7 @@ SelectionSort.LEGEND_Y =
 SelectionSort.LEGEND_SPACING = 200;
 SelectionSort.LEGEND_BOX_WIDTH = 42;
 SelectionSort.LEGEND_BOX_HEIGHT = 24;
-SelectionSort.LEGEND_LABEL_GAP = 12;
+SelectionSort.LEGEND_LABEL_VERTICAL_GAP = 10;
 
 SelectionSort.CODE_START_X = SelectionSort.CANVAS_WIDTH / 2 - 180;
 SelectionSort.CODE_START_Y = 760;
@@ -180,17 +180,17 @@ SelectionSort.prototype.createLegend = function () {
     );
     this.cmd("SetBackgroundColor", boxID, entries[i].color);
     this.cmd("SetForegroundColor", boxID, SelectionSort.BORDER_COLOR);
-    var labelX =
-      groupCenter +
-      SelectionSort.LEGEND_BOX_WIDTH / 2 +
-      SelectionSort.LEGEND_LABEL_GAP;
+    var labelY =
+      SelectionSort.LEGEND_Y +
+      SelectionSort.LEGEND_BOX_HEIGHT / 2 +
+      SelectionSort.LEGEND_LABEL_VERTICAL_GAP;
     this.cmd(
       "CreateLabel",
       labelID,
       entries[i].label,
-      labelX,
-      SelectionSort.LEGEND_Y,
-      0
+      groupCenter,
+      labelY,
+      1
     );
     this.cmd("SetForegroundColor", labelID, SelectionSort.BORDER_COLOR);
     this.cmd("SetTextStyle", labelID, "bold 18");
