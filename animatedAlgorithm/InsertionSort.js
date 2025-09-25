@@ -224,7 +224,6 @@ InsertionSort.prototype.createBars = function () {
     this.cmd("SetForegroundColor", rectID, InsertionSort.BORDER_COLOR);
     this.cmd("SetBackgroundColor", rectID, InsertionSort.DEFAULT_COLOR);
     this.cmd("SetLayer", rectID, InsertionSort.BAR_LAYER);
-
     this.cmd(
       "CreateLabel",
       labelID,
