@@ -561,6 +561,7 @@ QuickSort.prototype.partition = function (low, high) {
     this.swapBars(low, j);
     this.cmd("Step");
   }
+
   this.setBarColor(low, QuickSort.ACTIVE_RANGE_COLOR);
   this.markSorted(j);
   this.cmd("Step");
