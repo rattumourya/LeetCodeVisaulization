@@ -1,5 +1,5 @@
-// Quick sort visualization designed for a 9:16 canvas layout. The animation
-// mirrors the explanatory style of the merge sort page with highlighted code,
+// Quick sort visualization tuned for the merge sort style 720x1080 canvas.
+// The animation mirrors that explanatory layout with highlighted code,
 // descriptive text, and pointer-driven partitioning steps.
 
 function QuickSort(am, w, h) {
@@ -11,36 +11,38 @@ QuickSort.prototype.constructor = QuickSort;
 QuickSort.superclass = Algorithm.prototype;
 
 QuickSort.CANVAS_WIDTH = 720;
-QuickSort.CANVAS_HEIGHT = 1280;
+QuickSort.CANVAS_HEIGHT = 1080;
 
-QuickSort.BAR_COUNT = 10;
-QuickSort.BAR_WIDTH = 40;
-QuickSort.BAR_SPACING = 60;
-QuickSort.BAR_START_X = 120;
-QuickSort.BAR_BASE_Y = 640;
-QuickSort.BAR_LABEL_OFFSET = 28;
+QuickSort.BAR_COUNT = 12;
+QuickSort.BAR_WIDTH = 34;
+QuickSort.BAR_SPACING = 52;
+QuickSort.BAR_START_X =
+  QuickSort.CANVAS_WIDTH / 2 -
+  ((QuickSort.BAR_COUNT - 1) * QuickSort.BAR_SPACING) / 2;
+QuickSort.BAR_BASE_Y = 600;
+QuickSort.BAR_LABEL_OFFSET = 36;
 QuickSort.BAR_LABEL_Y = QuickSort.BAR_BASE_Y + QuickSort.BAR_LABEL_OFFSET;
-QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + 30;
+QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + 40;
 
 QuickSort.TITLE_Y = 60;
 QuickSort.INFO_Y = 140;
-QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 70;
+QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 60;
 QuickSort.LEGEND_SPACING = 150;
 QuickSort.LEGEND_BOX_WIDTH = 42;
 QuickSort.LEGEND_BOX_HEIGHT = 24;
-QuickSort.LEGEND_LABEL_GAP = 12;
+QuickSort.LEGEND_LABEL_GAP = 14;
 
 QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 70;
 QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 30;
-QuickSort.CODE_LINE_HEIGHT = 18;
+QuickSort.CODE_LINE_HEIGHT = 16;
 QuickSort.CODE_FONT = "bold 14";
 QuickSort.CODE_TITLE_FONT = "bold 18";
-QuickSort.CODE_LEFT_X = 140;
-QuickSort.CODE_RIGHT_X = 440;
+QuickSort.CODE_LEFT_X = 150;
+QuickSort.CODE_RIGHT_X = 450;
 
-QuickSort.VALUE_MIN = 10;
-QuickSort.VALUE_MAX = 90;
-QuickSort.SCALE_FACTOR = 5;
+QuickSort.VALUE_MIN = 15;
+QuickSort.VALUE_MAX = 95;
+QuickSort.SCALE_FACTOR = 5.5;
 
 QuickSort.DEFAULT_COLOR = "#8fb8ff";
 QuickSort.ACTIVE_RANGE_COLOR = "#ffd166";
@@ -50,7 +52,7 @@ QuickSort.SWAP_COLOR = "#e63946";
 QuickSort.FINAL_COLOR = "#43aa8b";
 QuickSort.BORDER_COLOR = "#1d3557";
 QuickSort.LABEL_COLOR = "#0b2545";
-QuickSort.INFO_COLOR = "#1f3d7a";
+QuickSort.INFO_COLOR = "#3c096c";
 QuickSort.CODE_STANDARD_COLOR = "#1f3d7a";
 QuickSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 QuickSort.POINTER_COLOR = QuickSort.PIVOT_COLOR;
@@ -60,6 +62,7 @@ QuickSort.LEGEND_ITEMS = [
   { label: "Active range", color: QuickSort.ACTIVE_RANGE_COLOR },
   { label: "Pivot", color: QuickSort.PIVOT_COLOR },
   { label: "Comparing", color: QuickSort.COMPARE_COLOR },
+  { label: "Swapping", color: QuickSort.SWAP_COLOR },
   { label: "Sorted", color: QuickSort.FINAL_COLOR },
 ];
 
@@ -164,9 +167,9 @@ QuickSort.prototype.createInfoPanel = function () {
     "",
     QuickSort.CANVAS_WIDTH / 2,
     QuickSort.INFO_Y,
-    0
+    1
   );
-  this.cmd("SetTextStyle", this.infoLabelID, "bold 18");
+  this.cmd("SetTextStyle", this.infoLabelID, "bold 22");
   this.cmd("SetForegroundColor", this.infoLabelID, QuickSort.INFO_COLOR);
 };
 
@@ -195,8 +198,16 @@ QuickSort.prototype.createLegend = function () {
     this.cmd("SetForegroundColor", boxID, QuickSort.BORDER_COLOR);
     this.cmd("SetBackgroundColor", boxID, item.color);
 
-    this.cmd("CreateLabel", labelID, item.label, x, QuickSort.LEGEND_Y + 28, 0);
-    this.cmd("SetForegroundColor", labelID, QuickSort.LABEL_COLOR);
+    this.cmd(
+      "CreateLabel",
+      labelID,
+      item.label,
+      x,
+      QuickSort.LEGEND_Y + QuickSort.LEGEND_BOX_HEIGHT / 2 + QuickSort.LEGEND_LABEL_GAP,
+      1
+    );
+    this.cmd("SetTextStyle", labelID, "bold 16");
+    this.cmd("SetForegroundColor", labelID, QuickSort.BORDER_COLOR);
 
     this.legendIDs.push({ box: boxID, label: labelID });
   }
@@ -223,8 +234,9 @@ QuickSort.prototype.createBars = function () {
     this.barObjects[i] = rectID;
 
     var labelID = this.nextIndex++;
-    this.cmd("CreateLabel", labelID, "0", x, QuickSort.BAR_LABEL_Y, 0);
+    this.cmd("CreateLabel", labelID, "0", x, QuickSort.BAR_LABEL_Y, 1);
     this.cmd("SetForegroundColor", labelID, QuickSort.LABEL_COLOR);
+    this.cmd("SetTextStyle", labelID, "bold 16");
     this.barLabels[i] = labelID;
 
     x += QuickSort.BAR_SPACING;
@@ -283,6 +295,7 @@ QuickSort.prototype.createPointers = function () {
     QuickSort.POINTER_Y,
     0
   );
+  this.cmd("SetTextStyle", this.iPointerID, "bold 20");
   this.cmd("SetForegroundColor", this.iPointerID, QuickSort.POINTER_COLOR);
   this.cmd("SetBackgroundColor", this.iPointerID, QuickSort.POINTER_BG);
   this.cmd("SetAlpha", this.iPointerID, 0);
@@ -296,6 +309,7 @@ QuickSort.prototype.createPointers = function () {
     QuickSort.POINTER_Y,
     0
   );
+  this.cmd("SetTextStyle", this.jPointerID, "bold 20");
   this.cmd("SetForegroundColor", this.jPointerID, QuickSort.POINTER_COLOR);
   this.cmd("SetBackgroundColor", this.jPointerID, QuickSort.POINTER_BG);
   this.cmd("SetAlpha", this.jPointerID, 0);
