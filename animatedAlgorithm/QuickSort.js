@@ -22,7 +22,7 @@ QuickSort.BAR_START_X =
 QuickSort.BAR_BASE_Y = 760;
 QuickSort.BAR_LABEL_OFFSET = 32;
 QuickSort.BAR_LABEL_Y = QuickSort.BAR_BASE_Y + QuickSort.BAR_LABEL_OFFSET;
-QuickSort.POINTER_OFFSET = 50;
+QuickSort.POINTER_OFFSET = 26;
 QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + QuickSort.POINTER_OFFSET;
 
 QuickSort.TITLE_Y = 60;
@@ -33,12 +33,9 @@ QuickSort.LEGEND_BOX_WIDTH = 42;
 QuickSort.LEGEND_BOX_HEIGHT = 24;
 QuickSort.LEGEND_LABEL_GAP = 14;
 
-
-QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 60;
-QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 26;
+QuickSort.CODE_START_Y = QuickSort.LEGEND_Y + 48;
 QuickSort.CODE_LINE_HEIGHT = 16;
 QuickSort.CODE_FONT = "bold 14";
-QuickSort.CODE_TITLE_FONT = "bold 18";
 QuickSort.CODE_LEFT_X = 90;
 QuickSort.CODE_RIGHT_X = 440;
 
@@ -67,7 +64,6 @@ QuickSort.LEGEND_ITEMS = [
 
 QuickSort.CODE_SECTIONS = [
   {
-    title: "quickSort",
     lines: [
       "void quickSort(int[] arr, int low, int high) {",
       "  if (low >= high) {",
@@ -80,7 +76,6 @@ QuickSort.CODE_SECTIONS = [
     ],
   },
   {
-    title: "partition",
     lines: [
       "int partition(int[] arr, int low, int high) {",
       "  int pivot = arr[low];",
@@ -256,18 +251,6 @@ QuickSort.prototype.createCodeDisplay = function () {
   for (var sectionIndex = 0; sectionIndex < QuickSort.CODE_SECTIONS.length; sectionIndex++) {
     var section = QuickSort.CODE_SECTIONS[sectionIndex];
     var columnX = columns[sectionIndex];
-    var titleID = this.nextIndex++;
-    this.cmd(
-      "CreateLabel",
-      titleID,
-      section.title,
-      columnX,
-      QuickSort.CODE_TITLE_Y,
-      0
-    );
-    this.cmd("SetTextStyle", titleID, QuickSort.CODE_TITLE_FONT);
-    this.cmd("SetForegroundColor", titleID, QuickSort.CODE_STANDARD_COLOR);
-
     var lineIDs = [];
     var lineY = QuickSort.CODE_START_Y;
     for (var line = 0; line < section.lines.length; line++) {
@@ -342,7 +325,6 @@ QuickSort.prototype.randomizeValues = function (includeStep, resetCommands) {
   if (resetCommands) {
     this.commands = [];
   }
-
   this.sortedIndices = {};
   for (var i = 0; i < this.arrayData.length; i++) {
     var value = this.generateRandomValue();
@@ -540,7 +522,6 @@ QuickSort.prototype.partition = function (low, high) {
         this.infoLabelID,
         "Swap values at i=" + i + " and j=" + j + "."
       );
-
       this.cmd("Step");
       if (i !== j) {
         this.swapBars(i, j);
