@@ -14,38 +14,38 @@ MergeSort.CANVAS_WIDTH = 720;
 MergeSort.CANVAS_HEIGHT = 1080;
 
 MergeSort.BAR_COUNT = 12;
-MergeSort.BAR_WIDTH = 32;
-MergeSort.BAR_SPACING = 52;
-MergeSort.BAR_START_X = 80;
-MergeSort.BAR_BASE_Y = 760;
-MergeSort.BAR_LABEL_OFFSET = 32;
 
+MergeSort.BAR_WIDTH = 24;
+MergeSort.BAR_SPACING = 48;
+MergeSort.BAR_START_X = 96;
+MergeSort.BAR_BASE_Y = 600;
+MergeSort.BAR_LABEL_OFFSET = 26;
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
-MergeSort.TEMP_BASE_Y = 440;
+MergeSort.TEMP_BASE_Y = 360;
+
 MergeSort.TEMP_LABEL_Y = MergeSort.TEMP_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
 MergeSort.VALUE_MIN = 15;
 MergeSort.VALUE_MAX = 90;
-MergeSort.SCALE_FACTOR = 4;
+MergeSort.SCALE_FACTOR = 3;
 
 MergeSort.TITLE_Y = 60;
 MergeSort.INFO_Y = 140;
-MergeSort.LEGEND_Y = MergeSort.BAR_LABEL_Y + 40;
+MergeSort.LEGEND_Y = MergeSort.BAR_LABEL_Y + 36;
+
 MergeSort.LEGEND_SPACING = 170;
 MergeSort.LEGEND_BOX_WIDTH = 42;
 MergeSort.LEGEND_BOX_HEIGHT = 24;
 MergeSort.LEGEND_LABEL_GAP = 10;
 
-MergeSort.CODE_TITLE_Y = MergeSort.LEGEND_Y + 28;
-MergeSort.CODE_START_Y = MergeSort.CODE_TITLE_Y + 20;
-MergeSort.CODE_LINE_HEIGHT = 20;
+MergeSort.CODE_START_Y = MergeSort.LEGEND_Y + 70;
+MergeSort.CODE_LINE_HEIGHT = 18;
 MergeSort.CODE_STANDARD_COLOR = "#1f3d7a";
 MergeSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 MergeSort.CODE_FONT = "bold 18";
-MergeSort.CODE_TITLE_FONT = "bold 20";
-MergeSort.CODE_LEFT_X = MergeSort.CANVAS_WIDTH / 2 - 210;
-MergeSort.CODE_RIGHT_X = MergeSort.CANVAS_WIDTH / 2 + 210;
+MergeSort.CODE_LEFT_X = 120;
+MergeSort.CODE_RIGHT_X = 520;
 
 MergeSort.DEFAULT_COLOR = "#8fb8ff";
 MergeSort.ACTIVE_SPLIT_COLOR = "#ffd166";
@@ -58,36 +58,50 @@ MergeSort.LABEL_COLOR = "#0b2545";
 MergeSort.ACTIVE_TEXT_COLOR = "#3a0f0f";
 
 MergeSort.CODE_SECTIONS = [
-  {
-    title: "mergeSort (Java)",
-    lines: [
-      "void mergeSort(int[] arr, int left, int right) {",
-      "    if (left >= right) return;",
-      "    int mid = left + (right - left) / 2;",
-      "    mergeSort(arr, left, mid);",
-      "    mergeSort(arr, mid + 1, right);",
-      "    merge(arr, left, mid, right);",
-      "}",
-    ],
-  },
-  {
-    title: "merge (Java)",
-    lines: [
-      "void merge(int[] arr, int left, int mid, int right) {",
-      "    int i = left, j = mid + 1, k = 0;",
-      "    int[] temp = new int[right - left + 1];",
-      "    while (i <= mid && j <= right) {",
-      "        if (arr[i] <= arr[j]) temp[k++] = arr[i++];",
-      "        else temp[k++] = arr[j++];",
-      "    }",
-      "    while (i <= mid) temp[k++] = arr[i++];",
-      "    while (j <= right) temp[k++] = arr[j++];",
-      "    for (int t = 0; t < temp.length; t++) arr[left + t] = temp[t];",
-      "}",
-    ],
-  },
-];
 
+  [
+    "MERGESORT(array, left, right)",
+    "  if left >= right: return",
+    "  mid <- floor((left + right) / 2)",
+    "  MERGESORT(array, left, mid)",
+    "  MERGESORT(array, mid + 1, right)",
+    "  MERGE(array, left, mid, right)",
+    "end MERGESORT",
+  ],
+  [
+    ["MERGE(array, left,", "      mid, right)"],
+    ["  i <- left", "  j <- mid + 1"],
+    "  merged <- empty list",
+    ["  while i <= mid", "    and j <= right:"],
+    [
+      "    if array[i] <=",
+      "      array[j]:",
+      "      append array[i];",
+      "      i++",
+    ],
+    ["    else:", "      append array[j];", "      j++"],
+    ["  # append remaining", "    values"],
+    [
+      "  while i <= mid:",
+      "    append remaining",
+      "      array[i];",
+      "    i++",
+    ],
+    [
+      "  while j <= right:",
+      "    append remaining",
+      "      array[j];",
+      "    j++",
+    ],
+    [
+      "  for offset from 0",
+      "    up to merged.length",
+      "    - 1:",
+      "    array[left + offset]",
+      "    <- merged[offset]",
+    ],
+  ],
+];
 
 MergeSort.prototype.init = function (am, w, h) {
   MergeSort.superclass.init.call(this, am, w, h);
@@ -232,33 +246,30 @@ MergeSort.prototype.createCodeDisplay = function () {
   var columns = [MergeSort.CODE_LEFT_X, MergeSort.CODE_RIGHT_X];
   for (var col = 0; col < MergeSort.CODE_SECTIONS.length; col++) {
     var section = MergeSort.CODE_SECTIONS[col];
-    var titleID = this.nextIndex++;
-    this.cmd(
-      "CreateLabel",
-      titleID,
-      section.title,
-      columns[col],
-      MergeSort.CODE_TITLE_Y,
-      0
-    );
-    this.cmd("SetTextStyle", titleID, MergeSort.CODE_TITLE_FONT);
-    this.cmd("SetForegroundColor", titleID, MergeSort.CODE_STANDARD_COLOR);
-
     var lineY = MergeSort.CODE_START_Y;
-    for (var line = 0; line < section.lines.length; line++) {
-      var labelID = this.nextIndex++;
-      this.cmd(
-        "CreateLabel",
-        labelID,
-        section.lines[line],
-        columns[col],
-        lineY,
-        0
-      );
-      this.cmd("SetTextStyle", labelID, MergeSort.CODE_FONT);
-      this.cmd("SetForegroundColor", labelID, MergeSort.CODE_STANDARD_COLOR);
-      this.codeID.push([labelID]);
-      lineY += MergeSort.CODE_LINE_HEIGHT;
+    for (var line = 0; line < section.length; line++) {
+      var lineEntry = section[line];
+      var segments = Array.isArray(lineEntry) ? lineEntry : [lineEntry];
+      var labelGroup = [];
+      for (var seg = 0; seg < segments.length; seg++) {
+        var labelID = this.nextIndex++;
+        this.cmd(
+          "CreateLabel",
+          labelID,
+          segments[seg],
+          columns[col],
+          lineY,
+          0
+        );
+        this.cmd("SetTextStyle", labelID, MergeSort.CODE_FONT);
+        this.cmd("SetForegroundColor", labelID, MergeSort.CODE_STANDARD_COLOR);
+        if (seg > 0) {
+          this.cmd("AlignLeft", labelID, labelGroup[0]);
+        }
+        labelGroup.push(labelID);
+        lineY += MergeSort.CODE_LINE_HEIGHT;
+      }
+      this.codeID.push(labelGroup);
     }
   }
 };
