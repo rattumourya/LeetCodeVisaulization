@@ -616,6 +616,24 @@ CountingSort.prototype.runCountingSort = function () {
     this.setInputHighlight(copyIdx, true);
     var sortedValue = this.outputData[copyIdx];
     this.highlightCode(4, 2, true);
+    var copyLabel = this.nextIndex++;
+    this.cmd(
+      "CreateLabel",
+      copyLabel,
+      sortedValue,
+      this.outputPositions[copyIdx],
+      CountingSort.OUTPUT_Y
+    );
+    this.cmd("SetForegroundColor", copyLabel, CountingSort.MOVE_LABEL_COLOR);
+    this.cmd(
+      "Move",
+      copyLabel,
+      this.arrayPositions[copyIdx],
+      CountingSort.INPUT_Y
+    );
+    this.cmd("Step");
+    this.cmd("Delete", copyLabel);
+    this.nextIndex--;
     this.cmd("SetText", this.arrayRects[copyIdx], sortedValue);
     this.cmd(
       "SetBackgroundColor",
