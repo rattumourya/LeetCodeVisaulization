@@ -33,6 +33,7 @@ QuickSort.LEGEND_BOX_WIDTH = 42;
 QuickSort.LEGEND_BOX_HEIGHT = 24;
 QuickSort.LEGEND_LABEL_GAP = 14;
 
+
 QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 60;
 QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 26;
 QuickSort.CODE_LINE_HEIGHT = 16;
@@ -341,6 +342,7 @@ QuickSort.prototype.randomizeValues = function (includeStep, resetCommands) {
   if (resetCommands) {
     this.commands = [];
   }
+
   this.sortedIndices = {};
   for (var i = 0; i < this.arrayData.length; i++) {
     var value = this.generateRandomValue();
@@ -538,6 +540,7 @@ QuickSort.prototype.partition = function (low, high) {
         this.infoLabelID,
         "Swap values at i=" + i + " and j=" + j + "."
       );
+
       this.cmd("Step");
       if (i !== j) {
         this.swapBars(i, j);
@@ -577,6 +580,7 @@ QuickSort.prototype.partition = function (low, high) {
     this.swapBars(low, j);
     this.cmd("Step");
   }
+
   this.setBarColor(low, QuickSort.ACTIVE_RANGE_COLOR);
   this.markSorted(j);
   this.cmd("Step");
