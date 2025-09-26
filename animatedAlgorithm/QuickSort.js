@@ -1,4 +1,3 @@
-
 // Quick sort visualization tuned for the merge sort style 720x1280 canvas.
 // The animation mirrors that explanatory layout with highlighted code,
 // descriptive text, and pointer-driven partitioning steps.
@@ -15,42 +14,40 @@ QuickSort.CANVAS_WIDTH = 720;
 QuickSort.CANVAS_HEIGHT = 1280;
 
 QuickSort.BAR_COUNT = 12;
-QuickSort.BAR_WIDTH = 54;
-QuickSort.BAR_SPACING = 60;
+QuickSort.BAR_WIDTH = 44;
+QuickSort.BAR_SPACING = 54;
 QuickSort.BAR_START_X =
   QuickSort.CANVAS_WIDTH / 2 -
   ((QuickSort.BAR_COUNT - 1) * QuickSort.BAR_SPACING) / 2;
-QuickSort.BAR_BASE_Y = 680;
-QuickSort.BAR_LABEL_OFFSET = 48;
+QuickSort.BAR_BASE_Y = 650;
+QuickSort.BAR_LABEL_OFFSET = 42;
 QuickSort.BAR_LABEL_Y = QuickSort.BAR_BASE_Y + QuickSort.BAR_LABEL_OFFSET;
 QuickSort.POINTER_OFFSET = 52;
 QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + QuickSort.POINTER_OFFSET;
 
 QuickSort.TITLE_Y = 60;
 QuickSort.INFO_Y = 140;
-QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 64;
+QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 56;
 QuickSort.LEGEND_SPACING = 150;
 QuickSort.LEGEND_BOX_WIDTH = 42;
 QuickSort.LEGEND_BOX_HEIGHT = 24;
 QuickSort.LEGEND_LABEL_GAP = 14;
 
-QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 90;
-QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 34;
+QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 76;
+QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 30;
 QuickSort.CODE_LINE_HEIGHT = 16;
 QuickSort.CODE_FONT = "bold 14";
 QuickSort.CODE_TITLE_FONT = "bold 18";
-QuickSort.CODE_LEFT_X = 150;
-QuickSort.CODE_RIGHT_X = 450;
+QuickSort.CODE_LEFT_X = 140;
+QuickSort.CODE_RIGHT_X = 520;
 
 QuickSort.VALUE_MIN = 15;
 QuickSort.VALUE_MAX = 95;
-QuickSort.SCALE_FACTOR = 7.0;
+QuickSort.SCALE_FACTOR = 6.0;
 
-QuickSort.DEFAULT_COLOR = "#8fb8ff";
+QuickSort.DEFAULT_COLOR = "#e1e7ef";
 QuickSort.ACTIVE_RANGE_COLOR = "#ffd166";
 QuickSort.PIVOT_COLOR = "#f48c06";
-QuickSort.COMPARE_COLOR = "#2b1300";
-QuickSort.SWAP_COLOR = "#e63946";
 QuickSort.FINAL_COLOR = "#43aa8b";
 QuickSort.BORDER_COLOR = "#1d3557";
 QuickSort.LABEL_COLOR = "#0b2545";
@@ -59,13 +56,11 @@ QuickSort.CODE_STANDARD_COLOR = "#1f3d7a";
 QuickSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 QuickSort.POINTER_COLOR = QuickSort.PIVOT_COLOR;
 QuickSort.POINTER_BG = "#ffe8cc";
-QuickSort.PIVOT_LINE_COLOR = "#ff0000";
+QuickSort.PIVOT_LINE_COLOR = QuickSort.PIVOT_COLOR;
 
 QuickSort.LEGEND_ITEMS = [
   { label: "Active range", color: QuickSort.ACTIVE_RANGE_COLOR },
   { label: "Pivot", color: QuickSort.PIVOT_COLOR },
-  { label: "Comparing", color: QuickSort.COMPARE_COLOR },
-  { label: "Swapping", color: QuickSort.SWAP_COLOR },
   { label: "Sorted", color: QuickSort.FINAL_COLOR },
 ];
 
@@ -500,8 +495,6 @@ QuickSort.prototype.partition = function (low, high) {
 
   this.highlightCode(1, 4, true);
   while (i <= j) {
-    this.setBarColor(i, QuickSort.COMPARE_COLOR);
-    this.setBarColor(j, QuickSort.COMPARE_COLOR);
     this.cmd(
       "SetText",
       this.infoLabelID,
@@ -546,8 +539,7 @@ QuickSort.prototype.partition = function (low, high) {
         this.infoLabelID,
         "Swap values at i=" + i + " and j=" + j + "."
       );
-      this.setBarColor(i, QuickSort.SWAP_COLOR);
-      this.setBarColor(j, QuickSort.SWAP_COLOR);
+
       this.cmd("Step");
       if (i !== j) {
         this.swapBars(i, j);
@@ -580,13 +572,17 @@ QuickSort.prototype.partition = function (low, high) {
     this.infoLabelID,
     "Place pivot into final index " + j + "."
   );
-  this.setBarColor(low, QuickSort.SWAP_COLOR);
-  this.setBarColor(j, QuickSort.SWAP_COLOR);
+  this.setBarColor(low, QuickSort.PIVOT_COLOR);
+  this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
+
   this.cmd("Step");
   if (low !== j) {
     this.swapBars(low, j);
     this.cmd("Step");
   }
+
+  this.setBarColor(low, QuickSort.ACTIVE_RANGE_COLOR);
+
   this.markSorted(j);
   this.cmd("Step");
 
