@@ -14,6 +14,7 @@ MergeSort.CANVAS_WIDTH = 720;
 MergeSort.CANVAS_HEIGHT = 1080;
 
 MergeSort.BAR_COUNT = 12;
+
 MergeSort.BAR_WIDTH = 24;
 MergeSort.BAR_SPACING = 48;
 MergeSort.BAR_START_X = 96;
@@ -22,6 +23,7 @@ MergeSort.BAR_LABEL_OFFSET = 26;
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
 MergeSort.TEMP_BASE_Y = 360;
+
 MergeSort.TEMP_LABEL_Y = MergeSort.TEMP_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
 MergeSort.VALUE_MIN = 15;
