@@ -33,7 +33,6 @@ MergeSort.SCALE_FACTOR = 3;
 MergeSort.TITLE_Y = 60;
 MergeSort.INFO_Y = 140;
 MergeSort.LEGEND_Y = MergeSort.BAR_LABEL_Y + 36;
-
 MergeSort.LEGEND_SPACING = 170;
 MergeSort.LEGEND_BOX_WIDTH = 42;
 MergeSort.LEGEND_BOX_HEIGHT = 24;
@@ -44,8 +43,8 @@ MergeSort.CODE_LINE_HEIGHT = 15;
 MergeSort.CODE_STANDARD_COLOR = "#1f3d7a";
 MergeSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 MergeSort.CODE_FONT = "bold 14";
-MergeSort.CODE_LEFT_X = 80;
-MergeSort.CODE_RIGHT_X = 430;
+MergeSort.CODE_LEFT_X = 60;
+MergeSort.CODE_RIGHT_X = 360;
 
 MergeSort.DEFAULT_COLOR = "#8fb8ff";
 MergeSort.ACTIVE_SPLIT_COLOR = "#ffd166";
