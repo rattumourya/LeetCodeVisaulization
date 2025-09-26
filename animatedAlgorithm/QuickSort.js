@@ -1,3 +1,4 @@
+
 // Quick sort visualization tuned for the merge sort style 720x1280 canvas.
 // The animation mirrors that explanatory layout with highlighted code,
 // descriptive text, and pointer-driven partitioning steps.
@@ -345,6 +346,7 @@ QuickSort.prototype.randomizeValues = function (includeStep, resetCommands) {
   if (resetCommands) {
     this.commands = [];
   }
+
   this.sortedIndices = {};
   for (var i = 0; i < this.arrayData.length; i++) {
     var value = this.generateRandomValue();
