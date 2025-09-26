@@ -1,6 +1,6 @@
+
 // Heap sort visualization showing both the array representation and
 // the corresponding binary heap tree in a 720x1280 layout.
-
 function HeapSort(am, w, h) {
   this.init(am, w, h);
 }
