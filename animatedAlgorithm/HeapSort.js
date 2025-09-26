@@ -1,6 +1,6 @@
-
 // Heap sort visualization showing both the array representation and
 // the corresponding binary heap tree in a 720x1280 layout.
+
 function HeapSort(am, w, h) {
   this.init(am, w, h);
 }
@@ -22,21 +22,23 @@ HeapSort.ARRAY_LABEL_Y = HeapSort.ARRAY_Y + 52;
 HeapSort.TITLE_Y = 60;
 HeapSort.INFO_Y = 130;
 
-HeapSort.CODE_START_Y = 880;
+HeapSort.CODE_START_Y = 830;
 HeapSort.CODE_LINE_HEIGHT = 18;
 HeapSort.CODE_FONT = "bold 15";
-HeapSort.CODE_LEFT_X = 120;
-HeapSort.CODE_RIGHT_X = 460;
+HeapSort.CODE_SECTION_GAP = 26;
+HeapSort.CODE_COLUMNS = [130, 450];
+HeapSort.CODE_LAYOUT = [0, 0, 1];
 
 HeapSort.DEFAULT_ARRAY_COLOR = "#edf2fb";
 HeapSort.ACTIVE_ARRAY_COLOR = "#ffd166";
-HeapSort.SORTED_ARRAY_COLOR = "#43aa8b";
+HeapSort.SORTED_ARRAY_COLOR = "#90ee90";
+
 HeapSort.ARRAY_BORDER_COLOR = "#1d3557";
 HeapSort.INDEX_LABEL_COLOR = "#0b2545";
 
 HeapSort.NODE_DEFAULT_COLOR = "#ffe8cc";
 HeapSort.NODE_ACTIVE_COLOR = "#ffca76";
-HeapSort.NODE_SORTED_COLOR = "#2a9d8f";
+HeapSort.NODE_SORTED_COLOR = "#90ee90";
 HeapSort.NODE_BORDER_COLOR = "#1d3557";
 HeapSort.NODE_TEXT_COLOR = "#001427";
 
@@ -131,6 +133,7 @@ HeapSort.prototype.init = function (am, w, h) {
   this.edgePairs = [];
 
   this.sortedIndices = {};
+  this.removedNodes = {};
   this.heapSize = HeapSort.ARRAY_SIZE;
 
   this.commands = [];
@@ -209,7 +212,7 @@ HeapSort.prototype.createArrayVisuals = function () {
     );
     this.cmd("SetForegroundColor", rectID, HeapSort.ARRAY_BORDER_COLOR);
     this.cmd("SetBackgroundColor", rectID, HeapSort.DEFAULT_ARRAY_COLOR);
-    this.cmd("SetTextStyle", rectID, "bold 20");
+    this.cmd("SetTextStyle", rectID, "bold 16");
 
     var indexLabel = this.nextIndex++;
     this.arrayIndexLabels[i] = indexLabel;
@@ -225,7 +228,7 @@ HeapSort.prototype.createTreeStructure = function () {
     var nodeID = this.nextIndex++;
     this.treeNodes[i] = nodeID;
     this.cmd("CreateCircle", nodeID, "", pos.x, pos.y);
-    this.cmd("SetTextStyle", nodeID, "bold 18");
+    this.cmd("SetTextStyle", nodeID, "bold 16");
     this.cmd("SetForegroundColor", nodeID, HeapSort.NODE_BORDER_COLOR);
     this.cmd("SetBackgroundColor", nodeID, HeapSort.NODE_DEFAULT_COLOR);
     this.cmd("SetAlpha", nodeID, 0);
@@ -252,22 +255,30 @@ HeapSort.prototype.createTreeStructure = function () {
 };
 
 HeapSort.prototype.createCodeDisplay = function () {
-  var columns = [HeapSort.CODE_LEFT_X, HeapSort.CODE_RIGHT_X];
   this.codeIDs = [];
+  var columnHeights = [];
+  for (var column = 0; column < HeapSort.CODE_COLUMNS.length; column++) {
+    columnHeights[column] = HeapSort.CODE_START_Y;
+  }
+
   for (var sectionIndex = 0; sectionIndex < HeapSort.CODE_SECTIONS.length; sectionIndex++) {
     var section = HeapSort.CODE_SECTIONS[sectionIndex];
-    var columnX = columns[Math.min(sectionIndex, columns.length - 1)];
-    var lineY = HeapSort.CODE_START_Y;
+    var columnIndex = HeapSort.CODE_LAYOUT[sectionIndex];
+    var columnX = HeapSort.CODE_COLUMNS[columnIndex];
+    var currentY = columnHeights[columnIndex];
+
     var lineIDs = [];
     for (var i = 0; i < section.lines.length; i++) {
       var labelID = this.nextIndex++;
-      this.cmd("CreateLabel", labelID, section.lines[i], columnX, lineY, 0);
+      this.cmd("CreateLabel", labelID, section.lines[i], columnX, currentY, 0);
       this.cmd("SetTextStyle", labelID, HeapSort.CODE_FONT);
       this.cmd("SetForegroundColor", labelID, HeapSort.CODE_STANDARD_COLOR);
       lineIDs.push(labelID);
-      lineY += HeapSort.CODE_LINE_HEIGHT;
+      currentY += HeapSort.CODE_LINE_HEIGHT;
     }
+
     this.codeIDs.push(lineIDs);
+    columnHeights[columnIndex] = currentY + HeapSort.CODE_SECTION_GAP;
   }
   this.highlightedSection = -1;
   this.highlightedLine = -1;
@@ -289,6 +300,7 @@ HeapSort.prototype.randomizeArray = function (showReveal) {
 
 HeapSort.prototype.randomizeValues = function (showReveal) {
   this.sortedIndices = {};
+  this.removedNodes = {};
   this.heapSize = HeapSort.ARRAY_SIZE;
 
   for (var i = 0; i < this.arrayData.length; i++) {
@@ -373,6 +385,7 @@ HeapSort.prototype.revealTreeSequentially = function () {
 HeapSort.prototype.runHeapSort = function () {
   this.commands = [];
   this.sortedIndices = {};
+  this.removedNodes = {};
   this.heapSize = this.arrayData.length;
   this.refreshHeapColors();
   this.clearAllHighlights();
@@ -402,6 +415,7 @@ HeapSort.prototype.runHeapSort = function () {
     this.highlightNode(end, false);
 
     this.sortedIndices[end] = true;
+    this.removeNodeFromTree(end);
     this.heapSize = end;
     this.refreshHeapColors();
 
@@ -418,6 +432,7 @@ HeapSort.prototype.runHeapSort = function () {
   }
 
   this.sortedIndices[0] = true;
+  this.removeNodeFromTree(0);
   this.heapSize = 0;
   this.refreshHeapColors();
   this.cmd("SetText", this.infoLabelID, "All elements sorted!");
@@ -527,6 +542,8 @@ HeapSort.prototype.swapValues = function (i, j) {
 
   var fromLabel = this.nextIndex++;
   var toLabel = this.nextIndex++;
+  var treeFromLabel = this.nextIndex++;
+  var treeToLabel = this.nextIndex++;
 
   this.cmd(
     "CreateLabel",
@@ -536,6 +553,7 @@ HeapSort.prototype.swapValues = function (i, j) {
     HeapSort.ARRAY_Y,
     0
   );
+  this.cmd("SetTextStyle", fromLabel, "bold 16");
   this.cmd(
     "CreateLabel",
     toLabel,
@@ -544,14 +562,43 @@ HeapSort.prototype.swapValues = function (i, j) {
     HeapSort.ARRAY_Y,
     0
   );
+  this.cmd("SetTextStyle", toLabel, "bold 16");
   this.cmd("SetForegroundColor", fromLabel, HeapSort.SWAP_LABEL_COLOR);
   this.cmd("SetForegroundColor", toLabel, HeapSort.SWAP_LABEL_COLOR);
 
+  var posI = HeapSort.TREE_POSITIONS[i];
+  var posJ = HeapSort.TREE_POSITIONS[j];
+
+  this.cmd(
+    "CreateLabel",
+    treeFromLabel,
+    this.arrayData[i],
+    posI.x,
+    posI.y,
+    0
+  );
+  this.cmd("SetTextStyle", treeFromLabel, "bold 16");
+  this.cmd("SetForegroundColor", treeFromLabel, HeapSort.SWAP_LABEL_COLOR);
+  this.cmd(
+    "CreateLabel",
+    treeToLabel,
+    this.arrayData[j],
+    posJ.x,
+    posJ.y,
+    0
+  );
+  this.cmd("SetTextStyle", treeToLabel, "bold 16");
+  this.cmd("SetForegroundColor", treeToLabel, HeapSort.SWAP_LABEL_COLOR);
+
   this.cmd("Move", fromLabel, this.arrayPositions[j], HeapSort.ARRAY_Y);
   this.cmd("Move", toLabel, this.arrayPositions[i], HeapSort.ARRAY_Y);
+  this.cmd("Move", treeFromLabel, posJ.x, posJ.y);
+  this.cmd("Move", treeToLabel, posI.x, posI.y);
   this.cmd("Step");
   this.cmd("Delete", fromLabel);
   this.cmd("Delete", toLabel);
+  this.cmd("Delete", treeFromLabel);
+  this.cmd("Delete", treeToLabel);
 
   var temp = this.arrayData[i];
   this.arrayData[i] = this.arrayData[j];
@@ -562,6 +609,53 @@ HeapSort.prototype.swapValues = function (i, j) {
   this.cmd("SetText", this.treeNodes[i], this.arrayData[i]);
   this.cmd("SetText", this.treeNodes[j], this.arrayData[j]);
   this.refreshHeapColors();
+};
+
+HeapSort.prototype.removeNodeFromTree = function (index) {
+  if (
+    index < 0 ||
+    index >= this.treeNodes.length ||
+    (this.removedNodes && this.removedNodes[index])
+  ) {
+    return;
+  }
+
+  this.removedNodes[index] = true;
+  this.cmd("SetHighlight", this.arrayRects[index], 0);
+  this.cmd("SetHighlight", this.treeNodes[index], 0);
+  this.cmd("SetAlpha", this.treeNodes[index], 0);
+  this.cmd("SetText", this.treeNodes[index], "");
+
+  if (index > 0) {
+    var parentIndex = Math.floor((index - 1) / 2);
+    this.cmd(
+      "SetEdgeAlpha",
+      this.treeNodes[parentIndex],
+      this.treeNodes[index],
+      0
+    );
+  }
+
+  var leftChild = 2 * index + 1;
+  var rightChild = 2 * index + 2;
+  if (leftChild < this.treeNodes.length) {
+    this.cmd(
+      "SetEdgeAlpha",
+      this.treeNodes[index],
+      this.treeNodes[leftChild],
+      0
+    );
+  }
+  if (rightChild < this.treeNodes.length) {
+    this.cmd(
+      "SetEdgeAlpha",
+      this.treeNodes[index],
+      this.treeNodes[rightChild],
+      0
+    );
+  }
+
+  this.cmd("Step");
 };
 
 HeapSort.prototype.highlightNode = function (index, highlight) {
@@ -594,7 +688,8 @@ HeapSort.prototype.refreshHeapColors = function () {
   for (var i = 0; i < this.arrayData.length; i++) {
     var rectColor = HeapSort.DEFAULT_ARRAY_COLOR;
     var nodeColor = HeapSort.NODE_DEFAULT_COLOR;
-    if (this.sortedIndices[i]) {
+    var isRemoved = this.removedNodes && this.removedNodes[i];
+    if (this.sortedIndices[i] || isRemoved) {
       rectColor = HeapSort.SORTED_ARRAY_COLOR;
       nodeColor = HeapSort.NODE_SORTED_COLOR;
     } else if (i < this.heapSize) {
@@ -603,6 +698,9 @@ HeapSort.prototype.refreshHeapColors = function () {
     }
     this.cmd("SetBackgroundColor", this.arrayRects[i], rectColor);
     this.cmd("SetBackgroundColor", this.treeNodes[i], nodeColor);
+    if (isRemoved) {
+      this.cmd("SetAlpha", this.treeNodes[i], 0);
+    }
   }
 };
 
