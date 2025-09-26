@@ -19,27 +19,28 @@ QuickSort.BAR_SPACING = 54;
 QuickSort.BAR_START_X =
   QuickSort.CANVAS_WIDTH / 2 -
   ((QuickSort.BAR_COUNT - 1) * QuickSort.BAR_SPACING) / 2;
-QuickSort.BAR_BASE_Y = 650;
-QuickSort.BAR_LABEL_OFFSET = 42;
+QuickSort.BAR_BASE_Y = 760;
+QuickSort.BAR_LABEL_OFFSET = 32;
 QuickSort.BAR_LABEL_Y = QuickSort.BAR_BASE_Y + QuickSort.BAR_LABEL_OFFSET;
-QuickSort.POINTER_OFFSET = 52;
+QuickSort.POINTER_OFFSET = 50;
 QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + QuickSort.POINTER_OFFSET;
 
 QuickSort.TITLE_Y = 60;
 QuickSort.INFO_Y = 140;
-QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 56;
+QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 36;
 QuickSort.LEGEND_SPACING = 150;
 QuickSort.LEGEND_BOX_WIDTH = 42;
 QuickSort.LEGEND_BOX_HEIGHT = 24;
 QuickSort.LEGEND_LABEL_GAP = 14;
 
-QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 76;
-QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 30;
+
+QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 60;
+QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 26;
 QuickSort.CODE_LINE_HEIGHT = 16;
 QuickSort.CODE_FONT = "bold 14";
 QuickSort.CODE_TITLE_FONT = "bold 18";
-QuickSort.CODE_LEFT_X = 140;
-QuickSort.CODE_RIGHT_X = 520;
+QuickSort.CODE_LEFT_X = 90;
+QuickSort.CODE_RIGHT_X = 440;
 
 QuickSort.VALUE_MIN = 15;
 QuickSort.VALUE_MAX = 95;
@@ -574,7 +575,6 @@ QuickSort.prototype.partition = function (low, high) {
   );
   this.setBarColor(low, QuickSort.PIVOT_COLOR);
   this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
-
   this.cmd("Step");
   if (low !== j) {
     this.swapBars(low, j);
@@ -582,7 +582,6 @@ QuickSort.prototype.partition = function (low, high) {
   }
 
   this.setBarColor(low, QuickSort.ACTIVE_RANGE_COLOR);
-
   this.markSorted(j);
   this.cmd("Step");
 
