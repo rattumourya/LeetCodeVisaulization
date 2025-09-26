@@ -23,16 +23,15 @@ HeapSort.TITLE_Y = 60;
 HeapSort.INFO_Y = 130;
 
 HeapSort.CODE_START_Y = 830;
-HeapSort.CODE_LINE_HEIGHT = 18;
-HeapSort.CODE_FONT = "bold 15";
+HeapSort.CODE_LINE_HEIGHT = 20;
+HeapSort.CODE_FONT = "bold 17";
 HeapSort.CODE_SECTION_GAP = 26;
-HeapSort.CODE_COLUMNS = [130, 450];
+HeapSort.CODE_COLUMNS = [110, 380];
 HeapSort.CODE_LAYOUT = [0, 0, 1];
 
 HeapSort.DEFAULT_ARRAY_COLOR = "#edf2fb";
 HeapSort.ACTIVE_ARRAY_COLOR = "#ffd166";
 HeapSort.SORTED_ARRAY_COLOR = "#90ee90";
-
 HeapSort.ARRAY_BORDER_COLOR = "#1d3557";
 HeapSort.INDEX_LABEL_COLOR = "#0b2545";
 
@@ -212,7 +211,7 @@ HeapSort.prototype.createArrayVisuals = function () {
     );
     this.cmd("SetForegroundColor", rectID, HeapSort.ARRAY_BORDER_COLOR);
     this.cmd("SetBackgroundColor", rectID, HeapSort.DEFAULT_ARRAY_COLOR);
-    this.cmd("SetTextStyle", rectID, "bold 16");
+    this.cmd("SetTextStyle", rectID, "bold 18");
 
     var indexLabel = this.nextIndex++;
     this.arrayIndexLabels[i] = indexLabel;
@@ -228,7 +227,7 @@ HeapSort.prototype.createTreeStructure = function () {
     var nodeID = this.nextIndex++;
     this.treeNodes[i] = nodeID;
     this.cmd("CreateCircle", nodeID, "", pos.x, pos.y);
-    this.cmd("SetTextStyle", nodeID, "bold 16");
+    this.cmd("SetTextStyle", nodeID, "bold 18");
     this.cmd("SetForegroundColor", nodeID, HeapSort.NODE_BORDER_COLOR);
     this.cmd("SetBackgroundColor", nodeID, HeapSort.NODE_DEFAULT_COLOR);
     this.cmd("SetAlpha", nodeID, 0);
@@ -390,6 +389,16 @@ HeapSort.prototype.runHeapSort = function () {
   this.refreshHeapColors();
   this.clearAllHighlights();
   this.clearCodeHighlights();
+
+  this.cmd(
+    "SetText",
+    this.infoLabelID,
+    "Constructing binary tree from the array."
+  );
+  this.hideTree();
+  this.cmd("Step");
+  this.revealTreeSequentially();
+  this.refreshHeapColors();
 
   this.cmd("SetText", this.infoLabelID, "Building a max heap from the array.");
   this.highlightCode(0, 0, true);
