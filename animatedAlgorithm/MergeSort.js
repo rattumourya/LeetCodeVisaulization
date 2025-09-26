@@ -40,12 +40,13 @@ MergeSort.LEGEND_BOX_HEIGHT = 24;
 MergeSort.LEGEND_LABEL_GAP = 10;
 
 MergeSort.CODE_START_Y = MergeSort.LEGEND_Y + 70;
-MergeSort.CODE_LINE_HEIGHT = 18;
+MergeSort.CODE_LINE_HEIGHT = 15;
 MergeSort.CODE_STANDARD_COLOR = "#1f3d7a";
 MergeSort.CODE_HIGHLIGHT_COLOR = "#d62828";
-MergeSort.CODE_FONT = "bold 18";
-MergeSort.CODE_LEFT_X = 120;
-MergeSort.CODE_RIGHT_X = 520;
+MergeSort.CODE_FONT = "bold 14";
+MergeSort.CODE_LEFT_X = 80;
+MergeSort.CODE_RIGHT_X = 460;
+
 
 MergeSort.DEFAULT_COLOR = "#8fb8ff";
 MergeSort.ACTIVE_SPLIT_COLOR = "#ffd166";
@@ -58,7 +59,6 @@ MergeSort.LABEL_COLOR = "#0b2545";
 MergeSort.ACTIVE_TEXT_COLOR = "#3a0f0f";
 
 MergeSort.CODE_SECTIONS = [
-
   [
     "MERGESORT(array, left, right)",
     "  if left >= right: return",
@@ -69,36 +69,23 @@ MergeSort.CODE_SECTIONS = [
     "end MERGESORT",
   ],
   [
-    ["MERGE(array, left,", "      mid, right)"],
-    ["  i <- left", "  j <- mid + 1"],
+    "MERGE(array, left, mid, right)",
+    "  i <- left, j <- mid + 1",
     "  merged <- empty list",
-    ["  while i <= mid", "    and j <= right:"],
+    ["  while i <= mid and", "        j <= right:"],
     [
-      "    if array[i] <=",
-      "      array[j]:",
+      "    if array[i] <= array[j]:",
       "      append array[i];",
       "      i++",
     ],
     ["    else:", "      append array[j];", "      j++"],
-    ["  # append remaining", "    values"],
+    "  # append remaining values",
+    ["  while i <= mid:", "    append array[i];  i++"],
+    ["  while j <= right:", "    append array[j];  j++"],
     [
-      "  while i <= mid:",
-      "    append remaining",
-      "      array[i];",
-      "    i++",
-    ],
-    [
-      "  while j <= right:",
-      "    append remaining",
-      "      array[j];",
-      "    j++",
-    ],
-    [
-      "  for offset from 0",
-      "    up to merged.length",
-      "    - 1:",
-      "    array[left + offset]",
-      "    <- merged[offset]",
+      "  for offset from 0 to",
+      "        merged.length - 1:",
+      "    array[left + offset] <- merged[offset]",
     ],
   ],
 ];
@@ -263,9 +250,7 @@ MergeSort.prototype.createCodeDisplay = function () {
         );
         this.cmd("SetTextStyle", labelID, MergeSort.CODE_FONT);
         this.cmd("SetForegroundColor", labelID, MergeSort.CODE_STANDARD_COLOR);
-        if (seg > 0) {
-          this.cmd("AlignLeft", labelID, labelGroup[0]);
-        }
+
         labelGroup.push(labelID);
         lineY += MergeSort.CODE_LINE_HEIGHT;
       }
