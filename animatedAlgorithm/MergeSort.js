@@ -14,6 +14,7 @@ MergeSort.CANVAS_WIDTH = 720;
 MergeSort.CANVAS_HEIGHT = 1080;
 
 MergeSort.BAR_COUNT = 12;
+
 MergeSort.BAR_WIDTH = 24;
 MergeSort.BAR_SPACING = 48;
 MergeSort.BAR_START_X = 96;
@@ -22,6 +23,7 @@ MergeSort.BAR_LABEL_OFFSET = 26;
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
 MergeSort.TEMP_BASE_Y = 360;
+
 MergeSort.TEMP_LABEL_Y = MergeSort.TEMP_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
 MergeSort.VALUE_MIN = 15;
@@ -31,6 +33,7 @@ MergeSort.SCALE_FACTOR = 3;
 MergeSort.TITLE_Y = 60;
 MergeSort.INFO_Y = 140;
 MergeSort.LEGEND_Y = MergeSort.BAR_LABEL_Y + 36;
+
 MergeSort.LEGEND_SPACING = 170;
 MergeSort.LEGEND_BOX_WIDTH = 42;
 MergeSort.LEGEND_BOX_HEIGHT = 24;
