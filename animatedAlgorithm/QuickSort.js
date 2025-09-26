@@ -341,6 +341,7 @@ QuickSort.prototype.randomizeValues = function (includeStep, resetCommands) {
   if (resetCommands) {
     this.commands = [];
   }
+
   this.sortedIndices = {};
   for (var i = 0; i < this.arrayData.length; i++) {
     var value = this.generateRandomValue();
@@ -538,6 +539,7 @@ QuickSort.prototype.partition = function (low, high) {
         this.infoLabelID,
         "Swap values at i=" + i + " and j=" + j + "."
       );
+
       this.cmd("Step");
       if (i !== j) {
         this.swapBars(i, j);
@@ -572,12 +574,15 @@ QuickSort.prototype.partition = function (low, high) {
   );
   this.setBarColor(low, QuickSort.PIVOT_COLOR);
   this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
+
   this.cmd("Step");
   if (low !== j) {
     this.swapBars(low, j);
     this.cmd("Step");
   }
+
   this.setBarColor(low, QuickSort.ACTIVE_RANGE_COLOR);
+
   this.markSorted(j);
   this.cmd("Step");
 
