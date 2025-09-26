@@ -11,18 +11,18 @@ QuickSort.prototype.constructor = QuickSort;
 QuickSort.superclass = Algorithm.prototype;
 
 QuickSort.CANVAS_WIDTH = 720;
-QuickSort.CANVAS_HEIGHT = 1080;
+QuickSort.CANVAS_HEIGHT = 1280;
 
 QuickSort.BAR_COUNT = 12;
-QuickSort.BAR_WIDTH = 44;
+QuickSort.BAR_WIDTH = 48;
 QuickSort.BAR_SPACING = 60;
 QuickSort.BAR_START_X =
   QuickSort.CANVAS_WIDTH / 2 -
   ((QuickSort.BAR_COUNT - 1) * QuickSort.BAR_SPACING) / 2;
-QuickSort.BAR_BASE_Y = 620;
-QuickSort.BAR_LABEL_OFFSET = 40;
+QuickSort.BAR_BASE_Y = 660;
+QuickSort.BAR_LABEL_OFFSET = 44;
 QuickSort.BAR_LABEL_Y = QuickSort.BAR_BASE_Y + QuickSort.BAR_LABEL_OFFSET;
-QuickSort.POINTER_OFFSET = 44;
+QuickSort.POINTER_OFFSET = 48;
 QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + QuickSort.POINTER_OFFSET;
 
 QuickSort.TITLE_Y = 60;
@@ -33,8 +33,8 @@ QuickSort.LEGEND_BOX_WIDTH = 42;
 QuickSort.LEGEND_BOX_HEIGHT = 24;
 QuickSort.LEGEND_LABEL_GAP = 14;
 
-QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 80;
-QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 32;
+QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 90;
+QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 34;
 QuickSort.CODE_LINE_HEIGHT = 16;
 QuickSort.CODE_FONT = "bold 14";
 QuickSort.CODE_TITLE_FONT = "bold 18";
@@ -43,12 +43,12 @@ QuickSort.CODE_RIGHT_X = 450;
 
 QuickSort.VALUE_MIN = 15;
 QuickSort.VALUE_MAX = 95;
-QuickSort.SCALE_FACTOR = 6.2;
+QuickSort.SCALE_FACTOR = 6.8;
 
 QuickSort.DEFAULT_COLOR = "#8fb8ff";
 QuickSort.ACTIVE_RANGE_COLOR = "#ffd166";
 QuickSort.PIVOT_COLOR = "#f48c06";
-QuickSort.COMPARE_COLOR = "#7a3f00";
+QuickSort.COMPARE_COLOR = "#2d1600";
 QuickSort.SWAP_COLOR = "#e63946";
 QuickSort.FINAL_COLOR = "#43aa8b";
 QuickSort.BORDER_COLOR = "#1d3557";
@@ -58,6 +58,7 @@ QuickSort.CODE_STANDARD_COLOR = "#1f3d7a";
 QuickSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 QuickSort.POINTER_COLOR = QuickSort.PIVOT_COLOR;
 QuickSort.POINTER_BG = "#ffe8cc";
+QuickSort.PIVOT_LINE_COLOR = "#ff0000";
 
 QuickSort.LEGEND_ITEMS = [
   { label: "Active range", color: QuickSort.ACTIVE_RANGE_COLOR },
@@ -85,16 +86,24 @@ QuickSort.CODE_SECTIONS = [
     title: "partition",
     lines: [
       "int partition(int[] arr, int low, int high) {",
-      "  int pivot = arr[high];",
-      "  int i = low;",
-      "  for (int j = low; j < high; j++) {",
-      "    if (arr[j] <= pivot) {",
-      "      swap(arr, i, j);",
+      "  int pivot = arr[low];",
+      "  int i = low + 1;",
+      "  int j = high;",
+      "  while (i <= j) {",
+      "    while (i <= j && arr[i] < pivot) {",
       "      i++;",
       "    }",
+      "    while (i <= j && arr[j] > pivot) {",
+      "      j--;",
+      "    }",
+      "    if (i <= j) {",
+      "      swap(arr, i, j);",
+      "      i++;",
+      "      j--;",
+      "    }",
       "  }",
-      "  swap(arr, i, high);",
-      "  return i;",
+      "  swap(arr, low, j);",
+      "  return j;",
       "}",
     ],
   },
@@ -383,12 +392,9 @@ QuickSort.prototype.quickSortRecursive = function (low, high) {
       this.cmd(
         "SetText",
         this.infoLabelID,
-        "Base case at index " + low + ". Element is sorted."
+        "Single element at index " + low + " is already sorted."
       );
       this.markSorted(low);
-      this.cmd("Step");
-    } else {
-      this.cmd("SetText", this.infoLabelID, "Range exhausted.");
       this.cmd("Step");
     }
     this.restoreRange();
@@ -409,12 +415,16 @@ QuickSort.prototype.quickSortRecursive = function (low, high) {
     this.cmd(
       "SetText",
       this.infoLabelID,
-      "Sorting left partition [" + low + ", " + (pivotIndex - 1) + "]"
+      "Recurse on left partition [" + low + ", " + (pivotIndex - 1) + "]"
     );
     this.cmd("Step");
     this.quickSortRecursive(low, pivotIndex - 1);
   } else {
-    this.cmd("SetText", this.infoLabelID, "Left partition empty.");
+    this.cmd(
+      "SetText",
+      this.infoLabelID,
+      "Left side already sorted."
+    );
     this.cmd("Step");
   }
 
@@ -423,12 +433,16 @@ QuickSort.prototype.quickSortRecursive = function (low, high) {
     this.cmd(
       "SetText",
       this.infoLabelID,
-      "Sorting right partition [" + (pivotIndex + 1) + ", " + high + "]"
+      "Recurse on right partition [" + (pivotIndex + 1) + ", " + high + "]"
     );
     this.cmd("Step");
     this.quickSortRecursive(pivotIndex + 1, high);
   } else {
-    this.cmd("SetText", this.infoLabelID, "Right partition empty.");
+    this.cmd(
+      "SetText",
+      this.infoLabelID,
+      "Right side already sorted."
+    );
     this.cmd("Step");
   }
 
@@ -438,98 +452,150 @@ QuickSort.prototype.quickSortRecursive = function (low, high) {
 QuickSort.prototype.partition = function (low, high) {
   this.focusRange(low, high);
   this.highlightCode(1, 0, true);
-  var pivotValue = this.arrayData[high];
+  var pivotValue = this.arrayData[low];
   this.cmd(
     "SetText",
     this.infoLabelID,
-    "Pivot selected at index " + high + " with value " + pivotValue
+    "Pivot selected at index " + low + " with value " + pivotValue
   );
-  this.setBarColor(high, QuickSort.PIVOT_COLOR);
+  this.setBarColor(low, QuickSort.PIVOT_COLOR);
+  var pivotLineID = this.nextIndex++;
+  var pivotLineWidth = (QuickSort.BAR_COUNT + 1) * QuickSort.BAR_SPACING;
+  var pivotLineX = QuickSort.BAR_START_X - QuickSort.BAR_SPACING / 2;
+  var pivotLineY =
+    QuickSort.BAR_BASE_Y - pivotValue * QuickSort.SCALE_FACTOR;
+  this.cmd(
+    "CreateRectangle",
+    pivotLineID,
+    "",
+    pivotLineWidth,
+    0,
+    pivotLineX,
+    pivotLineY,
+    "left",
+    "bottom"
+  );
+  this.cmd("SetForegroundColor", pivotLineID, QuickSort.PIVOT_LINE_COLOR);
   this.cmd("Step");
 
-  this.highlightCode(1, 1, true);
+  this.highlightCode(1, 1, false);
   this.highlightCode(1, 2, true);
-  var i = low;
-  this.movePointer(this.iPointerID, i);
+  var i = low + 1;
+  this.movePointer(this.iPointerID, Math.min(i, high));
   this.showPointer(this.iPointerID, true);
   this.cmd("Step");
 
   this.highlightCode(1, 3, true);
-  this.movePointer(this.jPointerID, low);
+  var j = high;
+  this.movePointer(this.jPointerID, j);
   this.showPointer(this.jPointerID, true);
-  for (var j = low; j < high; j++) {
-    this.movePointer(this.jPointerID, j);
+  this.cmd("Step");
+
+  this.highlightCode(1, 4, true);
+  while (i <= j) {
+    this.setBarColor(i, QuickSort.COMPARE_COLOR);
     this.setBarColor(j, QuickSort.COMPARE_COLOR);
     this.cmd(
       "SetText",
       this.infoLabelID,
-      "Comparing index " + j + " (" + this.arrayData[j] + ") with pivot " + pivotValue
+      "Scanning indices i=" + i + " and j=" + j + " against pivot " + pivotValue
     );
     this.cmd("Step");
 
-    this.highlightCode(1, 4, true);
-    if (this.arrayData[j] <= pivotValue) {
+    this.highlightCode(1, 5, true);
+    while (i <= j && this.arrayData[i] < pivotValue) {
       this.cmd(
         "SetText",
         this.infoLabelID,
-        "Value is less than or equal to pivot. Swapping with index " + i
+        "Value " + this.arrayData[i] + " at i is less than pivot. Move i right."
       );
-      if (i !== high) {
-        this.setBarColor(i, QuickSort.SWAP_COLOR);
-      }
-      this.setBarColor(j, QuickSort.SWAP_COLOR);
-      this.cmd("Step");
-
-      this.highlightCode(1, 5, true);
-      if (i !== j) {
-        this.swapBars(i, j);
-      }
-      this.cmd("Step");
-      if (i !== high) {
-        this.setBarColor(i, QuickSort.ACTIVE_RANGE_COLOR);
-      }
-      this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
-
+      this.setBarColor(i, QuickSort.ACTIVE_RANGE_COLOR);
       i++;
       this.highlightCode(1, 6, true);
-      this.movePointer(this.iPointerID, i);
+      this.movePointer(this.iPointerID, Math.min(i, high));
+      this.cmd("Step");
+      this.highlightCode(1, 5, true);
+    }
+
+    this.highlightCode(1, 8, true);
+    while (i <= j && this.arrayData[j] > pivotValue) {
+      this.cmd(
+        "SetText",
+        this.infoLabelID,
+        "Value " + this.arrayData[j] + " at j is greater than pivot. Move j left."
+      );
+      this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
+      j--;
+      this.highlightCode(1, 9, true);
+      this.movePointer(this.jPointerID, Math.max(j, low));
+      this.cmd("Step");
+      this.highlightCode(1, 8, true);
+    }
+
+    if (i <= j) {
+      this.highlightCode(1, 11, true);
+      this.cmd(
+        "SetText",
+        this.infoLabelID,
+        "Swap values at i=" + i + " and j=" + j + "."
+      );
+      this.setBarColor(i, QuickSort.SWAP_COLOR);
+      this.setBarColor(j, QuickSort.SWAP_COLOR);
+      this.cmd("Step");
+      if (i !== j) {
+        this.swapBars(i, j);
+        this.cmd("Step");
+      }
+      this.setBarColor(i, QuickSort.ACTIVE_RANGE_COLOR);
+      this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
+      i++;
+      j--;
+      this.highlightCode(1, 13, true);
+      this.movePointer(this.iPointerID, Math.min(i, high));
+      this.highlightCode(1, 14, true);
+      this.movePointer(this.jPointerID, Math.max(j, low));
       this.cmd("Step");
     } else {
-      this.cmd("SetText", this.infoLabelID, "Value greater than pivot. Continue scanning.");
-      this.cmd("Step");
-      this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
+      if (i >= 0 && i <= high) {
+        this.setBarColor(i, QuickSort.ACTIVE_RANGE_COLOR);
+      }
+      if (j >= low && j < this.barObjects.length) {
+        this.setBarColor(j, QuickSort.ACTIVE_RANGE_COLOR);
+      }
     }
+
+    this.highlightCode(1, 4, true);
   }
 
-  this.movePointer(this.jPointerID, high);
-  this.highlightCode(1, 9, true);
+  this.highlightCode(1, 17, true);
   this.cmd(
     "SetText",
     this.infoLabelID,
-    "Placing pivot into position " + i
+    "Place pivot into final index " + j + "."
   );
-  this.setBarColor(i, QuickSort.SWAP_COLOR);
-  this.setBarColor(high, QuickSort.SWAP_COLOR);
+  this.setBarColor(low, QuickSort.SWAP_COLOR);
+  this.setBarColor(j, QuickSort.SWAP_COLOR);
   this.cmd("Step");
-
-  if (i !== high) {
-    this.swapBars(i, high);
+  if (low !== j) {
+    this.swapBars(low, j);
     this.cmd("Step");
   }
-
-  this.markSorted(i);
+  this.markSorted(j);
   this.cmd("Step");
-  this.highlightCode(1, 10, false);
+
+  this.highlightCode(1, 18, false);
   this.cmd(
     "SetText",
     this.infoLabelID,
-    "Partition complete. Returning pivot index " + i + "."
+    "Partition complete. Returning pivot index " + j + "."
   );
   this.cmd("Step");
-  this.showPointer(this.jPointerID, false);
+
   this.showPointer(this.iPointerID, false);
+  this.showPointer(this.jPointerID, false);
+  this.cmd("Delete", pivotLineID);
   this.restoreRange();
-  return i;
+  return j;
 };
 
 QuickSort.prototype.swapBars = function (i, j) {
