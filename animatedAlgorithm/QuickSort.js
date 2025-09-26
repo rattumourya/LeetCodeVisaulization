@@ -140,7 +140,7 @@ QuickSort.prototype.init = function (am, w, h) {
   this.createBars();
   this.createCodeDisplay();
   this.createPointers();
-  this.randomizeValues(false);
+  this.randomizeValues(false, false);
 
   this.animationManager.StartNewAnimation(this.commands);
   this.animationManager.skipForward();
@@ -339,8 +339,14 @@ QuickSort.prototype.randomizeArray = function () {
   return this.commands;
 };
 
-QuickSort.prototype.randomizeValues = function (includeStep) {
-  this.commands = [];
+QuickSort.prototype.randomizeValues = function (includeStep, resetCommands) {
+  if (resetCommands === undefined) {
+    resetCommands = true;
+  }
+  if (resetCommands) {
+    this.commands = [];
+  }
+
   this.sortedIndices = {};
   for (var i = 0; i < this.arrayData.length; i++) {
     var value = this.generateRandomValue();
