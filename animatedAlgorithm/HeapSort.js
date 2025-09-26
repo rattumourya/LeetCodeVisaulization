@@ -32,6 +32,7 @@ HeapSort.CODE_LAYOUT = [0, 0, 1];
 HeapSort.DEFAULT_ARRAY_COLOR = "#edf2fb";
 HeapSort.ACTIVE_ARRAY_COLOR = "#ffd166";
 HeapSort.SORTED_ARRAY_COLOR = "#90ee90";
+
 HeapSort.ARRAY_BORDER_COLOR = "#1d3557";
 HeapSort.INDEX_LABEL_COLOR = "#0b2545";
 
