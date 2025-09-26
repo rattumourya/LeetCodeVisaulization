@@ -26,7 +26,7 @@ HeapSort.CODE_START_Y = 830;
 HeapSort.CODE_LINE_HEIGHT = 20;
 HeapSort.CODE_FONT = "bold 17";
 HeapSort.CODE_SECTION_GAP = 26;
-HeapSort.CODE_COLUMNS = [110, 380];
+HeapSort.CODE_COLUMNS = [60, 660];
 HeapSort.CODE_LAYOUT = [0, 0, 1];
 
 HeapSort.DEFAULT_ARRAY_COLOR = "#edf2fb";
@@ -562,7 +562,7 @@ HeapSort.prototype.swapValues = function (i, j) {
     HeapSort.ARRAY_Y,
     0
   );
-  this.cmd("SetTextStyle", fromLabel, "bold 16");
+  this.cmd("SetTextStyle", fromLabel, "bold 18");
   this.cmd(
     "CreateLabel",
     toLabel,
@@ -571,7 +571,7 @@ HeapSort.prototype.swapValues = function (i, j) {
     HeapSort.ARRAY_Y,
     0
   );
-  this.cmd("SetTextStyle", toLabel, "bold 16");
+  this.cmd("SetTextStyle", toLabel, "bold 18");
   this.cmd("SetForegroundColor", fromLabel, HeapSort.SWAP_LABEL_COLOR);
   this.cmd("SetForegroundColor", toLabel, HeapSort.SWAP_LABEL_COLOR);
 
@@ -586,7 +586,7 @@ HeapSort.prototype.swapValues = function (i, j) {
     posI.y,
     0
   );
-  this.cmd("SetTextStyle", treeFromLabel, "bold 16");
+  this.cmd("SetTextStyle", treeFromLabel, "bold 18");
   this.cmd("SetForegroundColor", treeFromLabel, HeapSort.SWAP_LABEL_COLOR);
   this.cmd(
     "CreateLabel",
@@ -596,7 +596,7 @@ HeapSort.prototype.swapValues = function (i, j) {
     posJ.y,
     0
   );
-  this.cmd("SetTextStyle", treeToLabel, "bold 16");
+  this.cmd("SetTextStyle", treeToLabel, "bold 18");
   this.cmd("SetForegroundColor", treeToLabel, HeapSort.SWAP_LABEL_COLOR);
 
   this.cmd("Move", fromLabel, this.arrayPositions[j], HeapSort.ARRAY_Y);
