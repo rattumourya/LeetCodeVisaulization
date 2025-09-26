@@ -45,8 +45,7 @@ MergeSort.CODE_STANDARD_COLOR = "#1f3d7a";
 MergeSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 MergeSort.CODE_FONT = "bold 14";
 MergeSort.CODE_LEFT_X = 80;
-MergeSort.CODE_RIGHT_X = 460;
-
+MergeSort.CODE_RIGHT_X = 430;
 
 MergeSort.DEFAULT_COLOR = "#8fb8ff";
 MergeSort.ACTIVE_SPLIT_COLOR = "#ffd166";
@@ -60,33 +59,37 @@ MergeSort.ACTIVE_TEXT_COLOR = "#3a0f0f";
 
 MergeSort.CODE_SECTIONS = [
   [
-    "MERGESORT(array, left, right)",
-    "  if left >= right: return",
-    "  mid <- floor((left + right) / 2)",
-    "  MERGESORT(array, left, mid)",
-    "  MERGESORT(array, mid + 1, right)",
-    "  MERGE(array, left, mid, right)",
-    "end MERGESORT",
+    "void mergeSort(int[] arr, int left, int right) {",
+    "  if (left >= right) {",
+    "    return;",
+    "  }",
+    "  int mid = left + (right - left) / 2;",
+    "  mergeSort(arr, left, mid);",
+    "  mergeSort(arr, mid + 1, right);",
+    "  merge(arr, left, mid, right);",
+    "}",
   ],
   [
-    "MERGE(array, left, mid, right)",
-    "  i <- left, j <- mid + 1",
-    "  merged <- empty list",
-    ["  while i <= mid and", "        j <= right:"],
-    [
-      "    if array[i] <= array[j]:",
-      "      append array[i];",
-      "      i++",
-    ],
-    ["    else:", "      append array[j];", "      j++"],
-    "  # append remaining values",
-    ["  while i <= mid:", "    append array[i];  i++"],
-    ["  while j <= right:", "    append array[j];  j++"],
-    [
-      "  for offset from 0 to",
-      "        merged.length - 1:",
-      "    array[left + offset] <- merged[offset]",
-    ],
+    "void merge(int[] arr, int left, int mid, int right) {",
+    "  int[] merged = new int[right - left + 1];",
+    "  int i = left, j = mid + 1, k = 0;",
+    "  while (i <= mid && j <= right) {",
+    "    if (arr[i] <= arr[j]) {",
+    "      merged[k++] = arr[i++];",
+    "    } else {",
+    "      merged[k++] = arr[j++];",
+    "    }",
+    "  }",
+    "  while (i <= mid) {",
+    "    merged[k++] = arr[i++];",
+    "  }",
+    "  while (j <= right) {",
+    "    merged[k++] = arr[j++];",
+    "  }",
+    "  for (int offset = 0; offset < merged.length; offset++) {",
+    "    arr[left + offset] = merged[offset];",
+    "  }",
+    "}",
   ],
 ];
 
@@ -250,7 +253,6 @@ MergeSort.prototype.createCodeDisplay = function () {
         );
         this.cmd("SetTextStyle", labelID, MergeSort.CODE_FONT);
         this.cmd("SetForegroundColor", labelID, MergeSort.CODE_STANDARD_COLOR);
-
         labelGroup.push(labelID);
         lineY += MergeSort.CODE_LINE_HEIGHT;
       }
@@ -319,7 +321,7 @@ MergeSort.prototype.mergeSortRecursive = function (left, right, depth) {
     return;
   }
 
-  this.highlightCodeLine(2, true);
+  this.highlightCodeLine(4, true);
   var mid = Math.floor((left + right) / 2);
   this.cmd(
     "SetText",
@@ -328,13 +330,13 @@ MergeSort.prototype.mergeSortRecursive = function (left, right, depth) {
   );
   this.cmd("Step");
 
-  this.highlightCodeLine(3, true);
+  this.highlightCodeLine(5, true);
   this.mergeSortRecursive(left, mid, depth + 1);
 
-  this.highlightCodeLine(4, true);
+  this.highlightCodeLine(6, true);
   this.mergeSortRecursive(mid + 1, right, depth + 1);
 
-  this.highlightCodeLine(5, true);
+  this.highlightCodeLine(7, true);
   this.cmd(
     "SetText",
     this.infoLabelID,
@@ -346,9 +348,9 @@ MergeSort.prototype.mergeSortRecursive = function (left, right, depth) {
 };
 
 MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
-  this.highlightCodeLine(7, true);
-  this.highlightCodeLine(8, true);
   this.highlightCodeLine(9, true);
+  this.highlightCodeLine(10, true);
+  this.highlightCodeLine(11, true);
 
   var leftItems = [];
   var rightItems = [];
@@ -365,12 +367,12 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
   var rightIndex = 0;
 
   while (leftIndex < leftItems.length && rightIndex < rightItems.length) {
-    this.highlightCodeLine(10, true);
+    this.highlightCodeLine(12, true);
     var leftItem = leftItems[leftIndex];
     var rightItem = rightItems[rightIndex];
     this.highlightComparison(leftItem, rightItem);
 
-    this.highlightCodeLine(11, true);
+    this.highlightCodeLine(13, true);
     if (leftItem.value <= rightItem.value) {
       this.cmd(
         "SetText",
@@ -383,7 +385,7 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
       this.placeMergedItem(leftItem, left + merged.length - 1, depth === 0);
       this.restoreItemColor(rightItem);
     } else {
-      this.highlightCodeLine(12, true);
+      this.highlightCodeLine(16, true);
       this.cmd(
         "SetText",
         this.infoLabelID,
@@ -398,7 +400,7 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
   }
 
   if (leftIndex < leftItems.length) {
-    this.highlightCodeLine(14, true);
+    this.highlightCodeLine(19, true);
   }
   while (leftIndex < leftItems.length) {
     var remainingLeft = leftItems[leftIndex];
@@ -414,7 +416,7 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
   }
 
   if (rightIndex < rightItems.length) {
-    this.highlightCodeLine(15, true);
+    this.highlightCodeLine(22, true);
   }
   while (rightIndex < rightItems.length) {
     var remainingRight = rightItems[rightIndex];
@@ -429,7 +431,7 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
     this.placeMergedItem(remainingRight, left + merged.length - 1, depth === 0);
   }
 
-  this.highlightCodeLine(16, true);
+  this.highlightCodeLine(25, true);
   this.cmd(
     "SetText",
     this.infoLabelID,
