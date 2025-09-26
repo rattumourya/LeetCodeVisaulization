@@ -1,4 +1,4 @@
-// Quick sort visualization tuned for the merge sort style 720x1080 canvas.
+// Quick sort visualization tuned for the merge sort style 720x1280 canvas.
 // The animation mirrors that explanatory layout with highlighted code,
 // descriptive text, and pointer-driven partitioning steps.
 
@@ -14,15 +14,15 @@ QuickSort.CANVAS_WIDTH = 720;
 QuickSort.CANVAS_HEIGHT = 1280;
 
 QuickSort.BAR_COUNT = 12;
-QuickSort.BAR_WIDTH = 48;
+QuickSort.BAR_WIDTH = 54;
 QuickSort.BAR_SPACING = 60;
 QuickSort.BAR_START_X =
   QuickSort.CANVAS_WIDTH / 2 -
   ((QuickSort.BAR_COUNT - 1) * QuickSort.BAR_SPACING) / 2;
-QuickSort.BAR_BASE_Y = 660;
-QuickSort.BAR_LABEL_OFFSET = 44;
+QuickSort.BAR_BASE_Y = 680;
+QuickSort.BAR_LABEL_OFFSET = 48;
 QuickSort.BAR_LABEL_Y = QuickSort.BAR_BASE_Y + QuickSort.BAR_LABEL_OFFSET;
-QuickSort.POINTER_OFFSET = 48;
+QuickSort.POINTER_OFFSET = 52;
 QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + QuickSort.POINTER_OFFSET;
 
 QuickSort.TITLE_Y = 60;
@@ -43,12 +43,12 @@ QuickSort.CODE_RIGHT_X = 450;
 
 QuickSort.VALUE_MIN = 15;
 QuickSort.VALUE_MAX = 95;
-QuickSort.SCALE_FACTOR = 6.8;
+QuickSort.SCALE_FACTOR = 7.0;
 
 QuickSort.DEFAULT_COLOR = "#8fb8ff";
 QuickSort.ACTIVE_RANGE_COLOR = "#ffd166";
 QuickSort.PIVOT_COLOR = "#f48c06";
-QuickSort.COMPARE_COLOR = "#2d1600";
+QuickSort.COMPARE_COLOR = "#2b1300";
 QuickSort.SWAP_COLOR = "#e63946";
 QuickSort.FINAL_COLOR = "#43aa8b";
 QuickSort.BORDER_COLOR = "#1d3557";
