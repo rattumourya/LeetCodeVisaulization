@@ -14,26 +14,27 @@ QuickSort.CANVAS_WIDTH = 720;
 QuickSort.CANVAS_HEIGHT = 1080;
 
 QuickSort.BAR_COUNT = 12;
-QuickSort.BAR_WIDTH = 34;
-QuickSort.BAR_SPACING = 52;
+QuickSort.BAR_WIDTH = 44;
+QuickSort.BAR_SPACING = 60;
 QuickSort.BAR_START_X =
   QuickSort.CANVAS_WIDTH / 2 -
   ((QuickSort.BAR_COUNT - 1) * QuickSort.BAR_SPACING) / 2;
-QuickSort.BAR_BASE_Y = 600;
-QuickSort.BAR_LABEL_OFFSET = 36;
+QuickSort.BAR_BASE_Y = 620;
+QuickSort.BAR_LABEL_OFFSET = 40;
 QuickSort.BAR_LABEL_Y = QuickSort.BAR_BASE_Y + QuickSort.BAR_LABEL_OFFSET;
-QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + 40;
+QuickSort.POINTER_OFFSET = 44;
+QuickSort.POINTER_Y = QuickSort.BAR_LABEL_Y + QuickSort.POINTER_OFFSET;
 
 QuickSort.TITLE_Y = 60;
 QuickSort.INFO_Y = 140;
-QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 60;
+QuickSort.LEGEND_Y = QuickSort.POINTER_Y + 64;
 QuickSort.LEGEND_SPACING = 150;
 QuickSort.LEGEND_BOX_WIDTH = 42;
 QuickSort.LEGEND_BOX_HEIGHT = 24;
 QuickSort.LEGEND_LABEL_GAP = 14;
 
-QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 70;
-QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 30;
+QuickSort.CODE_TITLE_Y = QuickSort.LEGEND_Y + 80;
+QuickSort.CODE_START_Y = QuickSort.CODE_TITLE_Y + 32;
 QuickSort.CODE_LINE_HEIGHT = 16;
 QuickSort.CODE_FONT = "bold 14";
 QuickSort.CODE_TITLE_FONT = "bold 18";
@@ -42,7 +43,7 @@ QuickSort.CODE_RIGHT_X = 450;
 
 QuickSort.VALUE_MIN = 15;
 QuickSort.VALUE_MAX = 95;
-QuickSort.SCALE_FACTOR = 5.5;
+QuickSort.SCALE_FACTOR = 6.2;
 
 QuickSort.DEFAULT_COLOR = "#8fb8ff";
 QuickSort.ACTIVE_RANGE_COLOR = "#ffd166";
