@@ -43,7 +43,7 @@ AnimatedRectangle = function(id, val, wth, hgt,  xJust, yJust, fillColor, edgeCo
         this.nullPointer = false;
         this.alpha = 1.0;
         this.addedToScene = true;
-        this.textSize = 16;
+        this.textSize = "bold 16";
 	
 }
 
@@ -280,8 +280,8 @@ AnimatedRectangle.prototype.draw = function(context)
 	context.fillStyle = this.labelColor;
 	
         context.textAlign = 'center';
-        context.font         = (typeof this.textSize === "number" ? this.textSize + 'px sans-serif' : this.textSize);
-        context.textBaseline   = 'middle';
+        context.font      = this.textSize + 'px sans-serif';
+        context.textBaseline  = 'middle';
         context.lineWidth = 1;
         context.fillText(this.label, this.x, this.y);
 	
