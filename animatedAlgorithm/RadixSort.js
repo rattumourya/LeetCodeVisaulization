@@ -623,7 +623,6 @@ RadixSort.prototype.runRadixSort = function () {
   }
   this.resetBucketsAndOutput();
   this.restoreInputAlpha();
-
   this.highlightCode(0, 0, true);
   this.highlightCode(0, 1, true);
   var maxValue = 0;
