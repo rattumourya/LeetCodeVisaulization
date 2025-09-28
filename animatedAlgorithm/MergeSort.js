@@ -17,12 +17,18 @@ MergeSort.BAR_COUNT = 12;
 MergeSort.BAR_WIDTH = 24;
 MergeSort.BAR_SPACING = 48;
 MergeSort.BAR_START_X = 96;
-MergeSort.BAR_BASE_Y = 600;
+MergeSort.BAR_BASE_Y = 540;
 MergeSort.BAR_LABEL_OFFSET = 26;
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
+
 MergeSort.POINTER_LABEL_OFFSET = 40;
-MergeSort.POINTER_LABEL_Y =
+MergeSort.POINTER_MID_Y =
   MergeSort.BAR_LABEL_Y + MergeSort.POINTER_LABEL_OFFSET;
+MergeSort.POINTER_SECONDARY_GAP = 22;
+MergeSort.POINTER_SECONDARY_Y =
+  MergeSort.POINTER_MID_Y + MergeSort.POINTER_SECONDARY_GAP;
+MergeSort.POINTER_BASELINE_Y = MergeSort.POINTER_SECONDARY_Y;
+
 MergeSort.TEMP_BASE_Y = 360;
 MergeSort.TEMP_LABEL_Y = MergeSort.TEMP_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
@@ -32,13 +38,13 @@ MergeSort.SCALE_FACTOR = 3;
 
 MergeSort.TITLE_Y = 60;
 MergeSort.INFO_Y = 140;
-MergeSort.LEGEND_Y = MergeSort.POINTER_LABEL_Y + 50;
+MergeSort.LEGEND_Y = MergeSort.POINTER_BASELINE_Y + 40;
 MergeSort.LEGEND_SPACING = 170;
 MergeSort.LEGEND_BOX_WIDTH = 42;
 MergeSort.LEGEND_BOX_HEIGHT = 24;
 MergeSort.LEGEND_LABEL_GAP = 10;
 
-MergeSort.CODE_START_Y = MergeSort.LEGEND_Y + 70;
+MergeSort.CODE_START_Y = MergeSort.LEGEND_Y + 60;
 MergeSort.CODE_LINE_HEIGHT = 15;
 MergeSort.CODE_STANDARD_COLOR = "#1f3d7a";
 MergeSort.CODE_HIGHLIGHT_COLOR = "#d62828";
@@ -115,6 +121,7 @@ MergeSort.prototype.init = function (am, w, h) {
   this.codeID = [];
   this.highlightedLine = -1;
   this.pointerIDs = {};
+  this.pointerYPositions = {};
 
   this.commands = [];
   this.createTitle();
@@ -232,35 +239,42 @@ MergeSort.prototype.createBars = function () {
 };
 
 MergeSort.prototype.createPointerIndicators = function () {
-  var pointerNames = ["i", "j", "mid"];
+  var pointerSpecs = [
+    { name: "mid", y: MergeSort.POINTER_MID_Y, color: MergeSort.CODE_HIGHLIGHT_COLOR },
+    { name: "i", y: MergeSort.POINTER_SECONDARY_Y, color: MergeSort.BORDER_COLOR },
+    { name: "j", y: MergeSort.POINTER_SECONDARY_Y, color: MergeSort.BORDER_COLOR },
+  ];
   var defaultX = this.barPositionsX[0] || MergeSort.BAR_START_X;
-  for (var p = 0; p < pointerNames.length; p++) {
-    var name = pointerNames[p];
+  for (var p = 0; p < pointerSpecs.length; p++) {
+    var spec = pointerSpecs[p];
     var labelID = this.nextIndex++;
-    this.pointerIDs[name] = labelID;
+    this.pointerIDs[spec.name] = labelID;
+    this.pointerYPositions[spec.name] = spec.y;
     this.cmd(
       "CreateLabel",
       labelID,
       "",
       defaultX,
-      MergeSort.POINTER_LABEL_Y,
+      spec.y,
       1
     );
     this.cmd("SetTextStyle", labelID, "bold 18");
-    var color =
-      name === "mid"
-        ? MergeSort.CODE_HIGHLIGHT_COLOR
-        : MergeSort.BORDER_COLOR;
-    this.cmd("SetForegroundColor", labelID, color);
+    this.cmd("SetForegroundColor", labelID, spec.color);
   }
   this.clearPointers();
 };
 
 MergeSort.prototype.updatePointer = function (name, index) {
-  if (!this.pointerIDs || !this.pointerIDs[name]) {
+  if (
+    !this.pointerIDs ||
+    !this.pointerIDs[name] ||
+    !this.pointerYPositions ||
+    this.pointerYPositions[name] === undefined
+  ) {
     return;
   }
   var labelID = this.pointerIDs[name];
+  var targetY = this.pointerYPositions[name];
   if (
     index === null ||
     index === undefined ||
@@ -268,10 +282,11 @@ MergeSort.prototype.updatePointer = function (name, index) {
     index >= this.barPositionsX.length
   ) {
     this.cmd("SetText", labelID, "");
+    this.cmd("Move", labelID, this.barPositionsX[0] || MergeSort.BAR_START_X, targetY);
     return;
   }
   this.cmd("SetText", labelID, name);
-  this.cmd("Move", labelID, this.barPositionsX[index], MergeSort.POINTER_LABEL_Y);
+  this.cmd("Move", labelID, this.barPositionsX[index], targetY);
 };
 
 MergeSort.prototype.clearPointers = function () {
