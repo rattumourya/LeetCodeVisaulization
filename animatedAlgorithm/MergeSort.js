@@ -20,11 +20,9 @@ MergeSort.BAR_START_X = 96;
 MergeSort.BAR_BASE_Y = 600;
 MergeSort.BAR_LABEL_OFFSET = 26;
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
-
 MergeSort.POINTER_LABEL_OFFSET = 40;
 MergeSort.POINTER_LABEL_Y =
   MergeSort.BAR_LABEL_Y + MergeSort.POINTER_LABEL_OFFSET;
-
 MergeSort.TEMP_BASE_Y = 360;
 MergeSort.TEMP_LABEL_Y = MergeSort.TEMP_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
@@ -213,7 +211,6 @@ MergeSort.prototype.createBars = function () {
     var labelID = this.nextIndex++;
     this.barObjects[i] = rectID;
     this.barLabels[i] = labelID;
-
     this.cmd(
       "CreateRectangle",
       rectID,
