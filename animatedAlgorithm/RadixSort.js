@@ -41,7 +41,6 @@ RadixSort.CODE_FONT = "bold 18";
 RadixSort.CODE_SECTION_GAP = 32;
 RadixSort.CODE_COLUMNS = [150, 520];
 RadixSort.CODE_LAYOUT = [0, 1, 1, 1, 1];
-
 RadixSort.INPUT_DEFAULT_COLOR = "#edf2fb";
 RadixSort.INPUT_ACTIVE_COLOR = "#ffcad4";
 RadixSort.INPUT_FINAL_COLOR = "#a9def9";
@@ -155,7 +154,6 @@ RadixSort.prototype.init = function (am, w, h) {
   this.highlightedSection = -1;
   this.highlightedLine = -1;
   this.inputDimmed = false;
-
   this.commands = [];
 
   this.createTitle();
@@ -530,7 +528,6 @@ RadixSort.prototype.runRadixSort = function () {
   }
   this.resetBucketsAndOutput();
   this.restoreInputAlpha();
-
   this.highlightCode(0, 0, true);
   this.highlightCode(0, 1, true);
   var maxValue = 0;
@@ -799,6 +796,7 @@ RadixSort.prototype.setInputHighlight = function (index, highlight, final) {
   } else if (highlight) {
     color = RadixSort.INPUT_ACTIVE_COLOR;
   }
+
   var alpha = this.inputDimmed ? RadixSort.INPUT_DIM_ALPHA : 1;
   var targetAlpha = alpha;
   if (highlight || final) {
