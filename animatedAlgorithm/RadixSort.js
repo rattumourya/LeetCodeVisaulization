@@ -38,7 +38,7 @@ RadixSort.CODE_START_Y = RadixSort.OUTPUT_Y + 120;
 RadixSort.CODE_LINE_HEIGHT = 22;
 RadixSort.CODE_FONT = "bold 18";
 RadixSort.CODE_SECTION_GAP = 32;
-RadixSort.CODE_COLUMNS = [120, 430];
+RadixSort.CODE_COLUMNS = [130, 400];
 RadixSort.CODE_LAYOUT = [0, 1, 1, 1, 1];
 
 RadixSort.INPUT_DEFAULT_COLOR = "#edf2fb";
@@ -48,7 +48,8 @@ RadixSort.INPUT_BORDER_COLOR = "#1d3557";
 
 RadixSort.MAX_DIGITS = 3;
 RadixSort.DIGIT_DIM_ALPHA = 0.25;
-RadixSort.DIGIT_FONT = "bold 20";
+RadixSort.DIGIT_FONT = "bold 24px sans-serif";
+RadixSort.DIGIT_SPACING = 14;
 
 RadixSort.COUNT_DEFAULT_COLOR = "#e0fbfc";
 RadixSort.COUNT_ACTIVE_COLOR = "#ffd166";
@@ -289,15 +290,14 @@ RadixSort.prototype.createInputArray = function () {
       var digitLabelID = this.nextIndex++;
       digitLabels[d] = digitLabelID;
       var offset =
-        (d - (RadixSort.MAX_DIGITS - 1) / 2) *
-        (RadixSort.RECT_WIDTH / RadixSort.MAX_DIGITS);
+        (d - (RadixSort.MAX_DIGITS - 1) / 2) * RadixSort.DIGIT_SPACING;
       this.cmd(
         "CreateLabel",
         digitLabelID,
         "",
         x + offset,
         RadixSort.INPUT_Y,
-        0
+        1
       );
       this.cmd("SetTextStyle", digitLabelID, RadixSort.DIGIT_FONT);
       this.cmd("SetForegroundColor", digitLabelID, RadixSort.INDEX_COLOR);
