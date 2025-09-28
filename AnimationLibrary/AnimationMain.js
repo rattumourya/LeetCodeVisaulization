@@ -350,21 +350,38 @@ function initCanvas()
 		speed = parseInt(speed);
 	}
 	
-	$(element).slider({
-					  animate: true,
-					  value: speed,
-					  change: function(e, ui)
-					  {
-						setCookie("VisualizationSpeed", String(ui.value), 30);
-					  },
-					  slide : function(e, ui){
-					  animationManager.SetSpeed(ui.value); 
-					  }
+	if (typeof window.jQuery !== "undefined" && jQuery.fn && jQuery.fn.slider) {
+		$(element).slider({
+                                          animate: true,
+                                          value: speed,
+                                          change: function(e, ui)
+                                          {
+                                                setCookie("VisualizationSpeed", String(ui.value), 30);
+                                          },
+                                          slide : function(e, ui){
+                                          animationManager.SetSpeed(ui.value);
+                                          }
 
-					  }); 
-	
+                                          });
+	} else {
+		var fallbackSlider = document.createElement("input");
+		fallbackSlider.setAttribute("type", "range");
+		fallbackSlider.setAttribute("min", "0");
+		fallbackSlider.setAttribute("max", "100");
+		fallbackSlider.value = speed;
+		fallbackSlider.oninput = function(e) {
+			var newSpeed = parseInt(e.target.value, 10);
+			animationManager.SetSpeed(newSpeed);
+		};
+		fallbackSlider.onchange = function(e) {
+			setCookie("VisualizationSpeed", String(e.target.value), 30);
+		};
+		fallbackSlider.setAttribute("style", "width:200px");
+		element.appendChild(fallbackSlider);
+	}
+
 	animationManager.SetSpeed(speed);
-	
+
 	element.setAttribute("style", "width:200px");
 
 
