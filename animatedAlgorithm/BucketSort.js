@@ -42,25 +42,28 @@ BucketSort.MAX_VALUE = 999;
 BucketSort.RECT_WIDTH = 54;
 BucketSort.RECT_HEIGHT = 48;
 BucketSort.ARRAY_SPACING = 62;
-BucketSort.ARRAY_LABEL_GAP = 62;
-BucketSort.INDEX_GAP = 36;
+BucketSort.ARRAY_LABEL_GAP = 44;
+BucketSort.INDEX_GAP = 32;
 
 BucketSort.INPUT_Y = 240;
-BucketSort.BUCKET_Y = 440;
-BucketSort.OUTPUT_Y = 640;
-BucketSort.NODE_STAGING_Y = BucketSort.INPUT_Y + 120;
-BucketSort.BUCKET_NODE_START_Y = BucketSort.BUCKET_Y + 90;
-BucketSort.BUCKET_NODE_GAP = 70;
-BucketSort.OUTPUT_NODE_Y = BucketSort.OUTPUT_Y - 90;
+BucketSort.NODE_STAGING_Y = BucketSort.INPUT_Y + 110;
+BucketSort.BUCKET_Y = 620;
+BucketSort.OUTPUT_Y = 820;
 
 BucketSort.NODE_WIDTH = 44;
 BucketSort.NODE_HEIGHT = 50;
+
+BucketSort.BUCKET_NODE_START_Y =
+  BucketSort.BUCKET_Y - BucketSort.RECT_HEIGHT / 2 - BucketSort.NODE_HEIGHT / 2 - 18;
+BucketSort.BUCKET_NODE_GAP = BucketSort.NODE_HEIGHT + 18;
+BucketSort.OUTPUT_NODE_Y = BucketSort.OUTPUT_Y - 120;
 
 BucketSort.TITLE_Y = 60;
 BucketSort.INFO_Y = 140;
 BucketSort.INFO_LINE_GAP = 26;
 
-BucketSort.CODE_START_Y = 860;
+BucketSort.CODE_START_Y = 980;
+
 BucketSort.CODE_LINE_HEIGHT = 22;
 BucketSort.CODE_FONT = "bold 18";
 BucketSort.CODE_SECTION_GAP = 32;
@@ -244,18 +247,6 @@ BucketSort.prototype.createInfoPanel = function () {
 };
 
 BucketSort.prototype.createInputArray = function () {
-  var labelID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    labelID,
-    "Input Array",
-    BucketSort.CANVAS_WIDTH / 2,
-    BucketSort.INPUT_Y - BucketSort.ARRAY_LABEL_GAP,
-    1
-  );
-  this.cmd("SetTextStyle", labelID, "bold 22");
-  this.cmd("SetForegroundColor", labelID, BucketSort.INFO_COLOR);
-
   var startX =
     BucketSort.CANVAS_WIDTH / 2 -
     ((BucketSort.ARRAY_SIZE - 1) * BucketSort.ARRAY_SPACING) / 2;
@@ -293,21 +284,26 @@ BucketSort.prototype.createInputArray = function () {
     this.cmd("SetTextStyle", indexID, "bold 16");
     this.cmd("SetForegroundColor", indexID, BucketSort.INDEX_COLOR);
   }
-};
 
-BucketSort.prototype.createBuckets = function () {
+  var labelY =
+    BucketSort.INPUT_Y +
+    BucketSort.RECT_HEIGHT / 2 +
+    BucketSort.INDEX_GAP +
+    BucketSort.ARRAY_LABEL_GAP;
   var labelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     labelID,
-    "Buckets",
+    "Input Array",
     BucketSort.CANVAS_WIDTH / 2,
-    BucketSort.BUCKET_Y - BucketSort.ARRAY_LABEL_GAP,
+    labelY,
     1
   );
   this.cmd("SetTextStyle", labelID, "bold 22");
   this.cmd("SetForegroundColor", labelID, BucketSort.INFO_COLOR);
+};
 
+BucketSort.prototype.createBuckets = function () {
   var startX =
     BucketSort.CANVAS_WIDTH / 2 -
     ((BucketSort.BUCKET_COUNT - 1) * BucketSort.ARRAY_SPACING) / 2;
@@ -346,21 +342,26 @@ BucketSort.prototype.createBuckets = function () {
     this.cmd("SetTextStyle", indexID, "bold 16");
     this.cmd("SetForegroundColor", indexID, BucketSort.INDEX_COLOR);
   }
-};
 
-BucketSort.prototype.createOutputArray = function () {
+  var labelY =
+    BucketSort.BUCKET_Y +
+    BucketSort.RECT_HEIGHT / 2 +
+    BucketSort.INDEX_GAP +
+    BucketSort.ARRAY_LABEL_GAP;
   var labelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     labelID,
-    "Output Array",
+    "Buckets",
     BucketSort.CANVAS_WIDTH / 2,
-    BucketSort.OUTPUT_Y - BucketSort.ARRAY_LABEL_GAP,
+    labelY,
     1
   );
   this.cmd("SetTextStyle", labelID, "bold 22");
   this.cmd("SetForegroundColor", labelID, BucketSort.INFO_COLOR);
+};
 
+BucketSort.prototype.createOutputArray = function () {
   var startX =
     BucketSort.CANVAS_WIDTH / 2 -
     ((BucketSort.ARRAY_SIZE - 1) * BucketSort.ARRAY_SPACING) / 2;
@@ -398,6 +399,23 @@ BucketSort.prototype.createOutputArray = function () {
     this.cmd("SetTextStyle", indexID, "bold 16");
     this.cmd("SetForegroundColor", indexID, BucketSort.INDEX_COLOR);
   }
+
+  var labelY =
+    BucketSort.OUTPUT_Y +
+    BucketSort.RECT_HEIGHT / 2 +
+    BucketSort.INDEX_GAP +
+    BucketSort.ARRAY_LABEL_GAP;
+  var labelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    labelID,
+    "Output Array",
+    BucketSort.CANVAS_WIDTH / 2,
+    labelY,
+    1
+  );
+  this.cmd("SetTextStyle", labelID, "bold 22");
+  this.cmd("SetForegroundColor", labelID, BucketSort.INFO_COLOR);
 };
 
 BucketSort.prototype.createCodeDisplay = function () {
@@ -598,7 +616,7 @@ BucketSort.prototype.rebuildBucketLayout = function (bucketIndex) {
   for (var index = 0; index < nodes.length; index++) {
     var node = nodes[index];
     var targetX = this.bucketPositions[bucketIndex];
-    var targetY = BucketSort.BUCKET_NODE_START_Y + index * BucketSort.BUCKET_NODE_GAP;
+    var targetY = BucketSort.BUCKET_NODE_START_Y - index * BucketSort.BUCKET_NODE_GAP;
     this.cmd("Move", node.graphicID, targetX, targetY);
   }
 
