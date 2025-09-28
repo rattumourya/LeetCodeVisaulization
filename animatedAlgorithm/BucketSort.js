@@ -63,6 +63,7 @@ BucketSort.INFO_Y = 140;
 BucketSort.INFO_LINE_GAP = 26;
 
 BucketSort.CODE_START_Y = 980;
+
 BucketSort.CODE_LINE_HEIGHT = 22;
 BucketSort.CODE_FONT = "bold 18";
 BucketSort.CODE_SECTION_GAP = 32;
