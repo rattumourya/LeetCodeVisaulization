@@ -36,9 +36,9 @@ RadixSort.INFO_Y = 140;
 
 RadixSort.CODE_START_Y = RadixSort.OUTPUT_Y + 120;
 RadixSort.CODE_LINE_HEIGHT = 22;
-RadixSort.CODE_FONT = "bold 18";
+RadixSort.CODE_FONT = "bold 16";
 RadixSort.CODE_SECTION_GAP = 32;
-RadixSort.CODE_COLUMNS = [130, 400];
+RadixSort.CODE_COLUMNS = [30, 370];
 RadixSort.CODE_LAYOUT = [0, 1, 1, 1, 1];
 
 RadixSort.INPUT_DEFAULT_COLOR = "#edf2fb";
