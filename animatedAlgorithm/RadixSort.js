@@ -35,17 +35,17 @@ RadixSort.EXP_INFO_Y = RadixSort.PASS_INFO_Y + 36;
 RadixSort.TITLE_Y = 60;
 RadixSort.INFO_Y = 140;
 
-RadixSort.CODE_START_Y = 860;
+RadixSort.CODE_START_Y = RadixSort.OUTPUT_Y + 120;
 RadixSort.CODE_LINE_HEIGHT = 22;
 RadixSort.CODE_FONT = "bold 18";
 RadixSort.CODE_SECTION_GAP = 32;
-RadixSort.CODE_COLUMNS = [110, 440];
-RadixSort.CODE_LAYOUT = [0, 0, 0, 1, 1];
-
+RadixSort.CODE_COLUMNS = [150, 520];
+RadixSort.CODE_LAYOUT = [0, 1, 1, 1, 1];
 RadixSort.INPUT_DEFAULT_COLOR = "#edf2fb";
 RadixSort.INPUT_ACTIVE_COLOR = "#ffcad4";
 RadixSort.INPUT_FINAL_COLOR = "#a9def9";
 RadixSort.INPUT_BORDER_COLOR = "#1d3557";
+RadixSort.INPUT_DIM_ALPHA = 0.25;
 
 RadixSort.COUNT_DEFAULT_COLOR = "#e0fbfc";
 RadixSort.COUNT_ACTIVE_COLOR = "#ffd166";
@@ -153,7 +153,7 @@ RadixSort.prototype.init = function (am, w, h) {
   this.codeIDs = [];
   this.highlightedSection = -1;
   this.highlightedLine = -1;
-
+  this.inputDimmed = false;
   this.commands = [];
 
   this.createTitle();
@@ -221,7 +221,7 @@ RadixSort.prototype.createPassDetails = function () {
     RadixSort.PASS_INFO_Y,
     1
   );
-  this.cmd("SetTextStyle", this.passLabelID, "bold 20");
+  this.cmd("SetTextStyle", this.passLabelID, "italic 18");
   this.cmd("SetForegroundColor", this.passLabelID, RadixSort.INFO_COLOR);
 
   this.exponentLabelID = this.nextIndex++;
@@ -465,7 +465,9 @@ RadixSort.prototype.randomizeValues = function (showMessage) {
       this.arrayRects[i],
       RadixSort.INPUT_DEFAULT_COLOR
     );
+    this.cmd("SetAlpha", this.arrayRects[i], 1);
   }
+  this.inputDimmed = false;
 
   this.resetBucketsAndOutput();
   this.clearPassDisplay();
@@ -525,7 +527,7 @@ RadixSort.prototype.runRadixSort = function () {
     );
   }
   this.resetBucketsAndOutput();
-
+  this.restoreInputAlpha();
   this.highlightCode(0, 0, true);
   this.highlightCode(0, 1, true);
   var maxValue = 0;
@@ -562,6 +564,7 @@ RadixSort.prototype.runRadixSort = function () {
       true
     );
     this.resetBucketsAndOutput();
+    this.dimInputForPass();
 
     this.highlightCode(1, 0, true);
     this.highlightCode(1, 1, true);
@@ -707,6 +710,7 @@ RadixSort.prototype.runRadixSort = function () {
       this.setInputHighlight(copyIdx, false, finalPass);
       this.setOutputHighlight(copyIdx, "final");
     }
+    this.restoreInputAlpha();
     this.highlightCode(4, 2, true);
     this.highlightCode(4, 3, true);
 
@@ -742,8 +746,8 @@ RadixSort.prototype.updatePassDisplay = function (passIndex, totalPasses, exp) {
   this.cmd(
     "SetText",
     this.passLabelID,
-    "Pass " + (passIndex + 1) + " of " + totalPasses +
-      " — sorting by the " + place + " digit."
+    "Pass " + (passIndex + 1) + "/" + totalPasses +
+      " – sorting by the " + place + " digit"
   );
   this.cmd(
     "SetText",
@@ -768,6 +772,20 @@ RadixSort.prototype.getPlaceName = function (passIndex) {
   return "10^" + passIndex;
 };
 
+RadixSort.prototype.dimInputForPass = function () {
+  this.inputDimmed = true;
+  for (var i = 0; i < this.arrayRects.length; i++) {
+    this.cmd("SetAlpha", this.arrayRects[i], RadixSort.INPUT_DIM_ALPHA);
+  }
+};
+
+RadixSort.prototype.restoreInputAlpha = function () {
+  this.inputDimmed = false;
+  for (var i = 0; i < this.arrayRects.length; i++) {
+    this.cmd("SetAlpha", this.arrayRects[i], 1);
+  }
+};
+
 RadixSort.prototype.setInputHighlight = function (index, highlight, final) {
   if (index < 0 || index >= this.arrayRects.length) {
     return;
@@ -778,7 +796,14 @@ RadixSort.prototype.setInputHighlight = function (index, highlight, final) {
   } else if (highlight) {
     color = RadixSort.INPUT_ACTIVE_COLOR;
   }
+
+  var alpha = this.inputDimmed ? RadixSort.INPUT_DIM_ALPHA : 1;
+  var targetAlpha = alpha;
+  if (highlight || final) {
+    targetAlpha = 1;
+  }
   this.cmd("SetBackgroundColor", this.arrayRects[index], color);
+  this.cmd("SetAlpha", this.arrayRects[index], targetAlpha);
 };
 
 RadixSort.prototype.setCountHighlight = function (index, mode) {
