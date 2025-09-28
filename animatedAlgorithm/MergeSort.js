@@ -218,7 +218,6 @@ MergeSort.prototype.createBars = function () {
     var labelID = this.nextIndex++;
     this.barObjects[i] = rectID;
     this.barLabels[i] = labelID;
-
     this.cmd(
       "CreateRectangle",
       rectID,
