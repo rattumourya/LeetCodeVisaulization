@@ -20,7 +20,9 @@ MergeSort.BAR_START_X = 96;
 MergeSort.BAR_BASE_Y = 600;
 MergeSort.BAR_LABEL_OFFSET = 26;
 MergeSort.BAR_LABEL_Y = MergeSort.BAR_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
-
+MergeSort.POINTER_LABEL_OFFSET = 40;
+MergeSort.POINTER_LABEL_Y =
+  MergeSort.BAR_LABEL_Y + MergeSort.POINTER_LABEL_OFFSET;
 MergeSort.TEMP_BASE_Y = 360;
 MergeSort.TEMP_LABEL_Y = MergeSort.TEMP_BASE_Y + MergeSort.BAR_LABEL_OFFSET;
 
@@ -30,7 +32,7 @@ MergeSort.SCALE_FACTOR = 3;
 
 MergeSort.TITLE_Y = 60;
 MergeSort.INFO_Y = 140;
-MergeSort.LEGEND_Y = MergeSort.BAR_LABEL_Y + 36;
+MergeSort.LEGEND_Y = MergeSort.POINTER_LABEL_Y + 50;
 MergeSort.LEGEND_SPACING = 170;
 MergeSort.LEGEND_BOX_WIDTH = 42;
 MergeSort.LEGEND_BOX_HEIGHT = 24;
@@ -112,12 +114,14 @@ MergeSort.prototype.init = function (am, w, h) {
   this.legendIDs = [];
   this.codeID = [];
   this.highlightedLine = -1;
+  this.pointerIDs = {};
 
   this.commands = [];
   this.createTitle();
   this.createInfoPanel();
   this.createLegend();
   this.createBars();
+  this.createPointerIndicators();
   this.createCodeDisplay();
 
   this.animationManager.StartNewAnimation(this.commands);
@@ -227,6 +231,75 @@ MergeSort.prototype.createBars = function () {
   }
 };
 
+MergeSort.prototype.createPointerIndicators = function () {
+  var pointerNames = ["i", "j", "mid"];
+  var defaultX = this.barPositionsX[0] || MergeSort.BAR_START_X;
+  for (var p = 0; p < pointerNames.length; p++) {
+    var name = pointerNames[p];
+    var labelID = this.nextIndex++;
+    this.pointerIDs[name] = labelID;
+    this.cmd(
+      "CreateLabel",
+      labelID,
+      "",
+      defaultX,
+      MergeSort.POINTER_LABEL_Y,
+      1
+    );
+    this.cmd("SetTextStyle", labelID, "bold 18");
+    var color =
+      name === "mid"
+        ? MergeSort.CODE_HIGHLIGHT_COLOR
+        : MergeSort.BORDER_COLOR;
+    this.cmd("SetForegroundColor", labelID, color);
+  }
+  this.clearPointers();
+};
+
+MergeSort.prototype.updatePointer = function (name, index) {
+  if (!this.pointerIDs || !this.pointerIDs[name]) {
+    return;
+  }
+  var labelID = this.pointerIDs[name];
+  if (
+    index === null ||
+    index === undefined ||
+    index < 0 ||
+    index >= this.barPositionsX.length
+  ) {
+    this.cmd("SetText", labelID, "");
+    return;
+  }
+  this.cmd("SetText", labelID, name);
+  this.cmd("Move", labelID, this.barPositionsX[index], MergeSort.POINTER_LABEL_Y);
+};
+
+MergeSort.prototype.clearPointers = function () {
+  this.updatePointer("i", null);
+  this.updatePointer("j", null);
+  this.updatePointer("mid", null);
+};
+
+MergeSort.prototype.updateMergePointers = function (
+  left,
+  mid,
+  leftIndex,
+  rightIndex,
+  leftLength,
+  rightLength
+) {
+  if (leftIndex < leftLength) {
+    this.updatePointer("i", left + leftIndex);
+  } else {
+    this.updatePointer("i", null);
+  }
+  if (rightIndex < rightLength) {
+    this.updatePointer("j", mid + 1 + rightIndex);
+  } else {
+    this.updatePointer("j", null);
+  }
+};
+
 MergeSort.prototype.createCodeDisplay = function () {
   this.codeID = [];
   var columns = [MergeSort.CODE_LEFT_X, MergeSort.CODE_RIGHT_X];
@@ -278,6 +351,7 @@ MergeSort.prototype.randomizeArray = function () {
     this.cmd("Move", this.barObjects[i], this.barPositionsX[i], MergeSort.BAR_BASE_Y);
     this.cmd("Move", labelID, this.barPositionsX[i], MergeSort.BAR_LABEL_Y);
   }
+  this.clearPointers();
   this.clearCodeHighlights();
   this.cmd("SetText", this.infoLabelID, "Array randomized. Ready to sort!");
   this.cmd("Step");
@@ -287,9 +361,11 @@ MergeSort.prototype.randomizeArray = function () {
 MergeSort.prototype.runMergeSort = function () {
   this.commands = [];
   this.clearCodeHighlights();
+  this.clearPointers();
   this.cmd("SetText", this.infoLabelID, "Starting merge sort...");
   this.cmd("Step");
   this.mergeSortRecursive(0, this.arrayData.length - 1, 0);
+  this.clearPointers();
   this.highlightCodeLine(-1, false);
   this.cmd("SetText", this.infoLabelID, "Merge sort complete.");
   this.cmd("Step");
@@ -320,6 +396,7 @@ MergeSort.prototype.mergeSortRecursive = function (left, right, depth) {
 
   this.highlightCodeLine(4, true);
   var mid = Math.floor((left + right) / 2);
+  this.updatePointer("mid", mid);
   this.cmd(
     "SetText",
     this.infoLabelID,
@@ -329,9 +406,11 @@ MergeSort.prototype.mergeSortRecursive = function (left, right, depth) {
 
   this.highlightCodeLine(5, true);
   this.mergeSortRecursive(left, mid, depth + 1);
+  this.updatePointer("mid", mid);
 
   this.highlightCodeLine(6, true);
   this.mergeSortRecursive(mid + 1, right, depth + 1);
+  this.updatePointer("mid", mid);
 
   this.highlightCodeLine(7, true);
   this.cmd(
@@ -362,6 +441,17 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
   var merged = [];
   var leftIndex = 0;
   var rightIndex = 0;
+  var leftLength = leftItems.length;
+  var rightLength = rightItems.length;
+
+  this.updateMergePointers(
+    left,
+    mid,
+    leftIndex,
+    rightIndex,
+    leftLength,
+    rightLength
+  );
 
   while (leftIndex < leftItems.length && rightIndex < rightItems.length) {
     this.highlightCodeLine(12, true);
@@ -381,6 +471,15 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
       leftIndex++;
       this.placeMergedItem(leftItem, left + merged.length - 1, depth === 0);
       this.restoreItemColor(rightItem);
+      this.updateMergePointers(
+        left,
+        mid,
+        leftIndex,
+        rightIndex,
+        leftLength,
+        rightLength
+      );
+      this.cmd("Step");
     } else {
       this.highlightCodeLine(16, true);
       this.cmd(
@@ -393,6 +492,15 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
       rightIndex++;
       this.placeMergedItem(rightItem, left + merged.length - 1, depth === 0);
       this.restoreItemColor(leftItem);
+      this.updateMergePointers(
+        left,
+        mid,
+        leftIndex,
+        rightIndex,
+        leftLength,
+        rightLength
+      );
+      this.cmd("Step");
     }
   }
 
@@ -410,6 +518,15 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
     merged.push(remainingLeft);
     leftIndex++;
     this.placeMergedItem(remainingLeft, left + merged.length - 1, depth === 0);
+    this.updateMergePointers(
+      left,
+      mid,
+      leftIndex,
+      rightIndex,
+      leftLength,
+      rightLength
+    );
+    this.cmd("Step");
   }
 
   if (rightIndex < rightItems.length) {
@@ -426,7 +543,27 @@ MergeSort.prototype.mergeRanges = function (left, mid, right, depth) {
     merged.push(remainingRight);
     rightIndex++;
     this.placeMergedItem(remainingRight, left + merged.length - 1, depth === 0);
+    this.updateMergePointers(
+      left,
+      mid,
+      leftIndex,
+      rightIndex,
+      leftLength,
+      rightLength
+    );
+    this.cmd("Step");
   }
+
+  this.updateMergePointers(
+    left,
+    mid,
+    leftIndex,
+    rightIndex,
+    leftLength,
+    rightLength
+  );
+  this.updatePointer("i", null);
+  this.updatePointer("j", null);
 
   this.highlightCodeLine(25, true);
   this.cmd(
@@ -563,7 +700,6 @@ MergeSort.prototype.placeMergedItem = function (item, positionIndex, isFinalPass
     isFinalPass ? MergeSort.FINAL_COLOR : MergeSort.MERGED_COLOR
   );
   this.cmd("SetForegroundColor", item.labelID, MergeSort.LABEL_COLOR);
-  this.cmd("Step");
 };
 
 MergeSort.prototype.highlightRange = function (
