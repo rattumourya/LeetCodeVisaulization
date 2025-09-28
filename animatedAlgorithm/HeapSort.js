@@ -26,7 +26,7 @@ HeapSort.CODE_START_Y = 830;
 HeapSort.CODE_LINE_HEIGHT = 20;
 HeapSort.CODE_FONT = "bold 17";
 HeapSort.CODE_SECTION_GAP = 26;
-HeapSort.CODE_COLUMNS = [60, 660];
+HeapSort.CODE_COLUMNS = [120, 440];
 HeapSort.CODE_LAYOUT = [0, 0, 1];
 
 HeapSort.DEFAULT_ARRAY_COLOR = "#edf2fb";
