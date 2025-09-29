@@ -31,11 +31,11 @@ CountingSort.INDEX_GAP = 36;
 CountingSort.TITLE_Y = 60;
 CountingSort.INFO_Y = 140;
 
-CountingSort.CODE_START_Y = 860;
+CountingSort.CODE_START_Y = 820;
 CountingSort.CODE_LINE_HEIGHT = 22;
 CountingSort.CODE_FONT = "bold 18";
 CountingSort.CODE_SECTION_GAP = 32;
-CountingSort.CODE_COLUMNS = [110, 440];
+CountingSort.CODE_COLUMNS = [50, 410];
 CountingSort.CODE_LAYOUT = [0, 0, 0, 1, 1];
 
 CountingSort.INPUT_DEFAULT_COLOR = "#edf2fb";
