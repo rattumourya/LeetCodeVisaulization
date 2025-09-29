@@ -42,8 +42,8 @@ BucketSort.MAX_VALUE = 999;
 BucketSort.RECT_WIDTH = 54;
 BucketSort.RECT_HEIGHT = 48;
 BucketSort.ARRAY_SPACING = 62;
-BucketSort.ARRAY_LABEL_GAP = 40;
-BucketSort.INDEX_GAP = 32;
+BucketSort.ARRAY_LABEL_GAP = 24;
+BucketSort.INDEX_GAP = 20;
 
 BucketSort.INPUT_Y = 300;
 BucketSort.NODE_STAGING_Y = BucketSort.INPUT_Y + 120;
@@ -56,7 +56,6 @@ BucketSort.NODE_HEIGHT = 50;
 BucketSort.BUCKET_NODE_START_Y =
   BucketSort.BUCKET_Y - BucketSort.RECT_HEIGHT / 2 - BucketSort.NODE_HEIGHT / 2 - 18;
 BucketSort.BUCKET_NODE_GAP = BucketSort.NODE_HEIGHT + 18;
-BucketSort.OUTPUT_NODE_Y = BucketSort.OUTPUT_Y - 120;
 
 BucketSort.TITLE_Y = 60;
 BucketSort.INFO_Y = 140;
@@ -66,16 +65,15 @@ BucketSort.SCATTER_INFO_Y = 238;
 BucketSort.SCATTER_INFO_GAP = 24;
 
 BucketSort.CODE_PANEL_MARGIN = 60;
-BucketSort.CODE_PANEL_TOP = 1010;
-BucketSort.CODE_PANEL_HEIGHT = 270;
+BucketSort.CODE_PANEL_TOP = 1000;
 
-BucketSort.CODE_START_Y = 1020;
-BucketSort.CODE_LINE_HEIGHT = 22;
+BucketSort.CODE_START_Y = BucketSort.CODE_PANEL_TOP + 24;
+BucketSort.CODE_LINE_HEIGHT = 24;
 BucketSort.CODE_FONT = "bold 18";
 BucketSort.CODE_SECTION_GAP = 32;
 BucketSort.CODE_COLUMNS = [
-  BucketSort.CODE_PANEL_MARGIN + 60,
-  BucketSort.CANVAS_WIDTH / 2 + 130,
+  BucketSort.CODE_PANEL_MARGIN + 48,
+  BucketSort.CANVAS_WIDTH / 2 + 140,
 ];
 BucketSort.CODE_LAYOUT = [0, 0, 1];
 
@@ -104,9 +102,6 @@ BucketSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 BucketSort.MOVE_LABEL_COLOR = "#003049";
 BucketSort.HIGHLIGHT_COLOR = "#ef476f";
 BucketSort.INDEX_COLOR = "#0b2545";
-BucketSort.CODE_PANEL_COLOR = "#f8f9fa";
-BucketSort.CODE_PANEL_BORDER_COLOR = "#1d3557";
-
 BucketSort.INFO_LINES = [
   "Distribute values to linked buckets using a scaled index.",
   "Keep each bucket sorted, then gather them to rebuild the array.",
@@ -300,9 +295,8 @@ BucketSort.prototype.createInputArray = function () {
   }
 
   var labelY =
-    BucketSort.INPUT_Y +
-    BucketSort.RECT_HEIGHT / 2 +
-    BucketSort.INDEX_GAP +
+    BucketSort.INPUT_Y -
+    BucketSort.RECT_HEIGHT / 2 -
     BucketSort.ARRAY_LABEL_GAP;
   var labelID = this.nextIndex++;
   this.cmd(
@@ -415,9 +409,8 @@ BucketSort.prototype.createOutputArray = function () {
   }
 
   var labelY =
-    BucketSort.OUTPUT_Y +
-    BucketSort.RECT_HEIGHT / 2 +
-    BucketSort.INDEX_GAP +
+    BucketSort.OUTPUT_Y -
+    BucketSort.RECT_HEIGHT / 2 -
     BucketSort.ARRAY_LABEL_GAP;
   var labelID = this.nextIndex++;
   this.cmd(
@@ -432,41 +425,8 @@ BucketSort.prototype.createOutputArray = function () {
   this.cmd("SetForegroundColor", labelID, BucketSort.INFO_COLOR);
 };
 
-BucketSort.prototype.createCodePanel = function () {
-  var panelWidth =
-    BucketSort.CANVAS_WIDTH - 2 * BucketSort.CODE_PANEL_MARGIN;
-  var panelHeight = BucketSort.CODE_PANEL_HEIGHT;
-  var panelX = BucketSort.CANVAS_WIDTH / 2;
-  var panelY = BucketSort.CODE_PANEL_TOP + panelHeight / 2;
-
-  this.codePanelID = this.nextIndex++;
-  this.cmd(
-    "CreateRectangle",
-    this.codePanelID,
-    "",
-    panelWidth,
-    panelHeight,
-    panelX,
-    panelY,
-    "center",
-    "center"
-  );
-  this.cmd(
-    "SetBackgroundColor",
-    this.codePanelID,
-    BucketSort.CODE_PANEL_COLOR
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.codePanelID,
-    BucketSort.CODE_PANEL_BORDER_COLOR
-  );
-  this.cmd("SetLayer", this.codePanelID, 0);
-};
-
 BucketSort.prototype.createCodeDisplay = function () {
   this.codeIDs = [];
-  this.createCodePanel();
   var columnHeights = [];
   for (var c = 0; c < BucketSort.CODE_COLUMNS.length; c++) {
     columnHeights[c] = BucketSort.CODE_START_Y;
@@ -502,46 +462,39 @@ BucketSort.prototype.clearScatterExplanation = function () {
 BucketSort.prototype.showScatterExplanation = function (value, bucketIndex) {
   this.clearScatterExplanation();
 
-  var lines = [
-    "index = floor(value * bucketCount / (MAX + 1))",
-    "index = floor(" +
-      value +
-      " * " +
-      BucketSort.BUCKET_COUNT +
-      ") / " +
-      (BucketSort.MAX_VALUE + 1) +
-      ") = " +
-      bucketIndex,
-  ];
+  var message =
+    "Scattering value " +
+    value +
+    " into bucket " +
+    bucketIndex +
+    " ( index " +
+    bucketIndex +
+    " )";
 
-  for (var i = 0; i < lines.length; i++) {
-    var labelID = this.nextIndex++;
-    this.cmd(
-      "CreateLabel",
-      labelID,
-      lines[i],
-      BucketSort.CANVAS_WIDTH / 2,
-      BucketSort.SCATTER_INFO_Y + i * BucketSort.SCATTER_INFO_GAP,
-      1
-    );
-    this.cmd("SetTextStyle", labelID, "bold 18");
-    this.cmd("SetForegroundColor", labelID, BucketSort.SCATTER_INFO_COLOR);
-    this.scatterInfoLabelIDs.push(labelID);
-  }
+  var labelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    labelID,
+    message,
+    BucketSort.CANVAS_WIDTH / 2,
+    BucketSort.SCATTER_INFO_Y,
+    1
+  );
+  this.cmd("SetTextStyle", labelID, "italic 18");
+  this.cmd("SetForegroundColor", labelID, BucketSort.SCATTER_INFO_COLOR);
+  this.scatterInfoLabelIDs.push(labelID);
 };
 
 BucketSort.prototype.updateScatterStatus = function (value, bucketIndex) {
-  this.cmd(
-    "SetText",
-    this.statusLabelID,
+  var message =
     "Scattering value " +
-      value +
-      " into bucket " +
-      bucketIndex +
-      " (index = " +
-      bucketIndex +
-      ")"
-  );
+    value +
+    " into bucket " +
+    bucketIndex +
+    " ( index " +
+    bucketIndex +
+    " )";
+  this.cmd("SetText", this.statusLabelID, message);
   this.showScatterExplanation(value, bucketIndex);
 };
 
@@ -829,7 +782,7 @@ BucketSort.prototype.runBucketSort = function () {
         "Move",
         node.graphicID,
         this.outputPositions[writeIndex],
-        BucketSort.OUTPUT_NODE_Y
+        BucketSort.OUTPUT_Y
       );
       this.cmd("Step");
 
