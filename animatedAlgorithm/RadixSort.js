@@ -194,7 +194,7 @@ RadixSort.prototype.createTitle = function () {
   this.cmd(
     "CreateLabel",
     this.titleLabelID,
-    "Radix Sort",
+    "Radix Sort (digit by digit sorting)",
     RadixSort.CANVAS_WIDTH / 2,
     RadixSort.TITLE_Y,
     1
