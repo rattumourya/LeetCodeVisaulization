@@ -26,7 +26,10 @@ SelectionSort.BAR_LAYER = 0;
 SelectionSort.BAR_LABEL_LAYER = 1;
 SelectionSort.MIN_LAYER = 2;
 SelectionSort.MIN_LABEL_LAYER = 3;
-SelectionSort.LEGEND_OFFSET = 48;
+SelectionSort.LEGEND_OFFSET = 110;
+SelectionSort.INDEX_LABEL_OFFSET = 72;
+SelectionSort.INDEX_LABEL_Y =
+  SelectionSort.BAR_BASE_Y + SelectionSort.INDEX_LABEL_OFFSET;
 SelectionSort.VALUE_MIN = 20;
 SelectionSort.VALUE_MAX = 100;
 SelectionSort.SCALE_FACTOR = 4;
@@ -107,6 +110,7 @@ SelectionSort.prototype.init = function (am, w, h) {
   this.createInfoPanel();
   this.createLegend();
   this.createBars();
+  this.createIndexMarkers();
   this.createCodeDisplay();
 
   this.animationManager.StartNewAnimation(this.commands);
@@ -239,6 +243,35 @@ SelectionSort.prototype.createBars = function () {
   }
 };
 
+SelectionSort.prototype.createIndexMarkers = function () {
+  this.iMarkerID = this.nextIndex++;
+  this.jMarkerID = this.nextIndex++;
+
+  this.cmd(
+    "CreateLabel",
+    this.iMarkerID,
+    "",
+    SelectionSort.BAR_START_X,
+    SelectionSort.INDEX_LABEL_Y,
+    1
+  );
+  this.cmd("SetForegroundColor", this.iMarkerID, SelectionSort.BORDER_COLOR);
+  this.cmd("SetTextStyle", this.iMarkerID, "bold 20");
+  this.cmd("SetLayer", this.iMarkerID, SelectionSort.BAR_LABEL_LAYER);
+
+  this.cmd(
+    "CreateLabel",
+    this.jMarkerID,
+    "",
+    SelectionSort.BAR_START_X,
+    SelectionSort.INDEX_LABEL_Y,
+    1
+  );
+  this.cmd("SetForegroundColor", this.jMarkerID, SelectionSort.BORDER_COLOR);
+  this.cmd("SetTextStyle", this.jMarkerID, "bold 20");
+  this.cmd("SetLayer", this.jMarkerID, SelectionSort.BAR_LABEL_LAYER);
+};
+
 SelectionSort.prototype.createCodeDisplay = function () {
   this.codeID = this.addCodeToCanvasBase(
     this.getCodeDefinition(),
@@ -300,6 +333,8 @@ SelectionSort.prototype.randomizeArray = function () {
   }
   this.clearCodeHighlights();
   this.cmd("SetText", this.infoLabelID, "Array randomized. Ready to sort!");
+  this.updateIndexMarker(this.iMarkerID, "", -1, false);
+  this.updateIndexMarker(this.jMarkerID, "", -1, false);
   this.cmd("Step");
   return this.commands;
 };
@@ -315,6 +350,8 @@ SelectionSort.prototype.runSelectionSort = function () {
   this.cmd("Step");
 
   for (var i = 0; i < n - 1; i++) {
+    this.updateIndexMarker(this.iMarkerID, "i", i, false);
+    this.updateIndexMarker(this.jMarkerID, "", -1, false);
     this.highlightCodeLine(0, true);
 
     var minIndex = i;
@@ -329,6 +366,7 @@ SelectionSort.prototype.runSelectionSort = function () {
     this.highlightCodeLine(2, true);
 
     for (var j = i + 1; j < n; j++) {
+      this.updateIndexMarker(this.jMarkerID, "j", j, false);
       this.highlightComparison(j);
       this.cmd(
         "SetText",
@@ -365,6 +403,8 @@ SelectionSort.prototype.runSelectionSort = function () {
       }
     }
 
+    this.updateIndexMarker(this.jMarkerID, "", -1, false);
+
     this.highlightCodeLine(6, true);
     if (minIndex !== i) {
       this.cmd(
@@ -390,6 +430,8 @@ SelectionSort.prototype.runSelectionSort = function () {
   this.updateSortedColors(n - 1, true);
   this.highlightCodeLine(-1, false);
   this.cmd("SetText", this.infoLabelID, "Selection sort complete.");
+  this.updateIndexMarker(this.iMarkerID, "", -1, false);
+  this.updateIndexMarker(this.jMarkerID, "", -1, false);
   this.cmd("Step");
   return this.commands;
 };
@@ -465,6 +507,31 @@ SelectionSort.prototype.restoreColor = function (index) {
   this.cmd("SetForegroundColor", this.barLabels[index], foreground);
   this.cmd("SetLayer", this.barObjects[index], rectLayer);
   this.cmd("SetLayer", this.barLabels[index], labelLayer);
+};
+
+SelectionSort.prototype.updateIndexMarker = function (
+  markerID,
+  label,
+  index,
+  stepAfter
+) {
+  if (!markerID) {
+    return;
+  }
+  if (index === undefined || index < 0 || index >= this.barPositionsX.length) {
+    this.cmd("SetText", markerID, "");
+  } else {
+    this.cmd("SetText", markerID, label);
+    this.cmd(
+      "Move",
+      markerID,
+      this.barPositionsX[index],
+      SelectionSort.INDEX_LABEL_Y
+    );
+  }
+  if (stepAfter) {
+    this.cmd("Step");
+  }
 };
 
 SelectionSort.prototype.swapBars = function (indexA, indexB) {
