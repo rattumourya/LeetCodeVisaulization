@@ -99,7 +99,6 @@ BucketSort.OUTPUT_BORDER_COLOR = "#1d3557";
 BucketSort.TITLE_COLOR = "#1d3557";
 BucketSort.INFO_COLOR = "#2b2d42";
 BucketSort.SCATTER_INFO_COLOR = "#2b2d42";
-
 BucketSort.CODE_STANDARD_COLOR = "#1d3557";
 BucketSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 BucketSort.MOVE_LABEL_COLOR = "#003049";
