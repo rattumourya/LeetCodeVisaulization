@@ -42,13 +42,13 @@ BucketSort.MAX_VALUE = 999;
 BucketSort.RECT_WIDTH = 54;
 BucketSort.RECT_HEIGHT = 48;
 BucketSort.ARRAY_SPACING = 62;
-BucketSort.ARRAY_LABEL_GAP = 44;
+BucketSort.ARRAY_LABEL_GAP = 40;
 BucketSort.INDEX_GAP = 32;
 
-BucketSort.INPUT_Y = 240;
-BucketSort.NODE_STAGING_Y = BucketSort.INPUT_Y + 110;
-BucketSort.BUCKET_Y = 620;
-BucketSort.OUTPUT_Y = 820;
+BucketSort.INPUT_Y = 300;
+BucketSort.NODE_STAGING_Y = BucketSort.INPUT_Y + 120;
+BucketSort.BUCKET_Y = 700;
+BucketSort.OUTPUT_Y = 900;
 
 BucketSort.NODE_WIDTH = 44;
 BucketSort.NODE_HEIGHT = 50;
@@ -61,13 +61,22 @@ BucketSort.OUTPUT_NODE_Y = BucketSort.OUTPUT_Y - 120;
 BucketSort.TITLE_Y = 60;
 BucketSort.INFO_Y = 140;
 BucketSort.INFO_LINE_GAP = 26;
+BucketSort.STATUS_Y = 208;
+BucketSort.SCATTER_INFO_Y = 238;
+BucketSort.SCATTER_INFO_GAP = 24;
 
-BucketSort.CODE_START_Y = 980;
+BucketSort.CODE_PANEL_MARGIN = 60;
+BucketSort.CODE_PANEL_TOP = 1010;
+BucketSort.CODE_PANEL_HEIGHT = 270;
 
+BucketSort.CODE_START_Y = 1020;
 BucketSort.CODE_LINE_HEIGHT = 22;
 BucketSort.CODE_FONT = "bold 18";
 BucketSort.CODE_SECTION_GAP = 32;
-BucketSort.CODE_COLUMNS = [110, 440];
+BucketSort.CODE_COLUMNS = [
+  BucketSort.CODE_PANEL_MARGIN + 60,
+  BucketSort.CANVAS_WIDTH / 2 + 130,
+];
 BucketSort.CODE_LAYOUT = [0, 0, 1];
 
 BucketSort.INPUT_DEFAULT_COLOR = "#edf2fb";
@@ -89,11 +98,15 @@ BucketSort.OUTPUT_BORDER_COLOR = "#1d3557";
 
 BucketSort.TITLE_COLOR = "#1d3557";
 BucketSort.INFO_COLOR = "#2b2d42";
+BucketSort.SCATTER_INFO_COLOR = "#2b2d42";
+
 BucketSort.CODE_STANDARD_COLOR = "#1d3557";
 BucketSort.CODE_HIGHLIGHT_COLOR = "#d62828";
 BucketSort.MOVE_LABEL_COLOR = "#003049";
 BucketSort.HIGHLIGHT_COLOR = "#ef476f";
 BucketSort.INDEX_COLOR = "#0b2545";
+BucketSort.CODE_PANEL_COLOR = "#f8f9fa";
+BucketSort.CODE_PANEL_BORDER_COLOR = "#1d3557";
 
 BucketSort.INFO_LINES = [
   "Distribute values to linked buckets using a scaled index.",
@@ -164,6 +177,8 @@ BucketSort.prototype.init = function (am, w, h) {
   this.outputRects = new Array(BucketSort.ARRAY_SIZE);
   this.outputIndexLabels = new Array(BucketSort.ARRAY_SIZE);
   this.outputPositions = new Array(BucketSort.ARRAY_SIZE);
+
+  this.scatterInfoLabelIDs = [];
 
   this.codeIDs = [];
   this.highlightedSection = -1;
@@ -239,7 +254,7 @@ BucketSort.prototype.createInfoPanel = function () {
     this.statusLabelID,
     "",
     BucketSort.CANVAS_WIDTH / 2,
-    BucketSort.INFO_Y + BucketSort.INFO_LINES.length * BucketSort.INFO_LINE_GAP + 30,
+    BucketSort.STATUS_Y,
     1
   );
   this.cmd("SetTextStyle", this.statusLabelID, "bold 20");
@@ -418,8 +433,41 @@ BucketSort.prototype.createOutputArray = function () {
   this.cmd("SetForegroundColor", labelID, BucketSort.INFO_COLOR);
 };
 
+BucketSort.prototype.createCodePanel = function () {
+  var panelWidth =
+    BucketSort.CANVAS_WIDTH - 2 * BucketSort.CODE_PANEL_MARGIN;
+  var panelHeight = BucketSort.CODE_PANEL_HEIGHT;
+  var panelX = BucketSort.CANVAS_WIDTH / 2;
+  var panelY = BucketSort.CODE_PANEL_TOP + panelHeight / 2;
+
+  this.codePanelID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.codePanelID,
+    "",
+    panelWidth,
+    panelHeight,
+    panelX,
+    panelY,
+    "center",
+    "center"
+  );
+  this.cmd(
+    "SetBackgroundColor",
+    this.codePanelID,
+    BucketSort.CODE_PANEL_COLOR
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.codePanelID,
+    BucketSort.CODE_PANEL_BORDER_COLOR
+  );
+  this.cmd("SetLayer", this.codePanelID, 0);
+};
+
 BucketSort.prototype.createCodeDisplay = function () {
   this.codeIDs = [];
+  this.createCodePanel();
   var columnHeights = [];
   for (var c = 0; c < BucketSort.CODE_COLUMNS.length; c++) {
     columnHeights[c] = BucketSort.CODE_START_Y;
@@ -445,6 +493,59 @@ BucketSort.prototype.createCodeDisplay = function () {
   }
 };
 
+BucketSort.prototype.clearScatterExplanation = function () {
+  while (this.scatterInfoLabelIDs.length > 0) {
+    var id = this.scatterInfoLabelIDs.pop();
+    this.cmd("Delete", id);
+  }
+};
+
+BucketSort.prototype.showScatterExplanation = function (value, bucketIndex) {
+  this.clearScatterExplanation();
+
+  var lines = [
+    "index = floor(value * bucketCount / (MAX + 1))",
+    "index = floor(" +
+      value +
+      " * " +
+      BucketSort.BUCKET_COUNT +
+      ") / " +
+      (BucketSort.MAX_VALUE + 1) +
+      ") = " +
+      bucketIndex,
+  ];
+
+  for (var i = 0; i < lines.length; i++) {
+    var labelID = this.nextIndex++;
+    this.cmd(
+      "CreateLabel",
+      labelID,
+      lines[i],
+      BucketSort.CANVAS_WIDTH / 2,
+      BucketSort.SCATTER_INFO_Y + i * BucketSort.SCATTER_INFO_GAP,
+      1
+    );
+    this.cmd("SetTextStyle", labelID, "bold 18");
+    this.cmd("SetForegroundColor", labelID, BucketSort.SCATTER_INFO_COLOR);
+    this.scatterInfoLabelIDs.push(labelID);
+  }
+};
+
+BucketSort.prototype.updateScatterStatus = function (value, bucketIndex) {
+  this.cmd(
+    "SetText",
+    this.statusLabelID,
+    "Scattering value " +
+      value +
+      " into bucket " +
+      bucketIndex +
+      " (index = " +
+      bucketIndex +
+      ")"
+  );
+  this.showScatterExplanation(value, bucketIndex);
+};
+
 BucketSort.prototype.randomizeCallback = function () {
   this.implementAction(this.randomizeArray.bind(this, true), 0);
 };
@@ -468,8 +569,13 @@ BucketSort.prototype.randomizeValues = function (showMessage) {
   }
 
   this.clearBuckets();
+  this.clearScatterExplanation();
   this.clearCodeHighlights();
-  this.cmd("SetText", this.statusLabelID, showMessage ? "Array randomized. Ready for bucket sort!" : "");
+  this.cmd(
+    "SetText",
+    this.statusLabelID,
+    showMessage ? "Array randomized. Ready for bucket sort!" : ""
+  );
   if (showMessage) {
     this.cmd("Step");
   }
@@ -563,6 +669,7 @@ BucketSort.prototype.createNode = function (value, startX) {
   this.cmd("SetNull", nodeID, 1);
   this.cmd("SetForegroundColor", nodeID, BucketSort.NODE_BORDER_COLOR);
   this.cmd("SetBackgroundColor", nodeID, BucketSort.NODE_FILL_COLOR);
+  this.cmd("SetTextStyle", nodeID, "bold 22");
 
   return node;
 };
@@ -636,6 +743,7 @@ BucketSort.prototype.runBucketSort = function () {
   this.commands = [];
   this.disableUI();
   this.clearCodeHighlights();
+  this.clearScatterExplanation();
   this.cmd("SetText", this.statusLabelID, "Scattering values into buckets...");
   this.cmd("Step");
 
@@ -670,6 +778,7 @@ BucketSort.prototype.runBucketSort = function () {
       (value * BucketSort.BUCKET_COUNT) /
         (BucketSort.MAX_VALUE + 1)
     );
+    this.updateScatterStatus(value, bucketIndex);
     this.highlightSection(1, 2);
     this.cmd("Step");
 
@@ -692,6 +801,7 @@ BucketSort.prototype.runBucketSort = function () {
     this.cmd("SetBackgroundColor", this.arrayRects[i], BucketSort.INPUT_DEFAULT_COLOR);
   }
 
+  this.clearScatterExplanation();
   this.cmd("SetText", this.statusLabelID, "Buckets ready. Gathering sorted values...");
   this.highlightSection(2, 0);
   this.cmd("Step");
