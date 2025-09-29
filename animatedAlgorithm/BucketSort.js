@@ -65,15 +65,15 @@ BucketSort.SCATTER_INFO_Y = 238;
 BucketSort.SCATTER_INFO_GAP = 24;
 
 BucketSort.CODE_PANEL_MARGIN = 60;
-BucketSort.CODE_PANEL_TOP = 1000;
+BucketSort.CODE_PANEL_TOP = 960;
 
 BucketSort.CODE_START_Y = BucketSort.CODE_PANEL_TOP + 24;
 BucketSort.CODE_LINE_HEIGHT = 24;
 BucketSort.CODE_FONT = "bold 18";
 BucketSort.CODE_SECTION_GAP = 32;
 BucketSort.CODE_COLUMNS = [
-  BucketSort.CODE_PANEL_MARGIN + 48,
-  BucketSort.CANVAS_WIDTH / 2 + 140,
+  BucketSort.CODE_PANEL_MARGIN + 24,
+  BucketSort.CANVAS_WIDTH - BucketSort.CODE_PANEL_MARGIN - 120,
 ];
 BucketSort.CODE_LAYOUT = [0, 0, 1];
 
@@ -459,7 +459,7 @@ BucketSort.prototype.clearScatterExplanation = function () {
   }
 };
 
-BucketSort.prototype.showScatterExplanation = function (value, bucketIndex) {
+BucketSort.prototype.updateScatterStatus = function (value, bucketIndex) {
   this.clearScatterExplanation();
 
   var message =
@@ -470,32 +470,7 @@ BucketSort.prototype.showScatterExplanation = function (value, bucketIndex) {
     " ( index " +
     bucketIndex +
     " )";
-
-  var labelID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    labelID,
-    message,
-    BucketSort.CANVAS_WIDTH / 2,
-    BucketSort.SCATTER_INFO_Y,
-    1
-  );
-  this.cmd("SetTextStyle", labelID, "italic 18");
-  this.cmd("SetForegroundColor", labelID, BucketSort.SCATTER_INFO_COLOR);
-  this.scatterInfoLabelIDs.push(labelID);
-};
-
-BucketSort.prototype.updateScatterStatus = function (value, bucketIndex) {
-  var message =
-    "Scattering value " +
-    value +
-    " into bucket " +
-    bucketIndex +
-    " ( index " +
-    bucketIndex +
-    " )";
   this.cmd("SetText", this.statusLabelID, message);
-  this.showScatterExplanation(value, bucketIndex);
 };
 
 BucketSort.prototype.randomizeCallback = function () {
