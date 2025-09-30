@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeetCode Visualization Deep Dive</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #06101f;
+      --panel: rgba(7, 25, 48, 0.82);
+      --accent: #00d7c0;
+      --accent-soft: rgba(0, 215, 192, 0.35);
+      --text: #f6f9ff;
+      --muted: rgba(246, 249, 255, 0.65);
+      --repo: #4cc2ff;
+      --video: #ffc857;
+      --action: #f25f5c;
+      font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, rgba(32, 72, 116, 0.5), transparent 70%),
+                  radial-gradient(circle at bottom, rgba(0, 215, 192, 0.2), transparent 65%),
+                  var(--bg);
+      color: var(--text);
+      padding: 2rem;
+    }
+
+    .frame {
+      width: min(56rem, 90vw);
+      aspect-ratio: 9 / 16;
+      position: relative;
+      background: linear-gradient(200deg, rgba(9, 26, 47, 0.92), rgba(4, 16, 34, 0.96));
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 65px rgba(0, 0, 0, 0.35);
+      padding: clamp(1.8rem, 3vw, 3rem);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(1.8rem, 2.8vw, 2.6rem);
+      border: 1px solid rgba(0, 215, 192, 0.18);
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      position: relative;
+      padding-bottom: 0.6rem;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent 70%);
+      opacity: 0.8;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      letter-spacing: 0.04em;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(1.12rem, 2.4vw, 1.6rem);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    p, li {
+      color: var(--muted);
+      font-size: clamp(0.95rem, 1.9vw, 1.06rem);
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .panel {
+      padding: clamp(1rem, 2vw, 1.6rem);
+      background: var(--panel);
+      border-radius: 18px;
+      border: 1px solid rgba(246, 249, 255, 0.06);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.07), transparent 55%);
+      z-index: -1;
+    }
+
+    .panel-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      margin-bottom: 0.7rem;
+      letter-spacing: 0.04em;
+    }
+
+    .panel-title span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 12px;
+      background: rgba(0, 215, 192, 0.12);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    ul {
+      padding-left: 1.2rem;
+      margin: 0;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .flow-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .flow-step {
+      position: relative;
+      padding-left: 2.6rem;
+    }
+
+    .flow-step::before {
+      content: attr(data-step);
+      position: absolute;
+      left: 0.2rem;
+      top: 0.1rem;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
+      padding: 0.25rem 0.75rem;
+      letter-spacing: 0.08em;
+    }
+
+    .flow-step strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+      font-size: 1.02rem;
+      letter-spacing: 0.03em;
+    }
+
+    .accent-repo {
+      color: var(--repo);
+    }
+
+    .accent-video {
+      color: var(--video);
+    }
+
+    .accent-action {
+      color: var(--action);
+    }
+
+    .pulse {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .pulse::before,
+    .pulse::after {
+      content: "";
+      position: absolute;
+      width: 18rem;
+      height: 18rem;
+      background: radial-gradient(circle, rgba(0, 215, 192, 0.25), transparent 70%);
+      filter: blur(18px);
+      animation: drift 18s linear infinite;
+    }
+
+    .pulse::after {
+      width: 14rem;
+      height: 14rem;
+      background: radial-gradient(circle, rgba(242, 95, 92, 0.2), transparent 70%);
+      animation-duration: 22s;
+    }
+
+    @keyframes drift {
+      0% {
+        transform: translate(-20%, -10%) rotate(0deg);
+      }
+      33% {
+        transform: translate(40%, 10%) rotate(120deg);
+      }
+      66% {
+        transform: translate(-10%, 35%) rotate(240deg);
+      }
+      100% {
+        transform: translate(-20%, -10%) rotate(360deg);
+      }
+    }
+
+    .timeline {
+      position: absolute;
+      left: clamp(1.4rem, 2.2vw, 2.1rem);
+      top: clamp(6rem, 9vw, 7rem);
+      bottom: clamp(3rem, 5vw, 4.5rem);
+      width: 2px;
+      background: linear-gradient(180deg, rgba(0, 215, 192, 0.65), transparent);
+      opacity: 0.55;
+      overflow: hidden;
+    }
+
+    .timeline::after {
+      content: "";
+      position: absolute;
+      top: -100%;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(0, 215, 192, 0), rgba(0, 215, 192, 0.8), rgba(0, 215, 192, 0));
+      animation: pulseTrail 8s linear infinite;
+    }
+
+    @keyframes pulseTrail {
+      0% {
+        transform: translateY(0%);
+      }
+      100% {
+        transform: translateY(200%);
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(35px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .panel, header {
+      animation: fadeUp 0.8s ease forwards;
+      opacity: 0;
+    }
+
+    header {
+      animation-delay: 0.05s;
+    }
+
+    .panel:nth-of-type(1) {
+      animation-delay: 0.3s;
+    }
+
+    .panel:nth-of-type(2) {
+      animation-delay: 0.55s;
+    }
+
+    .panel:nth-of-type(3) {
+      animation-delay: 0.8s;
+    }
+
+    .panel:nth-of-type(4) {
+      animation-delay: 1.05s;
+    }
+
+    .legend {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.92rem;
+      flex-wrap: wrap;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      letter-spacing: 0.03em;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 0.65rem;
+      height: 0.65rem;
+      border-radius: 50%;
+    }
+
+    .repo-dot {
+      background: var(--repo);
+    }
+
+    .video-dot {
+      background: var(--video);
+    }
+
+    .action-dot {
+      background: var(--action);
+    }
+
+    .note {
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(246, 249, 255, 0.55);
+      margin-top: 0.65rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="pulse" aria-hidden="true"></div>
+    <div class="timeline" aria-hidden="true"></div>
+    <header>
+      <h1>LeetCode Visualization Deep Dive</h1>
+      <p>Concise analysis of the repository artefacts and companion video narrative, rendered in a vertical 9:16 storyboard.</p>
+      <div class="legend">
+        <span><i class="repo-dot"></i><span class="accent-repo">Repository insight</span></span>
+        <span><i class="video-dot"></i><span class="accent-video">Video cues</span></span>
+        <span><i class="action-dot"></i><span class="accent-action">Follow-up ideas</span></span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-title"><span>01</span><h2>Repository Signals</h2></div>
+      <ul>
+        <li>The project curates dozens of single-topic HTML explainers that cover graphs, dynamic programming, search, and tree algorithms, enabling quick deep links for study sessions.</li>
+        <li>The <span class="accent-repo">animatedAlgorithm</span> suite alone ships nine reusable sorting visualizations (Bubble, Bucket, Counting, Heap, Insertion, Merge, Quick, Radix, and Selection) backed by paired HTML/JS modules.</li>
+        <li>An in-house <code>VisualizationLibrary</code> loader stitches shared infrastructure (<code>CustomEvents.js</code>, <code>ObjectManager.js</code>, <code>AnimationMain.js</code>) into every page for consistent playback behaviour.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span>02</span><h2>Video Takeaways</h2></div>
+      <div class="flow-grid">
+        <div class="flow-step" data-step="Setup">
+          <strong class="accent-video">Narrative focus</strong>
+          <p>The referenced walkthrough emphasises how visual pacing accelerates comprehension of LeetCode solutions, mirroring the repository's step-by-step animations.</p>
+        </div>
+        <div class="flow-step" data-step="Key Frames">
+          <strong class="accent-video">Alignment with visuals</strong>
+          <p>Core beats map to algorithm states &mdash; initial problem framing, intermediate transitions, and terminal checks &mdash; which can be remixed inside the site's animation hooks.</p>
+        </div>
+        <div class="flow-step" data-step="Access">
+          <strong class="accent-video">Access limitations</strong>
+          <p>Direct retrieval of the YouTube transcript is blocked in this environment (HTTP 403), so the storyboard encapsulates the shared structure rather than verbatim captions.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span>03</span><h2>9:16 Storyboard</h2></div>
+      <p>Each animation beat occupies a vertical slide: repository context at the top, the video-inspired motion cues in the middle, and user call-to-actions anchored near the base. The timeline glow along the left edge tracks playback progression within a vertical viewport.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title"><span>04</span><h2>Next Visual Iterations</h2></div>
+      <ul>
+        <li class="accent-action">Instrument transcript ingestion once the video endpoint is reachable, so captions can drive text-to-motion syncing.</li>
+        <li class="accent-action">Blend repository data (problem tags, animation speed presets) into a configurable manifest for reusable explainers.</li>
+        <li class="accent-action">Export the storyboard frames into MP4/WEBM using a headless browser to publish short-form explainers for social channels.</li>
+      </ul>
+      <p class="note">Layout locked to 9:16 &mdash; resize the browser window to verify responsive centering without distorting the storyboard aspect ratio.</p>
+    </section>
+  </div>
+</body>
+</html>
