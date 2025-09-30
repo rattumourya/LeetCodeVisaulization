@@ -64,16 +64,16 @@ BucketSort.STATUS_Y = 208;
 BucketSort.SCATTER_INFO_Y = 238;
 BucketSort.SCATTER_INFO_GAP = 24;
 
-BucketSort.CODE_PANEL_MARGIN = 60;
+BucketSort.CODE_PANEL_MARGIN = 30;
 BucketSort.CODE_PANEL_TOP = 960;
 
 BucketSort.CODE_START_Y = BucketSort.CODE_PANEL_TOP + 24;
 BucketSort.CODE_LINE_HEIGHT = 24;
-BucketSort.CODE_FONT = "bold 18";
+BucketSort.CODE_FONT = "bold 15";
 BucketSort.CODE_SECTION_GAP = 32;
 BucketSort.CODE_COLUMNS = [
-  BucketSort.CODE_PANEL_MARGIN + 24,
-  BucketSort.CANVAS_WIDTH - BucketSort.CODE_PANEL_MARGIN - 120,
+  BucketSort.CODE_PANEL_MARGIN,
+  BucketSort.CANVAS_WIDTH - BucketSort.CODE_PANEL_MARGIN - 310,
 ];
 BucketSort.CODE_LAYOUT = [0, 0, 1];
 
