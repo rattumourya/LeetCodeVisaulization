@@ -50,11 +50,13 @@ AnimatedLinkedList.prototype.init = function(id, val, wth, hgt, linkPer, vertica
 	
 	this.numLabels = numLab;
 	
-	this.labels = [];
-	this.labelPosX = [];
-	this.labelPosY = [];
-	this.labelColors = [];
-	this.nullPointer = false;
+        this.labels = [];
+        this.labelPosX = [];
+        this.labelPosY = [];
+        this.labelColors = [];
+        this.nullPointer = false;
+
+        this.textStyle = "10px sans-serif";
 	
 	this.currentHeightDif = 6;
 	this.maxHeightDiff = 5;
@@ -370,7 +372,10 @@ AnimatedLinkedList.prototype.draw = function(context)
 	
 	
 	context.textAlign = 'center';
-	context.font         = '10px sans-serif';
+        context.font =
+                typeof this.textStyle === "number"
+                        ? this.textStyle + 'px sans-serif'
+                        : this.textStyle;
 	context.textBaseline   = 'middle'; 
 	context.lineWidth = 1;
 	
@@ -407,8 +412,13 @@ AnimatedLinkedList.prototype.getText = function(index)
 
 AnimatedLinkedList.prototype.setText = function(newText, textIndex)
 {
-	this.labels[textIndex] = newText;
-	this.resetTextPosition();
+        this.labels[textIndex] = newText;
+        this.resetTextPosition();
+}
+
+AnimatedLinkedList.prototype.setTextStyle = function(style)
+{
+        this.textStyle = style;
 }
 
 
@@ -419,9 +429,9 @@ AnimatedLinkedList.prototype.setText = function(newText, textIndex)
 
 AnimatedLinkedList.prototype.createUndoDelete = function() 
 {		
-	return new UndoDeleteLinkedList(this.objectID, this.numLabels, this.labels, this.x, this.y, this.w, this.h, this.linkPercent,
-									this.linkPositionEnd, this.vertical, this.labelColors, this.backgroundColor, this.foregroundColor, 
-									this.layer, this.nullPointer);
+        return new UndoDeleteLinkedList(this.objectID, this.numLabels, this.labels, this.x, this.y, this.w, this.h, this.linkPercent,
+                                                                       this.linkPositionEnd, this.vertical, this.labelColors, this.backgroundColor, this.foregroundColor,
+                                                                       this.layer, this.nullPointer, this.textStyle);
 }
 
 AnimatedLinkedList.prototype.setHighlight = function(value)
@@ -435,23 +445,24 @@ AnimatedLinkedList.prototype.setHighlight = function(value)
 
 
 
-function UndoDeleteLinkedList(id, numlab, lab, x, y, w, h, linkper, posEnd, vert, labColors, bgColor, fgColor, l, np)
+function UndoDeleteLinkedList(id, numlab, lab, x, y, w, h, linkper, posEnd, vert, labColors, bgColor, fgColor, l, np, textStyle)
 {
-	this.objectID = id;
-	this.posX = x;
-	this.posY = y;
-	this.width = w;
-	this.height = h;
-	this.backgroundColor= bgColor;
-	this.foregroundColor = fgColor;
-	this.labels = lab;
-	this.linkPercent = linkper;
-	this.verticalOrentation = vert;
-	this.linkAtEnd = posEnd;
-	this.labelColors = labColors
-	this.layer = l;
-	this.numLabels = numlab;
-	this.nullPointer = np;
+        this.objectID = id;
+        this.posX = x;
+        this.posY = y;
+        this.width = w;
+        this.height = h;
+        this.backgroundColor= bgColor;
+        this.foregroundColor = fgColor;
+        this.labels = lab;
+        this.linkPercent = linkper;
+        this.verticalOrentation = vert;
+        this.linkAtEnd = posEnd;
+        this.labelColors = labColors
+        this.layer = l;
+        this.numLabels = numlab;
+        this.nullPointer = np;
+        this.textStyle = textStyle;
 }
 
 UndoDeleteLinkedList.prototype = new UndoBlock();
@@ -463,11 +474,15 @@ UndoDeleteLinkedList.prototype.undoInitialStep =function(world)
 {
 	world.addLinkedListObject(this.objectID,this.labels[0], this.width, this.height, this.linkPercent, this.verticalOrentation, this.linkAtEnd, this.numLabels, this.backgroundColor, this.foregroundColor);
 	world.setNodePosition(this.objectID, this.posX, this.posY);
-	world.setLayer(this.objectID, this.layer);
-	world.setNull(this.objectID, this.nullPointer);
-	for (var i = 0; i < this.numLabels; i++)
-	{
-		world.setText(this.objectID, this.labels[i], i);
-		world.setTextColor(this.objectID, this.labelColors[i], i);
-	}
+        world.setLayer(this.objectID, this.layer);
+        world.setNull(this.objectID, this.nullPointer);
+        if (this.textStyle !== undefined)
+        {
+                world.setTextStyle(this.objectID, this.textStyle);
+        }
+        for (var i = 0; i < this.numLabels; i++)
+        {
+                world.setText(this.objectID, this.labels[i], i);
+                world.setTextColor(this.objectID, this.labelColors[i], i);
+        }
 }
