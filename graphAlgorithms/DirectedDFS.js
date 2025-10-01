@@ -24,19 +24,22 @@ DirectedDFS.ROW3_START_Y =
 DirectedDFS.TITLE_Y = DirectedDFS.ROW1_CENTER_Y - 40;
 DirectedDFS.START_INFO_Y = DirectedDFS.ROW1_CENTER_Y + 40;
 
-DirectedDFS.GRAPH_AREA_CENTER_X = 170;
+DirectedDFS.GRAPH_AREA_CENTER_X = 360;
 DirectedDFS.GRAPH_NODE_RADIUS = 38;
 DirectedDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDFS.GRAPH_NODE_BORDER = "#0b3954";
 DirectedDFS.GRAPH_NODE_TEXT = "#003049";
+DirectedDFS.GRAPH_NODE_VISITED_COLOR = "#b8f5b1";
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
 
-DirectedDFS.ARRAY_BASE_X = 520;
-DirectedDFS.ARRAY_COLUMN_SPACING = 120;
-DirectedDFS.ARRAY_TOP_Y = DirectedDFS.ROW2_START_Y + 80;
-DirectedDFS.ARRAY_CELL_HEIGHT = 58;
-DirectedDFS.ARRAY_CELL_WIDTH = 72;
+DirectedDFS.ARRAY_BASE_X = 595;
+DirectedDFS.ARRAY_COLUMN_SPACING = 90;
+DirectedDFS.ARRAY_TOP_Y = DirectedDFS.ROW2_START_Y + 90;
+DirectedDFS.ARRAY_CELL_HEIGHT = 52;
+DirectedDFS.ARRAY_CELL_WIDTH = 60;
+DirectedDFS.ARRAY_CELL_INNER_HEIGHT = 42;
+DirectedDFS.ARRAY_HEADER_HEIGHT = DirectedDFS.ARRAY_CELL_INNER_HEIGHT;
 DirectedDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 DirectedDFS.ARRAY_RECT_BORDER = "#2b2d42";
 DirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
@@ -144,16 +147,16 @@ DirectedDFS.prototype.setup = function () {
     "J",
   ];
   this.vertexPositions = [
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X - 40, y: DirectedDFS.ROW2_START_Y + 80 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X + 120, y: DirectedDFS.ROW2_START_Y + 80 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X - 160, y: DirectedDFS.ROW2_START_Y + 220 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X + 20, y: DirectedDFS.ROW2_START_Y + 210 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X + 200, y: DirectedDFS.ROW2_START_Y + 220 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X - 150, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X + 30, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X + 210, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X - 40, y: DirectedDFS.ROW2_START_Y + 520 },
-    { x: DirectedDFS.GRAPH_AREA_CENTER_X + 150, y: DirectedDFS.ROW2_START_Y + 520 },
+    { x: 360, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 480, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 300, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 420, y: DirectedDFS.ROW2_START_Y + 220 },
+    { x: 540, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 300, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 420, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 540, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 360, y: DirectedDFS.ROW2_START_Y + 500 },
+    { x: 480, y: DirectedDFS.ROW2_START_Y + 500 },
   ];
 
   this.adjacencyList = [
@@ -260,39 +263,35 @@ DirectedDFS.prototype.createGraphArea = function () {
     DirectedDFS.HIGHLIGHT_COLOR,
     startPos.x,
     startPos.y,
-    DirectedDFS.GRAPH_NODE_RADIUS - 6
+    DirectedDFS.GRAPH_NODE_RADIUS
   );
   this.cmd("SetAlpha", this.highlightCircleID, 0);
 };
 
 DirectedDFS.prototype.createArrayArea = function () {
-  var visitedTitleID = this.nextIndex++;
-  var parentTitleID = this.nextIndex++;
-
-  var firstRowY = DirectedDFS.ARRAY_TOP_Y;
-  var labelYOffset = DirectedDFS.ARRAY_CELL_HEIGHT / 2 + 22;
+  var visitedHeaderID = this.nextIndex++;
+  var parentHeaderID = this.nextIndex++;
+  var headerY = DirectedDFS.ARRAY_TOP_Y - DirectedDFS.ARRAY_CELL_HEIGHT / 2;
 
   this.cmd(
     "CreateLabel",
-    visitedTitleID,
+    visitedHeaderID,
     "Visited",
     DirectedDFS.ARRAY_BASE_X,
-    firstRowY - labelYOffset,
-    0
+    headerY
   );
-  this.cmd("SetTextStyle", visitedTitleID, "bold 24");
-  this.cmd("SetForegroundColor", visitedTitleID, DirectedDFS.CODE_STANDARD_COLOR);
+  this.cmd("SetTextStyle", visitedHeaderID, "bold 20");
+  this.cmd("SetForegroundColor", visitedHeaderID, DirectedDFS.CODE_STANDARD_COLOR);
 
   this.cmd(
     "CreateLabel",
-    parentTitleID,
+    parentHeaderID,
     "Parent",
     DirectedDFS.ARRAY_BASE_X + DirectedDFS.ARRAY_COLUMN_SPACING,
-    firstRowY - labelYOffset,
-    0
+    headerY
   );
-  this.cmd("SetTextStyle", parentTitleID, "bold 24");
-  this.cmd("SetForegroundColor", parentTitleID, DirectedDFS.CODE_STANDARD_COLOR);
+  this.cmd("SetTextStyle", parentHeaderID, "bold 20");
+  this.cmd("SetForegroundColor", parentHeaderID, DirectedDFS.CODE_STANDARD_COLOR);
 
   this.visitedRectIDs = new Array(this.vertexLabels.length);
   this.parentRectIDs = new Array(this.vertexLabels.length);
@@ -307,7 +306,7 @@ DirectedDFS.prototype.createArrayArea = function () {
       "CreateLabel",
       vertexLabelID,
       this.vertexLabels[i],
-      DirectedDFS.ARRAY_BASE_X - 90,
+      DirectedDFS.ARRAY_BASE_X - 110,
       rowY,
       0
     );
@@ -321,12 +320,13 @@ DirectedDFS.prototype.createArrayArea = function () {
       visitedID,
       "F",
       DirectedDFS.ARRAY_CELL_WIDTH,
-      DirectedDFS.ARRAY_CELL_HEIGHT - 20,
+      DirectedDFS.ARRAY_CELL_INNER_HEIGHT,
       DirectedDFS.ARRAY_BASE_X,
       rowY
     );
     this.cmd("SetForegroundColor", visitedID, DirectedDFS.ARRAY_RECT_BORDER);
     this.cmd("SetBackgroundColor", visitedID, DirectedDFS.ARRAY_RECT_COLOR);
+    this.cmd("SetTextColor", visitedID, DirectedDFS.ARRAY_TEXT_COLOR);
 
     var parentID = this.nextIndex++;
     this.parentRectIDs[i] = parentID;
@@ -335,12 +335,13 @@ DirectedDFS.prototype.createArrayArea = function () {
       parentID,
       "-",
       DirectedDFS.ARRAY_CELL_WIDTH,
-      DirectedDFS.ARRAY_CELL_HEIGHT - 20,
+      DirectedDFS.ARRAY_CELL_INNER_HEIGHT,
       DirectedDFS.ARRAY_BASE_X + DirectedDFS.ARRAY_COLUMN_SPACING,
       rowY
     );
     this.cmd("SetForegroundColor", parentID, DirectedDFS.ARRAY_RECT_BORDER);
     this.cmd("SetBackgroundColor", parentID, DirectedDFS.ARRAY_RECT_COLOR);
+    this.cmd("SetTextColor", parentID, DirectedDFS.ARRAY_TEXT_COLOR);
   }
 };
 
@@ -390,6 +391,11 @@ DirectedDFS.prototype.clearTraversalState = function () {
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedDFS.ARRAY_RECT_COLOR);
     this.cmd("SetText", this.parentRectIDs[i], "-");
+    this.cmd(
+      "SetBackgroundColor",
+      this.vertexIDs[i],
+      DirectedDFS.GRAPH_NODE_COLOR
+    );
   }
   this.clearEdgeHighlights();
 };
@@ -462,6 +468,11 @@ DirectedDFS.prototype.dfsVisit = function (u) {
       "SetBackgroundColor",
       this.visitedRectIDs[u],
       DirectedDFS.ARRAY_VISITED_FILL
+    );
+    this.cmd(
+      "SetBackgroundColor",
+      this.vertexIDs[u],
+      DirectedDFS.GRAPH_NODE_VISITED_COLOR
     );
     this.cmd("Step");
   }
