@@ -24,17 +24,18 @@ DirectedDFS.ROW3_START_Y =
 DirectedDFS.TITLE_Y = DirectedDFS.ROW1_CENTER_Y - 40;
 DirectedDFS.START_INFO_Y = DirectedDFS.ROW1_CENTER_Y + 40;
 
-DirectedDFS.GRAPH_AREA_CENTER_X = 360;
+DirectedDFS.GRAPH_AREA_CENTER_X = 300;
 DirectedDFS.GRAPH_NODE_RADIUS = 38;
 DirectedDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDFS.GRAPH_NODE_BORDER = "#0b3954";
 DirectedDFS.GRAPH_NODE_TEXT = "#003049";
 DirectedDFS.GRAPH_NODE_VISITED_COLOR = "#b8f5b1";
+DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
 
-DirectedDFS.ARRAY_BASE_X = 595;
-DirectedDFS.ARRAY_COLUMN_SPACING = 90;
+DirectedDFS.ARRAY_BASE_X = 540;
+DirectedDFS.ARRAY_COLUMN_SPACING = 80;
 DirectedDFS.ARRAY_TOP_Y = DirectedDFS.ROW2_START_Y + 90;
 DirectedDFS.ARRAY_CELL_HEIGHT = 52;
 DirectedDFS.ARRAY_CELL_WIDTH = 60;
@@ -147,16 +148,16 @@ DirectedDFS.prototype.setup = function () {
     "J",
   ];
   this.vertexPositions = [
-    { x: 360, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 480, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 300, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 420, y: DirectedDFS.ROW2_START_Y + 220 },
-    { x: 540, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 300, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 420, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 540, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 360, y: DirectedDFS.ROW2_START_Y + 500 },
-    { x: 480, y: DirectedDFS.ROW2_START_Y + 500 },
+    { x: 250, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 370, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 190, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 310, y: DirectedDFS.ROW2_START_Y + 220 },
+    { x: 430, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 190, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 310, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 430, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 250, y: DirectedDFS.ROW2_START_Y + 500 },
+    { x: 370, y: DirectedDFS.ROW2_START_Y + 500 },
   ];
 
   this.adjacencyList = [
@@ -263,7 +264,7 @@ DirectedDFS.prototype.createGraphArea = function () {
     DirectedDFS.HIGHLIGHT_COLOR,
     startPos.x,
     startPos.y,
-    DirectedDFS.GRAPH_NODE_RADIUS
+    DirectedDFS.HIGHLIGHT_RADIUS
   );
   this.cmd("SetAlpha", this.highlightCircleID, 0);
 };
@@ -306,7 +307,7 @@ DirectedDFS.prototype.createArrayArea = function () {
       "CreateLabel",
       vertexLabelID,
       this.vertexLabels[i],
-      DirectedDFS.ARRAY_BASE_X - 110,
+      DirectedDFS.ARRAY_BASE_X - 95,
       rowY,
       0
     );
