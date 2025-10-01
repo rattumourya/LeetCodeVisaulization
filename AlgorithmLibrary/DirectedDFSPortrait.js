@@ -27,6 +27,7 @@ DirectedDFSPortrait.COLORS = {
 DirectedDFSPortrait.prototype.init = function(am, w, h) {
     DirectedDFSPortrait.superclass.init.call(this, am, w, h);
 
+    this.nextIndex = 0;
     this.graph = {
         labels: ["A", "B", "C", "D", "E", "F"],
         positions: [
