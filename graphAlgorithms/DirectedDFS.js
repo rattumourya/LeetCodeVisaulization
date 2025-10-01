@@ -30,7 +30,8 @@ DirectedDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDFS.GRAPH_NODE_BORDER = "#0b3954";
 DirectedDFS.GRAPH_NODE_TEXT = "#003049";
 DirectedDFS.GRAPH_NODE_VISITED_COLOR = "#b8f5b1";
-DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
+DirectedDFS.HIGHLIGHT_RADIUS =
+  DirectedDFS.GRAPH_NODE_RADIUS - DirectedDFS.HIGHLIGHT_CIRCLE_THICKNESS / 2;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
 
@@ -45,6 +46,7 @@ DirectedDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 DirectedDFS.ARRAY_RECT_BORDER = "#2b2d42";
 DirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 DirectedDFS.ARRAY_VISITED_FILL = "#90ee90";
+DirectedDFS.ARRAY_HEADER_GAP = 20;
 
 DirectedDFS.CODE_START_Y = DirectedDFS.ROW3_START_Y + 60;
 DirectedDFS.CODE_LINE_HEIGHT = 32;
@@ -148,16 +150,16 @@ DirectedDFS.prototype.setup = function () {
     "J",
   ];
   this.vertexPositions = [
-    { x: 250, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 370, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 190, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 310, y: DirectedDFS.ROW2_START_Y + 220 },
-    { x: 430, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 190, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 310, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 430, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 250, y: DirectedDFS.ROW2_START_Y + 500 },
-    { x: 370, y: DirectedDFS.ROW2_START_Y + 500 },
+    { x: 220, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 340, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 150, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 270, y: DirectedDFS.ROW2_START_Y + 220 },
+    { x: 390, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 150, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 270, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 390, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 220, y: DirectedDFS.ROW2_START_Y + 500 },
+    { x: 340, y: DirectedDFS.ROW2_START_Y + 500 },
   ];
 
   this.adjacencyList = [
@@ -272,7 +274,8 @@ DirectedDFS.prototype.createGraphArea = function () {
 DirectedDFS.prototype.createArrayArea = function () {
   var visitedHeaderID = this.nextIndex++;
   var parentHeaderID = this.nextIndex++;
-  var headerY = DirectedDFS.ARRAY_TOP_Y - DirectedDFS.ARRAY_CELL_HEIGHT / 2;
+  var headerY =
+    DirectedDFS.ARRAY_TOP_Y - DirectedDFS.ARRAY_CELL_HEIGHT / 2 - DirectedDFS.ARRAY_HEADER_GAP;
 
   this.cmd(
     "CreateLabel",
