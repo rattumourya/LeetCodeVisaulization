@@ -25,7 +25,7 @@ DirectedDFS.TITLE_Y = DirectedDFS.ROW1_CENTER_Y - 40;
 DirectedDFS.START_INFO_Y = DirectedDFS.ROW1_CENTER_Y + 40;
 
 DirectedDFS.GRAPH_AREA_CENTER_X = 300;
-DirectedDFS.GRAPH_NODE_RADIUS = 38;
+DirectedDFS.GRAPH_NODE_RADIUS = 22;
 DirectedDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDFS.GRAPH_NODE_BORDER = "#0b3954";
 DirectedDFS.GRAPH_NODE_TEXT = "#003049";
@@ -47,7 +47,7 @@ DirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 DirectedDFS.ARRAY_VISITED_FILL = "#90ee90";
 DirectedDFS.ARRAY_HEADER_GAP = 20;
 
-DirectedDFS.CODE_START_Y = DirectedDFS.ROW3_START_Y + 60;
+DirectedDFS.CODE_START_Y = DirectedDFS.ROW3_START_Y + 10;
 DirectedDFS.CODE_LINE_HEIGHT = 32;
 DirectedDFS.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDFS.CODE_HIGHLIGHT_COLOR = "#e63946";
@@ -149,16 +149,16 @@ DirectedDFS.prototype.setup = function () {
     "J",
   ];
   this.vertexPositions = [
-    { x: 220, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 340, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 150, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 270, y: DirectedDFS.ROW2_START_Y + 220 },
-    { x: 390, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 150, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 270, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 390, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 220, y: DirectedDFS.ROW2_START_Y + 500 },
-    { x: 340, y: DirectedDFS.ROW2_START_Y + 500 },
+    { x: 190, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 310, y: DirectedDFS.ROW2_START_Y + 90 },
+    { x: 120, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 260, y: DirectedDFS.ROW2_START_Y + 220 },
+    { x: 360, y: DirectedDFS.ROW2_START_Y + 230 },
+    { x: 120, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 240, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 360, y: DirectedDFS.ROW2_START_Y + 360 },
+    { x: 190, y: DirectedDFS.ROW2_START_Y + 500 },
+    { x: 310, y: DirectedDFS.ROW2_START_Y + 500 },
   ];
 
   this.adjacencyList = [
