@@ -35,6 +35,7 @@ UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
 UndirectedDFS.EDGE_VISITED_COLOR = "#0d47a1";
 UndirectedDFS.EDGE_THICKNESS = 3;
+UndirectedDFS.EDGE_HIGHLIGHT_THICKNESS = 6;
 
 UndirectedDFS.ARRAY_BASE_X = 720;
 UndirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -509,18 +510,37 @@ UndirectedDFS.prototype.setEdgeState = function (u, v, options) {
 };
 
 UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
+  var key = this.edgeKey(u, v);
+  var orientation = this.edgeOrientation[key];
+  if (!orientation) {
+    return;
+  }
+  var fromID = this.vertexIDs[orientation.from];
+  var toID = this.vertexIDs[orientation.to];
+
   if (active) {
     this.setEdgeState(u, v, {
       highlight: true,
       color: UndirectedDFS.EDGE_HIGHLIGHT_COLOR,
     });
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      UndirectedDFS.EDGE_HIGHLIGHT_THICKNESS
+    );
   } else {
-    var key = this.edgeKey(u, v);
     var color = UndirectedDFS.EDGE_COLOR;
     if (this.edgeStates[key] && this.edgeStates[key].tree) {
       color = UndirectedDFS.EDGE_VISITED_COLOR;
     }
     this.setEdgeState(u, v, { highlight: false, color: color });
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      UndirectedDFS.EDGE_THICKNESS
+    );
   }
 };
 
@@ -602,7 +622,7 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     "SetEdgeThickness",
     this.vertexIDs[parent],
     this.vertexIDs[child],
-    UndirectedDFS.EDGE_THICKNESS
+    UndirectedDFS.EDGE_HIGHLIGHT_THICKNESS
   );
   this.cmd(
     "SetEdgeHighlight",
