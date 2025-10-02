@@ -1227,6 +1227,7 @@ DirectedDFS.prototype.highlightEdge = function (from, to, active) {
     this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
     this.updateEdgeBaseColor(from, to);
   }
+  return value.replace(/^\s+/, "").replace(/\s+$/, "");
 };
 
 DirectedDFS.prototype.animateHighlightTraversal = function (
