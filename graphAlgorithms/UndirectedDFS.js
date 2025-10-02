@@ -8,8 +8,8 @@ UndirectedDFS.prototype = new Algorithm();
 UndirectedDFS.prototype.constructor = UndirectedDFS;
 UndirectedDFS.superclass = Algorithm.prototype;
 
-UndirectedDFS.CANVAS_WIDTH = 880;
-UndirectedDFS.CANVAS_HEIGHT = 1440;
+UndirectedDFS.CANVAS_WIDTH = 900;
+UndirectedDFS.CANVAS_HEIGHT = 1600;
 
 UndirectedDFS.ROW1_HEIGHT = 240;
 UndirectedDFS.ROW2_HEIGHT = 760;
@@ -53,17 +53,18 @@ UndirectedDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
 UndirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 UndirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 UndirectedDFS.ARRAY_HEADER_GAP = 20;
+UndirectedDFS.BOTTOM_SECTION_GAP = 56;
+UndirectedDFS.CODE_TOP_PADDING = 12;
 
 UndirectedDFS.CODE_START_X = 120;
-UndirectedDFS.CODE_START_Y = UndirectedDFS.ROW3_START_Y + 10;
 UndirectedDFS.CODE_LINE_HEIGHT = 32;
 UndirectedDFS.CODE_STANDARD_COLOR = "#1d3557";
 UndirectedDFS.CODE_HIGHLIGHT_COLOR = "#e63946";
 UndirectedDFS.CODE_FONT = "bold 22";
 
 UndirectedDFS.RECURSION_AREA_CENTER_X = 660;
-UndirectedDFS.RECURSION_AREA_TOP_MARGIN = 24;
-UndirectedDFS.RECURSION_HEADER_GAP = 20;
+UndirectedDFS.RECURSION_HEADER_HEIGHT = 44;
+UndirectedDFS.RECURSION_LABEL_MARGIN = 14;
 UndirectedDFS.RECURSION_AREA_BOTTOM_MARGIN = 30;
 UndirectedDFS.RECURSION_FRAME_WIDTH = 320;
 UndirectedDFS.RECURSION_FRAME_HEIGHT = 34;
@@ -143,10 +144,13 @@ UndirectedDFS.prototype.init = function (am, w, h) {
   this.highlightCircleID = -1;
   this.currentCodeLine = -1;
   this.startDisplayID = -1;
+  this.recursionBackgroundID = -1;
   this.recursionHeaderID = -1;
   this.recursionFrameIDs = [];
   this.activeRecursionIndex = -1;
   this.recursionDepth = 0;
+  this.bottomSectionTopY =
+    UndirectedDFS.ROW3_START_Y + UndirectedDFS.CODE_TOP_PADDING;
 
   this.visited = [];
   this.parents = [];
@@ -420,6 +424,15 @@ UndirectedDFS.prototype.createArrayArea = function () {
     this.cmd("SetBackgroundColor", parentID, UndirectedDFS.ARRAY_RECT_COLOR);
     this.cmd("SetTextColor", parentID, UndirectedDFS.ARRAY_TEXT_COLOR);
   }
+
+  var lastRowIndex = this.vertexLabels.length - 1;
+  if (lastRowIndex >= 0) {
+    var lastCenterY =
+      UndirectedDFS.ARRAY_TOP_Y + lastRowIndex * UndirectedDFS.ARRAY_CELL_HEIGHT;
+    var arrayBottomY =
+      lastCenterY + UndirectedDFS.ARRAY_CELL_INNER_HEIGHT / 2;
+    this.bottomSectionTopY = arrayBottomY + UndirectedDFS.BOTTOM_SECTION_GAP;
+  }
 };
 
 UndirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
@@ -438,10 +451,11 @@ UndirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
 };
 
 UndirectedDFS.prototype.createCodeDisplay = function () {
+  var startY = this.bottomSectionTopY + UndirectedDFS.CODE_TOP_PADDING;
   this.codeID = this.addCodeToCanvasBase(
     UndirectedDFS.CODE_LINES,
     UndirectedDFS.CODE_START_X,
-    UndirectedDFS.CODE_START_Y,
+    startY,
     UndirectedDFS.CODE_LINE_HEIGHT,
     UndirectedDFS.CODE_STANDARD_COLOR,
     0,
@@ -460,8 +474,9 @@ UndirectedDFS.prototype.computeRecursionLayout = function (frameCount) {
     height: UndirectedDFS.RECURSION_FRAME_HEIGHT,
     spacing: UndirectedDFS.RECURSION_FRAME_SPACING,
     startY:
-      UndirectedDFS.ROW3_START_Y +
-      UndirectedDFS.RECURSION_AREA_TOP_MARGIN +
+      this.bottomSectionTopY +
+      UndirectedDFS.RECURSION_HEADER_HEIGHT +
+      UndirectedDFS.RECURSION_LABEL_MARGIN +
       UndirectedDFS.RECURSION_FRAME_HEIGHT / 2
   };
 
@@ -470,21 +485,23 @@ UndirectedDFS.prototype.computeRecursionLayout = function (frameCount) {
   }
 
   var availableHeight =
-    UndirectedDFS.ROW3_HEIGHT -
-    (UndirectedDFS.RECURSION_AREA_TOP_MARGIN +
+    UndirectedDFS.CANVAS_HEIGHT -
+    (this.bottomSectionTopY +
+      UndirectedDFS.RECURSION_HEADER_HEIGHT +
+      UndirectedDFS.RECURSION_LABEL_MARGIN +
       UndirectedDFS.RECURSION_AREA_BOTTOM_MARGIN);
 
-  var spacing = layout.spacing;
-  if (frameCount === 1) {
-    spacing = 0;
+  if (availableHeight <= 0) {
+    return layout;
   }
 
+  var spacing = frameCount === 1 ? 0 : layout.spacing;
   var height = Math.min(
     UndirectedDFS.RECURSION_FRAME_HEIGHT,
     Math.max(
       UndirectedDFS.RECURSION_FRAME_MIN_HEIGHT,
       Math.floor(
-        (availableHeight - (frameCount - 1) * spacing) / frameCount
+        (availableHeight - (frameCount - 1) * spacing) / Math.max(frameCount, 1)
       )
     )
   );
@@ -493,7 +510,9 @@ UndirectedDFS.prototype.computeRecursionLayout = function (frameCount) {
   if (totalHeight > availableHeight) {
     spacing = Math.max(
       UndirectedDFS.RECURSION_FRAME_MIN_SPACING,
-      Math.floor((availableHeight - height * frameCount) / Math.max(1, frameCount - 1))
+      Math.floor(
+        (availableHeight - height * frameCount) / Math.max(1, frameCount - 1)
+      )
     );
     if (spacing < 0) {
       spacing = 0;
@@ -501,7 +520,7 @@ UndirectedDFS.prototype.computeRecursionLayout = function (frameCount) {
     height = Math.max(
       UndirectedDFS.RECURSION_FRAME_MIN_HEIGHT,
       Math.floor(
-        (availableHeight - (frameCount - 1) * spacing) / frameCount
+        (availableHeight - (frameCount - 1) * spacing) / Math.max(frameCount, 1)
       )
     );
   }
@@ -509,21 +528,31 @@ UndirectedDFS.prototype.computeRecursionLayout = function (frameCount) {
   layout.height = height;
   layout.spacing = spacing;
   layout.startY =
-    UndirectedDFS.ROW3_START_Y +
-    UndirectedDFS.RECURSION_AREA_TOP_MARGIN +
+    this.bottomSectionTopY +
+    UndirectedDFS.RECURSION_HEADER_HEIGHT +
+    UndirectedDFS.RECURSION_LABEL_MARGIN +
     height / 2;
 
   return layout;
 };
 
 UndirectedDFS.prototype.createRecursionArea = function () {
+  var frameCount = this.vertexLabels.length;
+  var layout = this.computeRecursionLayout(frameCount);
+  var framesTop = layout.startY - layout.height / 2;
+  var totalFrameHeight =
+    frameCount > 0
+      ? layout.height * frameCount + layout.spacing * (frameCount - 1)
+      : 0;
+  this.recursionBackgroundID = -1;
+
   this.recursionHeaderID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.recursionHeaderID,
     "Call Stack",
     UndirectedDFS.RECURSION_AREA_CENTER_X,
-    UndirectedDFS.ROW3_START_Y + 10,
+    this.bottomSectionTopY + UndirectedDFS.RECURSION_HEADER_HEIGHT / 2,
     0
   );
   this.cmd(
@@ -531,35 +560,15 @@ UndirectedDFS.prototype.createRecursionArea = function () {
     this.recursionHeaderID,
     UndirectedDFS.CODE_STANDARD_COLOR
   );
-  this.cmd(
-    "SetTextStyle",
-    this.recursionHeaderID,
-    "bold 22"
-  );
+  this.cmd("SetTextStyle", this.recursionHeaderID, "bold 22");
 
   this.recursionFrameIDs = [];
   this.activeRecursionIndex = -1;
   this.recursionDepth = 0;
 
-  var layout = this.computeRecursionLayout(this.vertexLabels.length);
-  var topRectCenterY = layout.startY;
-  var topRectTop = topRectCenterY - layout.height / 2;
-
-  var headerY =
-    topRectTop - (UndirectedDFS.RECURSION_HEADER_GAP > 0
-      ? UndirectedDFS.RECURSION_HEADER_GAP
-      : 0);
-
-  this.cmd(
-    "SetPosition",
-    this.recursionHeaderID,
-    UndirectedDFS.RECURSION_AREA_CENTER_X,
-    headerY
-  );
-
   var y = layout.startY;
 
-  for (var i = 0; i < this.vertexLabels.length; i++) {
+  for (var i = 0; i < frameCount; i++) {
     var rectID = this.nextIndex++;
     this.cmd(
       "CreateRectangle",
