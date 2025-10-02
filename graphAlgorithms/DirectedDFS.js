@@ -1227,6 +1227,96 @@ DirectedDFS.prototype.highlightEdge = function (from, to, active) {
     this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
     this.updateEdgeBaseColor(from, to);
   }
+  return value.replace(/^\s+/, "").replace(/\s+$/, "");
+};
+
+DirectedDFS.prototype.animateHighlightTraversal = function (
+  fromIndex,
+  toIndex,
+  preferKey
+) {
+  if (fromIndex === toIndex) {
+    return;
+  }
+
+  var startPos = this.vertexPositions[fromIndex];
+  var endPos = this.vertexPositions[toIndex];
+  if (!startPos || !endPos) {
+    return;
+  }
+  var curve = 0;
+  var hasCurve = false;
+
+  if (typeof preferKey === "string") {
+    var preferredMeta = this.edgeMeta[preferKey];
+    if (preferredMeta) {
+      curve = preferredMeta.curve;
+      if (
+        preferredMeta.from !== fromIndex ||
+        preferredMeta.to !== toIndex
+      ) {
+        curve = -curve;
+      }
+      hasCurve = true;
+    }
+  }
+
+  if (!hasCurve) {
+    var key = this.edgeKey(fromIndex, toIndex);
+    var meta = this.edgeMeta[key];
+    if (meta) {
+      curve = meta.curve;
+      hasCurve = true;
+    } else {
+      var reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
+      if (reverseMeta) {
+        curve = -reverseMeta.curve;
+        hasCurve = true;
+      }
+    }
+  }
+
+  if (Math.abs(curve) < 0.01) {
+    this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
+    this.cmd("Step");
+    return;
+  }
+
+  var dx = endPos.x - startPos.x;
+  var dy = endPos.y - startPos.y;
+  var midX = (startPos.x + endPos.x) / 2;
+  var midY = (startPos.y + endPos.y) / 2;
+  var controlX = midX - dy * curve;
+  var controlY = midY + dx * curve;
+
+  this.cmd(
+    "MoveAlongCurve",
+    this.highlightCircleID,
+    Math.round(controlX),
+    Math.round(controlY),
+    Math.round(endPos.x),
+    Math.round(endPos.y)
+  );
+  this.cmd("Step");
+};
+
+DirectedDFS.prototype.cleanInputLabel = function (value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value.replace(/^\s+/, "").replace(/\s+$/, "");
+};
+
+DirectedDFS.prototype.findVertexIndex = function (label) {
+  if (!this.vertexLabels) {
+    return -1;
+  }
+  for (var i = 0; i < this.vertexLabels.length; i++) {
+    if (this.vertexLabels[i] === label) {
+      return i;
+    }
+  }
+  return -1;
 };
 
 DirectedDFS.prototype.animateHighlightTraversal = function (
