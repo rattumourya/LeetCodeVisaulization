@@ -673,11 +673,11 @@ function ObjectManager()
 	
 	
 	
-	this.setEdgeColor = function(fromID, toID, color) // returns old color
-	{
-		var oldColor ="#000000";
-		if (this.Edges[fromID] != null &&
-			this.Edges[fromID] != undefined)
+        this.setEdgeColor = function(fromID, toID, color) // returns old color
+        {
+                var oldColor ="#000000";
+                if (this.Edges[fromID] != null &&
+                        this.Edges[fromID] != undefined)
 		{
 			var len = this.Edges[fromID].length;
 			for (var i = len - 1; i >= 0; i--)
@@ -690,9 +690,49 @@ function ObjectManager()
 					this.Edges[fromID][i].setColor(color);		
 				}
 			}
-		}	
-		return oldColor;
-	}		
+                }
+                return oldColor;
+        }
+
+        this.setEdgeThickness = function(fromID, toID, thickness)
+        {
+                var oldThickness = 1;
+                if (this.Edges[fromID] != null &&
+                        this.Edges[fromID] != undefined)
+                {
+                        var len = this.Edges[fromID].length;
+                        for (var i = len - 1; i >= 0; i--)
+                        {
+                                if (this.Edges[fromID][i] != null &&
+                                        this.Edges[fromID][i] != undefined &&
+                                        this.Edges[fromID][i].Node2 == this.Nodes[toID])
+                                {
+                                        oldThickness = this.Edges[fromID][i].getThickness();
+                                        this.Edges[fromID][i].setThickness(thickness);
+                                }
+                        }
+                }
+                return oldThickness;
+        }
+
+        this.getEdgeThickness = function(fromID, toID)
+        {
+                if (this.Edges[fromID] != null &&
+                        this.Edges[fromID] != undefined)
+                {
+                        var len = this.Edges[fromID].length;
+                        for (var i = len - 1; i >= 0; i--)
+                        {
+                                if (this.Edges[fromID][i] != null &&
+                                        this.Edges[fromID][i] != undefined &&
+                                        this.Edges[fromID][i].Node2 == this.Nodes[toID])
+                                {
+                                        return this.Edges[fromID][i].getThickness();
+                                }
+                        }
+                }
+                return -1;
+        }
 	
 	this.alignTop = function(id1, id2)
 	{
