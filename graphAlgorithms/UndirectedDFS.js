@@ -34,6 +34,7 @@ UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
 UndirectedDFS.EDGE_VISITED_COLOR = "#0d47a1";
+UndirectedDFS.EDGE_THICKNESS = 3;
 
 UndirectedDFS.ARRAY_BASE_X = 720;
 UndirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -286,6 +287,12 @@ UndirectedDFS.prototype.createGraphArea = function () {
       ""
     );
     this.cmd(
+      "SetEdgeThickness",
+      this.vertexIDs[pair.u],
+      this.vertexIDs[pair.v],
+      UndirectedDFS.EDGE_THICKNESS
+    );
+    this.cmd(
       "SetEdgeHighlight",
       this.vertexIDs[pair.u],
       this.vertexIDs[pair.v],
@@ -471,6 +478,12 @@ UndirectedDFS.prototype.resetEdgesToUndirected = function () {
       0,
       ""
     );
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      UndirectedDFS.EDGE_THICKNESS
+    );
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     var edgeKey = this.edgeKey(edge.u, edge.v);
     this.edgeOrientation[edgeKey] = { from: edge.u, to: edge.v };
@@ -584,6 +597,12 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     curve,
     1,
     ""
+  );
+  this.cmd(
+    "SetEdgeThickness",
+    this.vertexIDs[parent],
+    this.vertexIDs[child],
+    UndirectedDFS.EDGE_THICKNESS
   );
   this.cmd(
     "SetEdgeHighlight",
@@ -928,7 +947,6 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.highlightCodeLine(5);
       this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
-  
       this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v, u);
