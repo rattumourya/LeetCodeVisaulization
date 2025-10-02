@@ -44,7 +44,8 @@ AnimatedRectangle = function(id, val, wth, hgt,  xJust, yJust, fillColor, edgeCo
         this.alpha = 1.0;
         this.addedToScene = true;
         this.textSize = "bold 16";
-	
+        this.lineThickness = 1;
+
 }
 
 AnimatedRectangle.prototype = new AnimatedObject();
@@ -52,12 +53,22 @@ AnimatedRectangle.prototype.constructor = AnimatedRectangle;
 
 AnimatedRectangle.prototype.setNull = function(np)
 {
-	this.nullPointer = np;
+        this.nullPointer = np;
 }
 
 AnimatedRectangle.prototype.getNull = function()
 {
-	return this.nullPointer;
+        return this.nullPointer;
+}
+
+AnimatedRectangle.prototype.setLineThickness = function(thickness)
+{
+        this.lineThickness = thickness;
+}
+
+AnimatedRectangle.prototype.getLineThickness = function()
+{
+        return this.lineThickness;
 }
 
 
@@ -237,7 +248,7 @@ AnimatedRectangle.prototype.draw = function(context)
 		labelPosY = this.y - this.h / 2.0;
 	}
 	
-	context.lineWidth = 1;
+        context.lineWidth = this.lineThickness;
 	
 	if (this.highlighted)
 	{
@@ -304,7 +315,21 @@ AnimatedRectangle.prototype.setTextStyle = function(style)
 AnimatedRectangle.prototype.createUndoDelete = function() 
 {
 	// TODO: Add color?
-	return new UndoDeleteRectangle(this.objectID, this.label, this.x, this.y, this.w, this.h, this.xJustify, this.yJustify, this.backgroundColor, this.foregroundColor, this.highlighted, this.layer);
+        return new UndoDeleteRectangle(
+                this.objectID,
+                this.label,
+                this.x,
+                this.y,
+                this.w,
+                this.h,
+                this.xJustify,
+                this.yJustify,
+                this.backgroundColor,
+                this.foregroundColor,
+                this.highlighted,
+                this.layer,
+                this.lineThickness
+        );
 }
 
 AnimatedRectangle.prototype.setHighlight = function(value)
@@ -314,10 +339,10 @@ AnimatedRectangle.prototype.setHighlight = function(value)
 
 
 
-function UndoDeleteRectangle(id, lab, x, y, w, h, xJust, yJust, bgColor, fgColor, highlight, lay)
+function UndoDeleteRectangle(id, lab, x, y, w, h, xJust, yJust, bgColor, fgColor, highlight, lay, lineThickness)
 {
-	this.objectID = id;
-	this.posX = x;
+        this.objectID = id;
+        this.posX = x;
 	this.posY = y;
 	this.width = w;
 	this.height = h;
@@ -325,9 +350,10 @@ function UndoDeleteRectangle(id, lab, x, y, w, h, xJust, yJust, bgColor, fgColor
 	this.yJustify = yJust;
 	this.backgroundColor= bgColor;
 	this.foregroundColor = fgColor;
-	this.nodeLabel = lab;
-	this.layer = lay;
-	this.highlighted = highlight;
+        this.nodeLabel = lab;
+        this.layer = lay;
+        this.highlighted = highlight;
+        this.lineThickness = lineThickness;
 }
 
 UndoDeleteRectangle.prototype = new UndoBlock();
@@ -336,10 +362,11 @@ UndoDeleteRectangle.prototype.constructor = UndoDeleteRectangle;
 
 UndoDeleteRectangle.prototype.undoInitialStep = function(world)
 {
-	world.addRectangleObject(this.objectID, this.nodeLabel, this.width, this.height, this.xJustify, this.yJustify, this.backgroundColor, this.foregroundColor);
-	world.setNodePosition(this.objectID, this.posX, this.posY);
-	world.setLayer(this.objectID, this.layer);
-	world.setHighlight(this.objectID, this.highlighted);
+        world.addRectangleObject(this.objectID, this.nodeLabel, this.width, this.height, this.xJustify, this.yJustify, this.backgroundColor, this.foregroundColor);
+        world.setNodePosition(this.objectID, this.posX, this.posY);
+        world.setLayer(this.objectID, this.layer);
+        world.setHighlight(this.objectID, this.highlighted);
+        world.setRectangleLineThickness(this.objectID, this.lineThickness);
 }
 
 

@@ -112,8 +112,7 @@ function returnSubmit(field, funct, maxsize, intOnly)
 		if(window.event) // IE
 		{
 			keyASCII = event.keyCode
-		}
-		else if (event.which) // Netscape/Firefox/Opera
+		} else if (event.which) // Netscape/Firefox/Opera
 		{
 			keyASCII = event.which
 		} 
@@ -122,12 +121,10 @@ function returnSubmit(field, funct, maxsize, intOnly)
 		{
 			funct();
                         return false;
-		}
-        	else if (keyASCII == 59  || keyASCII == 45 || keyASCII == 46 || keyASCII == 190 || keyASCII == 173)
+		} else if (keyASCII == 59  || keyASCII == 45 || keyASCII == 46 || keyASCII == 190 || keyASCII == 173)
 		{
 		       return false;	
-		} 
-		else if (maxsize != undefined && field.value.length >= maxsize ||
+		} else if (maxsize != undefined && field.value.length >= maxsize ||
 				 intOnly && (keyASCII < 48 || keyASCII > 57))
 
 		{
@@ -227,8 +224,7 @@ function doPlayPause()
 			stepBackButton.disabled = false;		
 		}
 		
-	}
-	else
+	} else
 	{
 		playPauseBackButton.setAttribute("value", "pause");	
 	}
@@ -344,8 +340,7 @@ function initCanvas()
 	if (speed == null || speed == "")
 	{
 		speed = ANIMATION_SPEED_DEFAULT;
-	}
-	else
+	} else
 	{
 		speed = parseInt(speed);
 	}
@@ -390,8 +385,7 @@ function initCanvas()
 	if (width == null || width == "")
 	{
 		width = canvas.width;
-	}
-	else
+	} else
 	{
 		width = parseInt(width);
 	}
@@ -399,8 +393,7 @@ function initCanvas()
 	if (height == null || height == "")
 	{
 		height = canvas.height;
-	}
-	else
+	} else
 	{
 		height = parseInt(height);
 	}
@@ -538,8 +531,7 @@ function AnimationManager(objectManager)
 			if (clr.charAt(0) == "#")
 			{
 				return clr;
-			}
-			else if (clr.substring(0,2) == "0x")
+			} else if (clr.substring(0,2) == "0x")
 			{
 				return "#" + clr.substring(2);
 			}
@@ -605,8 +597,7 @@ function AnimationManager(objectManager)
 				}
 				undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
 
-			}
-			else if (nextCommand[0].toUpperCase() == "CONNECT")
+			} else if (nextCommand[0].toUpperCase() == "CONNECT")
 			{
 				
 				if (nextCommand.length > 7)
@@ -618,8 +609,7 @@ function AnimationManager(objectManager)
                                                                          this.parseBool(nextCommand[5]), 
                                                                          nextCommand[6], 
                                                                          parseInt(nextCommand[7]));
-				}
-				else if (nextCommand.length > 6)
+				} else if (nextCommand.length > 6)
 				{
 					this.animatedObjects.connectEdge(parseInt(nextCommand[1]), 
                                                                          parseInt(nextCommand[2]),
@@ -628,8 +618,7 @@ function AnimationManager(objectManager)
                                                                          this.parseBool(nextCommand[5]),
                                                                          nextCommand[6],
                                                                          0);
-				}
-				else if (nextCommand.length > 5)
+				} else if (nextCommand.length > 5)
 				{
 					this.animatedObjects.connectEdge(parseInt(nextCommand[1]), 
                                                                          parseInt(nextCommand[2]),
@@ -638,8 +627,7 @@ function AnimationManager(objectManager)
                                                                          this.parseBool(nextCommand[5]),
                                                                          "",
                                                                          0);
-				}
-				else if (nextCommand.length > 4)
+				} else if (nextCommand.length > 4)
 				{
 					this.animatedObjects.connectEdge(parseInt(nextCommand[1]),
                                                                          parseInt(nextCommand[2]),
@@ -648,8 +636,7 @@ function AnimationManager(objectManager)
                                                                          true,
                                                                          "",
                                                                          0);
-				}
-				else if (nextCommand.length > 3)
+				} else if (nextCommand.length > 3)
 				{
 					this.animatedObjects.connectEdge(parseInt(nextCommand[1]),
                                                                          parseInt(nextCommand[2]),
@@ -658,8 +645,7 @@ function AnimationManager(objectManager)
                                                                          true,
                                                                          "",
                                                                          0);
-				}
-				else
+				} else
 				{
 					this.animatedObjects.connectEdge(parseInt(nextCommand[1]),
                                                                          parseInt(nextCommand[2]),
@@ -671,8 +657,7 @@ function AnimationManager(objectManager)
 					
 				}
 				undoBlock.push(new UndoConnect(parseInt(nextCommand[1]), parseInt (nextCommand[2]), false));
-			}
-			else if (nextCommand[0].toUpperCase() == "CREATERECTANGLE")
+			} else if (nextCommand[0].toUpperCase() == "CREATERECTANGLE")
 			{
 				if (nextCommand.length == 9)
 				{
@@ -684,8 +669,7 @@ function AnimationManager(objectManager)
 															nextCommand[8],// yJustify
 															"#ffffff", // background color
 					                                        "#000000"); // foreground color
-				}
-				else
+				} else
 				{
 					this.animatedObjects.addRectangleObject(parseInt(nextCommand[1]), // ID
 															nextCommand[2], // Label
@@ -702,24 +686,38 @@ function AnimationManager(objectManager)
 					this.animatedObjects.setNodePosition(parseInt(nextCommand[1]), parseInt(nextCommand[5]), parseInt(nextCommand[6]));
 				}
 				undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
-			}
-			
-			else if (nextCommand[0].toUpperCase() == "MOVE")
-			{
-				var objectID = parseInt(nextCommand[1]);
-				var nextAnim =  new SingleAnimation(objectID, 
-													this.animatedObjects.getNodeX(objectID), 
-													this.animatedObjects.getNodeY(objectID), 
-													parseInt(nextCommand[2]),
-													parseInt(nextCommand[3]));
-				this.currentBlock.push(nextAnim);
+			} else if (nextCommand[0].toUpperCase() == "MOVE")
+                        {
+                                var objectID = parseInt(nextCommand[1]);
+                                var toX = parseInt(nextCommand[2]);
+                                var toY = parseInt(nextCommand[3]);
+                                var nextAnim =  new SingleAnimation(objectID,
+                                                                                                        this.animatedObjects.getNodeX(objectID),
+                                                                                                        this.animatedObjects.getNodeY(objectID),
+                                                                                                        toX,
+                                                                                                        toY);
+                                this.currentBlock.push(nextAnim);
 
-				undoBlock.push(new UndoMove(nextAnim.objectID, nextAnim.toX, nextAnim.toY, nextAnim.fromX, nextAnim.fromY));
+                                undoBlock.push(new UndoMove(nextAnim.objectID, nextAnim.toX, nextAnim.toY, nextAnim.fromX, nextAnim.fromY));
 
-				anyAnimations = true;
-			}
-			
-			else if (nextCommand[0].toUpperCase() == "MOVETOALIGNRIGHT")
+                                anyAnimations = true;
+                        } else if (nextCommand[0].toUpperCase() == "MOVEALONGCURVE")
+                        {
+                                var curveObjectID = parseInt(nextCommand[1]);
+                                var controlX = parseInt(nextCommand[2]);
+                                var controlY = parseInt(nextCommand[3]);
+                                var curveToX = parseInt(nextCommand[4]);
+                                var curveToY = parseInt(nextCommand[5]);
+                                var curveAnim = new SingleAnimation(curveObjectID,
+                                                                                                        this.animatedObjects.getNodeX(curveObjectID),
+                                                                                                        this.animatedObjects.getNodeY(curveObjectID),
+                                                                                                        curveToX,
+                                                                                                        curveToY,
+                                                                                                        { type: "quadratic", controlX: controlX, controlY: controlY });
+                                this.currentBlock.push(curveAnim);
+                                undoBlock.push(new UndoMove(curveAnim.objectID, curveAnim.toX, curveAnim.toY, curveAnim.fromX, curveAnim.fromY));
+                                anyAnimations = true;
+                        } else if (nextCommand[0].toUpperCase() == "MOVETOALIGNRIGHT")
 			{
 				var id = parseInt(nextCommand[1]);
 				var otherId = parseInt(nextCommand[2]);
@@ -734,47 +732,45 @@ function AnimationManager(objectManager)
 				this.currentBlock.push(nextAnim);
 				undoBlock.push(new UndoMove(nextAnim.objectID, nextAnim.toX, nextAnim.toY, nextAnim.fromX, nextAnim.fromY));
 				anyAnimations = true;
-			}
-
-			else if (nextCommand[0].toUpperCase() == "STEP")
+			} else if (nextCommand[0].toUpperCase() == "STEP")
 			{
 				foundBreak = true;
-			}
-			else if (nextCommand[0].toUpperCase() == "SETFOREGROUNDCOLOR")
+			} else if (nextCommand[0].toUpperCase() == "SETFOREGROUNDCOLOR")
 			{
 				var id = parseInt(nextCommand[1]);
 				var oldColor = this.animatedObjects.foregroundColor(id);
 				this.animatedObjects.setForegroundColor(id, this.parseColor(nextCommand[2]));
 				undoBlock.push(new UndoSetForegroundColor(id, oldColor));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETBACKGROUNDCOLOR")
-			{
-				id = parseInt(nextCommand[1]);
-				oldColor = this.animatedObjects.backgroundColor(id);
-				this.animatedObjects.setBackgroundColor(id, this.parseColor(nextCommand[2]));
-				undoBlock.push(new UndoSetBackgroundColor(id, oldColor));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETHIGHLIGHT")
-			{
-				var newHighlight = this.parseBool(nextCommand[2]);
-				this.animatedObjects.setHighlight( parseInt(nextCommand[1]), newHighlight);
-				undoBlock.push(new UndoHighlight( parseInt(nextCommand[1]), !newHighlight));
-			}
-			else if (nextCommand[0].toUpperCase() == "DISCONNECT")
+                        } else if (nextCommand[0].toUpperCase() == "SETBACKGROUNDCOLOR")
+                        {
+                                id = parseInt(nextCommand[1]);
+                                oldColor = this.animatedObjects.backgroundColor(id);
+                                this.animatedObjects.setBackgroundColor(id, this.parseColor(nextCommand[2]));
+                                undoBlock.push(new UndoSetBackgroundColor(id, oldColor));
+                        } else if (nextCommand[0].toUpperCase() == "SETRECTANGLELINETHICKNESS")
+                        {
+                                id = parseInt(nextCommand[1]);
+                                var newThickness = parseFloat(nextCommand[2]);
+                                var oldThickness = this.animatedObjects.setRectangleLineThickness(id, newThickness);
+                                undoBlock.push(new UndoSetRectangleLineThickness(id, oldThickness));
+                        } else if (nextCommand[0].toUpperCase() == "SETHIGHLIGHT")
+                        {
+                                var newHighlight = this.parseBool(nextCommand[2]);
+                                this.animatedObjects.setHighlight( parseInt(nextCommand[1]), newHighlight);
+                                undoBlock.push(new UndoHighlight( parseInt(nextCommand[1]), !newHighlight));
+			} else if (nextCommand[0].toUpperCase() == "DISCONNECT")
 			{
 				var undoConnect = this.animatedObjects.disconnect(parseInt(nextCommand[1]), parseInt(nextCommand[2]));
 				if (undoConnect != null)
 				{
 					undoBlock.push(undoConnect);
 				}
-			}
-			else if (nextCommand[0].toUpperCase() == "SETALPHA")
+			} else if (nextCommand[0].toUpperCase() == "SETALPHA")
 			{
 				var oldAlpha = this.animatedObjects.getAlpha(parseInt(nextCommand[1]));
 				this.animatedObjects.setAlpha(parseInt(nextCommand[1]), parseFloat(nextCommand[2]));
 				undoBlock.push(new UndoSetAlpha(parseInt(nextCommand[1]), oldAlpha));					
-			}
-                        else if (nextCommand[0].toUpperCase() == "SETTEXT")
+			} else if (nextCommand[0].toUpperCase() == "SETTEXT")
                         {
                                 if (nextCommand.length > 3)
                                 {
@@ -784,8 +780,7 @@ function AnimationManager(objectManager)
                                         {
                                                 undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, parseInt(nextCommand[3]) ));
                                         }
-                                }
-                                else
+                                } else
                                 {
                                         oldText = this.animatedObjects.getText(parseInt(nextCommand[1]), 0);
                                         this.animatedObjects.setText(parseInt(nextCommand[1]), nextCommand[2], 0);
@@ -794,8 +789,7 @@ function AnimationManager(objectManager)
                                                 undoBlock.push(new UndoSetText(parseInt(nextCommand[1]), oldText, 0));
                                         }
                                 }
-                        }
-                        else if (nextCommand[0].toUpperCase() == "DELETE")
+                        } else if (nextCommand[0].toUpperCase() == "DELETE")
                         {
                                 var objectID  = parseInt(nextCommand[1]);
 				
@@ -811,14 +805,12 @@ function AnimationManager(objectManager)
 					undoBlock.push(obj.createUndoDelete());
 					this.animatedObjects.removeObject(objectID);
 				}
-			}
-                        else if (nextCommand[0].toUpperCase() == "CREATEHIGHLIGHTCIRCLE")
+			} else if (nextCommand[0].toUpperCase() == "CREATEHIGHLIGHTCIRCLE")
                         {
                                 if (nextCommand.length > 5)
                                 {
                                         this.animatedObjects.addHighlightCircleObject(parseInt(nextCommand[1]), this.parseColor(nextCommand[2]), parseFloat(nextCommand[5]));
-                                }
-                                else
+                                } else
                                 {
                                         this.animatedObjects.addHighlightCircleObject(parseInt(nextCommand[1]), this.parseColor(nextCommand[2]), 20);
                                 }
@@ -829,8 +821,7 @@ function AnimationManager(objectManager)
                                 undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
 
 
-                        }
-                        else if (nextCommand[0].toUpperCase() == "CREATEHIGHLIGHTOVAL")
+                        } else if (nextCommand[0].toUpperCase() == "CREATEHIGHLIGHTOVAL")
                         {
                                 this.animatedObjects.addHighlightOvalObject(
                                         parseInt(nextCommand[1]),
@@ -843,14 +834,12 @@ function AnimationManager(objectManager)
                                 undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
 
 
-                        }
-                        else if (nextCommand[0].toUpperCase() == "CREATELABEL")
+                        } else if (nextCommand[0].toUpperCase() == "CREATELABEL")
                         {
 				if (nextCommand.length == 6)
 				{
 					this.animatedObjects.addLabelObject(parseInt(nextCommand[1]), nextCommand[2], this.parseBool(nextCommand[5]));						
-				}
-				else
+				} else
 				{
 					this.animatedObjects.addLabelObject(parseInt(nextCommand[1]), nextCommand[2], true);
 				}
@@ -860,56 +849,52 @@ function AnimationManager(objectManager)
 					this.animatedObjects.setNodePosition(parseInt(nextCommand[1]), parseFloat(nextCommand[3]), parseFloat(nextCommand[4]));
 				}
 				undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETEDGECOLOR")
-			{
-				var from = parseInt(nextCommand[1]);
-				var to = parseInt(nextCommand[2]);
-				var newColor = this.parseColor(nextCommand[3]);
-				var oldColor = this.animatedObjects.setEdgeColor(from, to, newColor);				
-				undoBlock.push(new UndoSetEdgeColor(from, to, oldColor));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETEDGEALPHA")
-			{
-				var from = parseInt(nextCommand[1]);
-				var to = parseInt(nextCommand[2]);
-				var newAlpha = parseFloat(nextCommand[3]);
+			} else if (nextCommand[0].toUpperCase() == "SETEDGECOLOR")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newColor = this.parseColor(nextCommand[3]);
+                                var oldColor = this.animatedObjects.setEdgeColor(from, to, newColor);
+                                undoBlock.push(new UndoSetEdgeColor(from, to, oldColor));
+                        } else if (nextCommand[0].toUpperCase() == "SETEDGETHICKNESS")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newThickness = parseFloat(nextCommand[3]);
+                                var oldThickness = this.animatedObjects.setEdgeThickness(from, to, newThickness);
+                                undoBlock.push(new UndoSetEdgeThickness(from, to, oldThickness));
+                        } else if (nextCommand[0].toUpperCase() == "SETEDGEALPHA")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newAlpha = parseFloat(nextCommand[3]);
 				var oldAplpha = this.animatedObjects.setEdgeAlpha(from, to, newAlpha);				
 				undoBlock.push(new UndoSetEdgeAlpha(from, to, oldAplpha));
-			}
-			
-			
-			else if (nextCommand[0].toUpperCase() == "SETEDGEHIGHLIGHT")
+			} else if (nextCommand[0].toUpperCase() == "SETEDGEHIGHLIGHT")
 			{
 				var newHighlight = this.parseBool(nextCommand[3]);
 				var from = parseInt(nextCommand[1]);
 				var to = parseInt(nextCommand[2]);
 				var oldHighlight = this.animatedObjects.setEdgeHighlight(from, to, newHighlight);
 				undoBlock.push(new UndoHighlightEdge(from, to, oldHighlight));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETHEIGHT")
+			} else if (nextCommand[0].toUpperCase() == "SETHEIGHT")
 			{
 				id = parseInt(nextCommand[1]);
 				var oldHeight = this.animatedObjects.getHeight(id);
 				this.animatedObjects.setHeight(id, parseInt(nextCommand[2]));
 				undoBlock.push(new UndoSetHeight(id, oldHeight));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETLAYER")
+			} else if (nextCommand[0].toUpperCase() == "SETLAYER")
 			{
 				this.animatedObjects.setLayer(parseInt(nextCommand[1]), parseInt(nextCommand[2]));
 				//TODO: Add undo information here
-			}
-			
-			
-			else if (nextCommand[0].toUpperCase() == "CREATELINKEDLIST")
+			} else if (nextCommand[0].toUpperCase() == "CREATELINKEDLIST")
 			{
 				if (nextCommand.length == 11)
 				{
 					this.animatedObjects.addLinkedListObject(parseInt(nextCommand[1]), nextCommand[2], 
 			               parseInt(nextCommand[3]), parseInt(nextCommand[4]), parseFloat(nextCommand[7]), 
 			               this.parseBool(nextCommand[8]), this.parseBool(nextCommand[9]),parseInt(nextCommand[10]), "#FFFFFF", "#000000");
-				}
-				else
+				} else
 				{
 					this.animatedObjects.addLinkedListObject(parseInt(nextCommand[1]), nextCommand[2], parseInt(nextCommand[3]), parseInt(nextCommand[4]), 0.25, true, false, 1, "#FFFFFF", "#000000");
 				}
@@ -919,110 +904,89 @@ function AnimationManager(objectManager)
 					undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
 				}
 				
-			}
-			else if (nextCommand[0].toUpperCase() == "SETNULL")
+			} else if (nextCommand[0].toUpperCase() == "SETNULL")
 			{
 				var oldNull = this.animatedObjects.getNull(parseInt(nextCommand[1]));
 				this.animatedObjects.setNull(parseInt(nextCommand[1]), this.parseBool(nextCommand[2]));
 				undoBlock.push(new UndoSetNull(parseInt(nextCommand[1]), oldNull));					
-			}
-			else if (nextCommand[0].toUpperCase() == "SETTEXTCOLOR")
+			} else if (nextCommand[0].toUpperCase() == "SETTEXTCOLOR")
 			{
 				if (nextCommand.length > 3)
 				{
 					oldColor = this.animatedObjects.getTextColor(parseInt(nextCommand[1]), parseInt(nextCommand[3]));
 					this.animatedObjects.setTextColor(parseInt(nextCommand[1]), this.parseColor(nextCommand[2]), parseInt(nextCommand[3]));
 					undoBlock.push(new UndoSetTextColor(parseInt(nextCommand[1]), oldColor, parseInt(nextCommand[3]) ));					
-				}
-				else
+				} else
 				{
 					oldColor = this.animatedObjects.getTextColor(parseInt(nextCommand[1]), 0);
 					this.animatedObjects.setTextColor(parseInt(nextCommand[1]),this.parseColor(nextCommand[2]), 0);
 					undoBlock.push(new UndoSetTextColor(parseInt(nextCommand[1]), oldColor, 0));					
 				}
-			}
-			
-			
-			else if (nextCommand[0].toUpperCase() == "CREATEBTREENODE")
+			} else if (nextCommand[0].toUpperCase() == "CREATEBTREENODE")
 			{
 
 				this.animatedObjects.addBTreeNode(parseInt(nextCommand[1]), parseFloat(nextCommand[2]), parseFloat(nextCommand[3]), 
 			                 parseInt(nextCommand[4]),this.parseColor(nextCommand[7]), this.parseColor(nextCommand[8]));
 				this.animatedObjects.setNodePosition(parseInt(nextCommand[1]), parseInt(nextCommand[5]), parseInt(nextCommand[6]));
 				undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
-			}
-
-			else if (nextCommand[0].toUpperCase() == "SETWIDTH")
+			} else if (nextCommand[0].toUpperCase() == "SETWIDTH")
 			{
 				var id = parseInt(nextCommand[1]);
 				this.animatedObjects.setWidth(id, parseInt(nextCommand[2]));
 				var oldWidth = this.animatedObjects.getWidth(id);
 				undoBlock.push(new UndoSetWidth(id, oldWidth));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETNUMELEMENTS")
+			} else if (nextCommand[0].toUpperCase() == "SETNUMELEMENTS")
 			{
 				var oldElem = this.animatedObjects.getObject(parseInt(nextCommand[1]));
 				undoBlock.push(new UndoSetNumElements(oldElem, parseInt(nextCommand[2])));
 				this.animatedObjects.setNumElements(parseInt(nextCommand[1]), parseInt(nextCommand[2]));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETPOSITION")
+			} else if (nextCommand[0].toUpperCase() == "SETPOSITION")
 			{
 				var id = parseInt(nextCommand[1])
 				var oldX = this.animatedObjects.getNodeX(id);
 				var oldY = this.animatedObjects.getNodeY(id);
 				undoBlock.push(new UndoSetPosition(id, oldX, oldY));
 				this.animatedObjects.setNodePosition(id, parseInt(nextCommand[2]), parseInt(nextCommand[3]));
-			}
-			else if (nextCommand[0].toUpperCase() == "ALIGNRIGHT")
+			} else if (nextCommand[0].toUpperCase() == "ALIGNRIGHT")
 			{
 				var id = parseInt(nextCommand[1])
 				var oldX = this.animatedObjects.getNodeX(id);
 				var oldY = this.animatedObjects.getNodeY(id);
-				undoBlock.push(new UndoSetPosition(id, oldX. oldY));
+				undoBlock.push(new UndoSetPosition(id, oldX, oldY));
 				this.animatedObjects.alignRight(id, parseInt(nextCommand[2]));
-			}
-			else if (nextCommand[0].toUpperCase() == "ALIGNLEFT")
+			} else if (nextCommand[0].toUpperCase() == "ALIGNLEFT")
 			{
 				var id = parseInt(nextCommand[1])
 				var oldX = this.animatedObjects.getNodeX(id);
 				var oldY = this.animatedObjects.getNodeY(id);
-				undoBlock.push(new UndoSetPosition(id, oldX. oldY));
+				undoBlock.push(new UndoSetPosition(id, oldX, oldY));
 				this.animatedObjects.alignLeft(id, parseInt(nextCommand[2]));
-			}
-			else if (nextCommand[0].toUpperCase() == "ALIGNTOP")
+			} else if (nextCommand[0].toUpperCase() == "ALIGNTOP")
 			{
 				var id = parseInt(nextCommand[1])
 				var oldX = this.animatedObjects.getNodeX(id);
 				var oldY = this.animatedObjects.getNodeY(id);
-				undoBlock.push(new UndoSetPosition(id, oldX. oldY));
+				undoBlock.push(new UndoSetPosition(id, oldX, oldY));
 				this.animatedObjects.alignTop(id, parseInt(nextCommand[2]));
-			}
-			else if (nextCommand[0].toUpperCase() == "ALIGNBOTTOM")
+			} else if (nextCommand[0].toUpperCase() == "ALIGNBOTTOM")
 			{
 				var id = parseInt(nextCommand[1])
 				var oldX = this.animatedObjects.getNodeX(id);
 				var oldY = this.animatedObjects.getNodeY(id);
-				undoBlock.push(new UndoSetPosition(id, oldX. oldY));
+				undoBlock.push(new UndoSetPosition(id, oldX, oldY));
 				this.animatedObjects.alignBottom(id, parseInt(nextCommand[2]));
-			}
-
-
-
-
-
-			else if (nextCommand[0].toUpperCase() == "SETHIGHLIGHTINDEX")
+			} else if (nextCommand[0].toUpperCase() == "SETHIGHLIGHTINDEX")
 			{
 				var id = parseInt(nextCommand[1]);
 				var index = parseInt(nextCommand[2]);
                                 var oldIndex = this.animatedObjects.getHighlightIndex(id)
 				undoBlock.push(new UndoSetHighlightIndex(id, oldIndex));
 				this.animatedObjects.setHighlightIndex(id,index);
-			}else if(nextCommand[0].toUpperCase() == "SETTEXTSTYLE") {	
+			} else if (nextCommand[0].toUpperCase() == "SETTEXTSTYLE") {	
 				var id = parseInt(nextCommand[1]);
 				var fontStyle = nextCommand[2];
 				this.animatedObjects.setTextStyle(id,fontStyle);
-			}
-			else
+			} else
 			{
 	//			throw "Unknown command: " + nextCommand[0];					
 			}
@@ -1057,8 +1021,7 @@ function AnimationManager(objectManager)
 		if (commands == undefined || commands.length == 0)
 		{
 			this.AnimationSteps = ["Step"];
-		}
-		else
+		} else
 		{
 			this.AnimationSteps = commands;
 		}
@@ -1089,8 +1052,7 @@ function AnimationManager(objectManager)
 			timer = setTimeout('timeout()', 30); 
 
 			
-		}
-		else if (!this.currentlyAnimating && this.animationPaused && this.undoAnimationStepIndices != null)
+		} else if (!this.currentlyAnimating && this.animationPaused && this.undoAnimationStepIndices != null)
 		{
 			this.fireEvent("AnimationStarted","NoData");
 			this.currentlyAnimating = true;
@@ -1326,27 +1288,37 @@ function AnimationManager(objectManager)
 		{
 			this.currFrame = this.currFrame + 1;
 			var i;
-			for (i = 0; i < this.currentBlock.length; i++)
-			{
-				if (this.currFrame == this.animationBlockLength || (this.currFrame == 1 && this.animationBlockLength == 0))
-				{
-					this.animatedObjects.setNodePosition(this.currentBlock[i].objectID,
-													     this.currentBlock[i].toX,
-													     this.currentBlock[i].toY);
-				}
-				else if (this.currFrame < this.animationBlockLength)
-				{
-					var objectID = this.currentBlock[i].objectID;
-					var percent = 1 / (this.animationBlockLength - this.currFrame);
-					var oldX = this.animatedObjects.getNodeX(objectID);
-					var oldY = this.animatedObjects.getNodeY(objectID);
-					var targetX = this.currentBlock[i].toX;
-					var targety  = this.currentBlock[i].toY;						
-					var newX = this.lerp(this.animatedObjects.getNodeX(objectID), this.currentBlock[i].toX, percent);
-					var newY = this.lerp(this.animatedObjects.getNodeY(objectID), this.currentBlock[i].toY, percent);
-					this.animatedObjects.setNodePosition(objectID, newX, newY);
-				}
-			}
+                        for (i = 0; i < this.currentBlock.length; i++)
+                        {
+                                var anim = this.currentBlock[i];
+                                if (anim.useQuadratic)
+                                {
+                                        var totalFrames = Math.max(1, this.animationBlockLength);
+                                        if (this.currFrame >= totalFrames)
+                                        {
+                                                this.animatedObjects.setNodePosition(anim.objectID, anim.toX, anim.toY);
+                                        } else
+                                        {
+                                                var t = this.currFrame / totalFrames;
+                                                var invT = 1 - t;
+                                                var quadX = invT * invT * anim.fromX + 2 * invT * t * anim.controlX + t * t * anim.toX;
+                                                var quadY = invT * invT * anim.fromY + 2 * invT * t * anim.controlY + t * t * anim.toY;
+                                                this.animatedObjects.setNodePosition(anim.objectID, quadX, quadY);
+                                        }
+                                } else if (this.currFrame == this.animationBlockLength || (this.currFrame == 1 && this.animationBlockLength == 0))
+                                {
+                                        this.animatedObjects.setNodePosition(anim.objectID,
+                                                                                                             anim.toX,
+                                                                                                             anim.toY);
+                                } else if (this.currFrame < this.animationBlockLength)
+                                {
+                                        var objectID = anim.objectID;
+                                        var percent = 1 / (this.animationBlockLength - this.currFrame);
+                                        var newX = this.lerp(this.animatedObjects.getNodeX(objectID), anim.toX, percent);
+                                        var newY = this.lerp(this.animatedObjects.getNodeY(objectID), anim.toY, percent);
+                                        this.animatedObjects.setNodePosition(objectID, newX, newY);
+                                }
+                        }
 			if (this.currFrame >= this.animationBlockLength)
 			{
 				if (this.doingUndo)
@@ -1357,16 +1329,14 @@ function AnimationManager(objectManager)
 						this.fireEvent("AnimationWaiting","NoData");
 					}
 
-				}
-				else
+				} else
 				{
 					if (this.animationPaused && (this.currentAnimation < this.AnimationSteps.length))
 					{
 						this.awaitingStep = true;
 						this.fireEvent("AnimationWaiting","NoData");
 						this.currentBlock = [];
-					}
-					else
+					} else
 					{
 						this.startNextBlock();
 					}
@@ -1385,11 +1355,23 @@ AnimationManager.prototype = new EventListener();
 AnimationManager.prototype.constructor = AnimationManager;
 
 				
-function SingleAnimation(id, fromX, fromY, toX, toY)
+function SingleAnimation(id, fromX, fromY, toX, toY, options)
 {
-	this.objectID = id;
-	this.fromX = fromX;
-	this.fromY = fromY;
-	this.toX = toX;
-	this.toY = toY;	
+        this.objectID = id;
+        this.fromX = fromX;
+        this.fromY = fromY;
+        this.toX = toX;
+        this.toY = toY;
+        this.useQuadratic = false;
+        this.controlX = 0;
+        this.controlY = 0;
+        if (options != null && options != undefined)
+        {
+                if (options.type === "quadratic")
+                {
+                        this.useQuadratic = true;
+                        this.controlX = options.controlX;
+                        this.controlY = options.controlY;
+                }
+        }
 }
