@@ -29,8 +29,8 @@
 //  pointers in linked lists, and so on. 
 
 
-var LINE_maxHeightDiff = 5;
-var LINE_minHeightDiff = 3;
+var LINE_maxHeightDiff = 12;
+var LINE_minHeightDiff = 8;
 var LINE_range= LINE_maxHeightDiff - LINE_minHeightDiff + 1;
 var LINE_highlightDiff = 3;
 
@@ -199,8 +199,8 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 		   }
 		   ctx.globalAlpha = this.alpha;
 
-			if (this.highlighted)
-                        this.drawArrow(this.highlightDiff, "#FF0000", ctx);
+                        if (this.highlighted)
+                        this.drawArrow(this.highlightDiff, "#ff3b30", ctx);
                         this.drawArrow(this.thickness, this.edgeColor, ctx);
            }
 	   

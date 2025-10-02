@@ -33,7 +33,6 @@ UndirectedDFS.GRAPH_NODE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
 UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
-UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
 UndirectedDFS.EDGE_HIGHLIGHT_THICKNESS = 6;
@@ -523,11 +522,15 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
   }
   var fromID = this.vertexIDs[orientation.from];
   var toID = this.vertexIDs[orientation.to];
+  var baseColor = UndirectedDFS.EDGE_COLOR;
+  if (this.edgeStates[key] && this.edgeStates[key].tree) {
+    baseColor = UndirectedDFS.EDGE_VISITED_COLOR;
+  }
 
   if (active) {
     this.setEdgeState(u, v, {
       highlight: true,
-      color: UndirectedDFS.EDGE_HIGHLIGHT_COLOR,
+      color: baseColor,
     });
     this.cmd(
       "SetEdgeThickness",
@@ -536,11 +539,7 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
       UndirectedDFS.EDGE_HIGHLIGHT_THICKNESS
     );
   } else {
-    var color = UndirectedDFS.EDGE_COLOR;
-    if (this.edgeStates[key] && this.edgeStates[key].tree) {
-      color = UndirectedDFS.EDGE_VISITED_COLOR;
-    }
-    this.setEdgeState(u, v, { highlight: false, color: color });
+    this.setEdgeState(u, v, { highlight: false, color: baseColor });
     this.cmd(
       "SetEdgeThickness",
       fromID,
