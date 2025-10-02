@@ -1140,11 +1140,41 @@ UndirectedDFS.prototype.pushVerticesAwayFromEdges = function (
   }
 };
 
-UndirectedDFS.prototype.cleanInputLabel = function (value) {
-  if (typeof value !== "string") {
+UndirectedDFS.prototype.isWhitespaceChar = function (ch) {
+  return (
+    ch === " " ||
+    ch === "\t" ||
+    ch === "\n" ||
+    ch === "\r" ||
+    ch === "\f" ||
+    ch === "\u00a0"
+  );
+};
+
+UndirectedDFS.prototype.cleanInputLabel = function (inputLabel) {
+  if (typeof inputLabel !== "string") {
     return "";
   }
-  return value.replace(/^\s+/, "").replace(/\s+$/, "");
+
+  var start = 0;
+  while (
+    start < inputLabel.length &&
+    this.isWhitespaceChar(inputLabel.charAt(start))
+  ) {
+    start++;
+  }
+
+  var end = inputLabel.length - 1;
+  while (end >= start && this.isWhitespaceChar(inputLabel.charAt(end))) {
+    end--;
+  }
+
+  var trimmed = "";
+  for (var i = start; i <= end; i++) {
+    trimmed += inputLabel.charAt(i);
+  }
+
+  return trimmed;
 };
 
 UndirectedDFS.prototype.findVertexIndex = function (label) {

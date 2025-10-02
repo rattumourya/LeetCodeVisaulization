@@ -1319,6 +1319,125 @@ DirectedDFS.prototype.findVertexIndex = function (label) {
   return -1;
 };
 
+DirectedDFS.prototype.animateHighlightTraversal = function (
+  fromIndex,
+  toIndex,
+  preferKey
+) {
+  if (fromIndex === toIndex) {
+    return;
+  }
+
+  var startPos = this.vertexPositions[fromIndex];
+  var endPos = this.vertexPositions[toIndex];
+  if (!startPos || !endPos) {
+    return;
+  }
+  var curve = 0;
+  var hasCurve = false;
+
+  if (typeof preferKey === "string") {
+    var preferredMeta = this.edgeMeta[preferKey];
+    if (preferredMeta) {
+      curve = preferredMeta.curve;
+      if (
+        preferredMeta.from !== fromIndex ||
+        preferredMeta.to !== toIndex
+      ) {
+        curve = -curve;
+      }
+      hasCurve = true;
+    }
+  }
+
+  if (!hasCurve) {
+    var key = this.edgeKey(fromIndex, toIndex);
+    var meta = this.edgeMeta[key];
+    if (meta) {
+      curve = meta.curve;
+      hasCurve = true;
+    } else {
+      var reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
+      if (reverseMeta) {
+        curve = -reverseMeta.curve;
+        hasCurve = true;
+      }
+    }
+  }
+
+  if (Math.abs(curve) < 0.01) {
+    this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
+    this.cmd("Step");
+    return;
+  }
+
+  var dx = endPos.x - startPos.x;
+  var dy = endPos.y - startPos.y;
+  var midX = (startPos.x + endPos.x) / 2;
+  var midY = (startPos.y + endPos.y) / 2;
+  var controlX = midX - dy * curve;
+  var controlY = midY + dx * curve;
+
+  this.cmd(
+    "MoveAlongCurve",
+    this.highlightCircleID,
+    Math.round(controlX),
+    Math.round(controlY),
+    Math.round(endPos.x),
+    Math.round(endPos.y)
+  );
+  this.cmd("Step");
+};
+
+DirectedDFS.prototype.isWhitespaceChar = function (ch) {
+  return (
+    ch === " " ||
+    ch === "\t" ||
+    ch === "\n" ||
+    ch === "\r" ||
+    ch === "\f" ||
+    ch === "\u00a0"
+  );
+};
+
+DirectedDFS.prototype.cleanInputLabel = function (inputLabel) {
+  if (typeof inputLabel !== "string") {
+    return "";
+  }
+
+  var start = 0;
+  while (
+    start < inputLabel.length &&
+    this.isWhitespaceChar(inputLabel.charAt(start))
+  ) {
+    start++;
+  }
+
+  var end = inputLabel.length - 1;
+  while (end >= start && this.isWhitespaceChar(inputLabel.charAt(end))) {
+    end--;
+  }
+
+  var trimmed = "";
+  for (var i = start; i <= end; i++) {
+    trimmed += inputLabel.charAt(i);
+  }
+
+  return trimmed;
+};
+
+DirectedDFS.prototype.findVertexIndex = function (label) {
+  if (!this.vertexLabels) {
+    return -1;
+  }
+  for (var i = 0; i < this.vertexLabels.length; i++) {
+    if (this.vertexLabels[i] === label) {
+      return i;
+    }
+  }
+  return -1;
+};
+
 DirectedDFS.prototype.startCallback = function () {
   if (!this.startField) return;
   var raw = this.cleanInputLabel(this.startField.value);
