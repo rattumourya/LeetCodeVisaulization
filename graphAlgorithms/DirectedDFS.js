@@ -75,7 +75,33 @@ DirectedDFS.CODE_LINES = [
   ["            dfs(v);"],
   ["        }"],
   ["    }"],
-  ["}"],
+  ["}"]
+];
+
+DirectedDFS.TEMPLATE_ALLOWED = [
+  [false, true, true, false, true, false, false, true, false, false],
+  [true, false, true, false, true, true, false, false, false, false],
+  [true, true, false, true, false, true, true, false, false, false],
+  [false, false, true, false, false, false, true, false, false, false],
+  [true, true, false, false, false, true, false, true, true, false],
+  [false, true, true, false, true, false, true, false, true, true],
+  [false, false, true, true, false, true, false, false, false, true],
+  [true, false, false, false, true, false, false, false, true, false],
+  [false, false, false, false, true, true, false, true, false, true],
+  [false, false, false, false, false, true, true, false, true, false]
+];
+
+DirectedDFS.EDGE_CURVES = [
+  [0, 0, -0.4, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0.4, 0, 0, 0, 0, -0.35, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0.35, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ];
 
 DirectedDFS.TEMPLATE_ALLOWED = [
@@ -338,7 +364,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
       to: to,
       min: edge.u,
       max: edge.v,
-      curve: 0,
+      curve: 0
     };
     directedEdges.push(record);
     baseRecords[b] = record;
@@ -399,7 +425,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
           to: neighbor,
           min: Math.min(ensure, neighbor),
           max: Math.max(ensure, neighbor),
-          curve: 0,
+          curve: 0
         });
         directedMap[ensureKey] = true;
         outDegree[ensure]++;
@@ -427,7 +453,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
           to: to,
           min: Math.min(from, to),
           max: Math.max(from, to),
-          curve: 0,
+          curve: 0
         });
         directedMap[key] = true;
         outDegree[from]++;
@@ -467,7 +493,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
             to: c,
             min: a,
             max: c,
-            curve: 0,
+            curve: 0
           });
           directedMap[a + "->" + c] = true;
           hasCurveCandidate = true;
@@ -477,7 +503,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
             to: a,
             min: a,
             max: c,
-            curve: 0,
+            curve: 0
           });
           directedMap[c + "->" + a] = true;
           hasCurveCandidate = true;
@@ -494,7 +520,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
       pairBuckets[bucketKey] = {
         edges: [],
         min: entry.min,
-        max: entry.max,
+        max: entry.max
       };
     }
     pairBuckets[bucketKey].edges.push(entry);

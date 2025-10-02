@@ -71,7 +71,7 @@ UndirectedDFS.CODE_LINES = [
   ["            dfs(v, u);"],
   ["        }"],
   ["    }"],
-  ["}"],
+  ["}"]
 ];
 
 // Allowed adjacency template derived from the DFS classroom visualization so
@@ -86,7 +86,7 @@ UndirectedDFS.TEMPLATE_ALLOWED = [
   [false, false, true, true, false, true, false, false, false, true],
   [true, false, false, false, true, false, false, false, true, false],
   [false, false, false, false, true, true, false, true, false, true],
-  [false, false, false, false, false, true, true, false, true, false],
+  [false, false, false, false, false, true, true, false, true, false]
 ];
 
 // Matching curve data from the DFS classroom visualization template. Only
@@ -101,7 +101,7 @@ UndirectedDFS.TEMPLATE_CURVES = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ];
 
 UndirectedDFS.prototype.init = function (am, w, h) {
@@ -276,7 +276,7 @@ UndirectedDFS.prototype.createGraphArea = function () {
     var key = this.edgeKey(pair.u, pair.v);
     this.edgeOrientation[key] = {
       from: pair.u,
-      to: pair.v,
+      to: pair.v
     };
     this.edgeStates[key] = { tree: false };
     this.edgeMeta[key] = pair;
@@ -547,7 +547,7 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
   if (active) {
     this.setEdgeState(u, v, {
       highlight: true,
-      color: baseColor,
+      color: baseColor
     });
     this.cmd(
       "SetEdgeThickness",
@@ -977,7 +977,6 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
     this.highlightCodeLine(3);
     this.setEdgeActive(u, v, true);
     this.cmd("Step");
-
 
     this.setVisitedCellHighlight(v, true);
     this.cmd("Step");
