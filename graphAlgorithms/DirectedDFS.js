@@ -869,6 +869,9 @@ DirectedDFS.prototype.clearTraversalState = function () {
 };
 
 DirectedDFS.prototype.clearEdgeHighlights = function () {
+  if (!this.edgePairs) {
+    return;
+  }
   for (var i = 0; i < this.edgePairs.length; i++) {
     var edge = this.edgePairs[i];
     this.highlightEdge(edge.from, edge.to, false);
@@ -897,6 +900,15 @@ DirectedDFS.prototype.getEdgeCurve = function (from, to) {
 };
 
 DirectedDFS.prototype.updateEdgeBaseColor = function (from, to) {
+  if (
+    !this.vertexIDs ||
+    from < 0 ||
+    to < 0 ||
+    from >= this.vertexIDs.length ||
+    to >= this.vertexIDs.length
+  ) {
+    return;
+  }
   var key = this.edgeKey(from, to);
   var baseColor = DirectedDFS.EDGE_COLOR;
   if (this.edgeStates[key] && this.edgeStates[key].tree) {
@@ -915,13 +927,17 @@ DirectedDFS.prototype.setEdgeTreeState = function (from, to, isTree) {
 };
 
 DirectedDFS.prototype.resetEdgeStates = function () {
+  if (!this.edgePairs) {
+    return;
+  }
   for (var i = 0; i < this.edgePairs.length; i++) {
     var edge = this.edgePairs[i];
     var key = this.edgeKey(edge.from, edge.to);
-    if (!this.edgeStates[key]) {
-      this.edgeStates[key] = {};
+    if (this.edgeStates[key]) {
+      this.edgeStates[key].tree = false;
+    } else {
+      this.edgeStates[key] = { tree: false };
     }
-    this.edgeStates[key].tree = false;
     this.updateEdgeBaseColor(edge.from, edge.to);
     this.cmd(
       "SetEdgeThickness",
@@ -935,16 +951,19 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.to],
       0
     );
-    this.cmd("SetEdgeHighlight", fromID, toID, 1);
-  } else {
-    this.cmd("SetEdgeHighlight", fromID, toID, 0);
-    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
-    this.updateEdgeBaseColor(from, to);
-
   }
 };
 
 DirectedDFS.prototype.highlightEdge = function (from, to, active) {
+  if (
+    !this.vertexIDs ||
+    from < 0 ||
+    to < 0 ||
+    from >= this.vertexIDs.length ||
+    to >= this.vertexIDs.length
+  ) {
+    return;
+  }
   var fromID = this.vertexIDs[from];
   var toID = this.vertexIDs[to];
   if (active) {
@@ -974,6 +993,9 @@ DirectedDFS.prototype.animateHighlightTraversal = function (
 
   var startPos = this.vertexPositions[fromIndex];
   var endPos = this.vertexPositions[toIndex];
+  if (!startPos || !endPos) {
+    return;
+  }
   var curve = 0;
   var hasCurve = false;
 
