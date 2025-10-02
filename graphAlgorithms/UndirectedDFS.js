@@ -1,4 +1,4 @@
-// Custom visualization for DFS traversal on an undirected graph using a 9:16 canvas.
+// Custom visualization for DFS traversal on an undirected graph with an expanded canvas.
 
 function UndirectedDFS(am, w, h) {
   this.init(am, w, h);
@@ -8,11 +8,11 @@ UndirectedDFS.prototype = new Algorithm();
 UndirectedDFS.prototype.constructor = UndirectedDFS;
 UndirectedDFS.superclass = Algorithm.prototype;
 
-UndirectedDFS.CANVAS_WIDTH = 720;
-UndirectedDFS.CANVAS_HEIGHT = 1280;
+UndirectedDFS.CANVAS_WIDTH = 880;
+UndirectedDFS.CANVAS_HEIGHT = 1440;
 
 UndirectedDFS.ROW1_HEIGHT = 240;
-UndirectedDFS.ROW2_HEIGHT = 640;
+UndirectedDFS.ROW2_HEIGHT = 760;
 UndirectedDFS.ROW3_HEIGHT =
   UndirectedDFS.CANVAS_HEIGHT - UndirectedDFS.ROW1_HEIGHT - UndirectedDFS.ROW2_HEIGHT;
 
@@ -24,18 +24,18 @@ UndirectedDFS.ROW3_START_Y =
 UndirectedDFS.TITLE_Y = UndirectedDFS.ROW1_CENTER_Y - 40;
 UndirectedDFS.START_INFO_Y = UndirectedDFS.ROW1_CENTER_Y + 40;
 
-UndirectedDFS.GRAPH_AREA_CENTER_X = 300;
+UndirectedDFS.GRAPH_AREA_CENTER_X = 360;
 UndirectedDFS.GRAPH_NODE_RADIUS = 22;
 UndirectedDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 UndirectedDFS.GRAPH_NODE_BORDER = "#0b3954";
 UndirectedDFS.GRAPH_NODE_TEXT = "#003049";
-UndirectedDFS.GRAPH_NODE_VISITED_COLOR = "#b8f5b1";
+UndirectedDFS.GRAPH_NODE_VISITED_COLOR = "#bbdefb";
 UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
-UndirectedDFS.EDGE_VISITED_COLOR = "#1b5e20";
+UndirectedDFS.EDGE_VISITED_COLOR = "#0d47a1";
 
-UndirectedDFS.ARRAY_BASE_X = 600;
+UndirectedDFS.ARRAY_BASE_X = 720;
 UndirectedDFS.ARRAY_COLUMN_SPACING = 80;
 UndirectedDFS.ARRAY_TOP_Y = UndirectedDFS.ROW2_START_Y + 90;
 UndirectedDFS.ARRAY_CELL_HEIGHT = 52;
@@ -45,7 +45,7 @@ UndirectedDFS.ARRAY_HEADER_HEIGHT = UndirectedDFS.ARRAY_CELL_INNER_HEIGHT;
 UndirectedDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 UndirectedDFS.ARRAY_RECT_BORDER = "#2b2d42";
 UndirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
-UndirectedDFS.ARRAY_VISITED_FILL = "#90ee90";
+UndirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 UndirectedDFS.ARRAY_HEADER_GAP = 20;
 
 UndirectedDFS.CODE_START_Y = UndirectedDFS.ROW3_START_Y + 10;
@@ -597,10 +597,10 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
 
 UndirectedDFS.prototype.computeTemplateLayout = function (vertexCount) {
   var layout = [];
-  var baseX = 130;
-  var stepX = 90;
-  var baseY = UndirectedDFS.ROW2_START_Y + 90;
-  var rowSpacing = 115;
+  var baseX = 180;
+  var stepX = 130;
+  var baseY = UndirectedDFS.ROW2_START_Y + 120;
+  var rowSpacing = 150;
   var rowPattern = [4, 3, 4, 3, 4];
 
   for (var row = 0, index = 0; row < rowPattern.length; row++) {
@@ -842,6 +842,7 @@ UndirectedDFS.prototype.pushVerticesAwayFromEdges = function (
     this.applyVertexClamping(minX, maxX, minY, maxY);
   }
 };
+
 UndirectedDFS.prototype.startCallback = function () {
   if (!this.startField) return;
   var raw = this.startField.value.trim();
@@ -927,7 +928,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.highlightCodeLine(5);
       this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
-
+  
       this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v, u);
@@ -937,6 +938,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
 
     this.highlightCodeLine(6);
     this.cmd("Step");
+
     this.setEdgeActive(u, v, false);
 
     this.highlightCodeLine(2);
