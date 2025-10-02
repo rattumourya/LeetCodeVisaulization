@@ -140,7 +140,6 @@ UndirectedDFS.prototype.reset = function () {
 
 UndirectedDFS.prototype.setup = function () {
   this.commands = [];
-
   this.edgeOrientation = {};
   this.edgeStates = {};
   this.edgeMeta = {};
@@ -158,7 +157,6 @@ UndirectedDFS.prototype.setup = function () {
     "J",
   ];
   this.generateRandomGraph();
-
   this.adjacencyList = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.adjacencyList.length; i++) {
     this.adjacencyList[i] = [];
@@ -448,6 +446,7 @@ UndirectedDFS.prototype.resetEdgesToUndirected = function () {
 };
 
 UndirectedDFS.prototype.setEdgeState = function (u, v, options) {
+
   var key = this.edgeKey(u, v);
   var orientation = this.edgeOrientation[key];
   if (!orientation) {
@@ -694,7 +693,6 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
 
     this.highlightCodeLine(6);
     this.cmd("Step");
-
     this.setEdgeActive(u, v, false);
 
     this.highlightCodeLine(2);
