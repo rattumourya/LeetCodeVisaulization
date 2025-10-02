@@ -8,11 +8,11 @@ DirectedDFS.prototype = new Algorithm();
 DirectedDFS.prototype.constructor = DirectedDFS;
 DirectedDFS.superclass = Algorithm.prototype;
 
-DirectedDFS.CANVAS_WIDTH = 720;
-DirectedDFS.CANVAS_HEIGHT = 1280;
+DirectedDFS.CANVAS_WIDTH = 880;
+DirectedDFS.CANVAS_HEIGHT = 1440;
 
 DirectedDFS.ROW1_HEIGHT = 240;
-DirectedDFS.ROW2_HEIGHT = 640;
+DirectedDFS.ROW2_HEIGHT = 760;
 DirectedDFS.ROW3_HEIGHT =
   DirectedDFS.CANVAS_HEIGHT - DirectedDFS.ROW1_HEIGHT - DirectedDFS.ROW2_HEIGHT;
 
@@ -24,17 +24,20 @@ DirectedDFS.ROW3_START_Y =
 DirectedDFS.TITLE_Y = DirectedDFS.ROW1_CENTER_Y - 40;
 DirectedDFS.START_INFO_Y = DirectedDFS.ROW1_CENTER_Y + 40;
 
-DirectedDFS.GRAPH_AREA_CENTER_X = 300;
+DirectedDFS.GRAPH_AREA_CENTER_X = 360;
 DirectedDFS.GRAPH_NODE_RADIUS = 22;
 DirectedDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDFS.GRAPH_NODE_BORDER = "#0b3954";
 DirectedDFS.GRAPH_NODE_TEXT = "#003049";
-DirectedDFS.GRAPH_NODE_VISITED_COLOR = "#b8f5b1";
+DirectedDFS.GRAPH_NODE_VISITED_COLOR = "#66bb6a";
+DirectedDFS.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
 DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
-DirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
+DirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
+DirectedDFS.EDGE_THICKNESS = 3;
+DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = 6;
 
-DirectedDFS.ARRAY_BASE_X = 540;
+DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
 DirectedDFS.ARRAY_TOP_Y = DirectedDFS.ROW2_START_Y + 90;
 DirectedDFS.ARRAY_CELL_HEIGHT = 52;
@@ -44,7 +47,7 @@ DirectedDFS.ARRAY_HEADER_HEIGHT = DirectedDFS.ARRAY_CELL_INNER_HEIGHT;
 DirectedDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 DirectedDFS.ARRAY_RECT_BORDER = "#2b2d42";
 DirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
-DirectedDFS.ARRAY_VISITED_FILL = "#90ee90";
+DirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 DirectedDFS.ARRAY_HEADER_GAP = 20;
 
 DirectedDFS.CODE_START_Y = DirectedDFS.ROW3_START_Y + 10;
@@ -69,6 +72,19 @@ DirectedDFS.CODE_LINES = [
   ["}"],
 ];
 
+DirectedDFS.EDGE_CURVES = [
+  [0, 0, -0.4, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, -0.35, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0.35, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+];
+
 DirectedDFS.prototype.init = function (am, w, h) {
   DirectedDFS.superclass.init.call(this, am, w, h);
 
@@ -78,6 +94,9 @@ DirectedDFS.prototype.init = function (am, w, h) {
   this.vertexLabels = [];
   this.vertexPositions = [];
   this.adjacencyList = [];
+  this.edgePairs = [];
+  this.edgeStates = {};
+  this.edgeMeta = {};
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
@@ -136,6 +155,10 @@ DirectedDFS.prototype.reset = function () {
 DirectedDFS.prototype.setup = function () {
   this.commands = [];
 
+  this.edgePairs = [];
+  this.edgeStates = {};
+  this.edgeMeta = {};
+
   this.vertexLabels = [
     "A",
     "B",
@@ -148,18 +171,7 @@ DirectedDFS.prototype.setup = function () {
     "I",
     "J",
   ];
-  this.vertexPositions = [
-    { x: 190, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 310, y: DirectedDFS.ROW2_START_Y + 90 },
-    { x: 120, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 260, y: DirectedDFS.ROW2_START_Y + 220 },
-    { x: 360, y: DirectedDFS.ROW2_START_Y + 230 },
-    { x: 120, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 240, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 360, y: DirectedDFS.ROW2_START_Y + 360 },
-    { x: 190, y: DirectedDFS.ROW2_START_Y + 500 },
-    { x: 310, y: DirectedDFS.ROW2_START_Y + 500 },
-  ];
+  this.vertexPositions = this.computeTemplateLayout(this.vertexLabels.length);
 
   this.adjacencyList = [
     [1, 2],
@@ -191,6 +203,29 @@ DirectedDFS.prototype.setup = function () {
 
 DirectedDFS.prototype.resetCallback = function () {
   this.implementAction(this.reset.bind(this), 0);
+};
+
+DirectedDFS.prototype.computeTemplateLayout = function (vertexCount) {
+  var layout = [];
+  var baseX = 200;
+  var stepX = 130;
+  var baseY = DirectedDFS.ROW2_START_Y + 120;
+  var rowSpacing = 150;
+  var rowPattern = [4, 3, 4, 3, 4];
+
+  for (var row = 0, index = 0; row < rowPattern.length; row++) {
+    var count = rowPattern[row];
+    var startX = count === 4 ? baseX : baseX + stepX / 2;
+    var y = baseY + row * rowSpacing;
+    for (var col = 0; col < count && index < vertexCount; col++, index++) {
+      layout.push({ x: startX + col * stepX, y: y });
+    }
+    if (layout.length >= vertexCount) {
+      break;
+    }
+  }
+
+  return layout;
 };
 
 DirectedDFS.prototype.createTitleRow = function () {
@@ -244,15 +279,32 @@ DirectedDFS.prototype.createGraphArea = function () {
   for (var from = 0; from < this.adjacencyList.length; from++) {
     for (var j = 0; j < this.adjacencyList[from].length; j++) {
       var to = this.adjacencyList[from][j];
-      this.edgePairs.push({ from: from, to: to });
+      var curve = this.getEdgeCurve(from, to);
+      var pair = { from: from, to: to, curve: curve };
+      var key = this.edgeKey(from, to);
+      this.edgePairs.push(pair);
+      this.edgeStates[key] = { tree: false };
+      this.edgeMeta[key] = pair;
       this.cmd(
         "Connect",
         this.vertexIDs[from],
         this.vertexIDs[to],
         DirectedDFS.EDGE_COLOR,
-        0,
+        curve,
         1,
         ""
+      );
+      this.cmd(
+        "SetEdgeThickness",
+        this.vertexIDs[from],
+        this.vertexIDs[to],
+        DirectedDFS.EDGE_THICKNESS
+      );
+      this.cmd(
+        "SetEdgeHighlight",
+        this.vertexIDs[from],
+        this.vertexIDs[to],
+        0
       );
     }
   }
@@ -309,7 +361,7 @@ DirectedDFS.prototype.createArrayArea = function () {
       "CreateLabel",
       vertexLabelID,
       this.vertexLabels[i],
-      DirectedDFS.ARRAY_BASE_X - 95,
+      DirectedDFS.ARRAY_BASE_X - 58,
       rowY,
       0
     );
@@ -393,31 +445,159 @@ DirectedDFS.prototype.clearTraversalState = function () {
     this.parents[i] = null;
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedDFS.ARRAY_RECT_COLOR);
+    this.cmd("SetTextColor", this.visitedRectIDs[i], DirectedDFS.ARRAY_TEXT_COLOR);
     this.cmd("SetText", this.parentRectIDs[i], "-");
     this.cmd(
       "SetBackgroundColor",
       this.vertexIDs[i],
       DirectedDFS.GRAPH_NODE_COLOR
     );
+    this.cmd(
+      "SetTextColor",
+      this.vertexIDs[i],
+      DirectedDFS.GRAPH_NODE_TEXT
+    );
   }
+  this.resetEdgeStates();
   this.clearEdgeHighlights();
 };
 
 DirectedDFS.prototype.clearEdgeHighlights = function () {
   for (var i = 0; i < this.edgePairs.length; i++) {
     var edge = this.edgePairs[i];
+    this.highlightEdge(edge.from, edge.to, false);
+  }
+};
+
+DirectedDFS.prototype.edgeKey = function (from, to) {
+  return from + "->" + to;
+};
+
+DirectedDFS.prototype.getEdgeCurve = function (from, to) {
+  if (
+    DirectedDFS.EDGE_CURVES[from] &&
+    typeof DirectedDFS.EDGE_CURVES[from][to] === "number"
+  ) {
+    return DirectedDFS.EDGE_CURVES[from][to];
+  }
+  return 0;
+};
+
+DirectedDFS.prototype.updateEdgeBaseColor = function (from, to) {
+  var key = this.edgeKey(from, to);
+  var baseColor = DirectedDFS.EDGE_COLOR;
+  if (this.edgeStates[key] && this.edgeStates[key].tree) {
+    baseColor = DirectedDFS.EDGE_VISITED_COLOR;
+  }
+  this.cmd("SetEdgeColor", this.vertexIDs[from], this.vertexIDs[to], baseColor);
+};
+
+DirectedDFS.prototype.setEdgeTreeState = function (from, to, isTree) {
+  var key = this.edgeKey(from, to);
+  if (!this.edgeStates[key]) {
+    this.edgeStates[key] = {};
+  }
+  this.edgeStates[key].tree = isTree;
+  this.updateEdgeBaseColor(from, to);
+};
+
+DirectedDFS.prototype.resetEdgeStates = function () {
+  for (var i = 0; i < this.edgePairs.length; i++) {
+    var edge = this.edgePairs[i];
+    var key = this.edgeKey(edge.from, edge.to);
+    if (!this.edgeStates[key]) {
+      this.edgeStates[key] = {};
+    }
+    this.edgeStates[key].tree = false;
+    this.updateEdgeBaseColor(edge.from, edge.to);
+    this.cmd(
+      "SetEdgeThickness",
+      this.vertexIDs[edge.from],
+      this.vertexIDs[edge.to],
+      DirectedDFS.EDGE_THICKNESS
+    );
     this.cmd(
       "SetEdgeHighlight",
       this.vertexIDs[edge.from],
       this.vertexIDs[edge.to],
       0
     );
+  }
+};
+
+DirectedDFS.prototype.highlightEdge = function (from, to, active) {
+  var fromID = this.vertexIDs[from];
+  var toID = this.vertexIDs[to];
+  if (active) {
+    this.updateEdgeBaseColor(from, to);
     this.cmd(
-      "SetEdgeColor",
-      this.vertexIDs[edge.from],
-      this.vertexIDs[edge.to],
-      DirectedDFS.EDGE_COLOR
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      DirectedDFS.EDGE_HIGHLIGHT_THICKNESS
     );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+  } else {
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+    this.updateEdgeBaseColor(from, to);
+  }
+};
+
+DirectedDFS.prototype.animateHighlightTraversal = function (
+  fromIndex,
+  toIndex
+) {
+  if (fromIndex === toIndex) {
+    return;
+  }
+
+  var startPos = this.vertexPositions[fromIndex];
+  var endPos = this.vertexPositions[toIndex];
+  var key = this.edgeKey(fromIndex, toIndex);
+  var meta = this.edgeMeta[key];
+  var curve = 0;
+  var reverseMeta = null;
+  if (meta) {
+    curve = meta.curve;
+  } else {
+    reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
+    if (reverseMeta) {
+      curve = -reverseMeta.curve;
+    }
+  }
+
+  if (!meta && !reverseMeta) {
+    curve = 0;
+  }
+
+  if (Math.abs(curve) < 0.01) {
+    this.cmd("Move", this.highlightCircleID, endPos.x, endPos.y);
+    this.cmd("Step");
+    return;
+  }
+
+  var dx = endPos.x - startPos.x;
+  var dy = endPos.y - startPos.y;
+  var midX = (startPos.x + endPos.x) / 2;
+  var midY = (startPos.y + endPos.y) / 2;
+  var controlX = midX - dy * curve;
+  var controlY = midY + dx * curve;
+
+  var segments = 10;
+  for (var step = 1; step <= segments; step++) {
+    var t = step / segments;
+    var invT = 1 - t;
+    var px =
+      invT * invT * startPos.x +
+      2 * invT * t * controlX +
+      t * t * endPos.x;
+    var py =
+      invT * invT * startPos.y +
+      2 * invT * t * controlY +
+      t * t * endPos.y;
+    this.cmd("Move", this.highlightCircleID, Math.round(px), Math.round(py));
+    this.cmd("Step");
   }
 };
 
@@ -477,6 +657,11 @@ DirectedDFS.prototype.dfsVisit = function (u) {
       this.vertexIDs[u],
       DirectedDFS.GRAPH_NODE_VISITED_COLOR
     );
+    this.cmd(
+      "SetTextColor",
+      this.vertexIDs[u],
+      DirectedDFS.GRAPH_NODE_VISITED_TEXT_COLOR
+    );
     this.cmd("Step");
   }
 
@@ -487,18 +672,7 @@ DirectedDFS.prototype.dfsVisit = function (u) {
   for (var i = 0; i < neighbors.length; i++) {
     var v = neighbors[i];
     this.highlightCodeLine(3);
-    this.cmd(
-      "SetEdgeHighlight",
-      this.vertexIDs[u],
-      this.vertexIDs[v],
-      1
-    );
-    this.cmd(
-      "SetEdgeColor",
-      this.vertexIDs[u],
-      this.vertexIDs[v],
-      DirectedDFS.EDGE_HIGHLIGHT_COLOR
-    );
+    this.highlightEdge(u, v, true);
     this.cmd("Step");
 
     if (!this.visited[v]) {
@@ -509,43 +683,21 @@ DirectedDFS.prototype.dfsVisit = function (u) {
         this.parentRectIDs[v],
         this.vertexLabels[u]
       );
+      this.setEdgeTreeState(u, v, true);
       this.cmd("Step");
 
       this.highlightCodeLine(5);
-      this.cmd(
-        "Move",
-        this.highlightCircleID,
-        this.vertexPositions[v].x,
-        this.vertexPositions[v].y
-      );
-      this.cmd("Step");
+      this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v);
 
-      this.cmd(
-        "Move",
-        this.highlightCircleID,
-        this.vertexPositions[u].x,
-        this.vertexPositions[u].y
-      );
-      this.cmd("Step");
+      this.animateHighlightTraversal(v, u);
     }
 
     this.highlightCodeLine(6);
     this.cmd("Step");
 
-    this.cmd(
-      "SetEdgeHighlight",
-      this.vertexIDs[u],
-      this.vertexIDs[v],
-      0
-    );
-    this.cmd(
-      "SetEdgeColor",
-      this.vertexIDs[u],
-      this.vertexIDs[v],
-      DirectedDFS.EDGE_COLOR
-    );
+    this.highlightEdge(u, v, false);
 
     this.highlightCodeLine(2);
     this.cmd("Step");
