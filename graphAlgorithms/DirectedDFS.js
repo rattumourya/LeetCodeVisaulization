@@ -104,32 +104,6 @@ DirectedDFS.EDGE_CURVES = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ];
 
-DirectedDFS.TEMPLATE_ALLOWED = [
-  [false, true, true, false, true, false, false, true, false, false],
-  [true, false, true, false, true, true, false, false, false, false],
-  [true, true, false, true, false, true, true, false, false, false],
-  [false, false, true, false, false, false, true, false, false, false],
-  [true, true, false, false, false, true, false, true, true, false],
-  [false, true, true, false, true, false, true, false, true, true],
-  [false, false, true, true, false, true, false, false, false, true],
-  [true, false, false, false, true, false, false, false, true, false],
-  [false, false, false, false, true, true, false, true, false, true],
-  [false, false, false, false, false, true, true, false, true, false],
-];
-
-DirectedDFS.EDGE_CURVES = [
-  [0, 0, -0.4, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0.4, 0, 0, 0, 0, -0.35, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0.35, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-];
-
 DirectedDFS.prototype.init = function (am, w, h) {
   DirectedDFS.superclass.init.call(this, am, w, h);
 
