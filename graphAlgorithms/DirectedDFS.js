@@ -42,6 +42,8 @@ DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 // Minimum curvature magnitude to keep opposite-direction edges visually parallel.
 DirectedDFS.MIN_PARALLEL_SEPARATION = 0.42;
 
+DirectedDFS.PARALLEL_EDGE_GAP = 0.18;
+
 
 DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -553,25 +555,24 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     }
 
     if (forward.length > 0 && backward.length > 0) {
-      var forwardCurve = baseCurve;
-      var backwardCurve = -baseCurve;
 
-      var minParallel = DirectedDFS.MIN_PARALLEL_SEPARATION;
-      if (Math.abs(baseCurve) < 0.01) {
-        var dualMagnitude = Math.max(
-          DirectedDFS.BIDIRECTIONAL_CURVE,
-          minParallel
-        );
-        forwardCurve = dualMagnitude;
-        backwardCurve = -dualMagnitude;
-      } else {
-        var resolvedMagnitude = Math.max(Math.abs(baseCurve), minParallel);
-        forwardCurve = (forwardCurve >= 0 ? 1 : -1) * resolvedMagnitude;
-        backwardCurve = (backwardCurve >= 0 ? 1 : -1) * resolvedMagnitude;
-
+      var baseSign = 1;
+      if (Math.abs(baseCurve) > 0.01) {
+        baseSign = baseCurve >= 0 ? 1 : -1;
       }
-      applyCurves(forward, forwardCurve, forwardCurve >= 0 ? 1 : -1);
-      applyCurves(backward, backwardCurve, backwardCurve >= 0 ? 1 : -1);
+      var minParallel = DirectedDFS.MIN_PARALLEL_SEPARATION;
+      var magnitude = Math.abs(baseCurve);
+      if (magnitude < minParallel) {
+        magnitude = minParallel;
+      }
+      if (magnitude < 0.01) {
+        magnitude = minParallel;
+      }
+      var forwardCurve = baseSign * magnitude;
+      var backwardCurve = baseSign * (magnitude + DirectedDFS.PARALLEL_EDGE_GAP);
+      applyCurves(forward, forwardCurve, baseSign);
+      applyCurves(backward, backwardCurve, baseSign);
+
     } else if (forward.length > 0) {
       var curveValue = Math.abs(baseCurve) < 0.01 ? 0 : baseCurve;
       applyCurves(forward, curveValue, 1);
@@ -946,7 +947,6 @@ DirectedDFS.prototype.highlightEdge = function (from, to, active) {
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
     this.updateEdgeBaseColor(from, to);
-
 
   }
 };

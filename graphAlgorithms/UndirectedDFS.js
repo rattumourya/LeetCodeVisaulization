@@ -39,7 +39,6 @@ UndirectedDFS.EDGE_THICKNESS = 3;
 UndirectedDFS.EDGE_ACTIVE_THICKNESS = UndirectedDFS.EDGE_THICKNESS;
 UndirectedDFS.EDGE_TREE_THICKNESS = 6;
 
-
 UndirectedDFS.ARRAY_BASE_X = 720;
 UndirectedDFS.ARRAY_COLUMN_SPACING = 80;
 UndirectedDFS.ARRAY_TOP_Y = UndirectedDFS.ROW2_START_Y + 90;
@@ -584,7 +583,6 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
   var midY = (startPos.y + endPos.y) / 2;
   var controlX = midX - dy * curve;
   var controlY = midY + dx * curve;
-
 
   this.cmd(
     "MoveAlongCurve",
