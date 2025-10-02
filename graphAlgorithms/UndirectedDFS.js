@@ -842,7 +842,6 @@ UndirectedDFS.prototype.pushVerticesAwayFromEdges = function (
     this.applyVertexClamping(minX, maxX, minY, maxY);
   }
 };
-
 UndirectedDFS.prototype.startCallback = function () {
   if (!this.startField) return;
   var raw = this.startField.value.trim();
@@ -928,6 +927,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.highlightCodeLine(5);
       this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
+
       this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v, u);
@@ -937,7 +937,6 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
 
     this.highlightCodeLine(6);
     this.cmd("Step");
-
     this.setEdgeActive(u, v, false);
 
     this.highlightCodeLine(2);
