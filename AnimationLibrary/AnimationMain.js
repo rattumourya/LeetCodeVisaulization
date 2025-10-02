@@ -861,19 +861,27 @@ function AnimationManager(objectManager)
 				}
 				undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
 			}
-			else if (nextCommand[0].toUpperCase() == "SETEDGECOLOR")
-			{
-				var from = parseInt(nextCommand[1]);
-				var to = parseInt(nextCommand[2]);
-				var newColor = this.parseColor(nextCommand[3]);
-				var oldColor = this.animatedObjects.setEdgeColor(from, to, newColor);				
-				undoBlock.push(new UndoSetEdgeColor(from, to, oldColor));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETEDGEALPHA")
-			{
-				var from = parseInt(nextCommand[1]);
-				var to = parseInt(nextCommand[2]);
-				var newAlpha = parseFloat(nextCommand[3]);
+                        else if (nextCommand[0].toUpperCase() == "SETEDGECOLOR")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newColor = this.parseColor(nextCommand[3]);
+                                var oldColor = this.animatedObjects.setEdgeColor(from, to, newColor);
+                                undoBlock.push(new UndoSetEdgeColor(from, to, oldColor));
+                        }
+                        else if (nextCommand[0].toUpperCase() == "SETEDGETHICKNESS")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newThickness = parseFloat(nextCommand[3]);
+                                var oldThickness = this.animatedObjects.setEdgeThickness(from, to, newThickness);
+                                undoBlock.push(new UndoSetEdgeThickness(from, to, oldThickness));
+                        }
+                        else if (nextCommand[0].toUpperCase() == "SETEDGEALPHA")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newAlpha = parseFloat(nextCommand[3]);
 				var oldAplpha = this.animatedObjects.setEdgeAlpha(from, to, newAlpha);				
 				undoBlock.push(new UndoSetEdgeAlpha(from, to, oldAplpha));
 			}
