@@ -43,14 +43,15 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 	this.Node1 = n1;
 	this.Node2 = n2;
 	this.Dirty = false;
-	this.directed = d;
-	this.edgeColor = color;
-	this.edgeLabel = weight;
-	this.highlighted = false;
-	this.addedToScene = true;
-	this.anchorPoint = anchorIndex;
-	this.highlightDiff = 0;
-	this.curve = cv;
+        this.directed = d;
+        this.edgeColor = color;
+        this.edgeLabel = weight;
+        this.highlighted = false;
+        this.addedToScene = true;
+        this.anchorPoint = anchorIndex;
+        this.highlightDiff = 0;
+        this.curve = cv;
+        this.thickness = 1;
 
 	this.alpha = 1.0;
 	this.color = function color()
@@ -58,11 +59,22 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 		return this.edgeColor;   
 	}
 	   
-	this.setColor = function(newColor)
-	{
-		this.edgeColor = newColor;
-		Dirty = true;
-	}
+        this.setColor = function(newColor)
+        {
+                this.edgeColor = newColor;
+                Dirty = true;
+        }
+
+        this.setThickness = function(newThickness)
+        {
+                this.thickness = newThickness;
+                Dirty = true;
+        }
+
+        this.getThickness = function()
+        {
+                return this.thickness;
+        }
 	   
 	this.setHighlight = function(highlightVal)
 	{
@@ -188,9 +200,9 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 		   ctx.globalAlpha = this.alpha;
 
 			if (this.highlighted)
-				this.drawArrow(this.highlightDiff, "#FF0000", ctx);
-			this.drawArrow(1, this.edgeColor, ctx);
-	   }
+                        this.drawArrow(this.highlightDiff, "#FF0000", ctx);
+                        this.drawArrow(this.thickness, this.edgeColor, ctx);
+           }
 	   
 	   
 }
