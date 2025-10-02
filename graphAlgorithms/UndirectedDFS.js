@@ -571,7 +571,9 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
   }
 
   if (!meta || Math.abs(curve) < 0.01) {
-    this.cmd("Move", this.highlightCircleID, endPos.x, endPos.y);
+
+    this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
+
     this.cmd("Step");
     return;
   }
@@ -583,21 +585,17 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
   var controlX = midX - dy * curve;
   var controlY = midY + dx * curve;
 
-  var segments = 10;
-  for (var step = 1; step <= segments; step++) {
-    var t = step / segments;
-    var invT = 1 - t;
-    var px =
-      invT * invT * startPos.x +
-      2 * invT * t * controlX +
-      t * t * endPos.x;
-    var py =
-      invT * invT * startPos.y +
-      2 * invT * t * controlY +
-      t * t * endPos.y;
-    this.cmd("Move", this.highlightCircleID, Math.round(px), Math.round(py));
-    this.cmd("Step");
-  }
+
+  this.cmd(
+    "MoveAlongCurve",
+    this.highlightCircleID,
+    Math.round(controlX),
+    Math.round(controlY),
+    Math.round(endPos.x),
+    Math.round(endPos.y)
+  );
+  this.cmd("Step");
+
 };
 
 UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {

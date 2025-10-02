@@ -39,6 +39,9 @@ DirectedDFS.EDGE_THICKNESS = 3;
 DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = DirectedDFS.EDGE_THICKNESS;
 DirectedDFS.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
+// Minimum curvature magnitude to keep opposite-direction edges visually parallel.
+DirectedDFS.MIN_PARALLEL_SEPARATION = 0.42;
+
 
 DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -552,9 +555,20 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     if (forward.length > 0 && backward.length > 0) {
       var forwardCurve = baseCurve;
       var backwardCurve = -baseCurve;
+
+      var minParallel = DirectedDFS.MIN_PARALLEL_SEPARATION;
       if (Math.abs(baseCurve) < 0.01) {
-        forwardCurve = DirectedDFS.BIDIRECTIONAL_CURVE;
-        backwardCurve = -DirectedDFS.BIDIRECTIONAL_CURVE;
+        var dualMagnitude = Math.max(
+          DirectedDFS.BIDIRECTIONAL_CURVE,
+          minParallel
+        );
+        forwardCurve = dualMagnitude;
+        backwardCurve = -dualMagnitude;
+      } else {
+        var resolvedMagnitude = Math.max(Math.abs(baseCurve), minParallel);
+        forwardCurve = (forwardCurve >= 0 ? 1 : -1) * resolvedMagnitude;
+        backwardCurve = (backwardCurve >= 0 ? 1 : -1) * resolvedMagnitude;
+
       }
       applyCurves(forward, forwardCurve, forwardCurve >= 0 ? 1 : -1);
       applyCurves(backward, backwardCurve, backwardCurve >= 0 ? 1 : -1);
@@ -932,6 +946,8 @@ DirectedDFS.prototype.highlightEdge = function (from, to, active) {
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
     this.updateEdgeBaseColor(from, to);
+
+
   }
 };
 
@@ -963,7 +979,7 @@ DirectedDFS.prototype.animateHighlightTraversal = function (
   }
 
   if (Math.abs(curve) < 0.01) {
-    this.cmd("Move", this.highlightCircleID, endPos.x, endPos.y);
+    this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
     this.cmd("Step");
     return;
   }
@@ -975,97 +991,15 @@ DirectedDFS.prototype.animateHighlightTraversal = function (
   var controlX = midX - dy * curve;
   var controlY = midY + dx * curve;
 
-  var segments = 10;
-  for (var step = 1; step <= segments; step++) {
-    var t = step / segments;
-    var invT = 1 - t;
-    var px =
-      invT * invT * startPos.x +
-      2 * invT * t * controlX +
-      t * t * endPos.x;
-    var py =
-      invT * invT * startPos.y +
-      2 * invT * t * controlY +
-      t * t * endPos.y;
-    this.cmd("Move", this.highlightCircleID, Math.round(px), Math.round(py));
-    this.cmd("Step");
-  }
-};
-
-DirectedDFS.prototype.highlightEdge = function (from, to, active) {
-  var fromID = this.vertexIDs[from];
-  var toID = this.vertexIDs[to];
-  if (active) {
-    this.updateEdgeBaseColor(from, to);
-    this.cmd(
-      "SetEdgeThickness",
-      fromID,
-      toID,
-      DirectedDFS.EDGE_HIGHLIGHT_THICKNESS
-    );
-    this.cmd("SetEdgeHighlight", fromID, toID, 1);
-  } else {
-    this.cmd("SetEdgeHighlight", fromID, toID, 0);
-    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
-    this.updateEdgeBaseColor(from, to);
-  }
-};
-
-DirectedDFS.prototype.animateHighlightTraversal = function (
-  fromIndex,
-  toIndex
-) {
-  if (fromIndex === toIndex) {
-    return;
-  }
-
-  var startPos = this.vertexPositions[fromIndex];
-  var endPos = this.vertexPositions[toIndex];
-  var key = this.edgeKey(fromIndex, toIndex);
-  var meta = this.edgeMeta[key];
-  var curve = 0;
-  var reverseMeta = null;
-  if (meta) {
-    curve = meta.curve;
-  } else {
-    reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
-    if (reverseMeta) {
-      curve = -reverseMeta.curve;
-    }
-  }
-
-  if (!meta && !reverseMeta) {
-    curve = 0;
-  }
-
-  if (Math.abs(curve) < 0.01) {
-    this.cmd("Move", this.highlightCircleID, endPos.x, endPos.y);
-    this.cmd("Step");
-    return;
-  }
-
-  var dx = endPos.x - startPos.x;
-  var dy = endPos.y - startPos.y;
-  var midX = (startPos.x + endPos.x) / 2;
-  var midY = (startPos.y + endPos.y) / 2;
-  var controlX = midX - dy * curve;
-  var controlY = midY + dx * curve;
-
-  var segments = 10;
-  for (var step = 1; step <= segments; step++) {
-    var t = step / segments;
-    var invT = 1 - t;
-    var px =
-      invT * invT * startPos.x +
-      2 * invT * t * controlX +
-      t * t * endPos.x;
-    var py =
-      invT * invT * startPos.y +
-      2 * invT * t * controlY +
-      t * t * endPos.y;
-    this.cmd("Move", this.highlightCircleID, Math.round(px), Math.round(py));
-    this.cmd("Step");
-  }
+  this.cmd(
+    "MoveAlongCurve",
+    this.highlightCircleID,
+    Math.round(controlX),
+    Math.round(controlY),
+    Math.round(endPos.x),
+    Math.round(endPos.y)
+  );
+  this.cmd("Step");
 };
 
 DirectedDFS.prototype.startCallback = function () {

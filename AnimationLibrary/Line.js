@@ -50,6 +50,9 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
         this.addedToScene = true;
         this.anchorPoint = anchorIndex;
         this.highlightDiff = 0;
+
+        this.highlightAlpha = 1.0;
+
         this.curve = cv;
         this.thickness = 1;
 
@@ -81,16 +84,22 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 		this.highlighted = highlightVal;   
 	}
 		   
-	this.pulseHighlight = function(frameNum)
-	{
-	   if (this.highlighted)
-	   {
-		   var frameMod = frameNum / 14.0;
-		   var delta  = Math.abs((frameMod) % (2 * LINE_range  - 2) - LINE_range + 1)
-		   this.highlightDiff =  delta + LINE_minHeightDiff;
-		   Dirty = true;			   
-	   }
-	}
+        this.pulseHighlight = function(frameNum)
+        {
+           if (this.highlighted)
+           {
+                   var phase = Math.abs(Math.sin(frameNum / 12.0));
+                   this.highlightAlpha = 0.35 + 0.65 * phase;
+                   this.highlightDiff = this.thickness;
+                   Dirty = true;
+           }
+           else
+           {
+                   this.highlightAlpha = 1.0;
+                   this.highlightDiff = this.thickness;
+                   Dirty = true;
+           }
+        }
 	   
 	   
 	this.hasNode = function(n)
@@ -199,9 +208,15 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 		   }
 		   ctx.globalAlpha = this.alpha;
 
-                        if (this.highlighted)
-                        this.drawArrow(this.highlightDiff, "#ff3b30", ctx);
                         this.drawArrow(this.thickness, this.edgeColor, ctx);
+                        if (this.highlighted)
+                        {
+                                ctx.save();
+                                ctx.globalAlpha = ctx.globalAlpha * this.highlightAlpha;
+                                this.drawArrow(this.thickness, "#ff3b30", ctx);
+                                ctx.restore();
+                        }
+
            }
 	   
 	   
