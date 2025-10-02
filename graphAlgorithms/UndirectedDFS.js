@@ -29,11 +29,12 @@ UndirectedDFS.GRAPH_NODE_RADIUS = 22;
 UndirectedDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 UndirectedDFS.GRAPH_NODE_BORDER = "#0b3954";
 UndirectedDFS.GRAPH_NODE_TEXT = "#003049";
-UndirectedDFS.GRAPH_NODE_VISITED_COLOR = "#bbdefb";
+UndirectedDFS.GRAPH_NODE_VISITED_COLOR = "#66bb6a";
+UndirectedDFS.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
 UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
-UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
-UndirectedDFS.EDGE_VISITED_COLOR = "#0d47a1";
+UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#66bb6a";
+UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
 UndirectedDFS.EDGE_HIGHLIGHT_THICKNESS = 6;
 
@@ -442,6 +443,11 @@ UndirectedDFS.prototype.clearTraversalState = function () {
       "SetBackgroundColor",
       this.vertexIDs[i],
       UndirectedDFS.GRAPH_NODE_COLOR
+    );
+    this.cmd(
+      "SetTextColor",
+      this.vertexIDs[i],
+      UndirectedDFS.GRAPH_NODE_TEXT
     );
   }
   this.resetEdgesToUndirected();
@@ -937,6 +943,11 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       "SetBackgroundColor",
       this.vertexIDs[u],
       UndirectedDFS.GRAPH_NODE_VISITED_COLOR
+    );
+    this.cmd(
+      "SetTextColor",
+      this.vertexIDs[u],
+      UndirectedDFS.GRAPH_NODE_VISITED_TEXT_COLOR
     );
     this.cmd("Step");
   }
