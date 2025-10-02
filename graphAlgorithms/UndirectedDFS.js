@@ -33,6 +33,7 @@ UndirectedDFS.GRAPH_NODE_VISITED_COLOR = "#b8f5b1";
 UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
+UndirectedDFS.EDGE_VISITED_COLOR = "#90ee90";
 
 UndirectedDFS.ARRAY_BASE_X = 540;
 UndirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -80,6 +81,8 @@ UndirectedDFS.prototype.init = function (am, w, h) {
   this.adjacencyList = [];
   this.edgePairs = [];
   this.edgeOrientation = {};
+  this.edgeStates = {};
+  this.edgeMeta = {};
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
@@ -137,6 +140,9 @@ UndirectedDFS.prototype.reset = function () {
 
 UndirectedDFS.prototype.setup = function () {
   this.commands = [];
+  this.edgeOrientation = {};
+  this.edgeStates = {};
+  this.edgeMeta = {};
 
   this.vertexLabels = [
     "A",
@@ -150,46 +156,16 @@ UndirectedDFS.prototype.setup = function () {
     "I",
     "J",
   ];
-  this.vertexPositions = [
-    { x: 190, y: UndirectedDFS.ROW2_START_Y + 90 },
-    { x: 310, y: UndirectedDFS.ROW2_START_Y + 90 },
-    { x: 120, y: UndirectedDFS.ROW2_START_Y + 230 },
-    { x: 260, y: UndirectedDFS.ROW2_START_Y + 220 },
-    { x: 360, y: UndirectedDFS.ROW2_START_Y + 230 },
-    { x: 120, y: UndirectedDFS.ROW2_START_Y + 360 },
-    { x: 240, y: UndirectedDFS.ROW2_START_Y + 360 },
-    { x: 360, y: UndirectedDFS.ROW2_START_Y + 360 },
-    { x: 190, y: UndirectedDFS.ROW2_START_Y + 500 },
-    { x: 310, y: UndirectedDFS.ROW2_START_Y + 500 },
-  ];
-
-  var edges = [
-    { u: 0, v: 1 },
-    { u: 0, v: 2 },
-    { u: 1, v: 3 },
-    { u: 1, v: 4 },
-    { u: 2, v: 5 },
-    { u: 2, v: 6 },
-    { u: 3, v: 7 },
-    { u: 4, v: 7 },
-    { u: 4, v: 8 },
-    { u: 6, v: 8 },
-    { u: 7, v: 9 },
-    { u: 8, v: 9 },
-  ];
-
+  this.generateRandomGraph();
   this.adjacencyList = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.adjacencyList.length; i++) {
     this.adjacencyList[i] = [];
   }
-  for (var e = 0; e < edges.length; e++) {
-    var edge = edges[e];
+  for (var e = 0; e < this.edgePairs.length; e++) {
+    var edge = this.edgePairs[e];
     this.adjacencyList[edge.u].push(edge.v);
     this.adjacencyList[edge.v].push(edge.u);
   }
-
-  this.edgePairs = edges;
-  this.edgeOrientation = {};
 
   this.createTitleRow();
   this.createGraphArea();
@@ -259,18 +235,27 @@ UndirectedDFS.prototype.createGraphArea = function () {
 
   for (var j = 0; j < this.edgePairs.length; j++) {
     var pair = this.edgePairs[j];
-    this.edgeOrientation[this.edgeKey(pair.u, pair.v)] = {
+    var key = this.edgeKey(pair.u, pair.v);
+    this.edgeOrientation[key] = {
       from: pair.u,
       to: pair.v,
     };
+    this.edgeStates[key] = { tree: false };
+    this.edgeMeta[key] = pair;
     this.cmd(
       "Connect",
       this.vertexIDs[pair.u],
       this.vertexIDs[pair.v],
       UndirectedDFS.EDGE_COLOR,
-      0,
+      pair.curve,
       0,
       ""
+    );
+    this.cmd(
+      "SetEdgeHighlight",
+      this.vertexIDs[pair.u],
+      this.vertexIDs[pair.v],
+      0
     );
   }
 
@@ -417,17 +402,51 @@ UndirectedDFS.prototype.clearTraversalState = function () {
       UndirectedDFS.GRAPH_NODE_COLOR
     );
   }
-  this.clearEdgeHighlights();
+  this.resetEdgesToUndirected();
 };
 
-UndirectedDFS.prototype.clearEdgeHighlights = function () {
+UndirectedDFS.prototype.edgeKey = function (u, v) {
+  return u < v ? u + "-" + v : v + "-" + u;
+};
+
+UndirectedDFS.prototype.resetEdgesToUndirected = function () {
+  var key;
+  for (key in this.edgeOrientation) {
+    if (!this.edgeOrientation.hasOwnProperty(key)) {
+      continue;
+    }
+    var orientation = this.edgeOrientation[key];
+    this.cmd(
+      "Disconnect",
+      this.vertexIDs[orientation.from],
+      this.vertexIDs[orientation.to]
+    );
+  }
+
+  this.edgeOrientation = {};
   for (var i = 0; i < this.edgePairs.length; i++) {
-    var pair = this.edgePairs[i];
-    this.setEdgeStyle(pair.u, pair.v, false);
+    var edge = this.edgePairs[i];
+    var fromID = this.vertexIDs[edge.u];
+    var toID = this.vertexIDs[edge.v];
+    this.cmd(
+      "Connect",
+      fromID,
+      toID,
+      UndirectedDFS.EDGE_COLOR,
+      edge.curve,
+      0,
+      ""
+    );
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    var edgeKey = this.edgeKey(edge.u, edge.v);
+    this.edgeOrientation[edgeKey] = { from: edge.u, to: edge.v };
+    this.edgeStates[edgeKey] = { tree: false };
+    this.edgeMeta[edgeKey] = edge;
   }
 };
 
-UndirectedDFS.prototype.setEdgeStyle = function (u, v, highlighted) {
+UndirectedDFS.prototype.setEdgeState = function (u, v, options) {
+
   var key = this.edgeKey(u, v);
   var orientation = this.edgeOrientation[key];
   if (!orientation) {
@@ -435,17 +454,137 @@ UndirectedDFS.prototype.setEdgeStyle = function (u, v, highlighted) {
   }
   var fromID = this.vertexIDs[orientation.from];
   var toID = this.vertexIDs[orientation.to];
-  this.cmd("SetEdgeHighlight", fromID, toID, highlighted ? 1 : 0);
-  this.cmd(
-    "SetEdgeColor",
-    fromID,
-    toID,
-    highlighted ? UndirectedDFS.EDGE_HIGHLIGHT_COLOR : UndirectedDFS.EDGE_COLOR
-  );
+  if (options.highlight !== undefined) {
+    this.cmd("SetEdgeHighlight", fromID, toID, options.highlight ? 1 : 0);
+  }
+  if (options.color) {
+    this.cmd("SetEdgeColor", fromID, toID, options.color);
+  }
 };
 
-UndirectedDFS.prototype.edgeKey = function (u, v) {
-  return u < v ? u + "-" + v : v + "-" + u;
+UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
+  if (active) {
+    this.setEdgeState(u, v, {
+      highlight: true,
+      color: UndirectedDFS.EDGE_HIGHLIGHT_COLOR,
+    });
+  } else {
+    var key = this.edgeKey(u, v);
+    var color = UndirectedDFS.EDGE_COLOR;
+    if (this.edgeStates[key] && this.edgeStates[key].tree) {
+      color = UndirectedDFS.EDGE_VISITED_COLOR;
+    }
+    this.setEdgeState(u, v, { highlight: false, color: color });
+  }
+};
+
+UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
+  var key = this.edgeKey(parent, child);
+  var orientation = this.edgeOrientation[key];
+  var meta = this.edgeMeta[key];
+  if (!orientation || !meta) {
+    return;
+  }
+
+  this.cmd(
+    "Disconnect",
+    this.vertexIDs[orientation.from],
+    this.vertexIDs[orientation.to]
+  );
+  this.cmd(
+    "Connect",
+    this.vertexIDs[parent],
+    this.vertexIDs[child],
+    UndirectedDFS.EDGE_VISITED_COLOR,
+    meta.curve,
+    1,
+    ""
+  );
+  this.cmd(
+    "SetEdgeHighlight",
+    this.vertexIDs[parent],
+    this.vertexIDs[child],
+    1
+  );
+  this.edgeOrientation[key] = { from: parent, to: child };
+  this.edgeStates[key] = { tree: true };
+};
+
+UndirectedDFS.prototype.generateRandomGraph = function () {
+  var vertexCount = this.vertexLabels.length;
+  this.vertexPositions = new Array(vertexCount);
+
+  var centerX = UndirectedDFS.GRAPH_AREA_CENTER_X;
+  var centerY =
+    UndirectedDFS.ROW2_START_Y + UndirectedDFS.ROW2_HEIGHT / 2 - 40;
+  var radiusX = 170;
+  var radiusY = 240;
+  var minX = 80;
+  var maxX = UndirectedDFS.ARRAY_BASE_X - 120;
+  var minY = UndirectedDFS.ROW2_START_Y + 70;
+  var maxY = UndirectedDFS.ROW2_START_Y + UndirectedDFS.ROW2_HEIGHT - 70;
+
+  for (var i = 0; i < vertexCount; i++) {
+    var angle = (2 * Math.PI * i) / vertexCount + (Math.random() - 0.5) * 0.6;
+    var jitterX = (Math.random() - 0.5) * 45;
+    var jitterY = (Math.random() - 0.5) * 45;
+    var x = centerX + Math.cos(angle) * radiusX + jitterX;
+    var y = centerY + Math.sin(angle) * radiusY + jitterY;
+    x = Math.max(minX, Math.min(maxX, x));
+    y = Math.max(minY, Math.min(maxY, y));
+    this.vertexPositions[i] = { x: Math.round(x), y: Math.round(y) };
+  }
+
+  var edges = [];
+  var existing = {};
+
+  var addEdge = function (u, v) {
+    if (u === v) {
+      return false;
+    }
+    var key = u < v ? u + "-" + v : v + "-" + u;
+    if (existing[key]) {
+      return false;
+    }
+    var curve = 0;
+    if (Math.random() < 0.35) {
+      var magnitude = 0.15 + Math.random() * 0.25;
+      curve = Math.random() < 0.5 ? -magnitude : magnitude;
+    }
+    edges.push({ u: u, v: v, curve: curve });
+    existing[key] = true;
+    return true;
+  };
+
+  for (var v = 1; v < vertexCount; v++) {
+    var parent = Math.floor(Math.random() * v);
+    addEdge(parent, v);
+  }
+
+  var targetTotal = vertexCount + 2 + Math.floor(Math.random() * 4);
+  var attempts = 0;
+  while (edges.length < targetTotal && attempts < vertexCount * vertexCount) {
+    var u = Math.floor(Math.random() * vertexCount);
+    var w = Math.floor(Math.random() * vertexCount);
+    if (addEdge(u, w)) {
+      attempts = 0;
+    } else {
+      attempts++;
+    }
+  }
+
+  var hasCurve = false;
+  for (var e = 0; e < edges.length; e++) {
+    if (Math.abs(edges[e].curve) > 0.01) {
+      hasCurve = true;
+      break;
+    }
+  }
+  if (!hasCurve && edges.length > 0) {
+    edges[edges.length - 1].curve = 0.25;
+  }
+
+  this.edgePairs = edges;
 };
 
 UndirectedDFS.prototype.startCallback = function () {
@@ -513,11 +652,14 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
   var neighbors = this.adjacencyList[u];
   for (var i = 0; i < neighbors.length; i++) {
     var v = neighbors[i];
+    if (v === parent) {
+      continue;
+    }
     this.highlightCodeLine(3);
-    this.setEdgeStyle(u, v, true);
+    this.setEdgeActive(u, v, true);
     this.cmd("Step");
 
-    if (v !== parent && !this.visited[v]) {
+    if (!this.visited[v]) {
       this.highlightCodeLine(4);
       this.parents[v] = u;
       this.cmd(
@@ -528,6 +670,8 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.cmd("Step");
 
       this.highlightCodeLine(5);
+      this.markEdgeAsTreeEdge(u, v);
+      this.cmd("Step");
       this.cmd(
         "Move",
         this.highlightCircleID,
@@ -549,8 +693,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
 
     this.highlightCodeLine(6);
     this.cmd("Step");
-
-    this.setEdgeStyle(u, v, false);
+    this.setEdgeActive(u, v, false);
 
     this.highlightCodeLine(2);
     this.cmd("Step");
