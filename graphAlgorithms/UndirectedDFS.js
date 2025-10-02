@@ -33,9 +33,9 @@ UndirectedDFS.GRAPH_NODE_VISITED_COLOR = "#b8f5b1";
 UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_HIGHLIGHT_COLOR = "#f77f00";
-UndirectedDFS.EDGE_VISITED_COLOR = "#90ee90";
+UndirectedDFS.EDGE_VISITED_COLOR = "#1b5e20";
 
-UndirectedDFS.ARRAY_BASE_X = 540;
+UndirectedDFS.ARRAY_BASE_X = 600;
 UndirectedDFS.ARRAY_COLUMN_SPACING = 80;
 UndirectedDFS.ARRAY_TOP_Y = UndirectedDFS.ROW2_START_Y + 90;
 UndirectedDFS.ARRAY_CELL_HEIGHT = 52;
@@ -68,6 +68,36 @@ UndirectedDFS.CODE_LINES = [
   ["        }"],
   ["    }"],
   ["}"],
+];
+
+// Allowed adjacency template derived from the DFS classroom visualization so
+// the undirected graph reuses its well-spaced layout without overlaps.
+UndirectedDFS.TEMPLATE_ALLOWED = [
+  [false, true, true, false, true, false, false, true, false, false],
+  [true, false, true, false, true, true, false, false, false, false],
+  [true, true, false, true, false, true, true, false, false, false],
+  [false, false, true, false, false, false, true, false, false, false],
+  [true, true, false, false, false, true, false, true, true, false],
+  [false, true, true, false, true, false, true, false, true, true],
+  [false, false, true, true, false, true, false, false, false, true],
+  [true, false, false, false, true, false, false, false, true, false],
+  [false, false, false, false, true, true, false, true, false, true],
+  [false, false, false, false, false, true, true, false, true, false],
+];
+
+// Matching curve data from the DFS classroom visualization template. Only
+// entries with a non-zero magnitude will render as curved edges.
+UndirectedDFS.TEMPLATE_CURVES = [
+  [0, 0, -0.4, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0.4, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
 UndirectedDFS.prototype.init = function (am, w, h) {
@@ -140,23 +170,15 @@ UndirectedDFS.prototype.reset = function () {
 
 UndirectedDFS.prototype.setup = function () {
   this.commands = [];
+
   this.edgeOrientation = {};
   this.edgeStates = {};
   this.edgeMeta = {};
 
-  this.vertexLabels = [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J",
-  ];
-  this.generateRandomGraph();
+  var vertexCount = this.chooseVertexCount();
+  this.vertexLabels = this.createVertexLabels(vertexCount);
+  this.generateRandomGraph(vertexCount);
+
   this.adjacencyList = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.adjacencyList.length; i++) {
     this.adjacencyList[i] = [];
@@ -184,6 +206,18 @@ UndirectedDFS.prototype.setup = function () {
 
 UndirectedDFS.prototype.resetCallback = function () {
   this.implementAction(this.reset.bind(this), 0);
+};
+
+UndirectedDFS.prototype.chooseVertexCount = function () {
+  return 10;
+};
+
+UndirectedDFS.prototype.createVertexLabels = function (count) {
+  var labels = [];
+  for (var i = 0; i < count; i++) {
+    labels.push(String.fromCharCode("A".charCodeAt(0) + i));
+  }
+  return labels;
 };
 
 UndirectedDFS.prototype.createTitleRow = function () {
@@ -311,7 +345,7 @@ UndirectedDFS.prototype.createArrayArea = function () {
       "CreateLabel",
       vertexLabelID,
       this.vertexLabels[i],
-      UndirectedDFS.ARRAY_BASE_X - 95,
+      UndirectedDFS.ARRAY_BASE_X - 58,
       rowY,
       0
     );
@@ -446,7 +480,6 @@ UndirectedDFS.prototype.resetEdgesToUndirected = function () {
 };
 
 UndirectedDFS.prototype.setEdgeState = function (u, v, options) {
-
   var key = this.edgeKey(u, v);
   var orientation = this.edgeOrientation[key];
   if (!orientation) {
@@ -478,6 +511,53 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
   }
 };
 
+UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex) {
+  if (fromIndex === toIndex) {
+    return;
+  }
+
+  var startPos = this.vertexPositions[fromIndex];
+  var endPos = this.vertexPositions[toIndex];
+  var key = this.edgeKey(fromIndex, toIndex);
+  var meta = this.edgeMeta[key];
+  var curve = 0;
+  if (meta) {
+    curve = meta.curve;
+    if (curve !== 0 && fromIndex === meta.v && toIndex === meta.u) {
+      curve = -curve;
+    }
+  }
+
+  if (!meta || Math.abs(curve) < 0.01) {
+    this.cmd("Move", this.highlightCircleID, endPos.x, endPos.y);
+    this.cmd("Step");
+    return;
+  }
+
+  var dx = endPos.x - startPos.x;
+  var dy = endPos.y - startPos.y;
+  var midX = (startPos.x + endPos.x) / 2;
+  var midY = (startPos.y + endPos.y) / 2;
+  var controlX = midX - dy * curve;
+  var controlY = midY + dx * curve;
+
+  var segments = 10;
+  for (var step = 1; step <= segments; step++) {
+    var t = step / segments;
+    var invT = 1 - t;
+    var px =
+      invT * invT * startPos.x +
+      2 * invT * t * controlX +
+      t * t * endPos.x;
+    var py =
+      invT * invT * startPos.y +
+      2 * invT * t * controlY +
+      t * t * endPos.y;
+    this.cmd("Move", this.highlightCircleID, Math.round(px), Math.round(py));
+    this.cmd("Step");
+  }
+};
+
 UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
   var key = this.edgeKey(parent, child);
   var orientation = this.edgeOrientation[key];
@@ -491,12 +571,17 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     this.vertexIDs[orientation.from],
     this.vertexIDs[orientation.to]
   );
+  var curve = meta.curve;
+  if (curve !== 0 && parent === meta.v && child === meta.u) {
+    curve = -curve;
+  }
+
   this.cmd(
     "Connect",
     this.vertexIDs[parent],
     this.vertexIDs[child],
     UndirectedDFS.EDGE_VISITED_COLOR,
-    meta.curve,
+    curve,
     1,
     ""
   );
@@ -510,31 +595,34 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
   this.edgeStates[key] = { tree: true };
 };
 
-UndirectedDFS.prototype.generateRandomGraph = function () {
-  var vertexCount = this.vertexLabels.length;
-  this.vertexPositions = new Array(vertexCount);
+UndirectedDFS.prototype.computeTemplateLayout = function (vertexCount) {
+  var layout = [];
+  var baseX = 130;
+  var stepX = 90;
+  var baseY = UndirectedDFS.ROW2_START_Y + 90;
+  var rowSpacing = 115;
+  var rowPattern = [4, 3, 4, 3, 4];
 
-  var centerX = UndirectedDFS.GRAPH_AREA_CENTER_X;
-  var centerY =
-    UndirectedDFS.ROW2_START_Y + UndirectedDFS.ROW2_HEIGHT / 2 - 40;
-  var radiusX = 170;
-  var radiusY = 240;
-  var minX = 80;
-  var maxX = UndirectedDFS.ARRAY_BASE_X - 120;
-  var minY = UndirectedDFS.ROW2_START_Y + 70;
-  var maxY = UndirectedDFS.ROW2_START_Y + UndirectedDFS.ROW2_HEIGHT - 70;
-
-  for (var i = 0; i < vertexCount; i++) {
-    var angle = (2 * Math.PI * i) / vertexCount + (Math.random() - 0.5) * 0.6;
-    var jitterX = (Math.random() - 0.5) * 45;
-    var jitterY = (Math.random() - 0.5) * 45;
-    var x = centerX + Math.cos(angle) * radiusX + jitterX;
-    var y = centerY + Math.sin(angle) * radiusY + jitterY;
-    x = Math.max(minX, Math.min(maxX, x));
-    y = Math.max(minY, Math.min(maxY, y));
-    this.vertexPositions[i] = { x: Math.round(x), y: Math.round(y) };
+  for (var row = 0, index = 0; row < rowPattern.length; row++) {
+    var count = rowPattern[row];
+    var startX = count === 4 ? baseX : baseX + stepX / 2;
+    var y = baseY + row * rowSpacing;
+    for (var col = 0; col < count && index < vertexCount; col++, index++) {
+      layout.push({ x: startX + col * stepX, y: y });
+    }
+    if (layout.length >= vertexCount) {
+      break;
+    }
   }
 
+  return layout;
+};
+
+UndirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
+  this.vertexPositions = this.computeTemplateLayout(vertexCount);
+
+  var allowed = UndirectedDFS.TEMPLATE_ALLOWED;
+  var curves = UndirectedDFS.TEMPLATE_CURVES;
   var edges = [];
   var existing = {};
 
@@ -542,34 +630,57 @@ UndirectedDFS.prototype.generateRandomGraph = function () {
     if (u === v) {
       return false;
     }
-    var key = u < v ? u + "-" + v : v + "-" + u;
+    var a = Math.min(u, v);
+    var b = Math.max(u, v);
+    var key = a + "-" + b;
     if (existing[key]) {
       return false;
     }
     var curve = 0;
-    if (Math.random() < 0.35) {
-      var magnitude = 0.15 + Math.random() * 0.25;
-      curve = Math.random() < 0.5 ? -magnitude : magnitude;
+    if (
+      curves[a] &&
+      typeof curves[a][b] === "number" &&
+      Math.abs(curves[a][b]) > 0.0001
+    ) {
+      curve = curves[a][b];
     }
-    edges.push({ u: u, v: v, curve: curve });
+    edges.push({ u: a, v: b, curve: curve });
     existing[key] = true;
     return true;
   };
 
   for (var v = 1; v < vertexCount; v++) {
-    var parent = Math.floor(Math.random() * v);
-    addEdge(parent, v);
+    var neighbors = [];
+    for (var u = 0; u < vertexCount; u++) {
+      if (allowed[v] && allowed[v][u]) {
+        neighbors.push(u);
+      }
+    }
+    if (neighbors.length > 0) {
+      for (var t = neighbors.length - 1; t >= 0; t--) {
+        var swap = Math.floor(Math.random() * (t + 1));
+        var candidate = neighbors[swap];
+        neighbors[swap] = neighbors[t];
+        neighbors[t] = candidate;
+        if (addEdge(candidate, v)) {
+          break;
+        }
+      }
+    }
   }
 
-  var targetTotal = vertexCount + 2 + Math.floor(Math.random() * 4);
-  var attempts = 0;
-  while (edges.length < targetTotal && attempts < vertexCount * vertexCount) {
-    var u = Math.floor(Math.random() * vertexCount);
-    var w = Math.floor(Math.random() * vertexCount);
-    if (addEdge(u, w)) {
-      attempts = 0;
-    } else {
-      attempts++;
+  var edgePercent = 0.45;
+  for (var i = 0; i < vertexCount; i++) {
+    for (var j = i + 1; j < vertexCount; j++) {
+      if (!allowed[i] || !allowed[i][j]) {
+        continue;
+      }
+      if (existing[i + "-" + j]) {
+        continue;
+      }
+      if (Math.random() <= edgePercent) {
+        addEdge(i, j);
+      }
     }
   }
 
@@ -580,13 +691,157 @@ UndirectedDFS.prototype.generateRandomGraph = function () {
       break;
     }
   }
-  if (!hasCurve && edges.length > 0) {
-    edges[edges.length - 1].curve = 0.25;
+  if (!hasCurve) {
+    for (var r = 0; r < vertexCount && !hasCurve; r++) {
+      for (var c = r + 1; c < vertexCount && !hasCurve; c++) {
+        if (!allowed[r] || !allowed[r][c]) {
+          continue;
+        }
+        if (
+          curves[r] &&
+          typeof curves[r][c] === "number" &&
+          Math.abs(curves[r][c]) > 0.01
+        ) {
+          if (addEdge(r, c)) {
+            hasCurve = true;
+          }
+        }
+      }
+    }
   }
 
   this.edgePairs = edges;
 };
 
+UndirectedDFS.prototype.applyVertexClamping = function (
+  minX,
+  maxX,
+  minY,
+  maxY
+) {
+  for (var i = 0; i < this.vertexPositions.length; i++) {
+    this.vertexPositions[i].x = Math.max(
+      minX,
+      Math.min(maxX, this.vertexPositions[i].x)
+    );
+    this.vertexPositions[i].y = Math.max(
+      minY,
+      Math.min(maxY, this.vertexPositions[i].y)
+    );
+  }
+};
+
+UndirectedDFS.prototype.relaxVertices = function (
+  minSeparation,
+  iterations,
+  minX,
+  maxX,
+  minY,
+  maxY
+) {
+  iterations = Math.max(0, iterations);
+  for (var iteration = 0; iteration < iterations; iteration++) {
+    for (var a = 0; a < this.vertexPositions.length; a++) {
+      for (var b = a + 1; b < this.vertexPositions.length; b++) {
+        var dx = this.vertexPositions[b].x - this.vertexPositions[a].x;
+        var dy = this.vertexPositions[b].y - this.vertexPositions[a].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist === 0) {
+          dx = (Math.random() - 0.5) * 0.01;
+          dy = (Math.random() - 0.5) * 0.01;
+          dist = Math.sqrt(dx * dx + dy * dy);
+        }
+        if (dist < minSeparation) {
+          var push = (minSeparation - dist) / 2;
+          var nx = dx / dist;
+          var ny = dy / dist;
+          this.vertexPositions[a].x -= nx * push;
+          this.vertexPositions[a].y -= ny * push;
+          this.vertexPositions[b].x += nx * push;
+          this.vertexPositions[b].y += ny * push;
+        }
+      }
+    }
+    this.applyVertexClamping(minX, maxX, minY, maxY);
+  }
+};
+
+UndirectedDFS.prototype.roundVertexPositions = function () {
+  for (var i = 0; i < this.vertexPositions.length; i++) {
+    this.vertexPositions[i].x = Math.round(this.vertexPositions[i].x);
+    this.vertexPositions[i].y = Math.round(this.vertexPositions[i].y);
+  }
+};
+
+UndirectedDFS.prototype.pushVerticesAwayFromEdges = function (
+  edges,
+  clearance,
+  iterations,
+  minX,
+  maxX,
+  minY,
+  maxY
+) {
+  if (!edges || edges.length === 0) {
+    return;
+  }
+  var vertexCount = this.vertexPositions.length;
+  var influence = clearance * 0.45;
+  for (var iter = 0; iter < iterations; iter++) {
+    var adjustments = new Array(vertexCount);
+    for (var i = 0; i < vertexCount; i++) {
+      adjustments[i] = { x: 0, y: 0 };
+    }
+    var changed = false;
+
+    for (var e = 0; e < edges.length; e++) {
+      var u = edges[e].u;
+      var v = edges[e].v;
+      var start = this.vertexPositions[u];
+      var end = this.vertexPositions[v];
+      var edgeDX = end.x - start.x;
+      var edgeDY = end.y - start.y;
+      var edgeLenSq = edgeDX * edgeDX + edgeDY * edgeDY;
+      if (edgeLenSq === 0) {
+        continue;
+      }
+
+      for (var w = 0; w < vertexCount; w++) {
+        if (w === u || w === v) {
+          continue;
+        }
+        var point = this.vertexPositions[w];
+        var t =
+          ((point.x - start.x) * edgeDX + (point.y - start.y) * edgeDY) /
+          edgeLenSq;
+        t = Math.max(0, Math.min(1, t));
+        var closestX = start.x + t * edgeDX;
+        var closestY = start.y + t * edgeDY;
+        var diffX = point.x - closestX;
+        var diffY = point.y - closestY;
+        var dist = Math.sqrt(diffX * diffX + diffY * diffY);
+        if (dist < clearance) {
+          var away = Math.max(dist, 0.0001);
+          var strength = (clearance - dist) / clearance;
+          adjustments[w].x += (diffX / away) * strength * influence;
+          adjustments[w].y += (diffY / away) * strength * influence;
+          changed = true;
+        }
+      }
+    }
+
+    if (!changed) {
+      break;
+    }
+
+    for (var idx = 0; idx < vertexCount; idx++) {
+      this.vertexPositions[idx].x += adjustments[idx].x;
+      this.vertexPositions[idx].y += adjustments[idx].y;
+    }
+
+    this.applyVertexClamping(minX, maxX, minY, maxY);
+  }
+};
 UndirectedDFS.prototype.startCallback = function () {
   if (!this.startField) return;
   var raw = this.startField.value.trim();
@@ -672,23 +927,12 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.highlightCodeLine(5);
       this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
-      this.cmd(
-        "Move",
-        this.highlightCircleID,
-        this.vertexPositions[v].x,
-        this.vertexPositions[v].y
-      );
-      this.cmd("Step");
+
+      this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v, u);
 
-      this.cmd(
-        "Move",
-        this.highlightCircleID,
-        this.vertexPositions[u].x,
-        this.vertexPositions[u].y
-      );
-      this.cmd("Step");
+      this.animateHighlightTraversal(v, u);
     }
 
     this.highlightCodeLine(6);
