@@ -35,11 +35,13 @@ DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 DirectedDFS.EDGE_THICKNESS = 3;
+
 DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = DirectedDFS.EDGE_THICKNESS;
 DirectedDFS.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 // Minimum curvature magnitude to keep opposite-direction edges visually parallel.
 DirectedDFS.MIN_PARALLEL_SEPARATION = 0.42;
+
 
 DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -499,6 +501,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
   }
 
   var hasCurveEdge = false;
+
   var applyCurves = function (list, baseCurveValue, orientationSign) {
     if (!list.length) {
       return;
@@ -537,6 +540,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     }
     var bucket = pairBuckets[bucketKey];
     var baseCurve = baseCurveForPair(bucket.min, bucket.max);
+
     var forward = [];
     var backward = [];
     for (var bi = 0; bi < bucket.edges.length; bi++) {
@@ -551,6 +555,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     if (forward.length > 0 && backward.length > 0) {
       var forwardCurve = baseCurve;
       var backwardCurve = -baseCurve;
+
       var minParallel = DirectedDFS.MIN_PARALLEL_SEPARATION;
       if (Math.abs(baseCurve) < 0.01) {
         var dualMagnitude = Math.max(
@@ -563,6 +568,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
         var resolvedMagnitude = Math.max(Math.abs(baseCurve), minParallel);
         forwardCurve = (forwardCurve >= 0 ? 1 : -1) * resolvedMagnitude;
         backwardCurve = (backwardCurve >= 0 ? 1 : -1) * resolvedMagnitude;
+
       }
       applyCurves(forward, forwardCurve, forwardCurve >= 0 ? 1 : -1);
       applyCurves(backward, backwardCurve, backwardCurve >= 0 ? 1 : -1);
@@ -918,6 +924,7 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.from],
       this.vertexIDs[edge.to],
       0
+
     );
   }
 };
@@ -932,12 +939,15 @@ DirectedDFS.prototype.highlightEdge = function (from, to, active) {
       fromID,
       toID,
       DirectedDFS.EDGE_HIGHLIGHT_THICKNESS
+
     );
     this.cmd("SetEdgeHighlight", fromID, toID, 1);
   } else {
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
     this.updateEdgeBaseColor(from, to);
+
+
   }
 };
 
