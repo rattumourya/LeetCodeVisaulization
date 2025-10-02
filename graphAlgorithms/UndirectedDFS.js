@@ -52,11 +52,27 @@ UndirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 UndirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 UndirectedDFS.ARRAY_HEADER_GAP = 20;
 
+UndirectedDFS.CODE_START_X = 120;
 UndirectedDFS.CODE_START_Y = UndirectedDFS.ROW3_START_Y + 10;
 UndirectedDFS.CODE_LINE_HEIGHT = 32;
 UndirectedDFS.CODE_STANDARD_COLOR = "#1d3557";
 UndirectedDFS.CODE_HIGHLIGHT_COLOR = "#e63946";
 UndirectedDFS.CODE_FONT = "bold 22";
+
+UndirectedDFS.RECURSION_AREA_CENTER_X = 660;
+UndirectedDFS.RECURSION_HEADER_Y = UndirectedDFS.ROW3_START_Y + 30;
+UndirectedDFS.RECURSION_AREA_TOP_MARGIN = 70;
+UndirectedDFS.RECURSION_AREA_BOTTOM_MARGIN = 30;
+UndirectedDFS.RECURSION_FRAME_WIDTH = 320;
+UndirectedDFS.RECURSION_FRAME_HEIGHT = 34;
+UndirectedDFS.RECURSION_FRAME_MIN_HEIGHT = 22;
+UndirectedDFS.RECURSION_FRAME_SPACING = 10;
+UndirectedDFS.RECURSION_FRAME_MIN_SPACING = 6;
+UndirectedDFS.RECURSION_RECT_COLOR = "#f8f9fa";
+UndirectedDFS.RECURSION_RECT_BORDER = "#1d3557";
+UndirectedDFS.RECURSION_RECT_ACTIVE_BORDER = "#e63946";
+UndirectedDFS.RECURSION_TEXT_COLOR = "#1d3557";
+UndirectedDFS.RECURSION_FONT = "bold 18";
 
 UndirectedDFS.TITLE_COLOR = "#1d3557";
 UndirectedDFS.START_INFO_COLOR = "#264653";
@@ -125,6 +141,11 @@ UndirectedDFS.prototype.init = function (am, w, h) {
   this.highlightCircleID = -1;
   this.currentCodeLine = -1;
   this.startDisplayID = -1;
+  this.recursionHeaderID = -1;
+  this.recursionFrameIDs = [];
+  this.recursionLabelIDs = [];
+  this.activeRecursionIndex = -1;
+  this.recursionDepth = 0;
 
   this.visited = [];
   this.parents = [];
@@ -197,6 +218,7 @@ UndirectedDFS.prototype.setup = function () {
   this.createGraphArea();
   this.createArrayArea();
   this.createCodeDisplay();
+  this.createRecursionArea();
 
   this.highlightCodeLine(-1);
 
@@ -405,10 +427,9 @@ UndirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
 };
 
 UndirectedDFS.prototype.createCodeDisplay = function () {
-  var codeStartX = UndirectedDFS.CANVAS_WIDTH / 2 - 150;
   this.codeID = this.addCodeToCanvasBase(
     UndirectedDFS.CODE_LINES,
-    codeStartX,
+    UndirectedDFS.CODE_START_X,
     UndirectedDFS.CODE_START_Y,
     UndirectedDFS.CODE_LINE_HEIGHT,
     UndirectedDFS.CODE_STANDARD_COLOR,
@@ -420,6 +441,201 @@ UndirectedDFS.prototype.createCodeDisplay = function () {
     for (var j = 0; j < this.codeID[i].length; j++) {
       this.cmd("SetTextStyle", this.codeID[i][j], UndirectedDFS.CODE_FONT);
     }
+  }
+};
+
+UndirectedDFS.prototype.computeRecursionLayout = function (frameCount) {
+  var layout = {
+    height: UndirectedDFS.RECURSION_FRAME_HEIGHT,
+    spacing: UndirectedDFS.RECURSION_FRAME_SPACING,
+    startY:
+      UndirectedDFS.ROW3_START_Y +
+      UndirectedDFS.RECURSION_AREA_TOP_MARGIN +
+      UndirectedDFS.RECURSION_FRAME_HEIGHT / 2
+  };
+
+  if (frameCount <= 0) {
+    return layout;
+  }
+
+  var availableHeight =
+    UndirectedDFS.ROW3_HEIGHT -
+    (UndirectedDFS.RECURSION_AREA_TOP_MARGIN +
+      UndirectedDFS.RECURSION_AREA_BOTTOM_MARGIN);
+
+  var spacing = layout.spacing;
+  if (frameCount === 1) {
+    spacing = 0;
+  }
+
+  var height = Math.min(
+    UndirectedDFS.RECURSION_FRAME_HEIGHT,
+    Math.max(
+      UndirectedDFS.RECURSION_FRAME_MIN_HEIGHT,
+      Math.floor(
+        (availableHeight - (frameCount - 1) * spacing) / frameCount
+      )
+    )
+  );
+
+  var totalHeight = height * frameCount + spacing * (frameCount - 1);
+  if (totalHeight > availableHeight) {
+    spacing = Math.max(
+      UndirectedDFS.RECURSION_FRAME_MIN_SPACING,
+      Math.floor((availableHeight - height * frameCount) / Math.max(1, frameCount - 1))
+    );
+    if (spacing < 0) {
+      spacing = 0;
+    }
+    height = Math.max(
+      UndirectedDFS.RECURSION_FRAME_MIN_HEIGHT,
+      Math.floor(
+        (availableHeight - (frameCount - 1) * spacing) / frameCount
+      )
+    );
+  }
+
+  layout.height = height;
+  layout.spacing = spacing;
+  layout.startY =
+    UndirectedDFS.ROW3_START_Y +
+    UndirectedDFS.RECURSION_AREA_TOP_MARGIN +
+    height / 2;
+
+  return layout;
+};
+
+UndirectedDFS.prototype.createRecursionArea = function () {
+  this.recursionHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.recursionHeaderID,
+    "DFS Recursion",
+    UndirectedDFS.RECURSION_AREA_CENTER_X,
+    UndirectedDFS.RECURSION_HEADER_Y,
+    0
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.recursionHeaderID,
+    UndirectedDFS.CODE_STANDARD_COLOR
+  );
+  this.cmd(
+    "SetTextStyle",
+    this.recursionHeaderID,
+    "bold 22"
+  );
+
+  this.recursionFrameIDs = [];
+  this.recursionLabelIDs = [];
+  this.activeRecursionIndex = -1;
+  this.recursionDepth = 0;
+
+  var layout = this.computeRecursionLayout(this.vertexLabels.length);
+  var y = layout.startY;
+
+  for (var i = 0; i < this.vertexLabels.length; i++) {
+    var rectID = this.nextIndex++;
+    this.cmd(
+      "CreateRectangle",
+      rectID,
+      "",
+      UndirectedDFS.RECURSION_FRAME_WIDTH,
+      layout.height,
+      UndirectedDFS.RECURSION_AREA_CENTER_X,
+      y
+    );
+    this.cmd(
+      "SetBackgroundColor",
+      rectID,
+      UndirectedDFS.RECURSION_RECT_COLOR
+    );
+    this.cmd("SetForegroundColor", rectID, UndirectedDFS.RECURSION_RECT_BORDER);
+    this.cmd("SetAlpha", rectID, 0);
+
+    var labelID = this.nextIndex++;
+    this.cmd("CreateLabel", labelID, "", UndirectedDFS.RECURSION_AREA_CENTER_X, y, 0);
+    this.cmd("SetForegroundColor", labelID, UndirectedDFS.RECURSION_TEXT_COLOR);
+    this.cmd("SetTextStyle", labelID, UndirectedDFS.RECURSION_FONT);
+    this.cmd("SetAlpha", labelID, 0);
+
+    this.recursionFrameIDs.push(rectID);
+    this.recursionLabelIDs.push(labelID);
+
+    y += layout.height + layout.spacing;
+  }
+};
+
+UndirectedDFS.prototype.resetRecursionArea = function () {
+  this.recursionDepth = 0;
+  this.activeRecursionIndex = -1;
+  for (var i = 0; i < this.recursionFrameIDs.length; i++) {
+    this.cmd("SetAlpha", this.recursionFrameIDs[i], 0);
+    this.cmd("SetAlpha", this.recursionLabelIDs[i], 0);
+    this.cmd("SetText", this.recursionLabelIDs[i], "");
+    this.cmd(
+      "SetForegroundColor",
+      this.recursionFrameIDs[i],
+      UndirectedDFS.RECURSION_RECT_BORDER
+    );
+  }
+};
+
+UndirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
+  if (
+    this.recursionDepth < 0 ||
+    this.recursionDepth >= this.recursionFrameIDs.length ||
+    !this.vertexLabels ||
+    vertex < 0 ||
+    vertex >= this.vertexLabels.length
+  ) {
+    return;
+  }
+
+  if (this.activeRecursionIndex >= 0 && this.activeRecursionIndex < this.recursionFrameIDs.length) {
+    this.cmd(
+      "SetForegroundColor",
+      this.recursionFrameIDs[this.activeRecursionIndex],
+      UndirectedDFS.RECURSION_RECT_BORDER
+    );
+  }
+
+  var frameID = this.recursionFrameIDs[this.recursionDepth];
+  var labelID = this.recursionLabelIDs[this.recursionDepth];
+  var parentLabel = "start";
+  if (typeof parent === "number" && parent >= 0 && parent < this.vertexLabels.length) {
+    parentLabel = this.vertexLabels[parent];
+  }
+  var text = "dfs(" + this.vertexLabels[vertex] + ", " + parentLabel + ")";
+  this.cmd("SetText", labelID, text);
+  this.cmd("SetAlpha", frameID, 1);
+  this.cmd("SetAlpha", labelID, 1);
+  this.cmd("SetForegroundColor", frameID, UndirectedDFS.RECURSION_RECT_ACTIVE_BORDER);
+
+  this.activeRecursionIndex = this.recursionDepth;
+  this.recursionDepth++;
+};
+
+UndirectedDFS.prototype.popRecursionFrame = function () {
+  if (this.recursionDepth <= 0) {
+    return;
+  }
+
+  this.recursionDepth--;
+  var frameID = this.recursionFrameIDs[this.recursionDepth];
+  var labelID = this.recursionLabelIDs[this.recursionDepth];
+  this.cmd("SetAlpha", frameID, 0);
+  this.cmd("SetAlpha", labelID, 0);
+  this.cmd("SetText", labelID, "");
+  this.cmd("SetForegroundColor", frameID, UndirectedDFS.RECURSION_RECT_BORDER);
+
+  this.activeRecursionIndex = this.recursionDepth - 1;
+  if (this.activeRecursionIndex >= 0 && this.activeRecursionIndex < this.recursionFrameIDs.length) {
+    this.cmd(
+      "SetForegroundColor",
+      this.recursionFrameIDs[this.activeRecursionIndex],
+      UndirectedDFS.RECURSION_RECT_ACTIVE_BORDER
+    );
   }
 };
 
@@ -467,6 +683,7 @@ UndirectedDFS.prototype.clearTraversalState = function () {
     );
   }
   this.resetEdgesToUndirected();
+  this.resetRecursionArea();
 };
 
 UndirectedDFS.prototype.edgeKey = function (u, v) {
@@ -944,6 +1161,9 @@ UndirectedDFS.prototype.runTraversal = function (startIndex) {
 };
 
 UndirectedDFS.prototype.dfsVisit = function (u, parent) {
+  this.pushRecursionFrame(u, parent);
+  this.cmd("Step");
+
   this.highlightCodeLine(0);
   this.cmd("Step");
 
@@ -1023,6 +1243,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
   this.cmd("Step");
   this.highlightCodeLine(8);
   this.cmd("Step");
+  this.popRecursionFrame();
 };
 
 UndirectedDFS.prototype.disableUI = function () {

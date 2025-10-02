@@ -56,11 +56,27 @@ DirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 DirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 DirectedDFS.ARRAY_HEADER_GAP = 20;
 
+DirectedDFS.CODE_START_X = 120;
 DirectedDFS.CODE_START_Y = DirectedDFS.ROW3_START_Y + 10;
 DirectedDFS.CODE_LINE_HEIGHT = 32;
 DirectedDFS.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDFS.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedDFS.CODE_FONT = "bold 22";
+
+DirectedDFS.RECURSION_AREA_CENTER_X = 660;
+DirectedDFS.RECURSION_HEADER_Y = DirectedDFS.ROW3_START_Y + 30;
+DirectedDFS.RECURSION_AREA_TOP_MARGIN = 70;
+DirectedDFS.RECURSION_AREA_BOTTOM_MARGIN = 30;
+DirectedDFS.RECURSION_FRAME_WIDTH = 320;
+DirectedDFS.RECURSION_FRAME_HEIGHT = 34;
+DirectedDFS.RECURSION_FRAME_MIN_HEIGHT = 22;
+DirectedDFS.RECURSION_FRAME_SPACING = 10;
+DirectedDFS.RECURSION_FRAME_MIN_SPACING = 6;
+DirectedDFS.RECURSION_RECT_COLOR = "#f8f9fa";
+DirectedDFS.RECURSION_RECT_BORDER = "#1d3557";
+DirectedDFS.RECURSION_RECT_ACTIVE_BORDER = "#e63946";
+DirectedDFS.RECURSION_TEXT_COLOR = "#1d3557";
+DirectedDFS.RECURSION_FONT = "bold 18";
 
 DirectedDFS.TITLE_COLOR = "#1d3557";
 DirectedDFS.START_INFO_COLOR = "#264653";
@@ -125,6 +141,11 @@ DirectedDFS.prototype.init = function (am, w, h) {
   this.highlightCircleID = -1;
   this.currentCodeLine = -1;
   this.startDisplayID = -1;
+  this.recursionHeaderID = -1;
+  this.recursionFrameIDs = [];
+  this.recursionLabelIDs = [];
+  this.activeRecursionIndex = -1;
+  this.recursionDepth = 0;
 
   this.visited = [];
   this.parents = [];
@@ -188,6 +209,7 @@ DirectedDFS.prototype.setup = function () {
   this.createGraphArea();
   this.createArrayArea();
   this.createCodeDisplay();
+  this.createRecursionArea();
 
   this.highlightCodeLine(-1);
 
@@ -802,10 +824,9 @@ DirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
 };
 
 DirectedDFS.prototype.createCodeDisplay = function () {
-  var codeStartX = DirectedDFS.CANVAS_WIDTH / 2 - 150;
   this.codeID = this.addCodeToCanvasBase(
     DirectedDFS.CODE_LINES,
-    codeStartX,
+    DirectedDFS.CODE_START_X,
     DirectedDFS.CODE_START_Y,
     DirectedDFS.CODE_LINE_HEIGHT,
     DirectedDFS.CODE_STANDARD_COLOR,
@@ -817,6 +838,201 @@ DirectedDFS.prototype.createCodeDisplay = function () {
     for (var j = 0; j < this.codeID[i].length; j++) {
       this.cmd("SetTextStyle", this.codeID[i][j], DirectedDFS.CODE_FONT);
     }
+  }
+};
+
+DirectedDFS.prototype.computeRecursionLayout = function (frameCount) {
+  var layout = {
+    height: DirectedDFS.RECURSION_FRAME_HEIGHT,
+    spacing: DirectedDFS.RECURSION_FRAME_SPACING,
+    startY:
+      DirectedDFS.ROW3_START_Y +
+      DirectedDFS.RECURSION_AREA_TOP_MARGIN +
+      DirectedDFS.RECURSION_FRAME_HEIGHT / 2
+  };
+
+  if (frameCount <= 0) {
+    return layout;
+  }
+
+  var availableHeight =
+    DirectedDFS.ROW3_HEIGHT -
+    (DirectedDFS.RECURSION_AREA_TOP_MARGIN +
+      DirectedDFS.RECURSION_AREA_BOTTOM_MARGIN);
+
+  var spacing = layout.spacing;
+  if (frameCount === 1) {
+    spacing = 0;
+  }
+
+  var height = Math.min(
+    DirectedDFS.RECURSION_FRAME_HEIGHT,
+    Math.max(
+      DirectedDFS.RECURSION_FRAME_MIN_HEIGHT,
+      Math.floor(
+        (availableHeight - (frameCount - 1) * spacing) / frameCount
+      )
+    )
+  );
+
+  var totalHeight = height * frameCount + spacing * (frameCount - 1);
+  if (totalHeight > availableHeight) {
+    spacing = Math.max(
+      DirectedDFS.RECURSION_FRAME_MIN_SPACING,
+      Math.floor((availableHeight - height * frameCount) / Math.max(1, frameCount - 1))
+    );
+    if (spacing < 0) {
+      spacing = 0;
+    }
+    height = Math.max(
+      DirectedDFS.RECURSION_FRAME_MIN_HEIGHT,
+      Math.floor(
+        (availableHeight - (frameCount - 1) * spacing) / frameCount
+      )
+    );
+  }
+
+  layout.height = height;
+  layout.spacing = spacing;
+  layout.startY =
+    DirectedDFS.ROW3_START_Y +
+    DirectedDFS.RECURSION_AREA_TOP_MARGIN +
+    height / 2;
+
+  return layout;
+};
+
+DirectedDFS.prototype.createRecursionArea = function () {
+  this.recursionHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.recursionHeaderID,
+    "DFS Recursion",
+    DirectedDFS.RECURSION_AREA_CENTER_X,
+    DirectedDFS.RECURSION_HEADER_Y,
+    0
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.recursionHeaderID,
+    DirectedDFS.CODE_STANDARD_COLOR
+  );
+  this.cmd("SetTextStyle", this.recursionHeaderID, "bold 22");
+
+  this.recursionFrameIDs = [];
+  this.recursionLabelIDs = [];
+  this.activeRecursionIndex = -1;
+  this.recursionDepth = 0;
+
+  var layout = this.computeRecursionLayout(this.vertexLabels.length);
+  var y = layout.startY;
+
+  for (var i = 0; i < this.vertexLabels.length; i++) {
+    var rectID = this.nextIndex++;
+    this.cmd(
+      "CreateRectangle",
+      rectID,
+      "",
+      DirectedDFS.RECURSION_FRAME_WIDTH,
+      layout.height,
+      DirectedDFS.RECURSION_AREA_CENTER_X,
+      y
+    );
+    this.cmd(
+      "SetBackgroundColor",
+      rectID,
+      DirectedDFS.RECURSION_RECT_COLOR
+    );
+    this.cmd("SetForegroundColor", rectID, DirectedDFS.RECURSION_RECT_BORDER);
+    this.cmd("SetAlpha", rectID, 0);
+
+    var labelID = this.nextIndex++;
+    this.cmd("CreateLabel", labelID, "", DirectedDFS.RECURSION_AREA_CENTER_X, y, 0);
+    this.cmd("SetForegroundColor", labelID, DirectedDFS.RECURSION_TEXT_COLOR);
+    this.cmd("SetTextStyle", labelID, DirectedDFS.RECURSION_FONT);
+    this.cmd("SetAlpha", labelID, 0);
+
+    this.recursionFrameIDs.push(rectID);
+    this.recursionLabelIDs.push(labelID);
+
+    y += layout.height + layout.spacing;
+  }
+};
+
+DirectedDFS.prototype.resetRecursionArea = function () {
+  this.recursionDepth = 0;
+  this.activeRecursionIndex = -1;
+  for (var i = 0; i < this.recursionFrameIDs.length; i++) {
+    this.cmd("SetAlpha", this.recursionFrameIDs[i], 0);
+    this.cmd("SetAlpha", this.recursionLabelIDs[i], 0);
+    this.cmd("SetText", this.recursionLabelIDs[i], "");
+    this.cmd(
+      "SetForegroundColor",
+      this.recursionFrameIDs[i],
+      DirectedDFS.RECURSION_RECT_BORDER
+    );
+  }
+};
+
+DirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
+  if (
+    this.recursionDepth < 0 ||
+    this.recursionDepth >= this.recursionFrameIDs.length ||
+    !this.vertexLabels ||
+    vertex < 0 ||
+    vertex >= this.vertexLabels.length
+  ) {
+    return;
+  }
+
+  if (this.activeRecursionIndex >= 0 && this.activeRecursionIndex < this.recursionFrameIDs.length) {
+    this.cmd(
+      "SetForegroundColor",
+      this.recursionFrameIDs[this.activeRecursionIndex],
+      DirectedDFS.RECURSION_RECT_BORDER
+    );
+  }
+
+  var frameID = this.recursionFrameIDs[this.recursionDepth];
+  var labelID = this.recursionLabelIDs[this.recursionDepth];
+  var parentLabel = "start";
+  if (typeof parent === "number" && parent >= 0 && parent < this.vertexLabels.length) {
+    parentLabel = this.vertexLabels[parent];
+  }
+  var text = "dfs(" + this.vertexLabels[vertex] + ", " + parentLabel + ")";
+  this.cmd("SetText", labelID, text);
+  this.cmd("SetAlpha", frameID, 1);
+  this.cmd("SetAlpha", labelID, 1);
+  this.cmd(
+    "SetForegroundColor",
+    frameID,
+    DirectedDFS.RECURSION_RECT_ACTIVE_BORDER
+  );
+
+  this.activeRecursionIndex = this.recursionDepth;
+  this.recursionDepth++;
+};
+
+DirectedDFS.prototype.popRecursionFrame = function () {
+  if (this.recursionDepth <= 0) {
+    return;
+  }
+
+  this.recursionDepth--;
+  var frameID = this.recursionFrameIDs[this.recursionDepth];
+  var labelID = this.recursionLabelIDs[this.recursionDepth];
+  this.cmd("SetAlpha", frameID, 0);
+  this.cmd("SetAlpha", labelID, 0);
+  this.cmd("SetText", labelID, "");
+  this.cmd("SetForegroundColor", frameID, DirectedDFS.RECURSION_RECT_BORDER);
+
+  this.activeRecursionIndex = this.recursionDepth - 1;
+  if (this.activeRecursionIndex >= 0 && this.activeRecursionIndex < this.recursionFrameIDs.length) {
+    this.cmd(
+      "SetForegroundColor",
+      this.recursionFrameIDs[this.activeRecursionIndex],
+      DirectedDFS.RECURSION_RECT_ACTIVE_BORDER
+    );
   }
 };
 
@@ -866,6 +1082,7 @@ DirectedDFS.prototype.clearTraversalState = function () {
   }
   this.resetEdgeStates();
   this.clearEdgeHighlights();
+  this.resetRecursionArea();
 };
 
 DirectedDFS.prototype.clearEdgeHighlights = function () {
@@ -1089,7 +1306,7 @@ DirectedDFS.prototype.runTraversal = function (startIndex) {
   this.cmd("Move", this.highlightCircleID, startPos.x, startPos.y);
   this.cmd("Step");
 
-  this.dfsVisit(startIndex);
+  this.dfsVisit(startIndex, -1);
 
   this.highlightCodeLine(-1);
   this.cmd("SetAlpha", this.highlightCircleID, 0);
@@ -1097,7 +1314,10 @@ DirectedDFS.prototype.runTraversal = function (startIndex) {
   return this.commands;
 };
 
-DirectedDFS.prototype.dfsVisit = function (u) {
+DirectedDFS.prototype.dfsVisit = function (u, parent) {
+  this.pushRecursionFrame(u, parent);
+  this.cmd("Step");
+
   this.highlightCodeLine(0);
   this.cmd("Step");
 
@@ -1153,7 +1373,7 @@ DirectedDFS.prototype.dfsVisit = function (u) {
       this.highlightCodeLine(5);
       this.animateHighlightTraversal(u, v, this.edgeKey(u, v));
 
-      this.dfsVisit(v);
+      this.dfsVisit(v, u);
 
       this.animateHighlightTraversal(v, u, this.edgeKey(u, v));
     }
@@ -1173,6 +1393,7 @@ DirectedDFS.prototype.dfsVisit = function (u) {
   this.cmd("Step");
   this.highlightCodeLine(8);
   this.cmd("Step");
+  this.popRecursionFrame();
 };
 
 DirectedDFS.prototype.disableUI = function () {
