@@ -898,9 +898,16 @@ UndirectedDFS.prototype.pushVerticesAwayFromEdges = function (
   }
 };
 
+UndirectedDFS.prototype.cleanInputLabel = function (value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value.replace(/^\s+/, "").replace(/\s+$/, "");
+};
+
 UndirectedDFS.prototype.startCallback = function () {
   if (!this.startField) return;
-  var raw = this.startField.value.trim();
+  var raw = this.cleanInputLabel(this.startField.value);
   if (raw.length === 0) return;
   var label = raw[0].toUpperCase();
   var index = this.vertexLabels.indexOf(label);
