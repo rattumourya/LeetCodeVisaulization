@@ -372,7 +372,26 @@ UndoSetEdgeAlpha.prototype.constructor = UndoSetEdgeAlpha;
 
 UndoSetEdgeAlpha.prototype.undoInitialStep = function(world)
 {
-	world.setEdgeAlpha(this.fromID, this.toID, this.alpha);
+        world.setEdgeAlpha(this.fromID, this.toID, this.alpha);
+}
+
+////////////////////////////////////////////////////////////
+// UndoSetEdgeThickness
+////////////////////////////////////////////////////////////
+
+function UndoSetEdgeThickness(from, to, oldThickness)
+{
+        this.fromID = from;
+        this.toID = to;
+        this.thickness = oldThickness;
+}
+
+UndoSetEdgeThickness.prototype = new UndoBlock();
+UndoSetEdgeThickness.prototype.constructor = UndoSetEdgeThickness;
+
+UndoSetEdgeThickness.prototype.undoInitialStep = function(world)
+{
+        world.setEdgeThickness(this.fromID, this.toID, this.thickness);
 }
 
 ////////////////////////////////////////////////////////////
