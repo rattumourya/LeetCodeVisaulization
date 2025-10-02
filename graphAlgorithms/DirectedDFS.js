@@ -64,8 +64,8 @@ DirectedDFS.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedDFS.CODE_FONT = "bold 22";
 
 DirectedDFS.RECURSION_AREA_CENTER_X = 660;
-DirectedDFS.RECURSION_HEADER_Y = DirectedDFS.ROW3_START_Y + 30;
-DirectedDFS.RECURSION_AREA_TOP_MARGIN = 70;
+DirectedDFS.RECURSION_AREA_TOP_MARGIN = 24;
+DirectedDFS.RECURSION_HEADER_GAP = 20;
 DirectedDFS.RECURSION_AREA_BOTTOM_MARGIN = 30;
 DirectedDFS.RECURSION_FRAME_WIDTH = 320;
 DirectedDFS.RECURSION_FRAME_HEIGHT = 34;
@@ -143,7 +143,6 @@ DirectedDFS.prototype.init = function (am, w, h) {
   this.startDisplayID = -1;
   this.recursionHeaderID = -1;
   this.recursionFrameIDs = [];
-  this.recursionLabelIDs = [];
   this.activeRecursionIndex = -1;
   this.recursionDepth = 0;
 
@@ -907,9 +906,9 @@ DirectedDFS.prototype.createRecursionArea = function () {
   this.cmd(
     "CreateLabel",
     this.recursionHeaderID,
-    "DFS Recursion",
+    "Call Stack",
     DirectedDFS.RECURSION_AREA_CENTER_X,
-    DirectedDFS.RECURSION_HEADER_Y,
+    DirectedDFS.ROW3_START_Y + 10,
     0
   );
   this.cmd(
@@ -920,11 +919,24 @@ DirectedDFS.prototype.createRecursionArea = function () {
   this.cmd("SetTextStyle", this.recursionHeaderID, "bold 22");
 
   this.recursionFrameIDs = [];
-  this.recursionLabelIDs = [];
   this.activeRecursionIndex = -1;
   this.recursionDepth = 0;
 
   var layout = this.computeRecursionLayout(this.vertexLabels.length);
+  var topRectCenterY = layout.startY;
+  var topRectTop = topRectCenterY - layout.height / 2;
+  var headerY =
+    topRectTop - (DirectedDFS.RECURSION_HEADER_GAP > 0
+      ? DirectedDFS.RECURSION_HEADER_GAP
+      : 0);
+
+  this.cmd(
+    "SetPosition",
+    this.recursionHeaderID,
+    DirectedDFS.RECURSION_AREA_CENTER_X,
+    headerY
+  );
+
   var y = layout.startY;
 
   for (var i = 0; i < this.vertexLabels.length; i++) {
@@ -945,15 +957,10 @@ DirectedDFS.prototype.createRecursionArea = function () {
     );
     this.cmd("SetForegroundColor", rectID, DirectedDFS.RECURSION_RECT_BORDER);
     this.cmd("SetAlpha", rectID, 0);
-
-    var labelID = this.nextIndex++;
-    this.cmd("CreateLabel", labelID, "", DirectedDFS.RECURSION_AREA_CENTER_X, y, 0);
-    this.cmd("SetForegroundColor", labelID, DirectedDFS.RECURSION_TEXT_COLOR);
-    this.cmd("SetTextStyle", labelID, DirectedDFS.RECURSION_FONT);
-    this.cmd("SetAlpha", labelID, 0);
+    this.cmd("SetTextColor", rectID, DirectedDFS.RECURSION_TEXT_COLOR);
+    this.cmd("SetTextStyle", rectID, DirectedDFS.RECURSION_FONT);
 
     this.recursionFrameIDs.push(rectID);
-    this.recursionLabelIDs.push(labelID);
 
     y += layout.height + layout.spacing;
   }
@@ -964,8 +971,7 @@ DirectedDFS.prototype.resetRecursionArea = function () {
   this.activeRecursionIndex = -1;
   for (var i = 0; i < this.recursionFrameIDs.length; i++) {
     this.cmd("SetAlpha", this.recursionFrameIDs[i], 0);
-    this.cmd("SetAlpha", this.recursionLabelIDs[i], 0);
-    this.cmd("SetText", this.recursionLabelIDs[i], "");
+    this.cmd("SetText", this.recursionFrameIDs[i], "");
     this.cmd(
       "SetForegroundColor",
       this.recursionFrameIDs[i],
@@ -994,15 +1000,9 @@ DirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
   }
 
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var labelID = this.recursionLabelIDs[this.recursionDepth];
-  var parentLabel = "start";
-  if (typeof parent === "number" && parent >= 0 && parent < this.vertexLabels.length) {
-    parentLabel = this.vertexLabels[parent];
-  }
-  var text = "dfs(" + this.vertexLabels[vertex] + ", " + parentLabel + ")";
-  this.cmd("SetText", labelID, text);
+  var text = "dfs(" + this.vertexLabels[vertex] + ")";
+  this.cmd("SetText", frameID, text);
   this.cmd("SetAlpha", frameID, 1);
-  this.cmd("SetAlpha", labelID, 1);
   this.cmd(
     "SetForegroundColor",
     frameID,
@@ -1020,10 +1020,8 @@ DirectedDFS.prototype.popRecursionFrame = function () {
 
   this.recursionDepth--;
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var labelID = this.recursionLabelIDs[this.recursionDepth];
   this.cmd("SetAlpha", frameID, 0);
-  this.cmd("SetAlpha", labelID, 0);
-  this.cmd("SetText", labelID, "");
+  this.cmd("SetText", frameID, "");
   this.cmd("SetForegroundColor", frameID, DirectedDFS.RECURSION_RECT_BORDER);
 
   this.activeRecursionIndex = this.recursionDepth - 1;
