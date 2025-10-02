@@ -35,6 +35,7 @@ UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
+
 UndirectedDFS.EDGE_ACTIVE_THICKNESS = UndirectedDFS.EDGE_THICKNESS;
 UndirectedDFS.EDGE_TREE_THICKNESS = 6;
 
@@ -537,6 +538,7 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
       "SetEdgeThickness",
       fromID,
       toID,
+
       UndirectedDFS.EDGE_ACTIVE_THICKNESS
     );
   } else {
@@ -568,7 +570,9 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
   }
 
   if (!meta || Math.abs(curve) < 0.01) {
+
     this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
+
     this.cmd("Step");
     return;
   }
@@ -589,6 +593,7 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
     Math.round(endPos.y)
   );
   this.cmd("Step");
+
 };
 
 UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
@@ -622,6 +627,7 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     "SetEdgeThickness",
     this.vertexIDs[parent],
     this.vertexIDs[child],
+
     UndirectedDFS.EDGE_TREE_THICKNESS
   );
   this.cmd(

@@ -35,12 +35,15 @@ DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 DirectedDFS.EDGE_THICKNESS = 3;
+
 DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = DirectedDFS.EDGE_THICKNESS;
 DirectedDFS.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 // Minimum curvature magnitude to keep opposite-direction edges visually parallel.
 DirectedDFS.MIN_PARALLEL_SEPARATION = 0.42;
+
 DirectedDFS.PARALLEL_EDGE_GAP = 0.18;
+
 
 DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -500,6 +503,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
   }
 
   var hasCurveEdge = false;
+
   var applyCurves = function (list, baseCurveValue, orientationSign) {
     if (!list.length) {
       return;
@@ -538,6 +542,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     }
     var bucket = pairBuckets[bucketKey];
     var baseCurve = baseCurveForPair(bucket.min, bucket.max);
+
     var forward = [];
     var backward = [];
     for (var bi = 0; bi < bucket.edges.length; bi++) {
@@ -550,6 +555,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     }
 
     if (forward.length > 0 && backward.length > 0) {
+
       var baseSign = 1;
       if (Math.abs(baseCurve) > 0.01) {
         baseSign = baseCurve >= 0 ? 1 : -1;
@@ -566,6 +572,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
       var backwardCurve = baseSign * (magnitude + DirectedDFS.PARALLEL_EDGE_GAP);
       applyCurves(forward, forwardCurve, baseSign);
       applyCurves(backward, backwardCurve, baseSign);
+
     } else if (forward.length > 0) {
       var curveValue = Math.abs(baseCurve) < 0.01 ? 0 : baseCurve;
       applyCurves(forward, curveValue, 1);
@@ -918,6 +925,7 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.from],
       this.vertexIDs[edge.to],
       0
+
     );
   }
 };
@@ -932,12 +940,14 @@ DirectedDFS.prototype.highlightEdge = function (from, to, active) {
       fromID,
       toID,
       DirectedDFS.EDGE_HIGHLIGHT_THICKNESS
+
     );
     this.cmd("SetEdgeHighlight", fromID, toID, 1);
   } else {
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
     this.updateEdgeBaseColor(from, to);
+
   }
 };
 

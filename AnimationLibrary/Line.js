@@ -50,7 +50,9 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
         this.addedToScene = true;
         this.anchorPoint = anchorIndex;
         this.highlightDiff = 0;
+
         this.highlightAlpha = 1.0;
+
         this.curve = cv;
         this.thickness = 1;
 
@@ -214,6 +216,7 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
                                 this.drawArrow(this.thickness, "#ff3b30", ctx);
                                 ctx.restore();
                         }
+
            }
 	   
 	   
