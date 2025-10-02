@@ -978,6 +978,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
     this.setEdgeActive(u, v, true);
     this.cmd("Step");
 
+
     this.setVisitedCellHighlight(v, true);
     this.cmd("Step");
 
