@@ -1147,12 +1147,24 @@ UndirectedDFS.prototype.cleanInputLabel = function (value) {
   return value.replace(/^\s+/, "").replace(/\s+$/, "");
 };
 
+UndirectedDFS.prototype.findVertexIndex = function (label) {
+  if (!this.vertexLabels) {
+    return -1;
+  }
+  for (var i = 0; i < this.vertexLabels.length; i++) {
+    if (this.vertexLabels[i] === label) {
+      return i;
+    }
+  }
+  return -1;
+};
+
 UndirectedDFS.prototype.startCallback = function () {
   if (!this.startField) return;
   var raw = this.cleanInputLabel(this.startField.value);
   if (raw.length === 0) return;
   var label = raw[0].toUpperCase();
-  var index = this.vertexLabels.indexOf(label);
+  var index = this.findVertexIndex(label);
   if (index === -1) {
     return;
   }
