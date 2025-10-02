@@ -928,6 +928,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.highlightCodeLine(5);
       this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
+  
       this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v, u);
