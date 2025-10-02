@@ -1190,14 +1190,30 @@ UndirectedDFS.prototype.findVertexIndex = function (label) {
 };
 
 UndirectedDFS.prototype.startCallback = function () {
-  if (!this.startField) return;
-  var raw = this.cleanInputLabel(this.startField.value);
-  if (raw.length === 0) return;
-  var label = raw[0].toUpperCase();
-  var index = this.findVertexIndex(label);
-  if (index === -1) {
+  if (
+    !this.startField ||
+    !this.vertexLabels ||
+    this.vertexLabels.length === 0
+  ) {
     return;
   }
+
+  var raw = this.cleanInputLabel(this.startField.value);
+  var label = "";
+  if (raw.length > 0) {
+    label = raw.charAt(0).toUpperCase();
+  }
+
+  var index = -1;
+  if (label.length > 0) {
+    index = this.findVertexIndex(label);
+  }
+
+  if (index === -1) {
+    index = 0;
+    label = this.vertexLabels[0];
+  }
+
   this.startField.value = label;
   this.implementAction(this.runTraversal.bind(this), index);
 };
