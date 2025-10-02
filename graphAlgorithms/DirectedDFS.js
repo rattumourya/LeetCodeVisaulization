@@ -35,8 +35,10 @@ DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 DirectedDFS.EDGE_THICKNESS = 3;
-DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = 6;
-DirectedDFS.BIDIRECTIONAL_CURVE = 0.22;
+
+DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = DirectedDFS.EDGE_THICKNESS;
+DirectedDFS.BIDIRECTIONAL_CURVE = 0.35;
+DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 
 DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -496,38 +498,72 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
   }
 
   var hasCurveEdge = false;
+
+  var applyCurves = function (list, baseCurveValue, orientationSign) {
+    if (!list.length) {
+      return;
+    }
+    list[0].curve = baseCurveValue;
+    if (Math.abs(baseCurveValue) > 0.01) {
+      hasCurveEdge = true;
+    }
+    var baseSign;
+    if (Math.abs(baseCurveValue) > 0.01) {
+      baseSign = baseCurveValue >= 0 ? 1 : -1;
+    } else {
+      baseSign = orientationSign >= 0 ? 1 : -1;
+    }
+    for (var idx = 1; idx < list.length; idx++) {
+      var magnitude = Math.abs(baseCurveValue);
+      var offsetIndex;
+      if (magnitude < 0.01) {
+        magnitude = DirectedDFS.BIDIRECTIONAL_CURVE;
+        offsetIndex = idx - 1;
+      } else {
+        offsetIndex = idx;
+      }
+      var offset = DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET * offsetIndex;
+      var curveValue = baseSign * (magnitude + offset);
+      list[idx].curve = curveValue;
+      if (Math.abs(curveValue) > 0.01) {
+        hasCurveEdge = true;
+      }
+    }
+  };
+
   for (var bucketKey in pairBuckets) {
     if (!Object.prototype.hasOwnProperty.call(pairBuckets, bucketKey)) {
       continue;
     }
     var bucket = pairBuckets[bucketKey];
     var baseCurve = baseCurveForPair(bucket.min, bucket.max);
-    if (bucket.edges.length === 1) {
-      var singleEdge = bucket.edges[0];
-      if (singleEdge.from === bucket.min && singleEdge.to === bucket.max) {
-        singleEdge.curve = baseCurve;
+
+    var forward = [];
+    var backward = [];
+    for (var bi = 0; bi < bucket.edges.length; bi++) {
+      var edgeRecord = bucket.edges[bi];
+      if (edgeRecord.from === bucket.min && edgeRecord.to === bucket.max) {
+        forward.push(edgeRecord);
       } else {
-        singleEdge.curve = -baseCurve;
+        backward.push(edgeRecord);
       }
-      if (Math.abs(singleEdge.curve) > 0.01) {
-        hasCurveEdge = true;
+    }
+
+    if (forward.length > 0 && backward.length > 0) {
+      var forwardCurve = baseCurve;
+      var backwardCurve = -baseCurve;
+      if (Math.abs(baseCurve) < 0.01) {
+        forwardCurve = DirectedDFS.BIDIRECTIONAL_CURVE;
+        backwardCurve = -DirectedDFS.BIDIRECTIONAL_CURVE;
       }
-    } else {
-      for (var bi = 0; bi < bucket.edges.length; bi++) {
-        var edgeRecord = bucket.edges[bi];
-        if (Math.abs(baseCurve) < 0.01) {
-          edgeRecord.curve =
-            edgeRecord.from === bucket.min
-              ? DirectedDFS.BIDIRECTIONAL_CURVE
-              : -DirectedDFS.BIDIRECTIONAL_CURVE;
-        } else {
-          edgeRecord.curve =
-            edgeRecord.from === bucket.min ? baseCurve : -baseCurve;
-        }
-        if (Math.abs(edgeRecord.curve) > 0.01) {
-          hasCurveEdge = true;
-        }
-      }
+      applyCurves(forward, forwardCurve, forwardCurve >= 0 ? 1 : -1);
+      applyCurves(backward, backwardCurve, backwardCurve >= 0 ? 1 : -1);
+    } else if (forward.length > 0) {
+      var curveValue = Math.abs(baseCurve) < 0.01 ? 0 : baseCurve;
+      applyCurves(forward, curveValue, 1);
+    } else if (backward.length > 0) {
+      var reverseCurve = Math.abs(baseCurve) < 0.01 ? 0 : -baseCurve;
+      applyCurves(backward, reverseCurve, -1);
     }
   }
 
@@ -874,7 +910,85 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.from],
       this.vertexIDs[edge.to],
       0
+
     );
+  }
+};
+
+DirectedDFS.prototype.highlightEdge = function (from, to, active) {
+  var fromID = this.vertexIDs[from];
+  var toID = this.vertexIDs[to];
+  if (active) {
+    this.updateEdgeBaseColor(from, to);
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      DirectedDFS.EDGE_HIGHLIGHT_THICKNESS
+
+    );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+  } else {
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+    this.updateEdgeBaseColor(from, to);
+  }
+};
+
+DirectedDFS.prototype.animateHighlightTraversal = function (
+  fromIndex,
+  toIndex
+) {
+  if (fromIndex === toIndex) {
+    return;
+  }
+
+  var startPos = this.vertexPositions[fromIndex];
+  var endPos = this.vertexPositions[toIndex];
+  var key = this.edgeKey(fromIndex, toIndex);
+  var meta = this.edgeMeta[key];
+  var curve = 0;
+  var reverseMeta = null;
+  if (meta) {
+    curve = meta.curve;
+  } else {
+    reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
+    if (reverseMeta) {
+      curve = -reverseMeta.curve;
+    }
+  }
+
+  if (!meta && !reverseMeta) {
+    curve = 0;
+  }
+
+  if (Math.abs(curve) < 0.01) {
+    this.cmd("Move", this.highlightCircleID, endPos.x, endPos.y);
+    this.cmd("Step");
+    return;
+  }
+
+  var dx = endPos.x - startPos.x;
+  var dy = endPos.y - startPos.y;
+  var midX = (startPos.x + endPos.x) / 2;
+  var midY = (startPos.y + endPos.y) / 2;
+  var controlX = midX - dy * curve;
+  var controlY = midY + dx * curve;
+
+  var segments = 10;
+  for (var step = 1; step <= segments; step++) {
+    var t = step / segments;
+    var invT = 1 - t;
+    var px =
+      invT * invT * startPos.x +
+      2 * invT * t * controlX +
+      t * t * endPos.x;
+    var py =
+      invT * invT * startPos.y +
+      2 * invT * t * controlY +
+      t * t * endPos.y;
+    this.cmd("Move", this.highlightCircleID, Math.round(px), Math.round(py));
+    this.cmd("Step");
   }
 };
 
