@@ -35,6 +35,7 @@ DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 DirectedDFS.EDGE_THICKNESS = 3;
+
 DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = DirectedDFS.EDGE_THICKNESS;
 DirectedDFS.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
@@ -497,6 +498,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
   }
 
   var hasCurveEdge = false;
+
   var applyCurves = function (list, baseCurveValue, orientationSign) {
     if (!list.length) {
       return;
@@ -535,6 +537,7 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     }
     var bucket = pairBuckets[bucketKey];
     var baseCurve = baseCurveForPair(bucket.min, bucket.max);
+
     var forward = [];
     var backward = [];
     for (var bi = 0; bi < bucket.edges.length; bi++) {
@@ -907,7 +910,85 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.from],
       this.vertexIDs[edge.to],
       0
+
     );
+  }
+};
+
+DirectedDFS.prototype.highlightEdge = function (from, to, active) {
+  var fromID = this.vertexIDs[from];
+  var toID = this.vertexIDs[to];
+  if (active) {
+    this.updateEdgeBaseColor(from, to);
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      DirectedDFS.EDGE_HIGHLIGHT_THICKNESS
+
+    );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+  } else {
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+    this.updateEdgeBaseColor(from, to);
+  }
+};
+
+DirectedDFS.prototype.animateHighlightTraversal = function (
+  fromIndex,
+  toIndex
+) {
+  if (fromIndex === toIndex) {
+    return;
+  }
+
+  var startPos = this.vertexPositions[fromIndex];
+  var endPos = this.vertexPositions[toIndex];
+  var key = this.edgeKey(fromIndex, toIndex);
+  var meta = this.edgeMeta[key];
+  var curve = 0;
+  var reverseMeta = null;
+  if (meta) {
+    curve = meta.curve;
+  } else {
+    reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
+    if (reverseMeta) {
+      curve = -reverseMeta.curve;
+    }
+  }
+
+  if (!meta && !reverseMeta) {
+    curve = 0;
+  }
+
+  if (Math.abs(curve) < 0.01) {
+    this.cmd("Move", this.highlightCircleID, endPos.x, endPos.y);
+    this.cmd("Step");
+    return;
+  }
+
+  var dx = endPos.x - startPos.x;
+  var dy = endPos.y - startPos.y;
+  var midX = (startPos.x + endPos.x) / 2;
+  var midY = (startPos.y + endPos.y) / 2;
+  var controlX = midX - dy * curve;
+  var controlY = midY + dx * curve;
+
+  var segments = 10;
+  for (var step = 1; step <= segments; step++) {
+    var t = step / segments;
+    var invT = 1 - t;
+    var px =
+      invT * invT * startPos.x +
+      2 * invT * t * controlX +
+      t * t * endPos.x;
+    var py =
+      invT * invT * startPos.y +
+      2 * invT * t * controlY +
+      t * t * endPos.y;
+    this.cmd("Move", this.highlightCircleID, Math.round(px), Math.round(py));
+    this.cmd("Step");
   }
 };
 

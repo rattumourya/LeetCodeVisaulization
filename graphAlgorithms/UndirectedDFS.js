@@ -35,8 +35,10 @@ UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
+
 UndirectedDFS.EDGE_ACTIVE_THICKNESS = UndirectedDFS.EDGE_THICKNESS;
 UndirectedDFS.EDGE_TREE_THICKNESS = 6;
+
 
 UndirectedDFS.ARRAY_BASE_X = 720;
 UndirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -537,6 +539,7 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
       "SetEdgeThickness",
       fromID,
       toID,
+
       UndirectedDFS.EDGE_ACTIVE_THICKNESS
     );
   } else {
@@ -628,6 +631,7 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     "SetEdgeThickness",
     this.vertexIDs[parent],
     this.vertexIDs[child],
+
     UndirectedDFS.EDGE_TREE_THICKNESS
   );
   this.cmd(
