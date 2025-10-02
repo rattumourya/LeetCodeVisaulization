@@ -35,15 +35,12 @@ DirectedDFS.HIGHLIGHT_RADIUS = DirectedDFS.GRAPH_NODE_RADIUS;
 DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 DirectedDFS.EDGE_THICKNESS = 3;
-
 DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = DirectedDFS.EDGE_THICKNESS;
 DirectedDFS.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 // Minimum curvature magnitude to keep opposite-direction edges visually parallel.
 DirectedDFS.MIN_PARALLEL_SEPARATION = 0.42;
-
 DirectedDFS.PARALLEL_EDGE_GAP = 0.18;
-
 
 DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -54,6 +51,7 @@ DirectedDFS.ARRAY_CELL_INNER_HEIGHT = 42;
 DirectedDFS.ARRAY_HEADER_HEIGHT = DirectedDFS.ARRAY_CELL_INNER_HEIGHT;
 DirectedDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 DirectedDFS.ARRAY_RECT_BORDER = "#2b2d42";
+DirectedDFS.ARRAY_RECT_HIGHLIGHT_BORDER = "#d62828";
 DirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 DirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 DirectedDFS.ARRAY_HEADER_GAP = 20;
@@ -503,7 +501,6 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
   }
 
   var hasCurveEdge = false;
-
   var applyCurves = function (list, baseCurveValue, orientationSign) {
     if (!list.length) {
       return;
@@ -542,7 +539,6 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     }
     var bucket = pairBuckets[bucketKey];
     var baseCurve = baseCurveForPair(bucket.min, bucket.max);
-
     var forward = [];
     var backward = [];
     for (var bi = 0; bi < bucket.edges.length; bi++) {
@@ -555,7 +551,6 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
     }
 
     if (forward.length > 0 && backward.length > 0) {
-
       var baseSign = 1;
       if (Math.abs(baseCurve) > 0.01) {
         baseSign = baseCurve >= 0 ? 1 : -1;
@@ -572,7 +567,6 @@ DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
       var backwardCurve = baseSign * (magnitude + DirectedDFS.PARALLEL_EDGE_GAP);
       applyCurves(forward, forwardCurve, baseSign);
       applyCurves(backward, backwardCurve, baseSign);
-
     } else if (forward.length > 0) {
       var curveValue = Math.abs(baseCurve) < 0.01 ? 0 : baseCurve;
       applyCurves(forward, curveValue, 1);
@@ -797,6 +791,16 @@ DirectedDFS.prototype.createArrayArea = function () {
   }
 };
 
+DirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
+  if (index < 0 || index >= this.visitedRectIDs.length) {
+    return;
+  }
+  var color = active
+    ? DirectedDFS.ARRAY_RECT_HIGHLIGHT_BORDER
+    : DirectedDFS.ARRAY_RECT_BORDER;
+  this.cmd("SetForegroundColor", this.visitedRectIDs[index], color);
+};
+
 DirectedDFS.prototype.createCodeDisplay = function () {
   var codeStartX = DirectedDFS.CANVAS_WIDTH / 2 - 150;
   this.codeID = this.addCodeToCanvasBase(
@@ -842,6 +846,11 @@ DirectedDFS.prototype.clearTraversalState = function () {
     this.parents[i] = null;
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedDFS.ARRAY_RECT_COLOR);
+    this.cmd(
+      "SetForegroundColor",
+      this.visitedRectIDs[i],
+      DirectedDFS.ARRAY_RECT_BORDER
+    );
     this.cmd("SetTextColor", this.visitedRectIDs[i], DirectedDFS.ARRAY_TEXT_COLOR);
     this.cmd("SetText", this.parentRectIDs[i], "-");
     this.cmd(
@@ -925,8 +934,13 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.from],
       this.vertexIDs[edge.to],
       0
-
     );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+  } else {
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+    this.updateEdgeBaseColor(from, to);
+
   }
 };
 
@@ -940,20 +954,19 @@ DirectedDFS.prototype.highlightEdge = function (from, to, active) {
       fromID,
       toID,
       DirectedDFS.EDGE_HIGHLIGHT_THICKNESS
-
     );
     this.cmd("SetEdgeHighlight", fromID, toID, 1);
   } else {
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
     this.updateEdgeBaseColor(from, to);
-
   }
 };
 
 DirectedDFS.prototype.animateHighlightTraversal = function (
   fromIndex,
-  toIndex
+  toIndex,
+  preferKey
 ) {
   if (fromIndex === toIndex) {
     return;
@@ -961,21 +974,36 @@ DirectedDFS.prototype.animateHighlightTraversal = function (
 
   var startPos = this.vertexPositions[fromIndex];
   var endPos = this.vertexPositions[toIndex];
-  var key = this.edgeKey(fromIndex, toIndex);
-  var meta = this.edgeMeta[key];
   var curve = 0;
-  var reverseMeta = null;
-  if (meta) {
-    curve = meta.curve;
-  } else {
-    reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
-    if (reverseMeta) {
-      curve = -reverseMeta.curve;
+  var hasCurve = false;
+
+  if (typeof preferKey === "string") {
+    var preferredMeta = this.edgeMeta[preferKey];
+    if (preferredMeta) {
+      curve = preferredMeta.curve;
+      if (
+        preferredMeta.from !== fromIndex ||
+        preferredMeta.to !== toIndex
+      ) {
+        curve = -curve;
+      }
+      hasCurve = true;
     }
   }
 
-  if (!meta && !reverseMeta) {
-    curve = 0;
+  if (!hasCurve) {
+    var key = this.edgeKey(fromIndex, toIndex);
+    var meta = this.edgeMeta[key];
+    if (meta) {
+      curve = meta.curve;
+      hasCurve = true;
+    } else {
+      var reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
+      if (reverseMeta) {
+        curve = -reverseMeta.curve;
+        hasCurve = true;
+      }
+    }
   }
 
   if (Math.abs(curve) < 0.01) {
@@ -1045,6 +1073,8 @@ DirectedDFS.prototype.dfsVisit = function (u) {
   this.cmd("Step");
 
   this.highlightCodeLine(1);
+  this.setVisitedCellHighlight(u, true);
+  this.cmd("Step");
   if (!this.visited[u]) {
     this.visited[u] = true;
     this.cmd("SetText", this.visitedRectIDs[u], "T");
@@ -1065,6 +1095,7 @@ DirectedDFS.prototype.dfsVisit = function (u) {
     );
     this.cmd("Step");
   }
+  this.setVisitedCellHighlight(u, false);
 
   this.highlightCodeLine(2);
   this.cmd("Step");
@@ -1074,6 +1105,9 @@ DirectedDFS.prototype.dfsVisit = function (u) {
     var v = neighbors[i];
     this.highlightCodeLine(3);
     this.highlightEdge(u, v, true);
+    this.cmd("Step");
+
+    this.setVisitedCellHighlight(v, true);
     this.cmd("Step");
 
     if (!this.visited[v]) {
@@ -1088,12 +1122,14 @@ DirectedDFS.prototype.dfsVisit = function (u) {
       this.cmd("Step");
 
       this.highlightCodeLine(5);
-      this.animateHighlightTraversal(u, v);
+      this.animateHighlightTraversal(u, v, this.edgeKey(u, v));
 
       this.dfsVisit(v);
 
-      this.animateHighlightTraversal(v, u);
+      this.animateHighlightTraversal(v, u, this.edgeKey(u, v));
     }
+
+    this.setVisitedCellHighlight(v, false);
 
     this.highlightCodeLine(6);
     this.cmd("Step");

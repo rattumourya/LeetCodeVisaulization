@@ -35,7 +35,6 @@ UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
-
 UndirectedDFS.EDGE_ACTIVE_THICKNESS = UndirectedDFS.EDGE_THICKNESS;
 UndirectedDFS.EDGE_TREE_THICKNESS = 6;
 
@@ -48,6 +47,7 @@ UndirectedDFS.ARRAY_CELL_INNER_HEIGHT = 42;
 UndirectedDFS.ARRAY_HEADER_HEIGHT = UndirectedDFS.ARRAY_CELL_INNER_HEIGHT;
 UndirectedDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 UndirectedDFS.ARRAY_RECT_BORDER = "#2b2d42";
+UndirectedDFS.ARRAY_RECT_HIGHLIGHT_BORDER = "#d62828";
 UndirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 UndirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 UndirectedDFS.ARRAY_HEADER_GAP = 20;
@@ -394,6 +394,16 @@ UndirectedDFS.prototype.createArrayArea = function () {
   }
 };
 
+UndirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
+  if (index < 0 || index >= this.visitedRectIDs.length) {
+    return;
+  }
+  var color = active
+    ? UndirectedDFS.ARRAY_RECT_HIGHLIGHT_BORDER
+    : UndirectedDFS.ARRAY_RECT_BORDER;
+  this.cmd("SetForegroundColor", this.visitedRectIDs[index], color);
+};
+
 UndirectedDFS.prototype.createCodeDisplay = function () {
   var codeStartX = UndirectedDFS.CANVAS_WIDTH / 2 - 150;
   this.codeID = this.addCodeToCanvasBase(
@@ -439,6 +449,11 @@ UndirectedDFS.prototype.clearTraversalState = function () {
     this.parents[i] = null;
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], UndirectedDFS.ARRAY_RECT_COLOR);
+    this.cmd(
+      "SetForegroundColor",
+      this.visitedRectIDs[i],
+      UndirectedDFS.ARRAY_RECT_BORDER
+    );
     this.cmd("SetText", this.parentRectIDs[i], "-");
     this.cmd(
       "SetBackgroundColor",
@@ -538,7 +553,6 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
       "SetEdgeThickness",
       fromID,
       toID,
-
       UndirectedDFS.EDGE_ACTIVE_THICKNESS
     );
   } else {
@@ -570,9 +584,7 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
   }
 
   if (!meta || Math.abs(curve) < 0.01) {
-
     this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
-
     this.cmd("Step");
     return;
   }
@@ -593,7 +605,6 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
     Math.round(endPos.y)
   );
   this.cmd("Step");
-
 };
 
 UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
@@ -627,7 +638,6 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     "SetEdgeThickness",
     this.vertexIDs[parent],
     this.vertexIDs[child],
-
     UndirectedDFS.EDGE_TREE_THICKNESS
   );
   this.cmd(
@@ -931,6 +941,8 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
   this.cmd("Step");
 
   this.highlightCodeLine(1);
+  this.setVisitedCellHighlight(u, true);
+  this.cmd("Step");
   if (!this.visited[u]) {
     this.visited[u] = true;
     this.cmd("SetText", this.visitedRectIDs[u], "T");
@@ -951,6 +963,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
     );
     this.cmd("Step");
   }
+  this.setVisitedCellHighlight(u, false);
 
   this.highlightCodeLine(2);
   this.cmd("Step");
@@ -963,6 +976,10 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
     }
     this.highlightCodeLine(3);
     this.setEdgeActive(u, v, true);
+    this.cmd("Step");
+
+
+    this.setVisitedCellHighlight(v, true);
     this.cmd("Step");
 
     if (!this.visited[v]) {
@@ -984,6 +1001,8 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
 
       this.animateHighlightTraversal(v, u);
     }
+
+    this.setVisitedCellHighlight(v, false);
 
     this.highlightCodeLine(6);
     this.cmd("Step");
