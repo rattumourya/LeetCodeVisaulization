@@ -36,6 +36,7 @@ DirectedDFS.EDGE_COLOR = "#4a4e69";
 DirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 DirectedDFS.EDGE_THICKNESS = 3;
 DirectedDFS.EDGE_HIGHLIGHT_THICKNESS = 6;
+DirectedDFS.BIDIRECTIONAL_CURVE = 0.22;
 
 DirectedDFS.ARRAY_BASE_X = 720;
 DirectedDFS.ARRAY_COLUMN_SPACING = 80;
@@ -72,10 +73,23 @@ DirectedDFS.CODE_LINES = [
   ["}"],
 ];
 
+DirectedDFS.TEMPLATE_ALLOWED = [
+  [false, true, true, false, true, false, false, true, false, false],
+  [true, false, true, false, true, true, false, false, false, false],
+  [true, true, false, true, false, true, true, false, false, false],
+  [false, false, true, false, false, false, true, false, false, false],
+  [true, true, false, false, false, true, false, true, true, false],
+  [false, true, true, false, true, false, true, false, true, true],
+  [false, false, true, true, false, true, false, false, false, true],
+  [true, false, false, false, true, false, false, false, true, false],
+  [false, false, false, false, true, true, false, true, false, true],
+  [false, false, false, false, false, true, true, false, true, false],
+];
+
 DirectedDFS.EDGE_CURVES = [
   [0, 0, -0.4, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, -0.35, 0, 0, 0, 0],
+  [0.4, 0, 0, 0, 0, -0.35, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0.35, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -97,6 +111,7 @@ DirectedDFS.prototype.init = function (am, w, h) {
   this.edgePairs = [];
   this.edgeStates = {};
   this.edgeMeta = {};
+  this.edgeCurveOverrides = {};
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
@@ -158,33 +173,11 @@ DirectedDFS.prototype.setup = function () {
   this.edgePairs = [];
   this.edgeStates = {};
   this.edgeMeta = {};
+  this.edgeCurveOverrides = {};
 
-  this.vertexLabels = [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J",
-  ];
-  this.vertexPositions = this.computeTemplateLayout(this.vertexLabels.length);
-
-  this.adjacencyList = [
-    [1, 2],
-    [3, 4],
-    [5, 6],
-    [7],
-    [7, 8],
-    [8],
-    [8, 9],
-    [9],
-    [],
-    [],
-  ];
+  var vertexCount = 10;
+  this.vertexLabels = this.createVertexLabels(vertexCount);
+  this.generateRandomGraph(vertexCount);
 
   this.createTitleRow();
   this.createGraphArea();
@@ -203,6 +196,359 @@ DirectedDFS.prototype.setup = function () {
 
 DirectedDFS.prototype.resetCallback = function () {
   this.implementAction(this.reset.bind(this), 0);
+};
+
+DirectedDFS.prototype.createVertexLabels = function (count) {
+  var labels = [];
+  var limit = Math.min(count, 26);
+  for (var i = 0; i < limit; i++) {
+    labels.push(String.fromCharCode(65 + i));
+  }
+  return labels;
+};
+
+DirectedDFS.prototype.generateRandomGraph = function (vertexCount) {
+  this.vertexPositions = this.computeTemplateLayout(vertexCount);
+  this.adjacencyList = new Array(vertexCount);
+  this.edgeCurveOverrides = {};
+
+  var allowed = DirectedDFS.TEMPLATE_ALLOWED;
+
+  var shuffle = function (array) {
+    for (var idx = array.length - 1; idx > 0; idx--) {
+      var swap = Math.floor(Math.random() * (idx + 1));
+      var temp = array[idx];
+      array[idx] = array[swap];
+      array[swap] = temp;
+    }
+  };
+
+  var isDirectionAllowed = function (from, to) {
+    return allowed[from] && allowed[from][to];
+  };
+
+  var isPairAllowed = function (a, b) {
+    return isDirectionAllowed(a, b) || isDirectionAllowed(b, a);
+  };
+
+  var pairKey = function (a, b) {
+    return a < b ? a + "-" + b : b + "-" + a;
+  };
+
+  var baseEdges = [];
+  var usedPairs = {};
+
+  var tryAddBaseEdge = function (a, b) {
+    if (a === b) {
+      return false;
+    }
+    if (!isPairAllowed(a, b)) {
+      return false;
+    }
+    var key = pairKey(a, b);
+    if (usedPairs[key]) {
+      return false;
+    }
+    var min = Math.min(a, b);
+    var max = Math.max(a, b);
+    baseEdges.push({ u: min, v: max });
+    usedPairs[key] = true;
+    return true;
+  };
+
+  for (var v = 1; v < vertexCount; v++) {
+    var neighbors = [];
+    for (var u = 0; u < vertexCount; u++) {
+      if (u === v) {
+        continue;
+      }
+      if (isPairAllowed(v, u)) {
+        neighbors.push(u);
+      }
+    }
+    if (neighbors.length === 0) {
+      continue;
+    }
+    shuffle(neighbors);
+    for (var n = 0; n < neighbors.length; n++) {
+      if (tryAddBaseEdge(v, neighbors[n])) {
+        break;
+      }
+    }
+  }
+
+  var baseEdgePercent = 0.45;
+  for (var i = 0; i < vertexCount; i++) {
+    for (var j = i + 1; j < vertexCount; j++) {
+      if (!isPairAllowed(i, j)) {
+        continue;
+      }
+      if (usedPairs[pairKey(i, j)]) {
+        continue;
+      }
+      if (Math.random() <= baseEdgePercent) {
+        tryAddBaseEdge(i, j);
+      }
+    }
+  }
+
+  var directedEdges = [];
+  var directedMap = {};
+  var incidentEdges = new Array(vertexCount);
+  var outDegree = new Array(vertexCount);
+  for (var p = 0; p < vertexCount; p++) {
+    incidentEdges[p] = [];
+    outDegree[p] = 0;
+    this.adjacencyList[p] = [];
+  }
+
+  var baseRecords = new Array(baseEdges.length);
+  for (var b = 0; b < baseEdges.length; b++) {
+    var edge = baseEdges[b];
+    var forwardAllowed = isDirectionAllowed(edge.u, edge.v);
+    var backwardAllowed = isDirectionAllowed(edge.v, edge.u);
+    if (!forwardAllowed && !backwardAllowed) {
+      continue;
+    }
+    var from = edge.u;
+    var to = edge.v;
+    if (forwardAllowed && backwardAllowed) {
+      if (Math.random() < 0.5) {
+        from = edge.u;
+        to = edge.v;
+      } else {
+        from = edge.v;
+        to = edge.u;
+      }
+    } else if (forwardAllowed) {
+      from = edge.u;
+      to = edge.v;
+    } else {
+      from = edge.v;
+      to = edge.u;
+    }
+
+    var record = {
+      from: from,
+      to: to,
+      min: edge.u,
+      max: edge.v,
+      curve: 0,
+    };
+    directedEdges.push(record);
+    baseRecords[b] = record;
+    directedMap[from + "->" + to] = true;
+    outDegree[from]++;
+    incidentEdges[edge.u].push(b);
+    incidentEdges[edge.v].push(b);
+  }
+
+  for (var vertex = 0; vertex < vertexCount; vertex++) {
+    if (outDegree[vertex] === 0 && incidentEdges[vertex].length > 0) {
+      var options = incidentEdges[vertex].slice();
+      shuffle(options);
+      for (var opt = 0; opt < options.length && outDegree[vertex] === 0; opt++) {
+        var idx = options[opt];
+        var record = baseRecords[idx];
+        if (!record) {
+          continue;
+        }
+        var other = record.min === vertex ? record.max : record.min;
+        if (!isDirectionAllowed(vertex, other)) {
+          continue;
+        }
+        var newKey = vertex + "->" + other;
+        if (directedMap[newKey]) {
+          continue;
+        }
+        var oldKey = record.from + "->" + record.to;
+        delete directedMap[oldKey];
+        outDegree[record.from]--;
+        record.from = vertex;
+        record.to = other;
+        directedMap[newKey] = true;
+        outDegree[vertex]++;
+      }
+    }
+  }
+
+  for (var ensure = 0; ensure < vertexCount; ensure++) {
+    if (outDegree[ensure] === 0) {
+      var extraNeighbors = [];
+      if (allowed[ensure]) {
+        for (var target = 0; target < vertexCount; target++) {
+          if (target !== ensure && isDirectionAllowed(ensure, target)) {
+            extraNeighbors.push(target);
+          }
+        }
+      }
+      shuffle(extraNeighbors);
+      for (var en = 0; en < extraNeighbors.length; en++) {
+        var neighbor = extraNeighbors[en];
+        var ensureKey = ensure + "->" + neighbor;
+        if (directedMap[ensureKey]) {
+          continue;
+        }
+        directedEdges.push({
+          from: ensure,
+          to: neighbor,
+          min: Math.min(ensure, neighbor),
+          max: Math.max(ensure, neighbor),
+          curve: 0,
+        });
+        directedMap[ensureKey] = true;
+        outDegree[ensure]++;
+        break;
+      }
+    }
+  }
+
+  var edgePercent = 0.35;
+  for (var from = 0; from < vertexCount; from++) {
+    if (!allowed[from]) {
+      continue;
+    }
+    for (var to = 0; to < vertexCount; to++) {
+      if (from === to || !allowed[from][to]) {
+        continue;
+      }
+      var key = from + "->" + to;
+      if (directedMap[key]) {
+        continue;
+      }
+      if (Math.random() <= edgePercent) {
+        directedEdges.push({
+          from: from,
+          to: to,
+          min: Math.min(from, to),
+          max: Math.max(from, to),
+          curve: 0,
+        });
+        directedMap[key] = true;
+        outDegree[from]++;
+      }
+    }
+  }
+
+  var baseCurveForPair = function (min, max) {
+    if (
+      DirectedDFS.EDGE_CURVES[min] &&
+      typeof DirectedDFS.EDGE_CURVES[min][max] === "number"
+    ) {
+      return DirectedDFS.EDGE_CURVES[min][max];
+    }
+    return 0;
+  };
+
+  var hasCurveCandidate = false;
+  for (var d = 0; d < directedEdges.length; d++) {
+    var candidate = directedEdges[d];
+    if (Math.abs(baseCurveForPair(candidate.min, candidate.max)) > 0.01) {
+      hasCurveCandidate = true;
+      break;
+    }
+  }
+
+  if (!hasCurveCandidate) {
+    for (var a = 0; a < vertexCount && !hasCurveCandidate; a++) {
+      for (var c = a + 1; c < vertexCount && !hasCurveCandidate; c++) {
+        var baseCurve = baseCurveForPair(a, c);
+        if (Math.abs(baseCurve) < 0.01) {
+          continue;
+        }
+        if (isDirectionAllowed(a, c) && !directedMap[a + "->" + c]) {
+          directedEdges.push({
+            from: a,
+            to: c,
+            min: a,
+            max: c,
+            curve: 0,
+          });
+          directedMap[a + "->" + c] = true;
+          hasCurveCandidate = true;
+        } else if (isDirectionAllowed(c, a) && !directedMap[c + "->" + a]) {
+          directedEdges.push({
+            from: c,
+            to: a,
+            min: a,
+            max: c,
+            curve: 0,
+          });
+          directedMap[c + "->" + a] = true;
+          hasCurveCandidate = true;
+        }
+      }
+    }
+  }
+
+  var pairBuckets = {};
+  for (var edgeIndex = 0; edgeIndex < directedEdges.length; edgeIndex++) {
+    var entry = directedEdges[edgeIndex];
+    var bucketKey = entry.min + "-" + entry.max;
+    if (!pairBuckets[bucketKey]) {
+      pairBuckets[bucketKey] = {
+        edges: [],
+        min: entry.min,
+        max: entry.max,
+      };
+    }
+    pairBuckets[bucketKey].edges.push(entry);
+  }
+
+  var hasCurveEdge = false;
+  for (var bucketKey in pairBuckets) {
+    if (!Object.prototype.hasOwnProperty.call(pairBuckets, bucketKey)) {
+      continue;
+    }
+    var bucket = pairBuckets[bucketKey];
+    var baseCurve = baseCurveForPair(bucket.min, bucket.max);
+    if (bucket.edges.length === 1) {
+      var singleEdge = bucket.edges[0];
+      if (singleEdge.from === bucket.min && singleEdge.to === bucket.max) {
+        singleEdge.curve = baseCurve;
+      } else {
+        singleEdge.curve = -baseCurve;
+      }
+      if (Math.abs(singleEdge.curve) > 0.01) {
+        hasCurveEdge = true;
+      }
+    } else {
+      for (var bi = 0; bi < bucket.edges.length; bi++) {
+        var edgeRecord = bucket.edges[bi];
+        if (Math.abs(baseCurve) < 0.01) {
+          edgeRecord.curve =
+            edgeRecord.from === bucket.min
+              ? DirectedDFS.BIDIRECTIONAL_CURVE
+              : -DirectedDFS.BIDIRECTIONAL_CURVE;
+        } else {
+          edgeRecord.curve =
+            edgeRecord.from === bucket.min ? baseCurve : -baseCurve;
+        }
+        if (Math.abs(edgeRecord.curve) > 0.01) {
+          hasCurveEdge = true;
+        }
+      }
+    }
+  }
+
+  if (!hasCurveEdge && directedEdges.length > 0) {
+    var fallbackEdge = directedEdges[0];
+    fallbackEdge.curve =
+      fallbackEdge.from === fallbackEdge.min
+        ? DirectedDFS.BIDIRECTIONAL_CURVE
+        : -DirectedDFS.BIDIRECTIONAL_CURVE;
+  }
+
+  for (var listIndex = 0; listIndex < directedEdges.length; listIndex++) {
+    var finalEdge = directedEdges[listIndex];
+    this.adjacencyList[finalEdge.from].push(finalEdge.to);
+    this.edgeCurveOverrides[this.edgeKey(finalEdge.from, finalEdge.to)] =
+      finalEdge.curve;
+  }
+
+  for (var list = 0; list < this.adjacencyList.length; list++) {
+    shuffle(this.adjacencyList[list]);
+  }
 };
 
 DirectedDFS.prototype.computeTemplateLayout = function (vertexCount) {
@@ -474,6 +820,13 @@ DirectedDFS.prototype.edgeKey = function (from, to) {
 };
 
 DirectedDFS.prototype.getEdgeCurve = function (from, to) {
+  var key = this.edgeKey(from, to);
+  if (
+    this.edgeCurveOverrides &&
+    Object.prototype.hasOwnProperty.call(this.edgeCurveOverrides, key)
+  ) {
+    return this.edgeCurveOverrides[key];
+  }
   if (
     DirectedDFS.EDGE_CURVES[from] &&
     typeof DirectedDFS.EDGE_CURVES[from][to] === "number"
