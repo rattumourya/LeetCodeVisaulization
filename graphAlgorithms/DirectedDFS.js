@@ -848,6 +848,21 @@ DirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
   this.cmd("SetRectangleLineThickness", rectID, thickness);
 };
 
+DirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
+  if (index < 0 || index >= this.visitedRectIDs.length) {
+    return;
+  }
+  var color = active
+    ? DirectedDFS.ARRAY_RECT_HIGHLIGHT_BORDER
+    : DirectedDFS.ARRAY_RECT_BORDER;
+  var thickness = active
+    ? DirectedDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS
+    : DirectedDFS.ARRAY_RECT_BORDER_THICKNESS;
+  var rectID = this.visitedRectIDs[index];
+  this.cmd("SetForegroundColor", rectID, color);
+  this.cmd("SetRectangleLineThickness", rectID, thickness);
+};
+
 DirectedDFS.prototype.createCodeDisplay = function () {
   var startY = this.bottomSectionTopY + DirectedDFS.CODE_TOP_PADDING;
   this.codeID = this.addCodeToCanvasBase(
@@ -1198,6 +1213,11 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.to],
       0
     );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+  } else {
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+    this.updateEdgeBaseColor(from, to);
   }
 };
 
