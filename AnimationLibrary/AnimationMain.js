@@ -704,20 +704,39 @@ function AnimationManager(objectManager)
 				undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
 			}
 			
-			else if (nextCommand[0].toUpperCase() == "MOVE")
-			{
-				var objectID = parseInt(nextCommand[1]);
-				var nextAnim =  new SingleAnimation(objectID, 
-													this.animatedObjects.getNodeX(objectID), 
-													this.animatedObjects.getNodeY(objectID), 
-													parseInt(nextCommand[2]),
-													parseInt(nextCommand[3]));
-				this.currentBlock.push(nextAnim);
+                        else if (nextCommand[0].toUpperCase() == "MOVE")
+                        {
+                                var objectID = parseInt(nextCommand[1]);
+                                var toX = parseInt(nextCommand[2]);
+                                var toY = parseInt(nextCommand[3]);
+                                var nextAnim =  new SingleAnimation(objectID,
+                                                                                                        this.animatedObjects.getNodeX(objectID),
+                                                                                                        this.animatedObjects.getNodeY(objectID),
+                                                                                                        toX,
+                                                                                                        toY);
+                                this.currentBlock.push(nextAnim);
 
-				undoBlock.push(new UndoMove(nextAnim.objectID, nextAnim.toX, nextAnim.toY, nextAnim.fromX, nextAnim.fromY));
+                                undoBlock.push(new UndoMove(nextAnim.objectID, nextAnim.toX, nextAnim.toY, nextAnim.fromX, nextAnim.fromY));
 
-				anyAnimations = true;
-			}
+                                anyAnimations = true;
+                        }
+                        else if (nextCommand[0].toUpperCase() == "MOVEALONGCURVE")
+                        {
+                                var curveObjectID = parseInt(nextCommand[1]);
+                                var controlX = parseInt(nextCommand[2]);
+                                var controlY = parseInt(nextCommand[3]);
+                                var curveToX = parseInt(nextCommand[4]);
+                                var curveToY = parseInt(nextCommand[5]);
+                                var curveAnim = new SingleAnimation(curveObjectID,
+                                                                                                        this.animatedObjects.getNodeX(curveObjectID),
+                                                                                                        this.animatedObjects.getNodeY(curveObjectID),
+                                                                                                        curveToX,
+                                                                                                        curveToY,
+                                                                                                        { type: "quadratic", controlX: controlX, controlY: controlY });
+                                this.currentBlock.push(curveAnim);
+                                undoBlock.push(new UndoMove(curveAnim.objectID, curveAnim.toX, curveAnim.toY, curveAnim.fromX, curveAnim.fromY));
+                                anyAnimations = true;
+                        }
 			
 			else if (nextCommand[0].toUpperCase() == "MOVETOALIGNRIGHT")
 			{
@@ -861,19 +880,27 @@ function AnimationManager(objectManager)
 				}
 				undoBlock.push(new UndoCreate(parseInt(nextCommand[1])));
 			}
-			else if (nextCommand[0].toUpperCase() == "SETEDGECOLOR")
-			{
-				var from = parseInt(nextCommand[1]);
-				var to = parseInt(nextCommand[2]);
-				var newColor = this.parseColor(nextCommand[3]);
-				var oldColor = this.animatedObjects.setEdgeColor(from, to, newColor);				
-				undoBlock.push(new UndoSetEdgeColor(from, to, oldColor));
-			}
-			else if (nextCommand[0].toUpperCase() == "SETEDGEALPHA")
-			{
-				var from = parseInt(nextCommand[1]);
-				var to = parseInt(nextCommand[2]);
-				var newAlpha = parseFloat(nextCommand[3]);
+                        else if (nextCommand[0].toUpperCase() == "SETEDGECOLOR")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newColor = this.parseColor(nextCommand[3]);
+                                var oldColor = this.animatedObjects.setEdgeColor(from, to, newColor);
+                                undoBlock.push(new UndoSetEdgeColor(from, to, oldColor));
+                        }
+                        else if (nextCommand[0].toUpperCase() == "SETEDGETHICKNESS")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newThickness = parseFloat(nextCommand[3]);
+                                var oldThickness = this.animatedObjects.setEdgeThickness(from, to, newThickness);
+                                undoBlock.push(new UndoSetEdgeThickness(from, to, oldThickness));
+                        }
+                        else if (nextCommand[0].toUpperCase() == "SETEDGEALPHA")
+                        {
+                                var from = parseInt(nextCommand[1]);
+                                var to = parseInt(nextCommand[2]);
+                                var newAlpha = parseFloat(nextCommand[3]);
 				var oldAplpha = this.animatedObjects.setEdgeAlpha(from, to, newAlpha);				
 				undoBlock.push(new UndoSetEdgeAlpha(from, to, oldAplpha));
 			}
@@ -1326,27 +1353,40 @@ function AnimationManager(objectManager)
 		{
 			this.currFrame = this.currFrame + 1;
 			var i;
-			for (i = 0; i < this.currentBlock.length; i++)
-			{
-				if (this.currFrame == this.animationBlockLength || (this.currFrame == 1 && this.animationBlockLength == 0))
-				{
-					this.animatedObjects.setNodePosition(this.currentBlock[i].objectID,
-													     this.currentBlock[i].toX,
-													     this.currentBlock[i].toY);
-				}
-				else if (this.currFrame < this.animationBlockLength)
-				{
-					var objectID = this.currentBlock[i].objectID;
-					var percent = 1 / (this.animationBlockLength - this.currFrame);
-					var oldX = this.animatedObjects.getNodeX(objectID);
-					var oldY = this.animatedObjects.getNodeY(objectID);
-					var targetX = this.currentBlock[i].toX;
-					var targety  = this.currentBlock[i].toY;						
-					var newX = this.lerp(this.animatedObjects.getNodeX(objectID), this.currentBlock[i].toX, percent);
-					var newY = this.lerp(this.animatedObjects.getNodeY(objectID), this.currentBlock[i].toY, percent);
-					this.animatedObjects.setNodePosition(objectID, newX, newY);
-				}
-			}
+                        for (i = 0; i < this.currentBlock.length; i++)
+                        {
+                                var anim = this.currentBlock[i];
+                                if (anim.useQuadratic)
+                                {
+                                        var totalFrames = Math.max(1, this.animationBlockLength);
+                                        if (this.currFrame >= totalFrames)
+                                        {
+                                                this.animatedObjects.setNodePosition(anim.objectID, anim.toX, anim.toY);
+                                        }
+                                        else
+                                        {
+                                                var t = this.currFrame / totalFrames;
+                                                var invT = 1 - t;
+                                                var quadX = invT * invT * anim.fromX + 2 * invT * t * anim.controlX + t * t * anim.toX;
+                                                var quadY = invT * invT * anim.fromY + 2 * invT * t * anim.controlY + t * t * anim.toY;
+                                                this.animatedObjects.setNodePosition(anim.objectID, quadX, quadY);
+                                        }
+                                }
+                                else if (this.currFrame == this.animationBlockLength || (this.currFrame == 1 && this.animationBlockLength == 0))
+                                {
+                                        this.animatedObjects.setNodePosition(anim.objectID,
+                                                                                                             anim.toX,
+                                                                                                             anim.toY);
+                                }
+                                else if (this.currFrame < this.animationBlockLength)
+                                {
+                                        var objectID = anim.objectID;
+                                        var percent = 1 / (this.animationBlockLength - this.currFrame);
+                                        var newX = this.lerp(this.animatedObjects.getNodeX(objectID), anim.toX, percent);
+                                        var newY = this.lerp(this.animatedObjects.getNodeY(objectID), anim.toY, percent);
+                                        this.animatedObjects.setNodePosition(objectID, newX, newY);
+                                }
+                        }
 			if (this.currFrame >= this.animationBlockLength)
 			{
 				if (this.doingUndo)
@@ -1385,11 +1425,23 @@ AnimationManager.prototype = new EventListener();
 AnimationManager.prototype.constructor = AnimationManager;
 
 				
-function SingleAnimation(id, fromX, fromY, toX, toY)
+function SingleAnimation(id, fromX, fromY, toX, toY, options)
 {
-	this.objectID = id;
-	this.fromX = fromX;
-	this.fromY = fromY;
-	this.toX = toX;
-	this.toY = toY;	
+        this.objectID = id;
+        this.fromX = fromX;
+        this.fromY = fromY;
+        this.toX = toX;
+        this.toY = toY;
+        this.useQuadratic = false;
+        this.controlX = 0;
+        this.controlY = 0;
+        if (options != null && options != undefined)
+        {
+                if (options.type === "quadratic")
+                {
+                        this.useQuadratic = true;
+                        this.controlX = options.controlX;
+                        this.controlY = options.controlY;
+                }
+        }
 }
