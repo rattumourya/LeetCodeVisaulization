@@ -741,17 +741,23 @@ function AnimationManager(objectManager)
 				var oldColor = this.animatedObjects.foregroundColor(id);
 				this.animatedObjects.setForegroundColor(id, this.parseColor(nextCommand[2]));
 				undoBlock.push(new UndoSetForegroundColor(id, oldColor));
-			} else if (nextCommand[0].toUpperCase() == "SETBACKGROUNDCOLOR")
-			{
-				id = parseInt(nextCommand[1]);
-				oldColor = this.animatedObjects.backgroundColor(id);
-				this.animatedObjects.setBackgroundColor(id, this.parseColor(nextCommand[2]));
-				undoBlock.push(new UndoSetBackgroundColor(id, oldColor));
-			} else if (nextCommand[0].toUpperCase() == "SETHIGHLIGHT")
-			{
-				var newHighlight = this.parseBool(nextCommand[2]);
-				this.animatedObjects.setHighlight( parseInt(nextCommand[1]), newHighlight);
-				undoBlock.push(new UndoHighlight( parseInt(nextCommand[1]), !newHighlight));
+                        } else if (nextCommand[0].toUpperCase() == "SETBACKGROUNDCOLOR")
+                        {
+                                id = parseInt(nextCommand[1]);
+                                oldColor = this.animatedObjects.backgroundColor(id);
+                                this.animatedObjects.setBackgroundColor(id, this.parseColor(nextCommand[2]));
+                                undoBlock.push(new UndoSetBackgroundColor(id, oldColor));
+                        } else if (nextCommand[0].toUpperCase() == "SETRECTANGLELINETHICKNESS")
+                        {
+                                id = parseInt(nextCommand[1]);
+                                var newThickness = parseFloat(nextCommand[2]);
+                                var oldThickness = this.animatedObjects.setRectangleLineThickness(id, newThickness);
+                                undoBlock.push(new UndoSetRectangleLineThickness(id, oldThickness));
+                        } else if (nextCommand[0].toUpperCase() == "SETHIGHLIGHT")
+                        {
+                                var newHighlight = this.parseBool(nextCommand[2]);
+                                this.animatedObjects.setHighlight( parseInt(nextCommand[1]), newHighlight);
+                                undoBlock.push(new UndoHighlight( parseInt(nextCommand[1]), !newHighlight));
 			} else if (nextCommand[0].toUpperCase() == "DISCONNECT")
 			{
 				var undoConnect = this.animatedObjects.disconnect(parseInt(nextCommand[1]), parseInt(nextCommand[2]));

@@ -325,20 +325,35 @@ function ObjectManager()
 	}
 	
 	
-	this.setForegroundColor = function(objectID, color)
-	{
-		if (this.Nodes[objectID] != null && this.Nodes[objectID] != undefined)
-		{
-			this.Nodes[objectID].setForegroundColor(color);
-			
-		}
-	}
-	
-	this.setBackgroundColor = function(objectID, color)
-	{
-		if (this.Nodes[objectID] != null)
-		{
-			this.Nodes[objectID].setBackgroundColor(color);
+        this.setForegroundColor = function(objectID, color)
+        {
+                if (this.Nodes[objectID] != null && this.Nodes[objectID] != undefined)
+                {
+                        this.Nodes[objectID].setForegroundColor(color);
+
+                }
+        }
+
+        this.setRectangleLineThickness = function(objectID, thickness)
+        {
+                if (this.Nodes[objectID] == null || this.Nodes[objectID] == undefined)
+                {
+                        return 1;
+                }
+                if (this.Nodes[objectID].setLineThickness == undefined)
+                {
+                        return 1;
+                }
+                var oldThickness = this.Nodes[objectID].getLineThickness();
+                this.Nodes[objectID].setLineThickness(thickness);
+                return oldThickness;
+        }
+
+        this.setBackgroundColor = function(objectID, color)
+        {
+                if (this.Nodes[objectID] != null)
+                {
+                        this.Nodes[objectID].setBackgroundColor(color);
 			
 		}
 	}

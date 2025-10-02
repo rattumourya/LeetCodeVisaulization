@@ -52,6 +52,8 @@ DirectedDFS.ARRAY_HEADER_HEIGHT = DirectedDFS.ARRAY_CELL_INNER_HEIGHT;
 DirectedDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 DirectedDFS.ARRAY_RECT_BORDER = "#2b2d42";
 DirectedDFS.ARRAY_RECT_HIGHLIGHT_BORDER = "#d62828";
+DirectedDFS.ARRAY_RECT_BORDER_THICKNESS = 1;
+DirectedDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
 DirectedDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 DirectedDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 DirectedDFS.ARRAY_HEADER_GAP = 20;
@@ -794,6 +796,11 @@ DirectedDFS.prototype.createArrayArea = function () {
     this.cmd("SetForegroundColor", visitedID, DirectedDFS.ARRAY_RECT_BORDER);
     this.cmd("SetBackgroundColor", visitedID, DirectedDFS.ARRAY_RECT_COLOR);
     this.cmd("SetTextColor", visitedID, DirectedDFS.ARRAY_TEXT_COLOR);
+    this.cmd(
+      "SetRectangleLineThickness",
+      visitedID,
+      DirectedDFS.ARRAY_RECT_BORDER_THICKNESS
+    );
 
     var parentID = this.nextIndex++;
     this.parentRectIDs[i] = parentID;
@@ -819,7 +826,12 @@ DirectedDFS.prototype.setVisitedCellHighlight = function (index, active) {
   var color = active
     ? DirectedDFS.ARRAY_RECT_HIGHLIGHT_BORDER
     : DirectedDFS.ARRAY_RECT_BORDER;
-  this.cmd("SetForegroundColor", this.visitedRectIDs[index], color);
+  var thickness = active
+    ? DirectedDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS
+    : DirectedDFS.ARRAY_RECT_BORDER_THICKNESS;
+  var rectID = this.visitedRectIDs[index];
+  this.cmd("SetForegroundColor", rectID, color);
+  this.cmd("SetRectangleLineThickness", rectID, thickness);
 };
 
 DirectedDFS.prototype.createCodeDisplay = function () {
@@ -1064,6 +1076,11 @@ DirectedDFS.prototype.clearTraversalState = function () {
       "SetForegroundColor",
       this.visitedRectIDs[i],
       DirectedDFS.ARRAY_RECT_BORDER
+    );
+    this.cmd(
+      "SetRectangleLineThickness",
+      this.visitedRectIDs[i],
+      DirectedDFS.ARRAY_RECT_BORDER_THICKNESS
     );
     this.cmd("SetTextColor", this.visitedRectIDs[i], DirectedDFS.ARRAY_TEXT_COLOR);
     this.cmd("SetText", this.parentRectIDs[i], "-");

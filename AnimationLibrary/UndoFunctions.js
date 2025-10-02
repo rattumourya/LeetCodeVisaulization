@@ -248,7 +248,25 @@ UndoSetBackgroundColor.prototype.constructor = UndoSetBackgroundColor;
 
 UndoSetBackgroundColor.prototype.undoInitialStep =  function (world)
 {
-	world.setBackgroundColor(this.objectID, this.color);
+        world.setBackgroundColor(this.objectID, this.color);
+}
+
+////////////////////////////////////////////////////////////
+// UndoSetRectangleLineThickness
+////////////////////////////////////////////////////////////
+
+function UndoSetRectangleLineThickness(id, oldThickness)
+{
+        this.objectID = id;
+        this.thickness = oldThickness;
+}
+
+UndoSetRectangleLineThickness.prototype = new UndoBlock();
+UndoSetRectangleLineThickness.prototype.constructor = UndoSetRectangleLineThickness;
+
+UndoSetRectangleLineThickness.prototype.undoInitialStep = function(world)
+{
+        world.setRectangleLineThickness(this.objectID, this.thickness);
 }
 
 
