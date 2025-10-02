@@ -29,8 +29,8 @@
 //  pointers in linked lists, and so on. 
 
 
-var LINE_maxHeightDiff = 5;
-var LINE_minHeightDiff = 3;
+var LINE_maxHeightDiff = 12;
+var LINE_minHeightDiff = 8;
 var LINE_range= LINE_maxHeightDiff - LINE_minHeightDiff + 1;
 var LINE_highlightDiff = 3;
 
@@ -43,14 +43,16 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 	this.Node1 = n1;
 	this.Node2 = n2;
 	this.Dirty = false;
-	this.directed = d;
-	this.edgeColor = color;
-	this.edgeLabel = weight;
-	this.highlighted = false;
-	this.addedToScene = true;
-	this.anchorPoint = anchorIndex;
-	this.highlightDiff = 0;
-	this.curve = cv;
+        this.directed = d;
+        this.edgeColor = color;
+        this.edgeLabel = weight;
+        this.highlighted = false;
+        this.addedToScene = true;
+        this.anchorPoint = anchorIndex;
+        this.highlightDiff = 0;
+        this.highlightAlpha = 1.0;
+        this.curve = cv;
+        this.thickness = 1;
 
 	this.alpha = 1.0;
 	this.color = function color()
@@ -58,27 +60,44 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 		return this.edgeColor;   
 	}
 	   
-	this.setColor = function(newColor)
-	{
-		this.edgeColor = newColor;
-		Dirty = true;
-	}
+        this.setColor = function(newColor)
+        {
+                this.edgeColor = newColor;
+                Dirty = true;
+        }
+
+        this.setThickness = function(newThickness)
+        {
+                this.thickness = newThickness;
+                Dirty = true;
+        }
+
+        this.getThickness = function()
+        {
+                return this.thickness;
+        }
 	   
 	this.setHighlight = function(highlightVal)
 	{
 		this.highlighted = highlightVal;   
 	}
 		   
-	this.pulseHighlight = function(frameNum)
-	{
-	   if (this.highlighted)
-	   {
-		   var frameMod = frameNum / 14.0;
-		   var delta  = Math.abs((frameMod) % (2 * LINE_range  - 2) - LINE_range + 1)
-		   this.highlightDiff =  delta + LINE_minHeightDiff;
-		   Dirty = true;			   
-	   }
-	}
+        this.pulseHighlight = function(frameNum)
+        {
+           if (this.highlighted)
+           {
+                   var phase = Math.abs(Math.sin(frameNum / 12.0));
+                   this.highlightAlpha = 0.35 + 0.65 * phase;
+                   this.highlightDiff = this.thickness;
+                   Dirty = true;
+           }
+           else
+           {
+                   this.highlightAlpha = 1.0;
+                   this.highlightDiff = this.thickness;
+                   Dirty = true;
+           }
+        }
 	   
 	   
 	this.hasNode = function(n)
@@ -187,10 +206,15 @@ function Line(n1, n2, color, cv, d, weight, anchorIndex)
 		   }
 		   ctx.globalAlpha = this.alpha;
 
-			if (this.highlighted)
-				this.drawArrow(this.highlightDiff, "#FF0000", ctx);
-			this.drawArrow(1, this.edgeColor, ctx);
-	   }
+                        this.drawArrow(this.thickness, this.edgeColor, ctx);
+                        if (this.highlighted)
+                        {
+                                ctx.save();
+                                ctx.globalAlpha = ctx.globalAlpha * this.highlightAlpha;
+                                this.drawArrow(this.thickness, "#ff3b30", ctx);
+                                ctx.restore();
+                        }
+           }
 	   
 	   
 }
