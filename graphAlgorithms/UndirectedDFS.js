@@ -35,7 +35,7 @@ UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
-UndirectedDFS.EDGE_ACTIVE_THICKNESS = UndirectedDFS.EDGE_THICKNESS;
+UndirectedDFS.EDGE_ACTIVE_THICKNESS = 2;
 UndirectedDFS.EDGE_TREE_THICKNESS = 6;
 
 UndirectedDFS.ARRAY_BASE_X = 720;
@@ -1355,13 +1355,14 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.cmd("Step");
 
       this.highlightCodeLine(5);
-      this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
       this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v, u);
 
       this.animateHighlightTraversal(v, u);
+      this.markEdgeAsTreeEdge(u, v);
+      this.cmd("Step");
     }
 
     this.highlightCodeLine(6);
