@@ -1189,24 +1189,23 @@ DirectedDFS.prototype.resetEdgeStates = function () {
   for (var i = 0; i < this.edgePairs.length; i++) {
     var edge = this.edgePairs[i];
     var key = this.edgeKey(edge.from, edge.to);
-    if (this.edgeStates[key]) {
-      this.edgeStates[key].tree = false;
-    } else {
+    if (!this.edgeStates[key]) {
       this.edgeStates[key] = { tree: false };
     }
+    this.edgeStates[key].tree = false;
     this.updateEdgeBaseColor(edge.from, edge.to);
-    this.cmd(
-      "SetEdgeThickness",
-      this.vertexIDs[edge.from],
-      this.vertexIDs[edge.to],
-      DirectedDFS.EDGE_THICKNESS
-    );
-    this.cmd(
-      "SetEdgeHighlight",
-      this.vertexIDs[edge.from],
-      this.vertexIDs[edge.to],
-      0
-    );
+    if (
+      this.vertexIDs &&
+      edge.from >= 0 &&
+      edge.to >= 0 &&
+      edge.from < this.vertexIDs.length &&
+      edge.to < this.vertexIDs.length
+    ) {
+      var fromID = this.vertexIDs[edge.from];
+      var toID = this.vertexIDs[edge.to];
+      this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+      this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    }
   }
 };
 
