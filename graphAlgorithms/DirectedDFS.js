@@ -1207,6 +1207,11 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.to],
       0
     );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+  } else {
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+    this.updateEdgeBaseColor(from, to);
   }
 };
 
