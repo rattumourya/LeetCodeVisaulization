@@ -228,7 +228,7 @@ UndirectedDFS.prototype.setup = function () {
   this.highlightCodeLine(-1);
 
   if (this.startField) {
-    this.startField.value = this.vertexLabels[0];
+    this.setStartFieldValue(this.vertexLabels[0]);
   }
 
   this.cmd("Step");
@@ -849,6 +849,40 @@ UndirectedDFS.prototype.animateHighlightTraversal = function (fromIndex, toIndex
   this.cmd("Step");
 };
 
+UndirectedDFS.prototype.getStartFieldValue = function () {
+  if (!this.startField) {
+    return "";
+  }
+
+  var field = this.startField;
+  if (typeof field.value === "string") {
+    return field.value;
+  }
+  if (field.value !== undefined && field.value !== null) {
+    return String(field.value);
+  }
+  if (field.getAttribute) {
+    var attr = field.getAttribute("value");
+    if (typeof attr === "string") {
+      return attr;
+    }
+  }
+  return "";
+};
+
+UndirectedDFS.prototype.setStartFieldValue = function (text) {
+  if (!this.startField) {
+    return;
+  }
+
+  var value = typeof text === "string" ? text : "";
+  if (typeof this.startField.value !== "undefined") {
+    this.startField.value = value;
+  } else if (this.startField.setAttribute) {
+    this.startField.setAttribute("value", value);
+  }
+};
+
 UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
   var key = this.edgeKey(parent, child);
   var orientation = this.edgeOrientation[key];
@@ -1198,7 +1232,7 @@ UndirectedDFS.prototype.startCallback = function () {
     return;
   }
 
-  var raw = this.cleanInputLabel(this.startField.value);
+  var raw = this.cleanInputLabel(this.getStartFieldValue());
   var label = "";
   if (raw.length > 0) {
     label = raw.charAt(0).toUpperCase();
@@ -1214,7 +1248,7 @@ UndirectedDFS.prototype.startCallback = function () {
     label = this.vertexLabels[0];
   }
 
-  this.startField.value = label;
+  this.setStartFieldValue(label);
   this.implementAction(this.runTraversal.bind(this), index);
 };
 
