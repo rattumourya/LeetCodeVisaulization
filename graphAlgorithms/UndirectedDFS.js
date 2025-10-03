@@ -765,64 +765,164 @@ UndirectedDFS.prototype.resetEdgesToUndirected = function () {
     );
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     var edgeKey = this.edgeKey(edge.u, edge.v);
-    this.edgeOrientation[edgeKey] = { from: edge.u, to: edge.v };
-    this.edgeStates[edgeKey] = { tree: false };
+    this.edgeOrientation[edgeKey] = {
+      from: edge.u,
+      to: edge.v,
+      directed: 0
+    };
+    this.edgeStates[edgeKey] = {
+      tree: false,
+      baseFrom: edge.u,
+      baseTo: edge.v
+    };
     this.edgeMeta[edgeKey] = edge;
   }
 };
 
-UndirectedDFS.prototype.setEdgeState = function (u, v, options) {
-  var key = this.edgeKey(u, v);
-  var orientation = this.edgeOrientation[key];
-  if (!orientation) {
+UndirectedDFS.prototype.getCurveForOrientation = function (key, from, to) {
+  var meta = this.edgeMeta[key];
+  if (!meta) {
+    return 0;
+  }
+  var curve = meta.curve;
+  if (curve !== 0 && from === meta.v && to === meta.u) {
+    curve = -curve;
+  }
+  return curve;
+};
+
+UndirectedDFS.prototype.ensureEdgeConnection = function (
+  key,
+  from,
+  to,
+  color,
+  directed,
+  thickness,
+  highlight
+) {
+  if (
+    !this.vertexIDs ||
+    from < 0 ||
+    to < 0 ||
+    from >= this.vertexIDs.length ||
+    to >= this.vertexIDs.length
+  ) {
     return;
   }
-  var fromID = this.vertexIDs[orientation.from];
-  var toID = this.vertexIDs[orientation.to];
-  if (options.highlight !== undefined) {
-    this.cmd("SetEdgeHighlight", fromID, toID, options.highlight ? 1 : 0);
+
+  var current = this.edgeOrientation[key];
+  var needsReconnect = true;
+  if (current) {
+    var currentDirected = current.directed ? 1 : 0;
+    var desiredDirected = directed ? 1 : 0;
+    if (
+      current.from === from &&
+      current.to === to &&
+      currentDirected === desiredDirected
+    ) {
+      needsReconnect = false;
+    } else {
+      this.cmd(
+        "Disconnect",
+        this.vertexIDs[current.from],
+        this.vertexIDs[current.to]
+      );
+    }
   }
-  if (options.color) {
-    this.cmd("SetEdgeColor", fromID, toID, options.color);
+
+  var fromID = this.vertexIDs[from];
+  var toID = this.vertexIDs[to];
+
+  if (needsReconnect) {
+    var curve = this.getCurveForOrientation(key, from, to);
+    this.cmd(
+      "Connect",
+      fromID,
+      toID,
+      color,
+      curve,
+      directed ? 1 : 0,
+      ""
+    );
+  } else {
+    this.cmd("SetEdgeColor", fromID, toID, color);
   }
+
+  this.cmd("SetEdgeThickness", fromID, toID, thickness);
+  this.cmd("SetEdgeHighlight", fromID, toID, highlight ? 1 : 0);
+
+  this.edgeOrientation[key] = { from: from, to: to, directed: directed ? 1 : 0 };
 };
 
 UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
   var key = this.edgeKey(u, v);
-  var orientation = this.edgeOrientation[key];
-  if (!orientation) {
+  var state = this.edgeStates[key];
+  if (!state) {
     return;
   }
-  var fromID = this.vertexIDs[orientation.from];
-  var toID = this.vertexIDs[orientation.to];
-  var isTree = false;
-  if (this.edgeStates[key] && this.edgeStates[key].tree) {
-    isTree = true;
-  }
+
+  var isTree = !!state.tree;
   var baseColor = isTree
     ? UndirectedDFS.EDGE_VISITED_COLOR
     : UndirectedDFS.EDGE_COLOR;
 
   if (active) {
-    this.setEdgeState(u, v, {
-      highlight: true,
-      color: baseColor
-    });
-    this.cmd(
-      "SetEdgeThickness",
-      fromID,
-      toID,
+    this.ensureEdgeConnection(
+      key,
+      u,
+      v,
+      baseColor,
+      true,
       isTree
         ? UndirectedDFS.EDGE_TREE_THICKNESS
-        : UndirectedDFS.EDGE_ACTIVE_THICKNESS
+        : UndirectedDFS.EDGE_ACTIVE_THICKNESS,
+      true
+    );
+  } else if (isTree) {
+    var treeFrom = state.treeFrom;
+    var treeTo = state.treeTo;
+    if (treeFrom === undefined || treeTo === undefined) {
+      var orientation = this.edgeOrientation[key];
+      if (orientation) {
+        treeFrom = orientation.from;
+        treeTo = orientation.to;
+      } else {
+        treeFrom = u;
+        treeTo = v;
+      }
+    }
+    this.ensureEdgeConnection(
+      key,
+      treeFrom,
+      treeTo,
+      UndirectedDFS.EDGE_VISITED_COLOR,
+      true,
+      UndirectedDFS.EDGE_TREE_THICKNESS,
+      false
     );
   } else {
-    this.setEdgeState(u, v, { highlight: false, color: baseColor });
-    this.cmd(
-      "SetEdgeThickness",
-      fromID,
-      toID,
-      isTree ? UndirectedDFS.EDGE_TREE_THICKNESS : UndirectedDFS.EDGE_THICKNESS
+    var baseFrom = state.baseFrom;
+    var baseTo = state.baseTo;
+    if (baseFrom === undefined || baseTo === undefined) {
+      var meta = this.edgeMeta[key];
+      if (meta) {
+        baseFrom = meta.u;
+        baseTo = meta.v;
+      } else {
+        baseFrom = u;
+        baseTo = v;
+      }
+      state.baseFrom = baseFrom;
+      state.baseTo = baseTo;
+    }
+    this.ensureEdgeConnection(
+      key,
+      baseFrom,
+      baseTo,
+      UndirectedDFS.EDGE_COLOR,
+      false,
+      UndirectedDFS.EDGE_THICKNESS,
+      false
     );
   }
 };
@@ -939,10 +1039,15 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     "SetEdgeHighlight",
     this.vertexIDs[parent],
     this.vertexIDs[child],
-    1
+    0
   );
-  this.edgeOrientation[key] = { from: parent, to: child };
-  this.edgeStates[key] = { tree: true };
+  this.edgeOrientation[key] = { from: parent, to: child, directed: 1 };
+  if (!this.edgeStates[key]) {
+    this.edgeStates[key] = {};
+  }
+  this.edgeStates[key].tree = true;
+  this.edgeStates[key].treeFrom = parent;
+  this.edgeStates[key].treeTo = child;
 };
 
 UndirectedDFS.prototype.computeTemplateLayout = function (vertexCount) {
