@@ -86,12 +86,12 @@ DirectedDFS.START_INFO_COLOR = "#264653";
 DirectedDFS.HIGHLIGHT_COLOR = "#ff3b30";
 
 DirectedDFS.CODE_LINES = [
-  ["void dfs(int u) {"],
+  ["void dfs(int u, int parent) {"],
   ["    visited[u] = true;"],
   ["    for (int v : adj[u]) {"],
   ["        if (!visited[v]) {"],
-  ["            parent[v] = u;"],
-  ["            dfs(v);"],
+  ["            parentArr[v] = u;"],
+  ["            dfs(v, u);"],
   ["        }"],
   ["    }"],
   ["}"]
@@ -153,7 +153,7 @@ DirectedDFS.prototype.init = function (am, w, h) {
     DirectedDFS.ROW3_START_Y + DirectedDFS.CODE_TOP_PADDING;
 
   this.visited = [];
-  this.parents = [];
+  this.parentArr = [];
 
   this.implementAction(this.reset.bind(this), 0);
 };
@@ -759,7 +759,7 @@ DirectedDFS.prototype.createArrayArea = function () {
   this.cmd(
     "CreateLabel",
     parentHeaderID,
-    "Parent",
+    "parentArr",
     DirectedDFS.ARRAY_BASE_X + DirectedDFS.ARRAY_COLUMN_SPACING,
     headerY
   );
@@ -1027,7 +1027,16 @@ DirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
   }
 
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var text = "dfs(" + this.vertexLabels[vertex] + ")";
+  var parentLabel = "-";
+  if (
+    typeof parent === "number" &&
+    parent >= 0 &&
+    parent < this.vertexLabels.length
+  ) {
+    parentLabel = this.vertexLabels[parent];
+  }
+  var text =
+    "dfs(" + this.vertexLabels[vertex] + ", " + parentLabel + ")";
   this.cmd("SetText", frameID, text);
   this.cmd("SetAlpha", frameID, 1);
   this.cmd(
@@ -1081,10 +1090,10 @@ DirectedDFS.prototype.highlightCodeLine = function (lineIndex) {
 
 DirectedDFS.prototype.clearTraversalState = function () {
   this.visited = new Array(this.vertexLabels.length);
-  this.parents = new Array(this.vertexLabels.length);
+  this.parentArr = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.vertexLabels.length; i++) {
     this.visited[i] = false;
-    this.parents[i] = null;
+    this.parentArr[i] = null;
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedDFS.ARRAY_RECT_COLOR);
     this.cmd(
@@ -1198,6 +1207,11 @@ DirectedDFS.prototype.resetEdgeStates = function () {
       this.vertexIDs[edge.to],
       0
     );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+  } else {
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDFS.EDGE_THICKNESS);
+    this.updateEdgeBaseColor(from, to);
   }
 };
 
@@ -1382,125 +1396,6 @@ DirectedDFS.prototype.findVertexIndex = function (label) {
   return -1;
 };
 
-DirectedDFS.prototype.animateHighlightTraversal = function (
-  fromIndex,
-  toIndex,
-  preferKey
-) {
-  if (fromIndex === toIndex) {
-    return;
-  }
-
-  var startPos = this.vertexPositions[fromIndex];
-  var endPos = this.vertexPositions[toIndex];
-  if (!startPos || !endPos) {
-    return;
-  }
-  var curve = 0;
-  var hasCurve = false;
-
-  if (typeof preferKey === "string") {
-    var preferredMeta = this.edgeMeta[preferKey];
-    if (preferredMeta) {
-      curve = preferredMeta.curve;
-      if (
-        preferredMeta.from !== fromIndex ||
-        preferredMeta.to !== toIndex
-      ) {
-        curve = -curve;
-      }
-      hasCurve = true;
-    }
-  }
-
-  if (!hasCurve) {
-    var key = this.edgeKey(fromIndex, toIndex);
-    var meta = this.edgeMeta[key];
-    if (meta) {
-      curve = meta.curve;
-      hasCurve = true;
-    } else {
-      var reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
-      if (reverseMeta) {
-        curve = -reverseMeta.curve;
-        hasCurve = true;
-      }
-    }
-  }
-
-  if (Math.abs(curve) < 0.01) {
-    this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
-    this.cmd("Step");
-    return;
-  }
-
-  var dx = endPos.x - startPos.x;
-  var dy = endPos.y - startPos.y;
-  var midX = (startPos.x + endPos.x) / 2;
-  var midY = (startPos.y + endPos.y) / 2;
-  var controlX = midX - dy * curve;
-  var controlY = midY + dx * curve;
-
-  this.cmd(
-    "MoveAlongCurve",
-    this.highlightCircleID,
-    Math.round(controlX),
-    Math.round(controlY),
-    Math.round(endPos.x),
-    Math.round(endPos.y)
-  );
-  this.cmd("Step");
-};
-
-DirectedDFS.prototype.isWhitespaceChar = function (ch) {
-  return (
-    ch === " " ||
-    ch === "\t" ||
-    ch === "\n" ||
-    ch === "\r" ||
-    ch === "\f" ||
-    ch === "\u00a0"
-  );
-};
-
-DirectedDFS.prototype.cleanInputLabel = function (inputLabel) {
-  if (typeof inputLabel !== "string") {
-    return "";
-  }
-
-  var start = 0;
-  while (
-    start < inputLabel.length &&
-    this.isWhitespaceChar(inputLabel.charAt(start))
-  ) {
-    start++;
-  }
-
-  var end = inputLabel.length - 1;
-  while (end >= start && this.isWhitespaceChar(inputLabel.charAt(end))) {
-    end--;
-  }
-
-  var trimmed = "";
-  for (var i = start; i <= end; i++) {
-    trimmed += inputLabel.charAt(i);
-  }
-
-  return trimmed;
-};
-
-DirectedDFS.prototype.findVertexIndex = function (label) {
-  if (!this.vertexLabels) {
-    return -1;
-  }
-  for (var i = 0; i < this.vertexLabels.length; i++) {
-    if (this.vertexLabels[i] === label) {
-      return i;
-    }
-  }
-  return -1;
-};
-
 DirectedDFS.prototype.startCallback = function () {
   if (
     !this.startField ||
@@ -1602,7 +1497,7 @@ DirectedDFS.prototype.dfsVisit = function (u, parent) {
 
     if (!this.visited[v]) {
       this.highlightCodeLine(4);
-      this.parents[v] = u;
+      this.parentArr[v] = u;
       this.cmd(
         "SetText",
         this.parentRectIDs[v],
