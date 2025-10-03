@@ -414,7 +414,7 @@ UndirectedDFS.prototype.createArrayArea = function () {
     this.cmd(
       "CreateRectangle",
       parentID,
-      "-",
+      "null",
       UndirectedDFS.ARRAY_CELL_WIDTH,
       UndirectedDFS.ARRAY_CELL_INNER_HEIGHT,
       UndirectedDFS.ARRAY_BASE_X + UndirectedDFS.ARRAY_COLUMN_SPACING,
@@ -629,7 +629,7 @@ UndirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
   }
 
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var parentLabel = "-";
+  var parentLabel = "null";
   if (
     typeof parent === "number" &&
     parent >= 0 &&
@@ -704,7 +704,12 @@ UndirectedDFS.prototype.clearTraversalState = function () {
       this.visitedRectIDs[i],
       UndirectedDFS.ARRAY_RECT_BORDER_THICKNESS
     );
-    this.cmd("SetText", this.parentRectIDs[i], "-");
+    this.cmd("SetText", this.parentRectIDs[i], "null");
+    this.cmd(
+      "SetBackgroundColor",
+      this.parentRectIDs[i],
+      UndirectedDFS.ARRAY_RECT_COLOR
+    );
     this.cmd(
       "SetBackgroundColor",
       this.vertexIDs[i],
@@ -790,10 +795,13 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
   }
   var fromID = this.vertexIDs[orientation.from];
   var toID = this.vertexIDs[orientation.to];
-  var baseColor = UndirectedDFS.EDGE_COLOR;
+  var isTree = false;
   if (this.edgeStates[key] && this.edgeStates[key].tree) {
-    baseColor = UndirectedDFS.EDGE_VISITED_COLOR;
+    isTree = true;
   }
+  var baseColor = isTree
+    ? UndirectedDFS.EDGE_VISITED_COLOR
+    : UndirectedDFS.EDGE_COLOR;
 
   if (active) {
     this.setEdgeState(u, v, {
@@ -804,7 +812,9 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
       "SetEdgeThickness",
       fromID,
       toID,
-      UndirectedDFS.EDGE_ACTIVE_THICKNESS
+      isTree
+        ? UndirectedDFS.EDGE_TREE_THICKNESS
+        : UndirectedDFS.EDGE_ACTIVE_THICKNESS
     );
   } else {
     this.setEdgeState(u, v, { highlight: false, color: baseColor });
@@ -812,7 +822,7 @@ UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
       "SetEdgeThickness",
       fromID,
       toID,
-      UndirectedDFS.EDGE_THICKNESS
+      isTree ? UndirectedDFS.EDGE_TREE_THICKNESS : UndirectedDFS.EDGE_THICKNESS
     );
   }
 };
