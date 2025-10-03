@@ -35,7 +35,7 @@ UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
-UndirectedDFS.EDGE_ACTIVE_THICKNESS = UndirectedDFS.EDGE_THICKNESS;
+UndirectedDFS.EDGE_ACTIVE_THICKNESS = 2;
 UndirectedDFS.EDGE_TREE_THICKNESS = 6;
 
 UndirectedDFS.ARRAY_BASE_X = 720;
@@ -86,7 +86,7 @@ UndirectedDFS.CODE_LINES = [
   ["    visited[u] = true;"],
   ["    for (int v : adj[u]) {"],
   ["        if (v != parent && !visited[v]) {"],
-  ["            parent[v] = u;"],
+  ["            parentArr[v] = u;"],
   ["            dfs(v, u);"],
   ["        }"],
   ["    }"],
@@ -629,7 +629,17 @@ UndirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
   }
 
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var text = "dfs(" + this.vertexLabels[vertex] + ")";
+  var parentText = "null";
+  if (
+    parent !== undefined &&
+    parent !== null &&
+    parent >= 0 &&
+    parent < this.vertexLabels.length
+  ) {
+    parentText = this.vertexLabels[parent];
+  }
+  var text =
+    "dfs(" + this.vertexLabels[vertex] + ", " + parentText + ")";
   this.cmd("SetText", frameID, text);
   this.cmd("SetAlpha", frameID, 1);
   this.cmd("SetForegroundColor", frameID, UndirectedDFS.RECURSION_RECT_ACTIVE_BORDER);
