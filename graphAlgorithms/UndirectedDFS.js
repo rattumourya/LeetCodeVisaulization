@@ -35,7 +35,7 @@ UndirectedDFS.HIGHLIGHT_RADIUS = UndirectedDFS.GRAPH_NODE_RADIUS;
 UndirectedDFS.EDGE_COLOR = "#4a4e69";
 UndirectedDFS.EDGE_VISITED_COLOR = "#66bb6a";
 UndirectedDFS.EDGE_THICKNESS = 3;
-UndirectedDFS.EDGE_ACTIVE_THICKNESS = 2;
+UndirectedDFS.EDGE_ACTIVE_THICKNESS = UndirectedDFS.EDGE_THICKNESS;
 UndirectedDFS.EDGE_TREE_THICKNESS = 6;
 
 UndirectedDFS.ARRAY_BASE_X = 720;
@@ -86,7 +86,7 @@ UndirectedDFS.CODE_LINES = [
   ["    visited[u] = true;"],
   ["    for (int v : adj[u]) {"],
   ["        if (v != parent && !visited[v]) {"],
-  ["            parentArr[v] = u;"],
+  ["            parent[v] = u;"],
   ["            dfs(v, u);"],
   ["        }"],
   ["    }"],
@@ -153,7 +153,7 @@ UndirectedDFS.prototype.init = function (am, w, h) {
     UndirectedDFS.ROW3_START_Y + UndirectedDFS.CODE_TOP_PADDING;
 
   this.visited = [];
-  this.parentArr = [];
+  this.parents = [];
 
   this.implementAction(this.reset.bind(this), 0);
 };
@@ -362,7 +362,7 @@ UndirectedDFS.prototype.createArrayArea = function () {
   this.cmd(
     "CreateLabel",
     parentHeaderID,
-    "parentArr",
+    "Parent",
     UndirectedDFS.ARRAY_BASE_X + UndirectedDFS.ARRAY_COLUMN_SPACING,
     headerY
   );
@@ -414,7 +414,7 @@ UndirectedDFS.prototype.createArrayArea = function () {
     this.cmd(
       "CreateRectangle",
       parentID,
-      "null",
+      "-",
       UndirectedDFS.ARRAY_CELL_WIDTH,
       UndirectedDFS.ARRAY_CELL_INNER_HEIGHT,
       UndirectedDFS.ARRAY_BASE_X + UndirectedDFS.ARRAY_COLUMN_SPACING,
@@ -629,16 +629,7 @@ UndirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
   }
 
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var parentLabel = "null";
-  if (
-    typeof parent === "number" &&
-    parent >= 0 &&
-    parent < this.vertexLabels.length
-  ) {
-    parentLabel = this.vertexLabels[parent];
-  }
-  var text =
-    "dfs(" + this.vertexLabels[vertex] + ", " + parentLabel + ")";
+  var text = "dfs(" + this.vertexLabels[vertex] + ")";
   this.cmd("SetText", frameID, text);
   this.cmd("SetAlpha", frameID, 1);
   this.cmd("SetForegroundColor", frameID, UndirectedDFS.RECURSION_RECT_ACTIVE_BORDER);
@@ -688,10 +679,10 @@ UndirectedDFS.prototype.highlightCodeLine = function (lineIndex) {
 
 UndirectedDFS.prototype.clearTraversalState = function () {
   this.visited = new Array(this.vertexLabels.length);
-  this.parentArr = new Array(this.vertexLabels.length);
+  this.parents = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.vertexLabels.length; i++) {
     this.visited[i] = false;
-    this.parentArr[i] = null;
+    this.parents[i] = null;
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], UndirectedDFS.ARRAY_RECT_COLOR);
     this.cmd(
@@ -704,12 +695,7 @@ UndirectedDFS.prototype.clearTraversalState = function () {
       this.visitedRectIDs[i],
       UndirectedDFS.ARRAY_RECT_BORDER_THICKNESS
     );
-    this.cmd("SetText", this.parentRectIDs[i], "null");
-    this.cmd(
-      "SetBackgroundColor",
-      this.parentRectIDs[i],
-      UndirectedDFS.ARRAY_RECT_COLOR
-    );
+    this.cmd("SetText", this.parentRectIDs[i], "-");
     this.cmd(
       "SetBackgroundColor",
       this.vertexIDs[i],
@@ -765,164 +751,59 @@ UndirectedDFS.prototype.resetEdgesToUndirected = function () {
     );
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     var edgeKey = this.edgeKey(edge.u, edge.v);
-    this.edgeOrientation[edgeKey] = {
-      from: edge.u,
-      to: edge.v,
-      directed: 0
-    };
-    this.edgeStates[edgeKey] = {
-      tree: false,
-      baseFrom: edge.u,
-      baseTo: edge.v
-    };
+    this.edgeOrientation[edgeKey] = { from: edge.u, to: edge.v };
+    this.edgeStates[edgeKey] = { tree: false };
     this.edgeMeta[edgeKey] = edge;
   }
 };
 
-UndirectedDFS.prototype.getCurveForOrientation = function (key, from, to) {
-  var meta = this.edgeMeta[key];
-  if (!meta) {
-    return 0;
-  }
-  var curve = meta.curve;
-  if (curve !== 0 && from === meta.v && to === meta.u) {
-    curve = -curve;
-  }
-  return curve;
-};
-
-UndirectedDFS.prototype.ensureEdgeConnection = function (
-  key,
-  from,
-  to,
-  color,
-  directed,
-  thickness,
-  highlight
-) {
-  if (
-    !this.vertexIDs ||
-    from < 0 ||
-    to < 0 ||
-    from >= this.vertexIDs.length ||
-    to >= this.vertexIDs.length
-  ) {
+UndirectedDFS.prototype.setEdgeState = function (u, v, options) {
+  var key = this.edgeKey(u, v);
+  var orientation = this.edgeOrientation[key];
+  if (!orientation) {
     return;
   }
-
-  var current = this.edgeOrientation[key];
-  var needsReconnect = true;
-  if (current) {
-    var currentDirected = current.directed ? 1 : 0;
-    var desiredDirected = directed ? 1 : 0;
-    if (
-      current.from === from &&
-      current.to === to &&
-      currentDirected === desiredDirected
-    ) {
-      needsReconnect = false;
-    } else {
-      this.cmd(
-        "Disconnect",
-        this.vertexIDs[current.from],
-        this.vertexIDs[current.to]
-      );
-    }
+  var fromID = this.vertexIDs[orientation.from];
+  var toID = this.vertexIDs[orientation.to];
+  if (options.highlight !== undefined) {
+    this.cmd("SetEdgeHighlight", fromID, toID, options.highlight ? 1 : 0);
   }
-
-  var fromID = this.vertexIDs[from];
-  var toID = this.vertexIDs[to];
-
-  if (needsReconnect) {
-    var curve = this.getCurveForOrientation(key, from, to);
-    this.cmd(
-      "Connect",
-      fromID,
-      toID,
-      color,
-      curve,
-      directed ? 1 : 0,
-      ""
-    );
-  } else {
-    this.cmd("SetEdgeColor", fromID, toID, color);
+  if (options.color) {
+    this.cmd("SetEdgeColor", fromID, toID, options.color);
   }
-
-  this.cmd("SetEdgeThickness", fromID, toID, thickness);
-  this.cmd("SetEdgeHighlight", fromID, toID, highlight ? 1 : 0);
-
-  this.edgeOrientation[key] = { from: from, to: to, directed: directed ? 1 : 0 };
 };
 
 UndirectedDFS.prototype.setEdgeActive = function (u, v, active) {
   var key = this.edgeKey(u, v);
-  var state = this.edgeStates[key];
-  if (!state) {
+  var orientation = this.edgeOrientation[key];
+  if (!orientation) {
     return;
   }
-
-  var isTree = !!state.tree;
-  var baseColor = isTree
-    ? UndirectedDFS.EDGE_VISITED_COLOR
-    : UndirectedDFS.EDGE_COLOR;
+  var fromID = this.vertexIDs[orientation.from];
+  var toID = this.vertexIDs[orientation.to];
+  var baseColor = UndirectedDFS.EDGE_COLOR;
+  if (this.edgeStates[key] && this.edgeStates[key].tree) {
+    baseColor = UndirectedDFS.EDGE_VISITED_COLOR;
+  }
 
   if (active) {
-    this.ensureEdgeConnection(
-      key,
-      u,
-      v,
-      baseColor,
-      true,
-      isTree
-        ? UndirectedDFS.EDGE_TREE_THICKNESS
-        : UndirectedDFS.EDGE_ACTIVE_THICKNESS,
-      true
-    );
-  } else if (isTree) {
-    var treeFrom = state.treeFrom;
-    var treeTo = state.treeTo;
-    if (treeFrom === undefined || treeTo === undefined) {
-      var orientation = this.edgeOrientation[key];
-      if (orientation) {
-        treeFrom = orientation.from;
-        treeTo = orientation.to;
-      } else {
-        treeFrom = u;
-        treeTo = v;
-      }
-    }
-    this.ensureEdgeConnection(
-      key,
-      treeFrom,
-      treeTo,
-      UndirectedDFS.EDGE_VISITED_COLOR,
-      true,
-      UndirectedDFS.EDGE_TREE_THICKNESS,
-      false
+    this.setEdgeState(u, v, {
+      highlight: true,
+      color: baseColor
+    });
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      UndirectedDFS.EDGE_ACTIVE_THICKNESS
     );
   } else {
-    var baseFrom = state.baseFrom;
-    var baseTo = state.baseTo;
-    if (baseFrom === undefined || baseTo === undefined) {
-      var meta = this.edgeMeta[key];
-      if (meta) {
-        baseFrom = meta.u;
-        baseTo = meta.v;
-      } else {
-        baseFrom = u;
-        baseTo = v;
-      }
-      state.baseFrom = baseFrom;
-      state.baseTo = baseTo;
-    }
-    this.ensureEdgeConnection(
-      key,
-      baseFrom,
-      baseTo,
-      UndirectedDFS.EDGE_COLOR,
-      false,
-      UndirectedDFS.EDGE_THICKNESS,
-      false
+    this.setEdgeState(u, v, { highlight: false, color: baseColor });
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      UndirectedDFS.EDGE_THICKNESS
     );
   }
 };
@@ -1039,15 +920,10 @@ UndirectedDFS.prototype.markEdgeAsTreeEdge = function (parent, child) {
     "SetEdgeHighlight",
     this.vertexIDs[parent],
     this.vertexIDs[child],
-    0
+    1
   );
-  this.edgeOrientation[key] = { from: parent, to: child, directed: 1 };
-  if (!this.edgeStates[key]) {
-    this.edgeStates[key] = {};
-  }
-  this.edgeStates[key].tree = true;
-  this.edgeStates[key].treeFrom = parent;
-  this.edgeStates[key].treeTo = child;
+  this.edgeOrientation[key] = { from: parent, to: child };
+  this.edgeStates[key] = { tree: true };
 };
 
 UndirectedDFS.prototype.computeTemplateLayout = function (vertexCount) {
@@ -1439,19 +1315,19 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
   var neighbors = this.adjacencyList[u];
   for (var i = 0; i < neighbors.length; i++) {
     var v = neighbors[i];
-
-    this.setEdgeActive(u, v, true);
-    this.cmd("Step");
-
+    if (v === parent) {
+      continue;
+    }
     this.highlightCodeLine(3);
+    this.setEdgeActive(u, v, true);
     this.cmd("Step");
 
     this.setVisitedCellHighlight(v, true);
     this.cmd("Step");
 
-    if (v !== parent && !this.visited[v]) {
+    if (!this.visited[v]) {
       this.highlightCodeLine(4);
-      this.parentArr[v] = u;
+      this.parents[v] = u;
       this.cmd(
         "SetText",
         this.parentRectIDs[v],
@@ -1460,20 +1336,18 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.cmd("Step");
 
       this.highlightCodeLine(5);
+      this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
       this.animateHighlightTraversal(u, v);
 
       this.dfsVisit(v, u);
 
       this.animateHighlightTraversal(v, u);
-      this.markEdgeAsTreeEdge(u, v);
-      this.cmd("Step");
     }
 
-    this.highlightCodeLine(6);
-    this.cmd("Step");
-
     this.setVisitedCellHighlight(v, false);
+
+    this.highlightCodeLine(6);
     this.cmd("Step");
 
     this.setEdgeActive(u, v, false);
