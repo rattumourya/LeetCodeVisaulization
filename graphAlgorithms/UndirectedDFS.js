@@ -551,7 +551,7 @@ UndirectedDFS.prototype.createRecursionArea = function () {
     "CreateLabel",
     this.recursionHeaderID,
     "Call Stack",
-    UndirectedDFS.RECURSION_AREA_CENTER_X,
+    UndirectedDFS.RECURSION_AREA_CENTER_X + 20,
     this.bottomSectionTopY + UndirectedDFS.RECURSION_HEADER_HEIGHT / 2,
     0
   );
@@ -576,7 +576,7 @@ UndirectedDFS.prototype.createRecursionArea = function () {
       "",
       UndirectedDFS.RECURSION_FRAME_WIDTH,
       layout.height,
-      UndirectedDFS.RECURSION_AREA_CENTER_X,
+      UndirectedDFS.RECURSION_AREA_CENTER_X + 50,
       y
     );
     this.cmd(
