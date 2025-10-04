@@ -34,6 +34,8 @@ ConnectedGraph.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
 ConnectedGraph.HIGHLIGHT_RADIUS = ConnectedGraph.GRAPH_NODE_RADIUS;
 ConnectedGraph.EDGE_COLOR = "#4a4e69";
 ConnectedGraph.EDGE_VISITED_COLOR = "#66bb6a";
+ConnectedGraph.EDGE_ACTIVE_COLOR = "#ff3b30";
+ConnectedGraph.EDGE_TRAVERSED_COLOR = ConnectedGraph.EDGE_VISITED_COLOR;
 ConnectedGraph.EDGE_THICKNESS = 3;
 ConnectedGraph.EDGE_HIGHLIGHT_THICKNESS = ConnectedGraph.EDGE_THICKNESS;
 ConnectedGraph.BIDIRECTIONAL_CURVE = 0.35;
@@ -156,6 +158,8 @@ ConnectedGraph.prototype.init = function (am, w, h) {
   this.undirectedEdgeMeta = {};
   this.edgeCurveOverrides = {};
   this.undirectedEdges = [];
+  this.edgeDisplayState = {};
+  this.traversalEdgeStates = {};
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.componentRectIDs = [];
@@ -260,6 +264,8 @@ ConnectedGraph.prototype.generateRandomGraph = function (vertexCount) {
   this.edgeMeta = {};
   this.undirectedEdgeMeta = {};
   this.edgeCurveOverrides = {};
+  this.edgeDisplayState = {};
+  this.traversalEdgeStates = {};
 
   for (var i = 0; i < vertexCount; i++) {
     this.adjacencyList[i] = [];
@@ -673,6 +679,16 @@ ConnectedGraph.prototype.createGraphArea = function () {
       v: pair.v,
       curve: pair.curve
     };
+    this.edgeDisplayState[key] = {
+      baseFrom: pair.u,
+      baseTo: pair.v,
+      baseCurve: pair.curve,
+      currentFrom: pair.u,
+      currentTo: pair.v,
+      currentCurve: pair.curve,
+      directed: false
+    };
+    this.traversalEdgeStates[key] = "default";
     this.edgeStates[key] = { tree: false };
 
     var forwardKey = this.edgeKey(pair.u, pair.v);
@@ -1123,6 +1139,8 @@ ConnectedGraph.prototype.clearTraversalState = function () {
       ConnectedGraph.GRAPH_NODE_TEXT
     );
   }
+  this.restoreAllEdgeOrientations();
+  this.traversalEdgeStates = {};
   this.resetEdgeStates();
   this.clearEdgeHighlights();
   this.resetRecursionArea();
@@ -1172,16 +1190,13 @@ ConnectedGraph.prototype.updateEdgeBaseColor = function (from, to) {
   if (!meta) {
     return;
   }
-  var baseColor = ConnectedGraph.EDGE_COLOR;
-  if (this.edgeStates[key] && this.edgeStates[key].tree) {
-    baseColor = ConnectedGraph.EDGE_VISITED_COLOR;
+  if (!this.traversalEdgeStates) {
+    this.traversalEdgeStates = {};
   }
-  this.cmd(
-    "SetEdgeColor",
-    this.vertexIDs[meta.u],
-    this.vertexIDs[meta.v],
-    baseColor
-  );
+  if (!this.traversalEdgeStates[key]) {
+    this.traversalEdgeStates[key] = "default";
+  }
+  this.applyTraversalVisuals(key);
 };
 
 ConnectedGraph.prototype.setEdgeTreeState = function (from, to, isTree) {
@@ -1203,15 +1218,233 @@ ConnectedGraph.prototype.resetEdgeStates = function () {
     }
     if (!this.edgeStates[key]) {
       this.edgeStates[key] = { tree: false };
+    } else {
+      this.edgeStates[key].tree = false;
     }
-    this.edgeStates[key].tree = false;
+    if (!this.traversalEdgeStates) {
+      this.traversalEdgeStates = {};
+    }
+    this.traversalEdgeStates[key] = "default";
     var meta = this.undirectedEdgeMeta[key];
     var fromID = this.vertexIDs[meta.u];
     var toID = this.vertexIDs[meta.v];
+    if (fromID === undefined || toID === undefined) {
+      continue;
+    }
     this.cmd("SetEdgeThickness", fromID, toID, ConnectedGraph.EDGE_THICKNESS);
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     this.cmd("SetEdgeColor", fromID, toID, ConnectedGraph.EDGE_COLOR);
   }
+};
+
+ConnectedGraph.prototype.applyTraversalVisuals = function (key) {
+  if (!this.undirectedEdgeMeta) {
+    return;
+  }
+  var meta = this.undirectedEdgeMeta[key];
+  if (!meta) {
+    return;
+  }
+  var fromID = this.vertexIDs[meta.u];
+  var toID = this.vertexIDs[meta.v];
+  if (fromID === undefined || toID === undefined) {
+    return;
+  }
+
+  var state = "default";
+  if (this.traversalEdgeStates && this.traversalEdgeStates[key]) {
+    state = this.traversalEdgeStates[key];
+  }
+
+  var color = ConnectedGraph.EDGE_COLOR;
+  var thickness = ConnectedGraph.EDGE_THICKNESS;
+  var highlight = 0;
+
+  if (state === "active") {
+    color = ConnectedGraph.EDGE_ACTIVE_COLOR;
+    thickness = ConnectedGraph.EDGE_HIGHLIGHT_THICKNESS;
+    highlight = 1;
+  } else if (state === "completed") {
+    color = ConnectedGraph.EDGE_TRAVERSED_COLOR;
+  } else if (this.edgeStates[key] && this.edgeStates[key].tree) {
+    color = ConnectedGraph.EDGE_TRAVERSED_COLOR;
+  }
+
+  this.cmd("SetEdgeColor", fromID, toID, color);
+  this.cmd("SetEdgeThickness", fromID, toID, thickness);
+  this.cmd("SetEdgeHighlight", fromID, toID, highlight);
+};
+
+ConnectedGraph.prototype.ensureDirectedEdgeOrientation = function (from, to) {
+  if (!this.vertexIDs) {
+    return;
+  }
+  var key = this.undirectedEdgeKey(from, to);
+  if (!this.undirectedEdgeMeta[key]) {
+    return;
+  }
+  if (!this.edgeDisplayState) {
+    this.edgeDisplayState = {};
+  }
+  var state = this.edgeDisplayState[key];
+  if (!state) {
+    var baseMeta = this.undirectedEdgeMeta[key];
+    state = {
+      baseFrom: baseMeta.u,
+      baseTo: baseMeta.v,
+      baseCurve: baseMeta.curve,
+      currentFrom: baseMeta.u,
+      currentTo: baseMeta.v,
+      currentCurve: baseMeta.curve,
+      directed: false
+    };
+    this.edgeDisplayState[key] = state;
+  }
+
+  var needsReconnect =
+    !state.directed || state.currentFrom !== from || state.currentTo !== to;
+  if (!needsReconnect) {
+    return;
+  }
+
+  if (
+    state.currentFrom !== undefined &&
+    state.currentTo !== undefined &&
+    this.vertexIDs[state.currentFrom] !== undefined &&
+    this.vertexIDs[state.currentTo] !== undefined
+  ) {
+    this.cmd(
+      "Disconnect",
+      this.vertexIDs[state.currentFrom],
+      this.vertexIDs[state.currentTo]
+    );
+  }
+
+  var directionalMeta = this.edgeMeta[this.edgeKey(from, to)];
+  var curve = directionalMeta ? directionalMeta.curve : state.baseCurve;
+
+  this.cmd(
+    "Connect",
+    this.vertexIDs[from],
+    this.vertexIDs[to],
+    ConnectedGraph.EDGE_COLOR,
+    curve,
+    1,
+    ""
+  );
+  this.cmd(
+    "SetEdgeThickness",
+    this.vertexIDs[from],
+    this.vertexIDs[to],
+    ConnectedGraph.EDGE_THICKNESS
+  );
+  this.cmd("SetEdgeHighlight", this.vertexIDs[from], this.vertexIDs[to], 0);
+
+  state.currentFrom = from;
+  state.currentTo = to;
+  state.currentCurve = curve;
+  state.directed = true;
+
+  this.undirectedEdgeMeta[key].u = from;
+  this.undirectedEdgeMeta[key].v = to;
+  this.undirectedEdgeMeta[key].curve = curve;
+};
+
+ConnectedGraph.prototype.restoreAllEdgeOrientations = function () {
+  if (!this.edgeDisplayState || !this.vertexIDs) {
+    return;
+  }
+
+  for (var key in this.edgeDisplayState) {
+    if (!Object.prototype.hasOwnProperty.call(this.edgeDisplayState, key)) {
+      continue;
+    }
+    var state = this.edgeDisplayState[key];
+    if (!state) {
+      continue;
+    }
+
+    var needsReconnect =
+      state.directed ||
+      state.currentFrom !== state.baseFrom ||
+      state.currentTo !== state.baseTo;
+
+    if (!needsReconnect) {
+      if (this.undirectedEdgeMeta && this.undirectedEdgeMeta[key]) {
+        this.undirectedEdgeMeta[key].u = state.baseFrom;
+        this.undirectedEdgeMeta[key].v = state.baseTo;
+        this.undirectedEdgeMeta[key].curve = state.baseCurve;
+      }
+      continue;
+    }
+
+    if (
+      state.currentFrom !== undefined &&
+      state.currentTo !== undefined &&
+      this.vertexIDs[state.currentFrom] !== undefined &&
+      this.vertexIDs[state.currentTo] !== undefined
+    ) {
+      this.cmd(
+        "Disconnect",
+        this.vertexIDs[state.currentFrom],
+        this.vertexIDs[state.currentTo]
+      );
+    }
+
+    this.cmd(
+      "Connect",
+      this.vertexIDs[state.baseFrom],
+      this.vertexIDs[state.baseTo],
+      ConnectedGraph.EDGE_COLOR,
+      state.baseCurve,
+      0,
+      ""
+    );
+    this.cmd(
+      "SetEdgeThickness",
+      this.vertexIDs[state.baseFrom],
+      this.vertexIDs[state.baseTo],
+      ConnectedGraph.EDGE_THICKNESS
+    );
+    this.cmd(
+      "SetEdgeHighlight",
+      this.vertexIDs[state.baseFrom],
+      this.vertexIDs[state.baseTo],
+      0
+    );
+
+    state.currentFrom = state.baseFrom;
+    state.currentTo = state.baseTo;
+    state.currentCurve = state.baseCurve;
+    state.directed = false;
+
+    if (this.undirectedEdgeMeta && this.undirectedEdgeMeta[key]) {
+      this.undirectedEdgeMeta[key].u = state.baseFrom;
+      this.undirectedEdgeMeta[key].v = state.baseTo;
+      this.undirectedEdgeMeta[key].curve = state.baseCurve;
+    }
+  }
+};
+
+ConnectedGraph.prototype.setTraversalEdgeState = function (from, to, state) {
+  var key = this.undirectedEdgeKey(from, to);
+  if (!this.traversalEdgeStates) {
+    this.traversalEdgeStates = {};
+  }
+  this.traversalEdgeStates[key] = state || "default";
+  if (this.edgeStates[key]) {
+    this.edgeStates[key].tree = state === "completed";
+  }
+  this.applyTraversalVisuals(key);
+};
+
+ConnectedGraph.prototype.activateTraversalEdge = function (from, to) {
+  this.ensureDirectedEdgeOrientation(from, to);
+  this.setTraversalEdgeState(from, to, "active");
+};
+
+ConnectedGraph.prototype.completeTraversalEdge = function (from, to) {
+  this.setTraversalEdgeState(from, to, "completed");
 };
 
 ConnectedGraph.prototype.highlightEdge = function (from, to, active) {
@@ -1466,15 +1699,13 @@ ConnectedGraph.prototype.runConnectedComponents = function (startIndex) {
 
   for (var idx = 0; idx < order.length; idx++) {
     var u = order[idx];
-    var target = this.vertexPositions[u];
-    if (target) {
-      this.cmd("Move", this.highlightCircleID, target.x, target.y);
-    }
-
     this.highlightCodeLine(1);
     this.cmd("Step");
 
     this.setVisitedCellHighlight(u, true);
+    if (this.vertexIDs[u] !== undefined) {
+      this.cmd("SetHighlight", this.vertexIDs[u], 1);
+    }
     this.cmd("Step");
 
     this.highlightCodeLine(2);
@@ -1496,6 +1727,9 @@ ConnectedGraph.prototype.runConnectedComponents = function (startIndex) {
     }
 
     this.setVisitedCellHighlight(u, false);
+    if (this.vertexIDs[u] !== undefined) {
+      this.cmd("SetHighlight", this.vertexIDs[u], 0);
+    }
 
     this.highlightCodeLine(5);
     this.cmd("Step");
@@ -1559,7 +1793,7 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
   for (var i = 0; i < neighbors.length; i++) {
     var v = neighbors[i];
 
-    this.setEdgeActive(u, v, true);
+    this.highlightEdge(u, v, true);
     this.cmd("Step");
 
     this.highlightCodeLine(11);
@@ -1568,7 +1802,7 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
 
     if (!this.visited[v]) {
       this.highlightCodeLine(12);
-      this.markEdgeAsTreeEdge(u, v);
+      this.activateTraversalEdge(u, v);
       this.cmd("Step");
 
       this.animateHighlightTraversal(u, v, this.edgeKey(u, v));
@@ -1577,6 +1811,9 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
 
       this.highlightCodeLine(13);
       this.cmd("Step");
+
+      this.completeTraversalEdge(u, v);
+      this.cmd("Step");
     }
 
     this.setVisitedCellHighlight(v, false);
@@ -1584,7 +1821,7 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
     this.highlightCodeLine(14);
     this.cmd("Step");
 
-    this.setEdgeActive(u, v, false);
+    this.highlightEdge(u, v, false);
 
     this.highlightCodeLine(10);
     this.cmd("Step");
