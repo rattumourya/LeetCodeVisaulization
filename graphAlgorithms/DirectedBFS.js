@@ -84,6 +84,7 @@ DirectedBFS.QUEUE_FONT = "bold 18";
 DirectedBFS.TITLE_COLOR = "#1d3557";
 DirectedBFS.START_INFO_COLOR = "#264653";
 DirectedBFS.HIGHLIGHT_COLOR = "#ff3b30";
+DirectedBFS.TRAVERSAL_CURSOR_COLOR = "#ff9500";
 
 DirectedBFS.CODE_LINES = [
     ["void bfs(int start) {"],
@@ -1171,7 +1172,7 @@ DirectedBFS.prototype.createTraversalCursor = function (vertexIndex) {
   this.cmd(
     "CreateHighlightCircle",
     circleID,
-    DirectedBFS.HIGHLIGHT_COLOR,
+    DirectedBFS.TRAVERSAL_CURSOR_COLOR,
     Math.round(pos.x),
     Math.round(pos.y),
     DirectedBFS.HIGHLIGHT_RADIUS
@@ -1184,6 +1185,56 @@ DirectedBFS.prototype.deleteTraversalCursor = function (circleID) {
     return;
   }
   this.cmd("Delete", circleID);
+};
+
+DirectedBFS.prototype.animateTraversalCursorToNeighbor = function (
+  circleID,
+  fromIndex,
+  toIndex
+) {
+  if (typeof circleID !== "number" || circleID < 0) {
+    return;
+  }
+  if (fromIndex === toIndex) {
+    return;
+  }
+  if (
+    !this.vertexPositions ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= this.vertexPositions.length ||
+    toIndex >= this.vertexPositions.length
+  ) {
+    return;
+  }
+
+  var preferKey = this.edgeKey(fromIndex, toIndex);
+  this.animateHighlightTraversal(circleID, fromIndex, toIndex, preferKey);
+  this.cmd("Step");
+};
+
+DirectedBFS.prototype.returnTraversalCursorToVertex = function (
+  circleID,
+  vertexIndex
+) {
+  if (typeof circleID !== "number" || circleID < 0) {
+    return;
+  }
+  if (
+    !this.vertexPositions ||
+    vertexIndex < 0 ||
+    vertexIndex >= this.vertexPositions.length
+  ) {
+    return;
+  }
+
+  var pos = this.vertexPositions[vertexIndex];
+  if (!pos) {
+    return;
+  }
+
+  this.cmd("Move", circleID, Math.round(pos.x), Math.round(pos.y));
+  this.cmd("Step");
 };
 
 DirectedBFS.prototype.highlightCodeLine = function (lineIndex) {
@@ -1643,6 +1694,10 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
       this.highlightEdge(u, v, true);
       this.cmd("Step");
 
+      if (traversalCursorID !== -1) {
+        this.animateTraversalCursorToNeighbor(traversalCursorID, u, v);
+      }
+
       this.highlightCodeLine(9);
       this.setVisitedCellHighlight(v, true);
       this.cmd("Step");
@@ -1692,6 +1747,10 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
       this.setVisitedCellHighlight(v, false);
       this.highlightEdge(u, v, false);
       this.cmd("Step");
+
+      if (traversalCursorID !== -1) {
+        this.returnTraversalCursorToVertex(traversalCursorID, u);
+      }
 
       this.highlightCodeLine(8);
       this.cmd("Step");
