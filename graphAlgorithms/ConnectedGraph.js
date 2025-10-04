@@ -1030,7 +1030,11 @@ ConnectedGraph.prototype.pushRecursionFrame = function (vertex, componentId) {
     componentLabel = String(componentId);
   }
   var text =
-    "dfs(" + this.vertexLabels[vertex] + ", comp " + componentLabel + ")";
+    "dfs(" +
+    this.vertexLabels[vertex] +
+    ", comp " +
+    componentLabel +
+    ")";
   this.cmd("SetText", frameID, text);
   this.cmd("SetAlpha", frameID, 1);
   this.cmd(
@@ -1235,6 +1239,14 @@ ConnectedGraph.prototype.highlightEdge = function (from, to, active) {
     this.cmd("SetEdgeThickness", fromID, toID, ConnectedGraph.EDGE_THICKNESS);
     this.updateEdgeBaseColor(meta.u, meta.v);
   }
+};
+
+ConnectedGraph.prototype.setEdgeActive = function (from, to, active) {
+  this.highlightEdge(from, to, active);
+};
+
+ConnectedGraph.prototype.markEdgeAsTreeEdge = function (from, to) {
+  this.setEdgeTreeState(from, to, true);
 };
 
 ConnectedGraph.prototype.animateHighlightTraversal = function (
@@ -1460,6 +1472,8 @@ ConnectedGraph.prototype.runConnectedComponents = function (startIndex) {
     }
 
     this.highlightCodeLine(1);
+    this.cmd("Step");
+
     this.setVisitedCellHighlight(u, true);
     this.cmd("Step");
 
@@ -1481,8 +1495,9 @@ ConnectedGraph.prototype.runConnectedComponents = function (startIndex) {
       this.dfsVisit(u, this.componentCount);
     }
 
-    this.highlightCodeLine(5);
     this.setVisitedCellHighlight(u, false);
+
+    this.highlightCodeLine(5);
     this.cmd("Step");
   }
 
@@ -1498,12 +1513,6 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
   this.pushRecursionFrame(u, componentId);
   this.cmd("Step");
 
-  var pos = this.vertexPositions[u];
-  if (pos) {
-    this.cmd("Move", this.highlightCircleID, pos.x, pos.y);
-    this.cmd("Step");
-  }
-
   this.highlightCodeLine(7);
   this.cmd("Step");
 
@@ -1518,22 +1527,28 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
       this.visitedRectIDs[u],
       ConnectedGraph.ARRAY_VISITED_FILL
     );
+    var vertexColor = this.getComponentColor(componentId);
+    this.cmd("SetBackgroundColor", this.vertexIDs[u], vertexColor);
+    this.cmd(
+      "SetTextColor",
+      this.vertexIDs[u],
+      ConnectedGraph.GRAPH_NODE_VISITED_TEXT_COLOR
+    );
   }
   this.setVisitedCellHighlight(u, false);
 
   this.highlightCodeLine(9);
   this.componentAssignments[u] = componentId;
+  this.cmd("SetText", this.componentRectIDs[u], String(componentId));
   this.cmd(
-    "SetText",
+    "SetBackgroundColor",
     this.componentRectIDs[u],
-    String(componentId)
+    ConnectedGraph.ARRAY_VISITED_FILL
   );
-  var color = this.getComponentColor(componentId);
-  this.cmd("SetBackgroundColor", this.vertexIDs[u], color);
   this.cmd(
     "SetTextColor",
-    this.vertexIDs[u],
-    ConnectedGraph.GRAPH_NODE_VISITED_TEXT_COLOR
+    this.componentRectIDs[u],
+    ConnectedGraph.ARRAY_TEXT_COLOR
   );
   this.cmd("Step");
 
@@ -1544,8 +1559,7 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
   for (var i = 0; i < neighbors.length; i++) {
     var v = neighbors[i];
 
-    this.highlightCodeLine(10);
-    this.highlightEdge(u, v, true);
+    this.setEdgeActive(u, v, true);
     this.cmd("Step");
 
     this.highlightCodeLine(11);
@@ -1554,6 +1568,7 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
 
     if (!this.visited[v]) {
       this.highlightCodeLine(12);
+      this.markEdgeAsTreeEdge(u, v);
       this.cmd("Step");
 
       this.animateHighlightTraversal(u, v, this.edgeKey(u, v));
@@ -1565,13 +1580,19 @@ ConnectedGraph.prototype.dfsVisit = function (u, componentId) {
     }
 
     this.setVisitedCellHighlight(v, false);
-    this.highlightEdge(u, v, false);
+
+    this.highlightCodeLine(14);
+    this.cmd("Step");
+
+    this.setEdgeActive(u, v, false);
+
+    this.highlightCodeLine(10);
     this.cmd("Step");
   }
 
-  this.highlightCodeLine(14);
-  this.cmd("Step");
   this.highlightCodeLine(15);
+  this.cmd("Step");
+  this.highlightCodeLine(-1);
   this.cmd("Step");
   this.popRecursionFrame();
 };
