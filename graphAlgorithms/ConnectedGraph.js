@@ -1556,13 +1556,16 @@ ConnectedGraph.prototype.showHighlightCircleAt = function (vertexIndex) {
   if (!position) {
     return;
   }
-  this.cmd("SetAlpha", this.highlightCircleID, 1);
+  // Ensure the circle repositions invisibly so we don't animate a slide from the
+  // previous component's root to the next starting vertex.
+  this.cmd("SetAlpha", this.highlightCircleID, 0);
   this.cmd(
     "Move",
     this.highlightCircleID,
     Math.round(position.x),
     Math.round(position.y)
   );
+  this.cmd("SetAlpha", this.highlightCircleID, 1);
 };
 
 ConnectedGraph.prototype.hideHighlightCircle = function () {
