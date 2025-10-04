@@ -155,6 +155,8 @@ DirectedBFS.prototype.init = function (am, w, h) {
   this.queueHeaderID = -1;
   this.queueFrameIDs = [];
   this.queueContents = [];
+  this.frontierHighlightIDs = {};
+  this.frontierHighlightList = [];
   this.bottomSectionTopY =
     DirectedBFS.ROW3_START_Y + DirectedBFS.CODE_TOP_PADDING;
 
@@ -195,6 +197,8 @@ DirectedBFS.prototype.addControls = function () {
 
 DirectedBFS.prototype.reset = function () {
   this.nextIndex = 0;
+  this.frontierHighlightIDs = {};
+  this.frontierHighlightList = [];
   if (
     typeof animationManager !== "undefined" &&
     animationManager.animatedObjects
@@ -1041,6 +1045,106 @@ DirectedBFS.prototype.dequeueQueueVertex = function () {
   return vertexIndex;
 };
 
+DirectedBFS.prototype.clearFrontierHighlights = function () {
+  if (!this.frontierHighlightList) {
+    this.frontierHighlightList = [];
+  }
+  for (var i = 0; i < this.frontierHighlightList.length; i++) {
+    var circleID = this.frontierHighlightList[i];
+    this.cmd("Delete", circleID);
+  }
+  this.frontierHighlightList = [];
+  this.frontierHighlightIDs = {};
+};
+
+DirectedBFS.prototype.createHighlightCircleAtPosition = function (x, y) {
+  if (typeof x !== "number" || typeof y !== "number") {
+    return -1;
+  }
+  var circleID = this.nextIndex++;
+  this.cmd(
+    "CreateHighlightCircle",
+    circleID,
+    DirectedBFS.HIGHLIGHT_COLOR,
+    Math.round(x),
+    Math.round(y),
+    DirectedBFS.HIGHLIGHT_RADIUS
+  );
+  this.cmd("SetAlpha", circleID, 1);
+  if (!this.frontierHighlightList) {
+    this.frontierHighlightList = [];
+  }
+  this.frontierHighlightList.push(circleID);
+  return circleID;
+};
+
+DirectedBFS.prototype.ensureFrontierHighlight = function (vertexIndex) {
+  if (!this.frontierHighlightIDs) {
+    this.frontierHighlightIDs = {};
+  }
+  if (typeof this.frontierHighlightIDs[vertexIndex] !== "undefined") {
+    return this.frontierHighlightIDs[vertexIndex];
+  }
+  var position = this.vertexPositions[vertexIndex];
+  if (!position) {
+    return -1;
+  }
+  var circleID = this.createHighlightCircleAtPosition(position.x, position.y);
+  if (circleID !== -1) {
+    this.frontierHighlightIDs[vertexIndex] = circleID;
+  }
+  return circleID;
+};
+
+DirectedBFS.prototype.createFrontierHighlightFromParent = function (
+  parentIndex,
+  vertexIndex
+) {
+  if (!this.frontierHighlightIDs) {
+    this.frontierHighlightIDs = {};
+  }
+  if (typeof this.frontierHighlightIDs[vertexIndex] !== "undefined") {
+    return this.frontierHighlightIDs[vertexIndex];
+  }
+
+  var parentPos = this.vertexPositions[parentIndex];
+  var childPos = this.vertexPositions[vertexIndex];
+  if (!parentPos || !childPos) {
+    return -1;
+  }
+
+  var circleID = this.createHighlightCircleAtPosition(parentPos.x, parentPos.y);
+  if (circleID === -1) {
+    return -1;
+  }
+
+  var preferKey = this.edgeKey(parentIndex, vertexIndex);
+  this.animateHighlightTraversal(circleID, parentIndex, vertexIndex, preferKey);
+  this.frontierHighlightIDs[vertexIndex] = circleID;
+  return circleID;
+};
+
+DirectedBFS.prototype.removeFrontierHighlight = function (vertexIndex) {
+  if (!this.frontierHighlightIDs) {
+    this.frontierHighlightIDs = {};
+  }
+  var circleID = this.frontierHighlightIDs[vertexIndex];
+  if (typeof circleID === "undefined") {
+    return -1;
+  }
+  delete this.frontierHighlightIDs[vertexIndex];
+  if (this.frontierHighlightList) {
+    for (var i = 0; i < this.frontierHighlightList.length; i++) {
+      if (this.frontierHighlightList[i] === circleID) {
+        this.frontierHighlightList.splice(i, 1);
+        break;
+      }
+    }
+  }
+  this.cmd("SetAlpha", circleID, 0);
+  return circleID;
+};
+
 DirectedBFS.prototype.highlightCodeLine = function (lineIndex) {
   if (this.currentCodeLine >= 0) {
     this.cmd(
@@ -1060,6 +1164,7 @@ DirectedBFS.prototype.highlightCodeLine = function (lineIndex) {
 };
 
 DirectedBFS.prototype.clearTraversalState = function () {
+  this.clearFrontierHighlights();
   this.visited = new Array(this.vertexLabels.length);
   this.parentArr = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.vertexLabels.length; i++) {
@@ -1209,10 +1314,14 @@ DirectedBFS.prototype.highlightEdge = function (from, to, active) {
 };
 
 DirectedBFS.prototype.animateHighlightTraversal = function (
+  circleID,
   fromIndex,
   toIndex,
   preferKey
 ) {
+  if (typeof circleID !== "number" || circleID < 0) {
+    return;
+  }
   if (fromIndex === toIndex) {
     return;
   }
@@ -1255,8 +1364,7 @@ DirectedBFS.prototype.animateHighlightTraversal = function (
   }
 
   if (Math.abs(curve) < 0.01) {
-    this.cmd("Move", this.highlightCircleID, Math.round(endPos.x), Math.round(endPos.y));
-    this.cmd("Step");
+    this.cmd("Move", circleID, Math.round(endPos.x), Math.round(endPos.y));
     return;
   }
 
@@ -1269,13 +1377,12 @@ DirectedBFS.prototype.animateHighlightTraversal = function (
 
   this.cmd(
     "MoveAlongCurve",
-    this.highlightCircleID,
+    circleID,
     Math.round(controlX),
     Math.round(controlY),
     Math.round(endPos.x),
     Math.round(endPos.y)
   );
-  this.cmd("Step");
 };
 
 DirectedBFS.prototype.getStartFieldValue = function () {
@@ -1456,6 +1563,7 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
   this.highlightCodeLine(4);
   queue.push(startIndex);
   this.enqueueQueueVertex(startIndex);
+  this.ensureFrontierHighlight(startIndex);
   this.cmd("Step");
 
   while (queue.length > 0) {
@@ -1469,7 +1577,11 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
     this.highlightCodeLine(7);
     queue.shift();
     this.dequeueQueueVertex();
+    var removedHighlight = this.removeFrontierHighlight(u);
     this.cmd("Step");
+    if (removedHighlight !== -1) {
+      this.cmd("Delete", removedHighlight);
+    }
 
     var pos = this.vertexPositions[u];
     if (pos) {
@@ -1521,10 +1633,7 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
         this.highlightCodeLine(12);
         queue.push(v);
         this.enqueueQueueVertex(v);
-        this.animateHighlightTraversal(u, v, this.edgeKey(u, v));
-        this.cmd("Step");
-
-        this.animateHighlightTraversal(v, u, this.edgeKey(u, v));
+        this.createFrontierHighlightFromParent(u, v);
         this.cmd("Step");
       }
 
