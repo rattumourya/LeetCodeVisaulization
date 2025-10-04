@@ -1560,7 +1560,7 @@ ConnectedGraph.prototype.showHighlightCircleAt = function (vertexIndex) {
   // previous component's root to the next starting vertex.
   this.cmd("SetAlpha", this.highlightCircleID, 0);
   this.cmd(
-    "Move",
+    "SetPosition",
     this.highlightCircleID,
     Math.round(position.x),
     Math.round(position.y)
