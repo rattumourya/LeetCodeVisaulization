@@ -149,7 +149,6 @@ DirectedBFS.prototype.init = function (am, w, h) {
   this.parentRectIDs = [];
   this.vertexRowLabelIDs = [];
   this.codeID = [];
-  this.highlightCircleID = -1;
   this.currentCodeLine = -1;
   this.startDisplayID = -1;
   this.queueHeaderID = -1;
@@ -737,17 +736,6 @@ DirectedBFS.prototype.createGraphArea = function () {
     }
   }
 
-  this.highlightCircleID = this.nextIndex++;
-  var startPos = this.vertexPositions[0];
-  this.cmd(
-    "CreateHighlightCircle",
-    this.highlightCircleID,
-    DirectedBFS.HIGHLIGHT_COLOR,
-    startPos.x,
-    startPos.y,
-    DirectedBFS.HIGHLIGHT_RADIUS
-  );
-  this.cmd("SetAlpha", this.highlightCircleID, 0);
 };
 
 DirectedBFS.prototype.createArrayArea = function () {
@@ -1165,6 +1153,39 @@ DirectedBFS.prototype.removeFrontierHighlightsForLevel = function (vertexList) {
   }
 };
 
+DirectedBFS.prototype.createTraversalCursor = function (vertexIndex) {
+  if (
+    !this.vertexPositions ||
+    vertexIndex < 0 ||
+    vertexIndex >= this.vertexPositions.length
+  ) {
+    return -1;
+  }
+
+  var pos = this.vertexPositions[vertexIndex];
+  if (!pos) {
+    return -1;
+  }
+
+  var circleID = this.nextIndex++;
+  this.cmd(
+    "CreateHighlightCircle",
+    circleID,
+    DirectedBFS.HIGHLIGHT_COLOR,
+    Math.round(pos.x),
+    Math.round(pos.y),
+    DirectedBFS.HIGHLIGHT_RADIUS
+  );
+  return circleID;
+};
+
+DirectedBFS.prototype.deleteTraversalCursor = function (circleID) {
+  if (typeof circleID !== "number" || circleID < 0) {
+    return;
+  }
+  this.cmd("Delete", circleID);
+};
+
 DirectedBFS.prototype.highlightCodeLine = function (lineIndex) {
   if (this.currentCodeLine >= 0) {
     this.cmd(
@@ -1529,15 +1550,9 @@ DirectedBFS.prototype.runTraversal = function (startIndex) {
     "Start Vertex: " + startLabel
   );
 
-  var startPos = this.vertexPositions[startIndex];
-  this.cmd("SetAlpha", this.highlightCircleID, 1);
-  this.cmd("Move", this.highlightCircleID, startPos.x, startPos.y);
-  this.cmd("Step");
-
   this.bfsTraversal(startIndex);
 
   this.highlightCodeLine(-1);
-  this.cmd("SetAlpha", this.highlightCircleID, 0);
 
   return this.commands;
 };
@@ -1613,9 +1628,8 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
       currentDepth = uDepth;
     }
 
-    var pos = this.vertexPositions[u];
-    if (pos) {
-      this.cmd("Move", this.highlightCircleID, pos.x, pos.y);
+    var traversalCursorID = this.createTraversalCursor(u);
+    if (traversalCursorID !== -1) {
       this.cmd("Step");
     }
 
@@ -1681,6 +1695,10 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
 
       this.highlightCodeLine(8);
       this.cmd("Step");
+    }
+
+    if (traversalCursorID !== -1) {
+      this.deleteTraversalCursor(traversalCursorID);
     }
 
     this.highlightCodeLine(14);
