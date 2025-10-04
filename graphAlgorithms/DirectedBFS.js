@@ -85,6 +85,17 @@ DirectedBFS.TITLE_COLOR = "#1d3557";
 DirectedBFS.START_INFO_COLOR = "#264653";
 DirectedBFS.HIGHLIGHT_COLOR = "#ff3b30";
 
+DirectedBFS.LEVEL_COLORS = [
+  "#ff9f1c",
+  "#2ec4b6",
+  "#e71d36",
+  "#3a86ff",
+  "#8338ec",
+  "#fb5607",
+  "#118ab2",
+  "#ef476f"
+];
+
 DirectedBFS.CODE_LINES = [
     ["void bfs(int start) {"],
     ["    queue<int> q;"],
@@ -144,6 +155,7 @@ DirectedBFS.prototype.init = function (am, w, h) {
   this.edgeStates = {};
   this.edgeMeta = {};
   this.edgeCurveOverrides = {};
+  this.vertexLevelColors = [];
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
@@ -683,6 +695,7 @@ DirectedBFS.prototype.createTitleRow = function () {
 
 DirectedBFS.prototype.createGraphArea = function () {
   this.vertexIDs = new Array(this.vertexLabels.length);
+  this.vertexLevelColors = new Array(this.vertexLabels.length);
   this.edgePairs = [];
 
   for (var i = 0; i < this.vertexLabels.length; i++) {
@@ -701,6 +714,7 @@ DirectedBFS.prototype.createGraphArea = function () {
     this.cmd("SetForegroundColor", id, DirectedBFS.GRAPH_NODE_BORDER);
     this.cmd("SetTextColor", id, DirectedBFS.GRAPH_NODE_TEXT);
     this.cmd("SetHighlight", id, 0);
+    this.vertexLevelColors[i] = null;
   }
 
   for (var from = 0; from < this.adjacencyList.length; from++) {
@@ -710,7 +724,7 @@ DirectedBFS.prototype.createGraphArea = function () {
       var pair = { from: from, to: to, curve: curve };
       var key = this.edgeKey(from, to);
       this.edgePairs.push(pair);
-      this.edgeStates[key] = { tree: false };
+      this.edgeStates[key] = { tree: false, color: null };
       this.edgeMeta[key] = pair;
       this.cmd(
         "Connect",
@@ -1178,6 +1192,9 @@ DirectedBFS.prototype.clearTraversalState = function () {
   for (var i = 0; i < this.vertexLabels.length; i++) {
     this.visited[i] = false;
     this.parentArr[i] = null;
+    if (this.vertexLevelColors && i < this.vertexLevelColors.length) {
+      this.vertexLevelColors[i] = null;
+    }
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedBFS.ARRAY_RECT_COLOR);
     this.cmd(
@@ -1252,17 +1269,25 @@ DirectedBFS.prototype.updateEdgeBaseColor = function (from, to) {
   var key = this.edgeKey(from, to);
   var baseColor = DirectedBFS.EDGE_COLOR;
   if (this.edgeStates[key] && this.edgeStates[key].tree) {
-    baseColor = DirectedBFS.EDGE_VISITED_COLOR;
+    baseColor =
+      this.edgeStates[key].color || DirectedBFS.EDGE_VISITED_COLOR;
   }
   this.cmd("SetEdgeColor", this.vertexIDs[from], this.vertexIDs[to], baseColor);
 };
 
-DirectedBFS.prototype.setEdgeTreeState = function (from, to, isTree) {
+DirectedBFS.prototype.setEdgeTreeState = function (from, to, isTree, color) {
   var key = this.edgeKey(from, to);
   if (!this.edgeStates[key]) {
-    this.edgeStates[key] = {};
+    this.edgeStates[key] = { tree: false, color: null };
   }
   this.edgeStates[key].tree = isTree;
+  if (isTree) {
+    if (typeof color === "string") {
+      this.edgeStates[key].color = color;
+    }
+  } else {
+    this.edgeStates[key].color = null;
+  }
   this.updateEdgeBaseColor(from, to);
 };
 
@@ -1274,9 +1299,10 @@ DirectedBFS.prototype.resetEdgeStates = function () {
     var edge = this.edgePairs[i];
     var key = this.edgeKey(edge.from, edge.to);
     if (!this.edgeStates[key]) {
-      this.edgeStates[key] = { tree: false };
+      this.edgeStates[key] = { tree: false, color: null };
     }
     this.edgeStates[key].tree = false;
+    this.edgeStates[key].color = null;
     this.updateEdgeBaseColor(edge.from, edge.to);
     if (
       this.vertexIDs &&
@@ -1291,6 +1317,40 @@ DirectedBFS.prototype.resetEdgeStates = function () {
       this.cmd("SetEdgeHighlight", fromID, toID, 0);
     }
   }
+};
+
+DirectedBFS.prototype.getLevelColor = function (depth) {
+  var palette = DirectedBFS.LEVEL_COLORS;
+  if (!palette || palette.length === 0) {
+    return DirectedBFS.GRAPH_NODE_VISITED_COLOR;
+  }
+  var index = depth % palette.length;
+  return palette[index];
+};
+
+DirectedBFS.prototype.applyVertexLevelColor = function (vertexIndex, depth) {
+  if (
+    !this.vertexIDs ||
+    vertexIndex < 0 ||
+    vertexIndex >= this.vertexIDs.length
+  ) {
+    return DirectedBFS.GRAPH_NODE_VISITED_COLOR;
+  }
+  var color = this.getLevelColor(depth);
+  if (this.vertexLevelColors && vertexIndex < this.vertexLevelColors.length) {
+    this.vertexLevelColors[vertexIndex] = color;
+  }
+  this.cmd(
+    "SetBackgroundColor",
+    this.vertexIDs[vertexIndex],
+    color
+  );
+  this.cmd(
+    "SetTextColor",
+    this.vertexIDs[vertexIndex],
+    DirectedBFS.GRAPH_NODE_VISITED_TEXT_COLOR
+  );
+  return color;
 };
 
 DirectedBFS.prototype.highlightEdge = function (from, to, active) {
@@ -1547,16 +1607,7 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
       this.visitedRectIDs[startIndex],
       DirectedBFS.ARRAY_VISITED_FILL
     );
-    this.cmd(
-      "SetBackgroundColor",
-      this.vertexIDs[startIndex],
-      DirectedBFS.GRAPH_NODE_VISITED_COLOR
-    );
-    this.cmd(
-      "SetTextColor",
-      this.vertexIDs[startIndex],
-      DirectedBFS.GRAPH_NODE_VISITED_TEXT_COLOR
-    );
+    this.applyVertexLevelColor(startIndex, 0);
     this.cmd("Step");
   }
   this.setVisitedCellHighlight(startIndex, false);
@@ -1618,31 +1669,23 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
           this.visitedRectIDs[v],
           DirectedBFS.ARRAY_VISITED_FILL
         );
-        this.cmd(
-          "SetBackgroundColor",
-          this.vertexIDs[v],
-          DirectedBFS.GRAPH_NODE_VISITED_COLOR
-        );
-        this.cmd(
-          "SetTextColor",
-          this.vertexIDs[v],
-          DirectedBFS.GRAPH_NODE_VISITED_TEXT_COLOR
-        );
+        var vDepth = uDepth + 1;
+        vertexDepths[v] = vDepth;
+        var levelColor = this.applyVertexLevelColor(v, vDepth);
         this.cmd("Step");
 
         this.highlightCodeLine(11);
         this.parentArr[v] = u;
         this.cmd("SetText", this.parentRectIDs[v], this.vertexLabels[u]);
-        this.setEdgeTreeState(u, v, true);
+        this.setEdgeTreeState(u, v, true, levelColor);
         this.cmd("Step");
 
         this.highlightCodeLine(12);
         queue.push(v);
-        vertexDepths[v] = uDepth + 1;
-        if (!levelVertices[uDepth + 1]) {
-          levelVertices[uDepth + 1] = [];
+        if (!levelVertices[vDepth]) {
+          levelVertices[vDepth] = [];
         }
-        levelVertices[uDepth + 1].push(v);
+        levelVertices[vDepth].push(v);
         this.enqueueQueueVertex(v);
         this.createFrontierHighlightFromParent(u, v);
         this.cmd("Step");
