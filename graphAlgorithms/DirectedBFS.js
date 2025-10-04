@@ -1145,6 +1145,26 @@ DirectedBFS.prototype.removeFrontierHighlight = function (vertexIndex) {
   return circleID;
 };
 
+DirectedBFS.prototype.removeFrontierHighlightsForLevel = function (vertexList) {
+  if (!vertexList || vertexList.length === 0) {
+    return;
+  }
+  var deleted = [];
+  for (var i = 0; i < vertexList.length; i++) {
+    var circleID = this.removeFrontierHighlight(vertexList[i]);
+    if (circleID !== -1) {
+      deleted.push(circleID);
+    }
+  }
+  vertexList.length = 0;
+  if (deleted.length > 0) {
+    this.cmd("Step");
+    for (var j = 0; j < deleted.length; j++) {
+      this.cmd("Delete", deleted[j]);
+    }
+  }
+};
+
 DirectedBFS.prototype.highlightCodeLine = function (lineIndex) {
   if (this.currentCodeLine >= 0) {
     this.cmd(
@@ -1524,6 +1544,9 @@ DirectedBFS.prototype.runTraversal = function (startIndex) {
 
 DirectedBFS.prototype.bfsTraversal = function (startIndex) {
   var queue = [];
+  var vertexDepths = new Array(this.vertexLabels.length);
+  var levelVertices = {};
+  var currentDepth = 0;
 
   this.highlightCodeLine(0);
   this.cmd("Step");
@@ -1562,6 +1585,8 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
 
   this.highlightCodeLine(4);
   queue.push(startIndex);
+  vertexDepths[startIndex] = 0;
+  levelVertices[0] = [startIndex];
   this.enqueueQueueVertex(startIndex);
   this.ensureFrontierHighlight(startIndex);
   this.cmd("Step");
@@ -1572,12 +1597,21 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
 
     this.highlightCodeLine(6);
     var u = queue[0];
+    var uDepth = 0;
+    if (typeof vertexDepths[u] === "number") {
+      uDepth = vertexDepths[u];
+    }
     this.cmd("Step");
 
     this.highlightCodeLine(7);
     queue.shift();
     this.dequeueQueueVertex();
     this.cmd("Step");
+
+    if (uDepth > currentDepth) {
+      this.removeFrontierHighlightsForLevel(levelVertices[currentDepth]);
+      currentDepth = uDepth;
+    }
 
     var pos = this.vertexPositions[u];
     if (pos) {
@@ -1628,6 +1662,11 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
 
         this.highlightCodeLine(12);
         queue.push(v);
+        vertexDepths[v] = uDepth + 1;
+        if (!levelVertices[uDepth + 1]) {
+          levelVertices[uDepth + 1] = [];
+        }
+        levelVertices[uDepth + 1].push(v);
         this.enqueueQueueVertex(v);
         this.createFrontierHighlightFromParent(u, v);
         this.cmd("Step");
@@ -1644,15 +1683,11 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
       this.cmd("Step");
     }
 
-    var removedHighlight = this.removeFrontierHighlight(u);
-    if (removedHighlight !== -1) {
-      this.cmd("Step");
-      this.cmd("Delete", removedHighlight);
-    }
-
     this.highlightCodeLine(14);
     this.cmd("Step");
   }
+
+  this.removeFrontierHighlightsForLevel(levelVertices[currentDepth]);
 
   this.highlightCodeLine(15);
   this.cmd("Step");
