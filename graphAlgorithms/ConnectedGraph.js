@@ -286,7 +286,7 @@ ConnectedGraph.prototype.generateRandomGraph = function (vertexCount) {
     var curve = 0;
     if (
       curves[a] &&
-      typeof curves[a][b] === 'number' &&
+      typeof curves[a][b] === "number" &&
       Math.abs(curves[a][b]) > 0.0001
     ) {
       curve = curves[a][b];
@@ -336,7 +336,22 @@ ConnectedGraph.prototype.generateRandomGraph = function (vertexCount) {
     addEdge(0, 1);
   }
 
+  var componentData = this.countComponentsFromEdges(vertexCount, edges);
+  if (componentData.count < 2) {
+    edges = this.forceMultipleComponents(vertexCount, edges, allowed, curves);
+    componentData = this.countComponentsFromEdges(vertexCount, edges);
+  }
+
+  if (componentData.count < 2) {
+    edges = this.isolateRandomVertex(vertexCount, edges);
+    componentData = this.countComponentsFromEdges(vertexCount, edges);
+  }
+
   this.undirectedEdges = edges;
+
+  for (var rebuild = 0; rebuild < this.adjacencyList.length; rebuild++) {
+    this.adjacencyList[rebuild] = [];
+  }
 
   for (var e = 0; e < edges.length; e++) {
     var edge = edges[e];
@@ -353,6 +368,216 @@ ConnectedGraph.prototype.generateRandomGraph = function (vertexCount) {
       adj[swapIndex] = temp;
     }
   }
+};
+
+
+ConnectedGraph.prototype.countComponentsFromEdges = function (vertexCount, edges) {
+  var adjacency = new Array(vertexCount);
+  for (var i = 0; i < vertexCount; i++) {
+    adjacency[i] = [];
+  }
+
+  for (var e = 0; e < edges.length; e++) {
+    var edge = edges[e];
+    adjacency[edge.u].push(edge.v);
+    adjacency[edge.v].push(edge.u);
+  }
+
+  var visited = new Array(vertexCount);
+  for (var v = 0; v < vertexCount; v++) {
+    visited[v] = false;
+  }
+
+  var stack = [];
+  var count = 0;
+
+  for (var start = 0; start < vertexCount; start++) {
+    if (visited[start]) {
+      continue;
+    }
+    count++;
+    stack.length = 0;
+    stack.push(start);
+    visited[start] = true;
+
+    while (stack.length > 0) {
+      var node = stack.pop();
+      var neighbors = adjacency[node];
+      for (var n = 0; n < neighbors.length; n++) {
+        var next = neighbors[n];
+        if (!visited[next]) {
+          visited[next] = true;
+          stack.push(next);
+        }
+      }
+    }
+  }
+
+  return { count: count, adjacency: adjacency };
+};
+
+
+ConnectedGraph.prototype.forceMultipleComponents = function (
+  vertexCount,
+  edges,
+  allowed,
+  curves
+) {
+  if (vertexCount <= 1) {
+    return edges;
+  }
+
+  var order = [];
+  for (var i = 0; i < vertexCount; i++) {
+    order.push(i);
+  }
+  for (var shuffleIndex = order.length - 1; shuffleIndex > 0; shuffleIndex--) {
+    var swapIndex = Math.floor(Math.random() * (shuffleIndex + 1));
+    var temp = order[shuffleIndex];
+    order[shuffleIndex] = order[swapIndex];
+    order[swapIndex] = temp;
+  }
+
+  var splitPoint = Math.floor(vertexCount / 2);
+  if (splitPoint <= 0) {
+    splitPoint = 1;
+  }
+  if (splitPoint >= vertexCount) {
+    splitPoint = vertexCount - 1;
+  }
+
+  var inFirst = {};
+  for (var a = 0; a < splitPoint; a++) {
+    inFirst[order[a]] = true;
+  }
+
+  var groupA = [];
+  var groupB = [];
+  for (var g = 0; g < order.length; g++) {
+    if (inFirst[order[g]]) {
+      groupA.push(order[g]);
+    } else {
+      groupB.push(order[g]);
+    }
+  }
+
+  var filteredEdges = [];
+  for (var e = 0; e < edges.length; e++) {
+    var edge = edges[e];
+    var inA = inFirst[edge.u];
+    var inB = inFirst[edge.v];
+    if ((inA && inB) || (!inA && !inB)) {
+      filteredEdges.push(edge);
+    }
+  }
+
+  edges = filteredEdges;
+
+  var used = {};
+  for (var u = 0; u < edges.length; u++) {
+    used[edges[u].u + '-' + edges[u].v] = true;
+  }
+
+  var connectGroup = function (group) {
+    if (group.length <= 1) {
+      return;
+    }
+
+    var sequence = [];
+    for (var s = 0; s < group.length; s++) {
+      sequence.push(group[s]);
+    }
+    for (var si = sequence.length - 1; si > 0; si--) {
+      var sj = Math.floor(Math.random() * (si + 1));
+      var tmp = sequence[si];
+      sequence[si] = sequence[sj];
+      sequence[sj] = tmp;
+    }
+
+    for (var idx = 1; idx < sequence.length; idx++) {
+      var target = sequence[idx];
+      var connected = false;
+
+      for (var prev = 0; prev < idx; prev++) {
+        var candidate = sequence[prev];
+        var min = Math.min(target, candidate);
+        var max = Math.max(target, candidate);
+        if (!allowed[min] || !allowed[min][max]) {
+          continue;
+        }
+        var key = min + '-' + max;
+        if (used[key]) {
+          connected = true;
+          break;
+        }
+        var curve = 0;
+        if (
+          curves[min] &&
+          typeof curves[min][max] === "number" &&
+          Math.abs(curves[min][max]) > 0.0001
+        ) {
+          curve = curves[min][max];
+        }
+        edges.push({ u: min, v: max, curve: curve });
+        used[key] = true;
+        connected = true;
+        break;
+      }
+
+      if (connected) {
+        continue;
+      }
+
+      for (var x = 0; x < group.length && !connected; x++) {
+        for (var y = x + 1; y < group.length; y++) {
+          var ga = Math.min(group[x], group[y]);
+          var gb = Math.max(group[x], group[y]);
+          if (!allowed[ga] || !allowed[ga][gb]) {
+            continue;
+          }
+          var gkey = ga + '-' + gb;
+          if (used[gkey]) {
+            continue;
+          }
+          var gcurve = 0;
+          if (
+            curves[ga] &&
+            typeof curves[ga][gb] === "number" &&
+            Math.abs(curves[ga][gb]) > 0.0001
+          ) {
+            gcurve = curves[ga][gb];
+          }
+          edges.push({ u: ga, v: gb, curve: gcurve });
+          used[gkey] = true;
+          connected = true;
+          break;
+        }
+      }
+    }
+  };
+
+  connectGroup(groupA);
+  connectGroup(groupB);
+
+  return edges;
+};
+
+
+ConnectedGraph.prototype.isolateRandomVertex = function (vertexCount, edges) {
+  if (vertexCount <= 1) {
+    return edges;
+  }
+
+  var target = Math.floor(Math.random() * vertexCount);
+  var filtered = [];
+  for (var i = 0; i < edges.length; i++) {
+    var edge = edges[i];
+    if (edge.u === target || edge.v === target) {
+      continue;
+    }
+    filtered.push(edge);
+  }
+  return filtered;
 };
 
 
