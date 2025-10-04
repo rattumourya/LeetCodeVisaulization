@@ -1577,11 +1577,7 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
     this.highlightCodeLine(7);
     queue.shift();
     this.dequeueQueueVertex();
-    var removedHighlight = this.removeFrontierHighlight(u);
     this.cmd("Step");
-    if (removedHighlight !== -1) {
-      this.cmd("Delete", removedHighlight);
-    }
 
     var pos = this.vertexPositions[u];
     if (pos) {
@@ -1646,6 +1642,12 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
 
       this.highlightCodeLine(8);
       this.cmd("Step");
+    }
+
+    var removedHighlight = this.removeFrontierHighlight(u);
+    if (removedHighlight !== -1) {
+      this.cmd("Step");
+      this.cmd("Delete", removedHighlight);
     }
 
     this.highlightCodeLine(14);
