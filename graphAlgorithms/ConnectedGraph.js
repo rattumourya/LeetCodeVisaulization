@@ -854,12 +854,7 @@ ConnectedGraph.prototype.setVisitedCellHighlight = function (index, active) {
 };
 
 ConnectedGraph.prototype.getComponentColor = function (componentId) {
-  var palette = ConnectedGraph.COMPONENT_COLORS;
-  if (!palette || palette.length === 0) {
-    return ConnectedGraph.GRAPH_NODE_VISITED_COLOR;
-  }
-  var index = Math.max(0, componentId - 1) % palette.length;
-  return palette[index];
+  return ConnectedGraph.GRAPH_NODE_VISITED_COLOR;
 };
 
 ConnectedGraph.prototype.createCodeDisplay = function () {
@@ -1144,6 +1139,7 @@ ConnectedGraph.prototype.clearTraversalState = function () {
   this.resetEdgeStates();
   this.clearEdgeHighlights();
   this.resetRecursionArea();
+  this.hideHighlightCircle();
 };
 
 ConnectedGraph.prototype.clearEdgeHighlights = function () {
@@ -1552,6 +1548,30 @@ ConnectedGraph.prototype.animateHighlightTraversal = function (
   this.cmd("Step");
 };
 
+ConnectedGraph.prototype.showHighlightCircleAt = function (vertexIndex) {
+  if (this.highlightCircleID < 0) {
+    return;
+  }
+  var position = this.vertexPositions[vertexIndex];
+  if (!position) {
+    return;
+  }
+  this.cmd("SetAlpha", this.highlightCircleID, 1);
+  this.cmd(
+    "Move",
+    this.highlightCircleID,
+    Math.round(position.x),
+    Math.round(position.y)
+  );
+};
+
+ConnectedGraph.prototype.hideHighlightCircle = function () {
+  if (this.highlightCircleID < 0) {
+    return;
+  }
+  this.cmd("SetAlpha", this.highlightCircleID, 0);
+};
+
 ConnectedGraph.prototype.getStartFieldValue = function () {
   if (!this.startField) {
     return "";
@@ -1681,11 +1701,7 @@ ConnectedGraph.prototype.runConnectedComponents = function (startIndex) {
     "Components Found: 0"
   );
 
-  var startPos = this.vertexPositions[startIndex];
-  if (startPos) {
-    this.cmd("SetAlpha", this.highlightCircleID, 1);
-    this.cmd("Move", this.highlightCircleID, startPos.x, startPos.y);
-  }
+  this.hideHighlightCircle();
   this.cmd("Step");
 
   this.componentCount = 0;
@@ -1723,7 +1739,10 @@ ConnectedGraph.prototype.runConnectedComponents = function (startIndex) {
 
       this.highlightCodeLine(4);
       this.cmd("Step");
+      this.showHighlightCircleAt(u);
+      this.cmd("Step");
       this.dfsVisit(u, this.componentCount);
+      this.hideHighlightCircle();
     }
 
     this.setVisitedCellHighlight(u, false);
