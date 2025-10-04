@@ -82,12 +82,12 @@ UndirectedDFS.START_INFO_COLOR = "#264653";
 UndirectedDFS.HIGHLIGHT_COLOR = "#ff3b30";
 
 UndirectedDFS.CODE_LINES = [
-  ["void dfs(int u, int parent) {"],
+  ["void dfs(int u) {"],
   ["    visited[u] = true;"],
   ["    for (int v : adj[u]) {"],
-  ["        if (v != parent && !visited[v]) {"],
+  ["        if (parentArr[u] != v && !visited[v]) {"],
   ["            parentArr[v] = u;"],
-  ["            dfs(v, u);"],
+  ["            dfs(v);"],
   ["        }"],
   ["    }"],
   ["}"]
@@ -609,7 +609,7 @@ UndirectedDFS.prototype.resetRecursionArea = function () {
   }
 };
 
-UndirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
+UndirectedDFS.prototype.pushRecursionFrame = function (vertex) {
   if (
     this.recursionDepth < 0 ||
     this.recursionDepth >= this.recursionFrameIDs.length ||
@@ -629,17 +629,7 @@ UndirectedDFS.prototype.pushRecursionFrame = function (vertex, parent) {
   }
 
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var parentText = "null";
-  if (
-    parent !== undefined &&
-    parent !== null &&
-    parent >= 0 &&
-    parent < this.vertexLabels.length
-  ) {
-    parentText = this.vertexLabels[parent];
-  }
-  var text =
-    "dfs(" + this.vertexLabels[vertex] + ", " + parentText + ")";
+  var text = "dfs(" + this.vertexLabels[vertex] + ")";
   this.cmd("SetText", frameID, text);
   this.cmd("SetAlpha", frameID, 1);
   this.cmd("SetForegroundColor", frameID, UndirectedDFS.RECURSION_RECT_ACTIVE_BORDER);
@@ -1279,7 +1269,8 @@ UndirectedDFS.prototype.runTraversal = function (startIndex) {
   this.cmd("Move", this.highlightCircleID, startPos.x, startPos.y);
   this.cmd("Step");
 
-  this.dfsVisit(startIndex, -1);
+  this.parents[startIndex] = null;
+  this.dfsVisit(startIndex);
 
   this.highlightCodeLine(-1);
   this.cmd("SetAlpha", this.highlightCircleID, 0);
@@ -1287,8 +1278,8 @@ UndirectedDFS.prototype.runTraversal = function (startIndex) {
   return this.commands;
 };
 
-UndirectedDFS.prototype.dfsVisit = function (u, parent) {
-  this.pushRecursionFrame(u, parent);
+UndirectedDFS.prototype.dfsVisit = function (u) {
+  this.pushRecursionFrame(u);
   this.cmd("Step");
 
   this.highlightCodeLine(0);
@@ -1325,7 +1316,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
   var neighbors = this.adjacencyList[u];
   for (var i = 0; i < neighbors.length; i++) {
     var v = neighbors[i];
-    if (v === parent) {
+    if (this.parents[u] !== null && this.parents[u] === v) {
       continue;
     }
     this.highlightCodeLine(3);
@@ -1350,7 +1341,7 @@ UndirectedDFS.prototype.dfsVisit = function (u, parent) {
       this.cmd("Step");
       this.animateHighlightTraversal(u, v);
 
-      this.dfsVisit(v, u);
+      this.dfsVisit(v);
 
       this.animateHighlightTraversal(v, u);
     }
