@@ -502,31 +502,16 @@ UndirectedBFS.prototype.createGraphArea = function () {
     var key = this.edgeKey(a, b);
     this.edgeStates[key] = { tree: false, color: null };
     this.edgeMeta[key] = {
-      from: a,
-      to: b,
-      curve: curve
+      key: key,
+      baseFrom: a,
+      baseTo: b,
+      curve: curve,
+      currentFrom: a,
+      currentTo: b,
+      currentCurve: curve,
+      directed: false
     };
-    this.cmd(
-      "Connect",
-      this.vertexIDs[a],
-      this.vertexIDs[b],
-      UndirectedBFS.EDGE_COLOR,
-      curve,
-      0,
-      ""
-    );
-    this.cmd(
-      "SetEdgeThickness",
-      this.vertexIDs[a],
-      this.vertexIDs[b],
-      UndirectedBFS.EDGE_THICKNESS
-    );
-    this.cmd(
-      "SetEdgeHighlight",
-      this.vertexIDs[a],
-      this.vertexIDs[b],
-      0
-    );
+    this.renderEdgeMetaConnection(this.edgeMeta[key]);
   }
 
 };
@@ -1134,7 +1119,11 @@ UndirectedBFS.prototype.getEdgeInfo = function (from, to) {
   var meta = this.edgeMeta ? this.edgeMeta[key] : null;
   var reversed = false;
   if (meta) {
-    reversed = from !== meta.from;
+    if (meta.directed) {
+      reversed = from === meta.currentTo && to === meta.currentFrom;
+    } else {
+      reversed = from === meta.baseTo && to === meta.baseFrom;
+    }
   } else {
     reversed = from > to;
   }
@@ -1166,6 +1155,15 @@ UndirectedBFS.prototype.getEdgeCurve = function (from, to) {
   return 0;
 };
 
+UndirectedBFS.prototype.getEdgeBaseColorByKey = function (key) {
+  var baseColor = UndirectedBFS.EDGE_COLOR;
+  if (this.edgeStates[key] && this.edgeStates[key].tree) {
+    baseColor =
+      this.edgeStates[key].color || UndirectedBFS.EDGE_VISITED_COLOR;
+  }
+  return baseColor;
+};
+
 UndirectedBFS.prototype.updateEdgeBaseColor = function (from, to) {
   if (
     !this.vertexIDs ||
@@ -1176,15 +1174,125 @@ UndirectedBFS.prototype.updateEdgeBaseColor = function (from, to) {
   ) {
     return;
   }
-  var a = Math.min(from, to);
-  var b = Math.max(from, to);
-  var key = this.edgeKey(a, b);
-  var baseColor = UndirectedBFS.EDGE_COLOR;
-  if (this.edgeStates[key] && this.edgeStates[key].tree) {
-    baseColor =
-      this.edgeStates[key].color || UndirectedBFS.EDGE_VISITED_COLOR;
+  var info = this.getEdgeInfo(from, to);
+  var key = info.key;
+  var meta = info.meta;
+  var baseColor = this.getEdgeBaseColorByKey(key);
+  var fromIndex = info.fromIndex;
+  var toIndex = info.toIndex;
+  if (meta) {
+    if (typeof meta.currentFrom === "number") {
+      fromIndex = meta.currentFrom;
+    }
+    if (typeof meta.currentTo === "number") {
+      toIndex = meta.currentTo;
+    }
   }
-  this.cmd("SetEdgeColor", this.vertexIDs[a], this.vertexIDs[b], baseColor);
+  this.cmd(
+    "SetEdgeColor",
+    this.vertexIDs[fromIndex],
+    this.vertexIDs[toIndex],
+    baseColor
+  );
+};
+
+UndirectedBFS.prototype.renderEdgeMetaConnection = function (meta) {
+  if (!meta) {
+    return;
+  }
+  if (
+    !this.vertexIDs ||
+    typeof meta.currentFrom !== "number" ||
+    typeof meta.currentTo !== "number"
+  ) {
+    return;
+  }
+  var fromIndex = meta.currentFrom;
+  var toIndex = meta.currentTo;
+  var curve = typeof meta.currentCurve === "number" ? meta.currentCurve : 0;
+  var color = this.getEdgeBaseColorByKey(meta.key);
+  this.cmd(
+    "Connect",
+    this.vertexIDs[fromIndex],
+    this.vertexIDs[toIndex],
+    color,
+    curve,
+    meta.directed ? 1 : 0,
+    ""
+  );
+  this.cmd(
+    "SetEdgeThickness",
+    this.vertexIDs[fromIndex],
+    this.vertexIDs[toIndex],
+    UndirectedBFS.EDGE_THICKNESS
+  );
+  this.cmd(
+    "SetEdgeHighlight",
+    this.vertexIDs[fromIndex],
+    this.vertexIDs[toIndex],
+    0
+  );
+};
+
+UndirectedBFS.prototype.setEdgeDirection = function (from, to, directed) {
+  var info = this.getEdgeInfo(from, to);
+  var meta = info.meta;
+  if (!meta) {
+    return;
+  }
+  var desiredDirected = !!directed;
+  var desiredFrom = desiredDirected ? from : meta.baseFrom;
+  var desiredTo = desiredDirected ? to : meta.baseTo;
+  if (
+    desiredFrom < 0 ||
+    desiredTo < 0 ||
+    desiredFrom >= this.vertexIDs.length ||
+    desiredTo >= this.vertexIDs.length
+  ) {
+    return;
+  }
+
+  var baseCurve = typeof meta.curve === "number" ? meta.curve : 0;
+  var desiredCurve = baseCurve;
+  if (desiredFrom === meta.baseTo && desiredTo === meta.baseFrom) {
+    desiredCurve = -baseCurve;
+  } else if (desiredFrom !== meta.baseFrom || desiredTo !== meta.baseTo) {
+    desiredCurve = desiredFrom < desiredTo ? baseCurve : -baseCurve;
+  }
+
+  if (
+    meta.currentFrom === desiredFrom &&
+    meta.currentTo === desiredTo &&
+    !!meta.directed === desiredDirected &&
+    typeof meta.currentCurve === "number" &&
+    Math.abs(meta.currentCurve - desiredCurve) < 0.0001
+  ) {
+    this.updateEdgeBaseColor(info.fromIndex, info.toIndex);
+    return;
+  }
+
+  if (
+    typeof meta.currentFrom === "number" &&
+    typeof meta.currentTo === "number" &&
+    meta.currentFrom >= 0 &&
+    meta.currentTo >= 0 &&
+    meta.currentFrom < this.vertexIDs.length &&
+    meta.currentTo < this.vertexIDs.length
+  ) {
+    this.cmd(
+      "Disconnect",
+      this.vertexIDs[meta.currentFrom],
+      this.vertexIDs[meta.currentTo]
+    );
+  }
+
+  meta.currentFrom = desiredFrom;
+  meta.currentTo = desiredTo;
+  meta.directed = desiredDirected;
+  meta.currentCurve = desiredCurve;
+
+  this.renderEdgeMetaConnection(meta);
+  this.updateEdgeBaseColor(info.fromIndex, info.toIndex);
 };
 
 UndirectedBFS.prototype.setEdgeTreeState = function (from, to, isTree, color) {
@@ -1217,6 +1325,7 @@ UndirectedBFS.prototype.resetEdgeStates = function () {
     }
     this.edgeStates[key].tree = false;
     this.edgeStates[key].color = null;
+    this.setEdgeDirection(edge.from, edge.to, false);
     this.updateEdgeBaseColor(edge.from, edge.to);
     if (
       this.vertexIDs &&
@@ -1412,12 +1521,23 @@ UndirectedBFS.prototype.highlightEdge = function (from, to, active) {
   ) {
     return;
   }
-  var a = Math.min(from, to);
-  var b = Math.max(from, to);
-  var fromID = this.vertexIDs[a];
-  var toID = this.vertexIDs[b];
+  var info = this.getEdgeInfo(from, to);
+  var meta = info.meta;
+  var fromIndex = info.fromIndex;
+  var toIndex = info.toIndex;
+  if (meta) {
+    if (meta.directed) {
+      fromIndex = meta.currentFrom;
+      toIndex = meta.currentTo;
+    } else {
+      fromIndex = meta.baseFrom;
+      toIndex = meta.baseTo;
+    }
+  }
+  var fromID = this.vertexIDs[fromIndex];
+  var toID = this.vertexIDs[toIndex];
   if (active) {
-    this.updateEdgeBaseColor(a, b);
+    this.updateEdgeBaseColor(info.fromIndex, info.toIndex);
     this.cmd(
       "SetEdgeThickness",
       fromID,
@@ -1428,7 +1548,7 @@ UndirectedBFS.prototype.highlightEdge = function (from, to, active) {
   } else {
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     this.cmd("SetEdgeThickness", fromID, toID, UndirectedBFS.EDGE_THICKNESS);
-    this.updateEdgeBaseColor(a, b);
+    this.updateEdgeBaseColor(info.fromIndex, info.toIndex);
   }
 };
 
@@ -1459,18 +1579,37 @@ UndirectedBFS.prototype.animateHighlightTraversal = function (
       meta = preferredMeta;
       info = {
         key: preferKey,
-        fromIndex: preferredMeta.from,
-        toIndex: preferredMeta.to,
+        fromIndex: preferredMeta.baseFrom,
+        toIndex: preferredMeta.baseTo,
         meta: preferredMeta,
         reversed:
-          fromIndex !== preferredMeta.from || toIndex !== preferredMeta.to
+          fromIndex === preferredMeta.baseTo &&
+          toIndex === preferredMeta.baseFrom
       };
     }
   }
 
-  var curve = meta ? meta.curve : 0;
-  if (meta && info.reversed) {
-    curve = -curve;
+  var curve = 0;
+  if (meta) {
+    var baseCurve = typeof meta.curve === "number" ? meta.curve : 0;
+    var directedCurve =
+      typeof meta.currentCurve === "number" ? meta.currentCurve : baseCurve;
+    if (meta.directed) {
+      if (fromIndex === meta.currentFrom && toIndex === meta.currentTo) {
+        curve = directedCurve;
+      } else if (fromIndex === meta.currentTo && toIndex === meta.currentFrom) {
+        curve = -directedCurve;
+      } else if (fromIndex === meta.baseTo && toIndex === meta.baseFrom) {
+        curve = -baseCurve;
+      } else {
+        curve = baseCurve;
+      }
+    } else {
+      curve = baseCurve;
+      if (fromIndex === meta.baseTo && toIndex === meta.baseFrom) {
+        curve = -curve;
+      }
+    }
   }
 
   if (Math.abs(curve) < 0.01) {
@@ -1725,6 +1864,8 @@ UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
         this.cmd("SetText", this.parentRectIDs[v], this.vertexLabels[u]);
         var edgeColor = this.getVertexEdgeColor(v) || levelColor;
         this.setEdgeTreeState(u, v, true, edgeColor);
+        this.setEdgeDirection(u, v, true);
+        this.highlightEdge(u, v, true);
         this.cmd("Step");
 
         this.highlightCodeLine(12);
