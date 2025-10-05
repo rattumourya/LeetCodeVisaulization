@@ -312,6 +312,7 @@ UndirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
     );
   };
 
+  var self = this;
   var addEdge = function (u, v) {
     if (u === v) {
       return false;
@@ -335,10 +336,10 @@ UndirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
     }
     edges.push({ from: a, to: b, curve: curve });
     existing[key] = true;
-    this.adjacencyList[u].push(v);
-    this.adjacencyList[v].push(u);
+    self.adjacencyList[u].push(v);
+    self.adjacencyList[v].push(u);
     return true;
-  }.bind(this);
+  };
 
   for (var v = 1; v < vertexCount; v++) {
     var options = [];
