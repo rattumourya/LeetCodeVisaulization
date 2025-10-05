@@ -810,7 +810,7 @@ UndirectedCycleDetection.prototype.resetEdgesToUndirected = function () {
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
     var edgeKey = this.edgeKey(edge.u, edge.v);
     this.edgeOrientation[edgeKey] = { from: edge.u, to: edge.v };
-    this.edgeStates[edgeKey] = { tree: false };
+    this.edgeStates[edgeKey] = { tree: false, visited: false, cycle: false };
     this.edgeMeta[edgeKey] = edge;
   }
 };
@@ -862,13 +862,18 @@ UndirectedCycleDetection.prototype.setEdgeActive = function (
     var baseColor = UndirectedCycleDetection.EDGE_COLOR;
     var highlight = false;
     var thickness = UndirectedCycleDetection.EDGE_THICKNESS;
-    if (this.edgeStates[key]) {
-      if (this.edgeStates[key].cycle) {
+    var state = this.edgeStates[key];
+    if (state) {
+      if (state.cycle) {
         baseColor = UndirectedCycleDetection.EDGE_CYCLE_COLOR;
         highlight = true;
         thickness = UndirectedCycleDetection.EDGE_CYCLE_THICKNESS;
-      } else if (this.edgeStates[key].tree) {
+      } else if (state.visited) {
+        baseColor = UndirectedCycleDetection.EDGE_VISITED_COLOR;
+        thickness = UndirectedCycleDetection.EDGE_TREE_THICKNESS;
+      } else if (state.tree) {
         baseColor = UndirectedCycleDetection.EDGE_COLOR;
+        thickness = UndirectedCycleDetection.EDGE_TREE_THICKNESS;
       }
     }
 
@@ -1001,6 +1006,33 @@ UndirectedCycleDetection.prototype.markEdgeAsTreeEdge = function (parent, child)
   this.edgeStates[key] = state;
 };
 
+UndirectedCycleDetection.prototype.markEdgeAsExplored = function (parent, child) {
+  var key = this.edgeKey(parent, child);
+  var orientation = this.edgeOrientation[key];
+  if (!orientation) {
+    return;
+  }
+
+  var fromID = this.vertexIDs[orientation.from];
+  var toID = this.vertexIDs[orientation.to];
+
+  this.setEdgeState(parent, child, {
+    highlight: false,
+    color: UndirectedCycleDetection.EDGE_VISITED_COLOR
+  });
+  this.cmd(
+    "SetEdgeThickness",
+    fromID,
+    toID,
+    UndirectedCycleDetection.EDGE_TREE_THICKNESS
+  );
+
+  var state = this.edgeStates[key] || {};
+  state.tree = true;
+  state.visited = true;
+  this.edgeStates[key] = state;
+};
+
 UndirectedCycleDetection.prototype.markEdgeAsCycleEdge = function (a, b) {
   var key = this.edgeKey(a, b);
   var meta = this.edgeMeta[key];
@@ -1042,6 +1074,7 @@ UndirectedCycleDetection.prototype.markEdgeAsCycleEdge = function (a, b) {
   var state = this.edgeStates[key] || {};
   state.tree = true;
   state.cycle = true;
+  state.visited = true;
   this.edgeStates[key] = state;
 };
 
@@ -1494,9 +1527,9 @@ UndirectedCycleDetection.prototype.runTraversal = function (startIndex) {
     UndirectedCycleDetection.STATUS_SEARCHING_TEXT,
     UndirectedCycleDetection.STATUS_COLOR_SEARCH
   );
-  this.dfsVisit(startIndex, null);
+  var foundCycle = this.dfsVisit(startIndex, null);
 
-  if (!this.cycleFound) {
+  if (!foundCycle) {
     this.updateCycleStatus(
       UndirectedCycleDetection.STATUS_NO_CYCLE_TEXT,
       UndirectedCycleDetection.STATUS_COLOR_MISS
@@ -1512,7 +1545,7 @@ UndirectedCycleDetection.prototype.runTraversal = function (startIndex) {
 
 UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
   if (this.cycleFound) {
-    return;
+    return true;
   }
 
   this.pushRecursionFrame(u, parent);
@@ -1550,16 +1583,24 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
   this.cmd("Step");
 
   var neighbors = this.adjacencyList[u];
+  var foundCycle = false;
+
   for (var i = 0; i < neighbors.length; i++) {
-    if (this.cycleFound) {
-      break;
-    }
     var v = neighbors[i];
-    this.setEdgeActive(u, v, true);
+
+    if (parent !== null && parent === v) {
+      continue;
+    }
+
     this.highlightCodeLine(3);
     this.cmd("Step");
+
+    this.setEdgeActive(u, v, true);
+    this.cmd("Step");
+
     this.setVisitedCellHighlight(v, true);
     this.cmd("Step");
+
     if (!this.visited[v]) {
       this.highlightCodeLine(4);
       this.parents[v] = u;
@@ -1573,17 +1614,18 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
       this.cmd("Step");
       this.animateHighlightTraversal(u, v);
 
-      this.dfsVisit(v, u);
-
-      if (this.cycleFound) {
+      foundCycle = this.dfsVisit(v, u);
+      if (foundCycle) {
         this.setVisitedCellHighlight(v, false);
-        this.setEdgeActive(u, v, false);
         break;
       }
 
       this.animateHighlightTraversal(v, u);
+      this.markEdgeAsExplored(u, v);
+      this.cmd("Step");
+
       this.setVisitedCellHighlight(v, false);
-      this.setEdgeActive(u, v, false);
+      this.setEdgeActive(u, v, false, true);
 
       this.highlightCodeLine(8);
       this.cmd("Step");
@@ -1600,11 +1642,12 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
         this.setVisitedCellHighlight(v, false);
         this.setEdgeActive(u, v, false);
         this.reportCycle(u, v);
+        foundCycle = true;
         break;
       }
 
       this.setVisitedCellHighlight(v, false);
-      this.setEdgeActive(u, v, false);
+      this.setEdgeActive(u, v, false, true);
 
       this.highlightCodeLine(8);
       this.cmd("Step");
@@ -1614,13 +1657,14 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
     }
   }
 
-  if (!this.cycleFound) {
+  if (!foundCycle && !this.cycleFound) {
     this.highlightCodeLine(9);
     this.cmd("Step");
     this.highlightCodeLine(10);
     this.cmd("Step");
   }
   this.popRecursionFrame();
+  return foundCycle || this.cycleFound;
 };
 
 UndirectedCycleDetection.prototype.disableUI = function () {
