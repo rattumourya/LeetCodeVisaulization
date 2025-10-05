@@ -831,10 +831,18 @@ UndirectedCycleDetection.prototype.setEdgeState = function (u, v, options) {
   }
 };
 
-UndirectedCycleDetection.prototype.setEdgeActive = function (u, v, active) {
+UndirectedCycleDetection.prototype.setEdgeActive = function (
+  u,
+  v,
+  active,
+  force
+) {
   var key = this.edgeKey(u, v);
   var orientation = this.edgeOrientation[key];
   if (!orientation) {
+    return;
+  }
+  if (!active && !force && !this.cycleFound) {
     return;
   }
   var fromID = this.vertexIDs[orientation.from];
@@ -869,6 +877,13 @@ UndirectedCycleDetection.prototype.setEdgeActive = function (u, v, active) {
       color: baseColor
     });
     this.cmd("SetEdgeThickness", fromID, toID, thickness);
+  }
+};
+
+UndirectedCycleDetection.prototype.releaseAllTraversalEdges = function () {
+  for (var i = 0; i < this.edgePairs.length; i++) {
+    var edge = this.edgePairs[i];
+    this.setEdgeActive(edge.u, edge.v, false, true);
   }
 };
 
@@ -1486,6 +1501,7 @@ UndirectedCycleDetection.prototype.runTraversal = function (startIndex) {
       UndirectedCycleDetection.STATUS_NO_CYCLE_TEXT,
       UndirectedCycleDetection.STATUS_COLOR_MISS
     );
+    this.releaseAllTraversalEdges();
   }
 
   this.highlightCodeLine(-1);
