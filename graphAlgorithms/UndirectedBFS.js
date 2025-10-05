@@ -886,6 +886,30 @@ UndirectedBFS.prototype.ensureFrontierHighlight = function (vertexIndex) {
   return circleID;
 };
 
+UndirectedBFS.prototype.setFrontierHighlightColor = function (
+  vertexIndex,
+  color
+) {
+  if (typeof vertexIndex !== "number") {
+    return;
+  }
+  if (!this.frontierHighlightIDs) {
+    this.frontierHighlightIDs = {};
+  }
+  var circleID = this.frontierHighlightIDs[vertexIndex];
+  if (typeof circleID === "undefined") {
+    circleID = this.ensureFrontierHighlight(vertexIndex);
+  }
+  if (circleID === -1) {
+    return;
+  }
+  var targetColor =
+    typeof color === "string" && color.length > 0
+      ? color
+      : this.getVertexHighlightColor(vertexIndex);
+  this.cmd("SetForegroundColor", circleID, targetColor);
+};
+
 UndirectedBFS.prototype.createFrontierHighlightFromParent = function (
   parentIndex,
   vertexIndex
@@ -956,6 +980,10 @@ UndirectedBFS.prototype.setActiveFrontierVertex = function (vertexIndex) {
     this.activeFrontierVertex = null;
     return;
   }
+  this.setFrontierHighlightColor(
+    this.activeFrontierVertex,
+    UndirectedBFS.HIGHLIGHT_COLOR
+  );
   this.frontierBlinkStates[this.activeFrontierVertex] = "bright";
   this.cmd(
     "SetAlpha",
