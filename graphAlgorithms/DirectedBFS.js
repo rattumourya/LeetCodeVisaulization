@@ -156,6 +156,7 @@ DirectedBFS.prototype.init = function (am, w, h) {
   this.edgeMeta = {};
   this.edgeCurveOverrides = {};
   this.vertexLevelColors = [];
+  this.vertexEdgeColors = [];
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
@@ -696,6 +697,7 @@ DirectedBFS.prototype.createTitleRow = function () {
 DirectedBFS.prototype.createGraphArea = function () {
   this.vertexIDs = new Array(this.vertexLabels.length);
   this.vertexLevelColors = new Array(this.vertexLabels.length);
+  this.vertexEdgeColors = new Array(this.vertexLabels.length);
   this.edgePairs = [];
 
   for (var i = 0; i < this.vertexLabels.length; i++) {
@@ -715,6 +717,7 @@ DirectedBFS.prototype.createGraphArea = function () {
     this.cmd("SetTextColor", id, DirectedBFS.GRAPH_NODE_TEXT);
     this.cmd("SetHighlight", id, 0);
     this.vertexLevelColors[i] = null;
+    this.vertexEdgeColors[i] = null;
   }
 
   for (var from = 0; from < this.adjacencyList.length; from++) {
@@ -1195,6 +1198,9 @@ DirectedBFS.prototype.clearTraversalState = function () {
     if (this.vertexLevelColors && i < this.vertexLevelColors.length) {
       this.vertexLevelColors[i] = null;
     }
+    if (this.vertexEdgeColors && i < this.vertexEdgeColors.length) {
+      this.vertexEdgeColors[i] = null;
+    }
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedBFS.ARRAY_RECT_COLOR);
     this.cmd(
@@ -1340,6 +1346,10 @@ DirectedBFS.prototype.applyVertexLevelColor = function (vertexIndex, depth) {
   if (this.vertexLevelColors && vertexIndex < this.vertexLevelColors.length) {
     this.vertexLevelColors[vertexIndex] = color;
   }
+  var derivedEdgeColor = this.deriveEdgeColor(color);
+  if (this.vertexEdgeColors && vertexIndex < this.vertexEdgeColors.length) {
+    this.vertexEdgeColors[vertexIndex] = derivedEdgeColor;
+  }
   this.cmd(
     "SetBackgroundColor",
     this.vertexIDs[vertexIndex],
@@ -1351,6 +1361,137 @@ DirectedBFS.prototype.applyVertexLevelColor = function (vertexIndex, depth) {
     DirectedBFS.GRAPH_NODE_VISITED_TEXT_COLOR
   );
   return color;
+};
+
+DirectedBFS.prototype.getVertexEdgeColor = function (vertexIndex) {
+  if (
+    this.vertexEdgeColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexEdgeColors.length &&
+    typeof this.vertexEdgeColors[vertexIndex] === "string"
+  ) {
+    return this.vertexEdgeColors[vertexIndex];
+  }
+  if (
+    this.vertexLevelColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexLevelColors.length
+  ) {
+    return this.deriveEdgeColor(this.vertexLevelColors[vertexIndex]);
+  }
+  return null;
+};
+
+DirectedBFS.prototype.deriveEdgeColor = function (nodeColor) {
+  if (typeof nodeColor !== "string") {
+    return DirectedBFS.EDGE_VISITED_COLOR;
+  }
+  var rgb = this.parseHexColor(nodeColor);
+  if (!rgb) {
+    return nodeColor;
+  }
+  var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.s = Math.min(1, hsl.s + 0.2);
+  hsl.l = Math.max(0, Math.min(1, hsl.l - 0.18));
+  var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+  return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
+};
+
+DirectedBFS.prototype.parseHexColor = function (hex) {
+  if (typeof hex !== "string") {
+    return null;
+  }
+  var cleaned = hex.trim();
+  if (cleaned.charAt(0) === "#") {
+    cleaned = cleaned.substring(1);
+  }
+  if (cleaned.length === 3) {
+    cleaned =
+      cleaned.charAt(0) +
+      cleaned.charAt(0) +
+      cleaned.charAt(1) +
+      cleaned.charAt(1) +
+      cleaned.charAt(2) +
+      cleaned.charAt(2);
+  }
+  if (cleaned.length !== 6) {
+    return null;
+  }
+  var num = parseInt(cleaned, 16);
+  if (isNaN(num)) {
+    return null;
+  }
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
+};
+
+DirectedBFS.prototype.rgbToHex = function (r, g, b) {
+  var toHex = function (value) {
+    var clamped = Math.max(0, Math.min(255, Math.round(value)));
+    var hex = clamped.toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+  return "#" + toHex(r) + toHex(g) + toHex(b);
+};
+
+DirectedBFS.prototype.rgbToHsl = function (r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  var max = Math.max(r, g, b);
+  var min = Math.min(r, g, b);
+  var h, s;
+  var l = (max + min) / 2;
+
+  if (max === min) {
+    h = 0;
+    s = 0;
+  } else {
+    var d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      default:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+
+  return { h: h, s: s, l: l };
+};
+
+DirectedBFS.prototype.hslToRgb = function (h, s, l) {
+  var hue2rgb = function (p, q, t) {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+
+  var r, g, b;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  return { r: r * 255, g: g * 255, b: b * 255 };
 };
 
 DirectedBFS.prototype.highlightEdge = function (from, to, active) {
@@ -1677,7 +1818,8 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
         this.highlightCodeLine(11);
         this.parentArr[v] = u;
         this.cmd("SetText", this.parentRectIDs[v], this.vertexLabels[u]);
-        this.setEdgeTreeState(u, v, true, levelColor);
+        var edgeColor = this.getVertexEdgeColor(v) || levelColor;
+        this.setEdgeTreeState(u, v, true, edgeColor);
         this.cmd("Step");
 
         this.highlightCodeLine(12);
