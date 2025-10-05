@@ -28,20 +28,25 @@ UndirectedCycleDetection.STATUS_INFO_Y =
 
 UndirectedCycleDetection.GRAPH_AREA_CENTER_X = 360;
 UndirectedCycleDetection.GRAPH_NODE_RADIUS = 22;
-UndirectedCycleDetection.GRAPH_NODE_COLOR = "#e3f2fd";
-UndirectedCycleDetection.GRAPH_NODE_BORDER = "#0b3954";
-UndirectedCycleDetection.GRAPH_NODE_TEXT = "#003049";
-UndirectedCycleDetection.GRAPH_NODE_VISITED_COLOR = "#66bb6a";
-UndirectedCycleDetection.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
-UndirectedCycleDetection.GRAPH_NODE_CYCLE_COLOR = "#ffe082";
-UndirectedCycleDetection.GRAPH_NODE_CYCLE_TEXT_COLOR = "#5d3500";
+UndirectedCycleDetection.GRAPH_NODE_COLOR = "#0d1b2a";
+UndirectedCycleDetection.GRAPH_NODE_BORDER = "#415a77";
+UndirectedCycleDetection.GRAPH_NODE_TEXT = "#f0f4f8";
+UndirectedCycleDetection.GRAPH_NODE_VISITED_COLOR = "#007f5f";
+UndirectedCycleDetection.GRAPH_NODE_VISITED_TEXT_COLOR = "#f1faee";
+UndirectedCycleDetection.GRAPH_NODE_CYCLE_COLOR = "#9d0208";
+UndirectedCycleDetection.GRAPH_NODE_CYCLE_TEXT_COLOR = "#f8f9fa";
 UndirectedCycleDetection.HIGHLIGHT_RADIUS = UndirectedCycleDetection.GRAPH_NODE_RADIUS;
-UndirectedCycleDetection.EDGE_COLOR = "#4a4e69";
-UndirectedCycleDetection.EDGE_VISITED_COLOR = "#66bb6a";
+UndirectedCycleDetection.ACTIVE_VERTEX_RING_COLOR = "#ff6d00";
+UndirectedCycleDetection.ACTIVE_VERTEX_RING_RADIUS_OFFSET = 5;
+UndirectedCycleDetection.ACTIVE_VERTEX_RING_LAYER = 5;
+UndirectedCycleDetection.GRAPH_NODE_LAYER = 6;
+UndirectedCycleDetection.TRAVERSAL_HIGHLIGHT_LAYER = 7;
+UndirectedCycleDetection.EDGE_COLOR = "#1d3557";
+UndirectedCycleDetection.EDGE_VISITED_COLOR = "#2b9348";
 UndirectedCycleDetection.EDGE_THICKNESS = 3;
 UndirectedCycleDetection.EDGE_ACTIVE_THICKNESS = 2;
 UndirectedCycleDetection.EDGE_TREE_THICKNESS = 6;
-UndirectedCycleDetection.EDGE_CYCLE_COLOR = "#ffa726";
+UndirectedCycleDetection.EDGE_CYCLE_COLOR = "#ffba08";
 UndirectedCycleDetection.EDGE_CYCLE_THICKNESS = 7;
 
 UndirectedCycleDetection.ARRAY_BASE_X = 720;
@@ -51,13 +56,13 @@ UndirectedCycleDetection.ARRAY_CELL_HEIGHT = 52;
 UndirectedCycleDetection.ARRAY_CELL_WIDTH = 60;
 UndirectedCycleDetection.ARRAY_CELL_INNER_HEIGHT = 42;
 UndirectedCycleDetection.ARRAY_HEADER_HEIGHT = UndirectedCycleDetection.ARRAY_CELL_INNER_HEIGHT;
-UndirectedCycleDetection.ARRAY_RECT_COLOR = "#f1f1f6";
-UndirectedCycleDetection.ARRAY_RECT_BORDER = "#2b2d42";
-UndirectedCycleDetection.ARRAY_RECT_HIGHLIGHT_BORDER = "#d62828";
+UndirectedCycleDetection.ARRAY_RECT_COLOR = "#f8f9fa";
+UndirectedCycleDetection.ARRAY_RECT_BORDER = "#1d3557";
+UndirectedCycleDetection.ARRAY_RECT_HIGHLIGHT_BORDER = "#ff6d00";
 UndirectedCycleDetection.ARRAY_RECT_BORDER_THICKNESS = 1;
 UndirectedCycleDetection.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
-UndirectedCycleDetection.ARRAY_TEXT_COLOR = "#2b2d42";
-UndirectedCycleDetection.ARRAY_VISITED_FILL = "#b3e5fc";
+UndirectedCycleDetection.ARRAY_TEXT_COLOR = "#1d3557";
+UndirectedCycleDetection.ARRAY_VISITED_FILL = "#d0f4de";
 UndirectedCycleDetection.ARRAY_HEADER_GAP = 20;
 UndirectedCycleDetection.BOTTOM_SECTION_GAP = 56;
 UndirectedCycleDetection.CODE_TOP_PADDING = 12;
@@ -65,7 +70,7 @@ UndirectedCycleDetection.CODE_TOP_PADDING = 12;
 UndirectedCycleDetection.CODE_START_X = 120;
 UndirectedCycleDetection.CODE_LINE_HEIGHT = 32;
 UndirectedCycleDetection.CODE_STANDARD_COLOR = "#1d3557";
-UndirectedCycleDetection.CODE_HIGHLIGHT_COLOR = "#e63946";
+UndirectedCycleDetection.CODE_HIGHLIGHT_COLOR = "#ef233c";
 UndirectedCycleDetection.CODE_FONT = "bold 22";
 
 UndirectedCycleDetection.RECURSION_AREA_CENTER_X = 660;
@@ -79,17 +84,17 @@ UndirectedCycleDetection.RECURSION_FRAME_SPACING = 10;
 UndirectedCycleDetection.RECURSION_FRAME_MIN_SPACING = 6;
 UndirectedCycleDetection.RECURSION_RECT_COLOR = "#f8f9fa";
 UndirectedCycleDetection.RECURSION_RECT_BORDER = "#1d3557";
-UndirectedCycleDetection.RECURSION_RECT_ACTIVE_BORDER = "#e63946";
+UndirectedCycleDetection.RECURSION_RECT_ACTIVE_BORDER = "#ef233c";
 UndirectedCycleDetection.RECURSION_TEXT_COLOR = "#1d3557";
 UndirectedCycleDetection.RECURSION_FONT = "bold 18";
 
-UndirectedCycleDetection.TITLE_COLOR = "#1d3557";
-UndirectedCycleDetection.START_INFO_COLOR = "#264653";
-UndirectedCycleDetection.HIGHLIGHT_COLOR = "#ff3b30";
-UndirectedCycleDetection.STATUS_COLOR_IDLE = "#264653";
-UndirectedCycleDetection.STATUS_COLOR_SEARCH = "#1d3557";
-UndirectedCycleDetection.STATUS_COLOR_FOUND = "#d84315";
-UndirectedCycleDetection.STATUS_COLOR_MISS = "#00695c";
+UndirectedCycleDetection.TITLE_COLOR = "#001219";
+UndirectedCycleDetection.START_INFO_COLOR = "#005f73";
+UndirectedCycleDetection.HIGHLIGHT_COLOR = "#ef233c";
+UndirectedCycleDetection.STATUS_COLOR_IDLE = "#005f73";
+UndirectedCycleDetection.STATUS_COLOR_SEARCH = "#001219";
+UndirectedCycleDetection.STATUS_COLOR_FOUND = "#ef233c";
+UndirectedCycleDetection.STATUS_COLOR_MISS = "#0a9396";
 UndirectedCycleDetection.STATUS_IDLE_TEXT = "Cycle Status: awaiting run";
 UndirectedCycleDetection.STATUS_SEARCHING_TEXT = "Cycle Status: exploring...";
 UndirectedCycleDetection.STATUS_NO_CYCLE_TEXT = "Cycle Status: no cycle found";
@@ -153,6 +158,7 @@ UndirectedCycleDetection.prototype.init = function (am, w, h) {
   this.edgeStates = {};
   this.edgeMeta = {};
   this.vertexIDs = [];
+  this.vertexRingIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
   this.vertexRowLabelIDs = [];
@@ -315,6 +321,7 @@ UndirectedCycleDetection.prototype.createTitleRow = function () {
 
 UndirectedCycleDetection.prototype.createGraphArea = function () {
   this.vertexIDs = new Array(this.vertexLabels.length);
+  this.vertexRingIDs = new Array(this.vertexLabels.length);
 
   for (var i = 0; i < this.vertexLabels.length; i++) {
     var id = this.nextIndex++;
@@ -332,6 +339,22 @@ UndirectedCycleDetection.prototype.createGraphArea = function () {
     this.cmd("SetForegroundColor", id, UndirectedCycleDetection.GRAPH_NODE_BORDER);
     this.cmd("SetTextColor", id, UndirectedCycleDetection.GRAPH_NODE_TEXT);
     this.cmd("SetHighlight", id, 0);
+    this.cmd("SetLayer", id, UndirectedCycleDetection.GRAPH_NODE_LAYER);
+
+    var ringID = this.nextIndex++;
+    this.vertexRingIDs[i] = ringID;
+    this.cmd(
+      "CreateHighlightCircle",
+      ringID,
+      UndirectedCycleDetection.ACTIVE_VERTEX_RING_COLOR,
+      pos.x,
+      pos.y,
+      UndirectedCycleDetection.GRAPH_NODE_RADIUS +
+        UndirectedCycleDetection.ACTIVE_VERTEX_RING_RADIUS_OFFSET
+    );
+    this.cmd("SetLayer", ringID, UndirectedCycleDetection.ACTIVE_VERTEX_RING_LAYER);
+    this.cmd("SetAlpha", ringID, 0);
+    this.cmd("SetHighlight", ringID, 0);
   }
 
   this.vertexHighlightStates = new Array(this.vertexLabels.length);
@@ -382,6 +405,11 @@ UndirectedCycleDetection.prototype.createGraphArea = function () {
     UndirectedCycleDetection.HIGHLIGHT_RADIUS
   );
   this.cmd("SetAlpha", this.highlightCircleID, 0);
+  this.cmd(
+    "SetLayer",
+    this.highlightCircleID,
+    UndirectedCycleDetection.TRAVERSAL_HIGHLIGHT_LAYER
+  );
 };
 
 UndirectedCycleDetection.prototype.createArrayArea = function () {
@@ -766,6 +794,10 @@ UndirectedCycleDetection.prototype.clearTraversalState = function () {
       UndirectedCycleDetection.GRAPH_NODE_TEXT
     );
     this.cmd("SetHighlight", this.vertexIDs[i], 0);
+    if (this.vertexRingIDs && this.vertexRingIDs[i] !== undefined) {
+      this.cmd("SetAlpha", this.vertexRingIDs[i], 0);
+      this.cmd("SetHighlight", this.vertexRingIDs[i], 0);
+    }
     this.vertexHighlightStates[i] = false;
   }
   this.resetEdgesToUndirected();
@@ -801,7 +833,19 @@ UndirectedCycleDetection.prototype.setVertexActiveHighlight = function (
   }
 
   this.vertexHighlightStates[index] = active;
-  this.cmd("SetHighlight", this.vertexIDs[index], active ? 1 : 0);
+
+  var ringID =
+    this.vertexRingIDs && index < this.vertexRingIDs.length
+      ? this.vertexRingIDs[index]
+      : null;
+  if (ringID !== null && ringID !== undefined) {
+    this.cmd("SetAlpha", ringID, active ? 1 : 0);
+    this.cmd("SetHighlight", ringID, active ? 1 : 0);
+  }
+
+  if (!active) {
+    this.cmd("SetHighlight", this.vertexIDs[index], 0);
+  }
 };
 
 UndirectedCycleDetection.prototype.edgeKey = function (u, v) {
