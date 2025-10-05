@@ -86,14 +86,14 @@ DirectedBFS.START_INFO_COLOR = "#264653";
 DirectedBFS.HIGHLIGHT_COLOR = "#ff3b30";
 
 DirectedBFS.LEVEL_COLORS = [
-  "#ff9f1c",
-  "#2ec4b6",
-  "#e71d36",
-  "#3a86ff",
-  "#8338ec",
-  "#fb5607",
-  "#118ab2",
-  "#ef476f"
+  "#c6e2ff",
+  "#d0f4de",
+  "#ffeacc",
+  "#e8d7ff",
+  "#f0f4c3",
+  "#c8f7f4",
+  "#dbe7ff",
+  "#f2e7fe"
 ];
 
 DirectedBFS.CODE_LINES = [
