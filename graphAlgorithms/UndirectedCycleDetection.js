@@ -159,6 +159,7 @@ UndirectedCycleDetection.prototype.init = function (am, w, h) {
   this.edgeMeta = {};
   this.vertexIDs = [];
   this.vertexRingIDs = [];
+  this.activeVertexStack = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
   this.vertexRowLabelIDs = [];
@@ -361,6 +362,7 @@ UndirectedCycleDetection.prototype.createGraphArea = function () {
   for (var v = 0; v < this.vertexHighlightStates.length; v++) {
     this.vertexHighlightStates[v] = false;
   }
+  this.activeVertexStack = [];
 
   for (var j = 0; j < this.edgePairs.length; j++) {
     var pair = this.edgePairs[j];
@@ -767,6 +769,7 @@ UndirectedCycleDetection.prototype.clearTraversalState = function () {
   this.visited = new Array(this.vertexLabels.length);
   this.parents = new Array(this.vertexLabels.length);
   this.vertexHighlightStates = new Array(this.vertexLabels.length);
+  this.activeVertexStack = [];
   for (var i = 0; i < this.vertexLabels.length; i++) {
     this.visited[i] = false;
     this.parents[i] = null;
@@ -815,7 +818,7 @@ UndirectedCycleDetection.prototype.setVertexActiveHighlight = function (
   active
 ) {
   if (!this.vertexIDs || index < 0 || index >= this.vertexIDs.length) {
-    return;
+    return false;
   }
 
   if (
@@ -826,13 +829,29 @@ UndirectedCycleDetection.prototype.setVertexActiveHighlight = function (
     for (var i = 0; i < this.vertexHighlightStates.length; i++) {
       this.vertexHighlightStates[i] = false;
     }
+    this.activeVertexStack = [];
   }
 
   if (this.vertexHighlightStates[index] === active) {
-    return;
+    return false;
   }
 
   this.vertexHighlightStates[index] = active;
+
+  if (!this.activeVertexStack) {
+    this.activeVertexStack = [];
+  }
+
+  if (active) {
+    this.activeVertexStack.push(index);
+  } else {
+    for (var pos = this.activeVertexStack.length - 1; pos >= 0; pos--) {
+      if (this.activeVertexStack[pos] === index) {
+        this.activeVertexStack.splice(pos, 1);
+        break;
+      }
+    }
+  }
 
   var ringID =
     this.vertexRingIDs && index < this.vertexRingIDs.length
@@ -846,6 +865,7 @@ UndirectedCycleDetection.prototype.setVertexActiveHighlight = function (
   if (!active) {
     this.cmd("SetHighlight", this.vertexIDs[index], 0);
   }
+  return true;
 };
 
 UndirectedCycleDetection.prototype.edgeKey = function (u, v) {
@@ -1743,7 +1763,9 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
     this.highlightCodeLine(10);
     this.cmd("Step");
   }
-  this.setVertexActiveHighlight(u, false);
+  if (this.setVertexActiveHighlight(u, false)) {
+    this.cmd("Step");
+  }
   this.popRecursionFrame();
   return foundCycle || this.cycleFound;
 };
