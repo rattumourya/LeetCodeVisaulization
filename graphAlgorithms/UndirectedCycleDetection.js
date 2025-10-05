@@ -98,10 +98,12 @@ UndirectedCycleDetection.CODE_LINES = [
   ["bool dfs(int u, int parent) {"],
   ["    visited[u] = true;"],
   ["    for (int v : adj[u]) {"],
-  ["        if (v == parent) continue;"],
-  ["        if (visited[v]) return true;"],
-  ["        parentArr[v] = u;"],
-  ["        if (dfs(v, u)) return true;"],
+  ["        if (!visited[v]) {"],
+  ["            parentArr[v] = u;"],
+  ["            if (dfs(v, u)) return true;"],
+  ["        } else if (v != parent) {"],
+  ["            return true;  // cycle detected"],
+  ["        }"],
   ["    }"],
   ["    return false;"],
   ["}"]
@@ -1554,58 +1556,69 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
       break;
     }
     var v = neighbors[i];
-    this.highlightCodeLine(3);
     this.setEdgeActive(u, v, true);
+    this.highlightCodeLine(3);
     this.cmd("Step");
-
-    if (parent !== null && v === parent) {
-      this.cmd("Step");
-      this.setEdgeActive(u, v, false);
-      this.highlightCodeLine(2);
-      this.cmd("Step");
-      continue;
-    }
-
     this.setVisitedCellHighlight(v, true);
     this.cmd("Step");
-
-    if (this.visited[v]) {
+    if (!this.visited[v]) {
       this.highlightCodeLine(4);
+      this.parents[v] = u;
+      this.cmd("SetText", this.parentRectIDs[v], this.vertexLabels[u]);
       this.cmd("Step");
-      this.setVisitedCellHighlight(v, false);
-      this.reportCycle(u, v);
-      break;
-    }
 
-    this.highlightCodeLine(5);
-    this.parents[v] = u;
-    this.cmd("SetText", this.parentRectIDs[v], this.vertexLabels[u]);
-    this.cmd("Step");
+      this.highlightCodeLine(5);
+      this.cmd("Step");
 
-    this.highlightCodeLine(6);
-    this.markEdgeAsTreeEdge(u, v);
-    this.cmd("Step");
-    this.animateHighlightTraversal(u, v);
+      this.markEdgeAsTreeEdge(u, v);
+      this.cmd("Step");
+      this.animateHighlightTraversal(u, v);
 
-    this.dfsVisit(v, u);
+      this.dfsVisit(v, u);
 
-    if (this.cycleFound) {
+      if (this.cycleFound) {
+        this.setVisitedCellHighlight(v, false);
+        this.setEdgeActive(u, v, false);
+        break;
+      }
+
+      this.animateHighlightTraversal(v, u);
       this.setVisitedCellHighlight(v, false);
       this.setEdgeActive(u, v, false);
-      break;
-    }
 
-    this.animateHighlightTraversal(v, u);
-    this.setVisitedCellHighlight(v, false);
-    this.highlightCodeLine(2);
-    this.cmd("Step");
-    this.setEdgeActive(u, v, false);
+      this.highlightCodeLine(8);
+      this.cmd("Step");
+
+      this.highlightCodeLine(2);
+      this.cmd("Step");
+    } else {
+      this.highlightCodeLine(6);
+      this.cmd("Step");
+
+      if (v !== parent) {
+        this.highlightCodeLine(7);
+        this.cmd("Step");
+        this.setVisitedCellHighlight(v, false);
+        this.setEdgeActive(u, v, false);
+        this.reportCycle(u, v);
+        break;
+      }
+
+      this.setVisitedCellHighlight(v, false);
+      this.setEdgeActive(u, v, false);
+
+      this.highlightCodeLine(8);
+      this.cmd("Step");
+
+      this.highlightCodeLine(2);
+      this.cmd("Step");
+    }
   }
 
   if (!this.cycleFound) {
-    this.highlightCodeLine(7);
+    this.highlightCodeLine(9);
     this.cmd("Step");
-    this.highlightCodeLine(8);
+    this.highlightCodeLine(10);
     this.cmd("Step");
   }
   this.popRecursionFrame();
