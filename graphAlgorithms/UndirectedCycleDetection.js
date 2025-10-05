@@ -839,19 +839,10 @@ UndirectedCycleDetection.prototype.setEdgeActive = function (u, v, active) {
   }
   var fromID = this.vertexIDs[orientation.from];
   var toID = this.vertexIDs[orientation.to];
-  var baseColor = UndirectedCycleDetection.EDGE_COLOR;
-  if (this.edgeStates[key]) {
-    if (this.edgeStates[key].cycle) {
-      baseColor = UndirectedCycleDetection.EDGE_CYCLE_COLOR;
-    } else if (this.edgeStates[key].tree) {
-      baseColor = UndirectedCycleDetection.EDGE_VISITED_COLOR;
-    }
-  }
-
   if (active) {
     this.setEdgeState(u, v, {
       highlight: true,
-      color: baseColor
+      color: UndirectedCycleDetection.HIGHLIGHT_COLOR
     });
     this.cmd(
       "SetEdgeThickness",
@@ -860,26 +851,24 @@ UndirectedCycleDetection.prototype.setEdgeActive = function (u, v, active) {
       UndirectedCycleDetection.EDGE_ACTIVE_THICKNESS
     );
   } else {
-    if (this.edgeStates[key] && this.edgeStates[key].cycle) {
-      this.setEdgeState(u, v, {
-        highlight: true,
-        color: UndirectedCycleDetection.EDGE_CYCLE_COLOR
-      });
-      this.cmd(
-        "SetEdgeThickness",
-        fromID,
-        toID,
-        UndirectedCycleDetection.EDGE_CYCLE_THICKNESS
-      );
-    } else {
-      this.setEdgeState(u, v, { highlight: false, color: baseColor });
-      this.cmd(
-        "SetEdgeThickness",
-        fromID,
-        toID,
-        UndirectedCycleDetection.EDGE_THICKNESS
-      );
+    var baseColor = UndirectedCycleDetection.EDGE_COLOR;
+    var highlight = false;
+    var thickness = UndirectedCycleDetection.EDGE_THICKNESS;
+    if (this.edgeStates[key]) {
+      if (this.edgeStates[key].cycle) {
+        baseColor = UndirectedCycleDetection.EDGE_CYCLE_COLOR;
+        highlight = true;
+        thickness = UndirectedCycleDetection.EDGE_CYCLE_THICKNESS;
+      } else if (this.edgeStates[key].tree) {
+        baseColor = UndirectedCycleDetection.EDGE_COLOR;
+      }
     }
+
+    this.setEdgeState(u, v, {
+      highlight: highlight,
+      color: baseColor
+    });
+    this.cmd("SetEdgeThickness", fromID, toID, thickness);
   }
 };
 
@@ -980,7 +969,7 @@ UndirectedCycleDetection.prototype.markEdgeAsTreeEdge = function (parent, child)
     "Connect",
     this.vertexIDs[parent],
     this.vertexIDs[child],
-    UndirectedCycleDetection.EDGE_VISITED_COLOR,
+    UndirectedCycleDetection.EDGE_COLOR,
     curve,
     1,
     ""
@@ -990,12 +979,6 @@ UndirectedCycleDetection.prototype.markEdgeAsTreeEdge = function (parent, child)
     this.vertexIDs[parent],
     this.vertexIDs[child],
     UndirectedCycleDetection.EDGE_TREE_THICKNESS
-  );
-  this.cmd(
-    "SetEdgeHighlight",
-    this.vertexIDs[parent],
-    this.vertexIDs[child],
-    1
   );
   this.edgeOrientation[key] = { from: parent, to: child };
   var state = this.edgeStates[key] || {};
