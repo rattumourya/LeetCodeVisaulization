@@ -158,6 +158,7 @@ UndirectedCycleDetection.prototype.init = function (am, w, h) {
   this.vertexRowLabelIDs = [];
   this.codeID = [];
   this.highlightCircleID = -1;
+  this.vertexHighlightStates = [];
   this.currentCodeLine = -1;
   this.startDisplayID = -1;
   this.statusDisplayID = -1;
@@ -331,6 +332,11 @@ UndirectedCycleDetection.prototype.createGraphArea = function () {
     this.cmd("SetForegroundColor", id, UndirectedCycleDetection.GRAPH_NODE_BORDER);
     this.cmd("SetTextColor", id, UndirectedCycleDetection.GRAPH_NODE_TEXT);
     this.cmd("SetHighlight", id, 0);
+  }
+
+  this.vertexHighlightStates = new Array(this.vertexLabels.length);
+  for (var v = 0; v < this.vertexHighlightStates.length; v++) {
+    this.vertexHighlightStates[v] = false;
   }
 
   for (var j = 0; j < this.edgePairs.length; j++) {
@@ -732,6 +738,7 @@ UndirectedCycleDetection.prototype.updateCycleStatus = function (text, color) {
 UndirectedCycleDetection.prototype.clearTraversalState = function () {
   this.visited = new Array(this.vertexLabels.length);
   this.parents = new Array(this.vertexLabels.length);
+  this.vertexHighlightStates = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.vertexLabels.length; i++) {
     this.visited[i] = false;
     this.parents[i] = null;
@@ -758,6 +765,8 @@ UndirectedCycleDetection.prototype.clearTraversalState = function () {
       this.vertexIDs[i],
       UndirectedCycleDetection.GRAPH_NODE_TEXT
     );
+    this.cmd("SetHighlight", this.vertexIDs[i], 0);
+    this.vertexHighlightStates[i] = false;
   }
   this.resetEdgesToUndirected();
   this.resetRecursionArea();
@@ -767,6 +776,32 @@ UndirectedCycleDetection.prototype.clearTraversalState = function () {
     UndirectedCycleDetection.STATUS_IDLE_TEXT,
     UndirectedCycleDetection.STATUS_COLOR_IDLE
   );
+};
+
+UndirectedCycleDetection.prototype.setVertexActiveHighlight = function (
+  index,
+  active
+) {
+  if (!this.vertexIDs || index < 0 || index >= this.vertexIDs.length) {
+    return;
+  }
+
+  if (
+    !this.vertexHighlightStates ||
+    this.vertexHighlightStates.length !== this.vertexIDs.length
+  ) {
+    this.vertexHighlightStates = new Array(this.vertexIDs.length);
+    for (var i = 0; i < this.vertexHighlightStates.length; i++) {
+      this.vertexHighlightStates[i] = false;
+    }
+  }
+
+  if (this.vertexHighlightStates[index] === active) {
+    return;
+  }
+
+  this.vertexHighlightStates[index] = active;
+  this.cmd("SetHighlight", this.vertexIDs[index], active ? 1 : 0);
 };
 
 UndirectedCycleDetection.prototype.edgeKey = function (u, v) {
@@ -1548,6 +1583,7 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
     return true;
   }
 
+  this.setVertexActiveHighlight(u, true);
   this.pushRecursionFrame(u, parent);
   this.cmd("Step");
 
@@ -1663,6 +1699,7 @@ UndirectedCycleDetection.prototype.dfsVisit = function (u, parent) {
     this.highlightCodeLine(10);
     this.cmd("Step");
   }
+  this.setVertexActiveHighlight(u, false);
   this.popRecursionFrame();
   return foundCycle || this.cycleFound;
 };
