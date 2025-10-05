@@ -42,7 +42,7 @@ UndirectedBFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 UndirectedBFS.MIN_PARALLEL_SEPARATION = 0.42;
 UndirectedBFS.PARALLEL_EDGE_GAP = 0.18;
 UndirectedBFS.FRONTIER_BLINK_BRIGHT_ALPHA = 1;
-UndirectedBFS.FRONTIER_BLINK_DIM_ALPHA = 0.55;
+UndirectedBFS.FRONTIER_BLINK_DIM_ALPHA = 0.7;
 
 UndirectedBFS.ARRAY_BASE_X = 720;
 UndirectedBFS.ARRAY_COLUMN_SPACING = 80;
@@ -167,6 +167,7 @@ UndirectedBFS.prototype.init = function (am, w, h) {
   this.edgeCurveOverrides = {};
   this.vertexLevelColors = [];
   this.vertexEdgeColors = [];
+  this.vertexHighlightColors = [];
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
@@ -473,6 +474,7 @@ UndirectedBFS.prototype.createGraphArea = function () {
   this.vertexIDs = new Array(this.vertexLabels.length);
   this.vertexLevelColors = new Array(this.vertexLabels.length);
   this.vertexEdgeColors = new Array(this.vertexLabels.length);
+  this.vertexHighlightColors = new Array(this.vertexLabels.length);
   if (!this.edgePairs) {
     this.edgePairs = [];
   }
@@ -495,6 +497,7 @@ UndirectedBFS.prototype.createGraphArea = function () {
     this.cmd("SetHighlight", id, 0);
     this.vertexLevelColors[i] = null;
     this.vertexEdgeColors[i] = null;
+    this.vertexHighlightColors[i] = null;
   }
 
   for (var e = 0; e < this.edgePairs.length; e++) {
@@ -1053,6 +1056,12 @@ UndirectedBFS.prototype.clearTraversalState = function () {
     if (this.vertexEdgeColors && i < this.vertexEdgeColors.length) {
       this.vertexEdgeColors[i] = null;
     }
+    if (
+      this.vertexHighlightColors &&
+      i < this.vertexHighlightColors.length
+    ) {
+      this.vertexHighlightColors[i] = null;
+    }
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], UndirectedBFS.ARRAY_RECT_COLOR);
     this.cmd(
@@ -1457,6 +1466,13 @@ UndirectedBFS.prototype.applyVertexLevelColor = function (vertexIndex, depth) {
   if (this.vertexEdgeColors && vertexIndex < this.vertexEdgeColors.length) {
     this.vertexEdgeColors[vertexIndex] = derivedEdgeColor;
   }
+  var highlightColor = this.deriveHighlightColor(derivedEdgeColor || color);
+  if (
+    this.vertexHighlightColors &&
+    vertexIndex < this.vertexHighlightColors.length
+  ) {
+    this.vertexHighlightColors[vertexIndex] = highlightColor;
+  }
   this.cmd(
     "SetBackgroundColor",
     this.vertexIDs[vertexIndex],
@@ -1490,9 +1506,17 @@ UndirectedBFS.prototype.getVertexEdgeColor = function (vertexIndex) {
 };
 
 UndirectedBFS.prototype.getVertexHighlightColor = function (vertexIndex) {
+  if (
+    this.vertexHighlightColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexHighlightColors.length &&
+    typeof this.vertexHighlightColors[vertexIndex] === "string"
+  ) {
+    return this.vertexHighlightColors[vertexIndex];
+  }
   var edgeColor = this.getVertexEdgeColor(vertexIndex);
   if (typeof edgeColor === "string" && edgeColor.length > 0) {
-    return edgeColor;
+    return this.deriveHighlightColor(edgeColor);
   }
   if (
     this.vertexLevelColors &&
@@ -1500,7 +1524,7 @@ UndirectedBFS.prototype.getVertexHighlightColor = function (vertexIndex) {
     vertexIndex < this.vertexLevelColors.length &&
     typeof this.vertexLevelColors[vertexIndex] === "string"
   ) {
-    return this.vertexLevelColors[vertexIndex];
+    return this.deriveHighlightColor(this.vertexLevelColors[vertexIndex]);
   }
   return UndirectedBFS.HIGHLIGHT_COLOR;
 };
@@ -1516,6 +1540,21 @@ UndirectedBFS.prototype.deriveEdgeColor = function (nodeColor) {
   var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
   hsl.s = Math.min(1, hsl.s + 0.2);
   hsl.l = Math.max(0, Math.min(1, hsl.l - 0.18));
+  var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+  return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
+};
+
+UndirectedBFS.prototype.deriveHighlightColor = function (baseColor) {
+  if (typeof baseColor !== "string") {
+    return UndirectedBFS.HIGHLIGHT_COLOR;
+  }
+  var rgb = this.parseHexColor(baseColor);
+  if (!rgb) {
+    return baseColor;
+  }
+  var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.s = Math.min(1, hsl.s + 0.25);
+  hsl.l = Math.max(0, Math.min(1, hsl.l * 0.6));
   var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
   return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
 };
