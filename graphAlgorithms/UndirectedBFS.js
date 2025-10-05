@@ -1837,7 +1837,10 @@ UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
     for (var i = 0; i < neighbors.length; i++) {
       var v = neighbors[i];
 
-      this.highlightEdge(u, v, true);
+      var shouldHighlightEdge = !this.visited[v];
+      if (shouldHighlightEdge) {
+        this.highlightEdge(u, v, true);
+      }
       this.cmd("Step");
 
       this.highlightCodeLine(9);
