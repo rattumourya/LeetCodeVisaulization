@@ -42,7 +42,7 @@ BipartiteCheck.EDGE_THICKNESS = 3;
 BipartiteCheck.EDGE_ACTIVE_THICKNESS = 2;
 BipartiteCheck.EDGE_TREE_THICKNESS = 6;
 
-BipartiteCheck.ARRAY_BASE_X = 640;
+BipartiteCheck.ARRAY_BASE_X = 700;
 BipartiteCheck.ARRAY_COLUMN_SPACING = 90;
 BipartiteCheck.ARRAY_TOP_Y = BipartiteCheck.ROW2_START_Y + 90;
 BipartiteCheck.ARRAY_CELL_HEIGHT = 52;
