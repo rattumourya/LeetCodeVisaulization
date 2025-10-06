@@ -103,6 +103,41 @@ TopoSortDFS.HIGHLIGHT_COLOR = "#ff3b30";
 TopoSortDFS.DEFAULT_STATUS_TEXT =
   "Vertices are added to the order when recursion unwinds.";
 
+TopoSortDFS.SAMPLE_GRAPH = (function () {
+  var topY = TopoSortDFS.ROW2_START_Y + 110;
+  var middleY = topY + 170;
+  var bottomY = middleY + 170;
+  var leftX = TopoSortDFS.GRAPH_AREA_CENTER_X - 180;
+  var centerX = TopoSortDFS.GRAPH_AREA_CENTER_X;
+  var rightX = TopoSortDFS.GRAPH_AREA_CENTER_X + 180;
+
+  return {
+    vertexCount: 9,
+    positions: [
+      { x: leftX, y: topY },
+      { x: centerX, y: topY },
+      { x: rightX, y: topY },
+      { x: leftX, y: middleY },
+      { x: centerX, y: middleY },
+      { x: rightX, y: middleY },
+      { x: leftX, y: bottomY },
+      { x: centerX, y: bottomY },
+      { x: rightX, y: bottomY }
+    ],
+    edges: [
+      { from: 0, to: 3 },
+      { from: 0, to: 4 },
+      { from: 1, to: 4 },
+      { from: 1, to: 5 },
+      { from: 2, to: 5 },
+      { from: 3, to: 6 },
+      { from: 3, to: 7 },
+      { from: 4, to: 7 },
+      { from: 5, to: 8 }
+    ]
+  };
+})();
+
 TopoSortDFS.CODE_LINES = [
   ["private void dfs(int u) {"],
   ["    visited[u] = true;"],
@@ -222,9 +257,9 @@ TopoSortDFS.prototype.setup = function () {
   this.edgeMeta = {};
   this.edgeCurveOverrides = {};
 
-  var vertexCount = 10;
+  var vertexCount = TopoSortDFS.SAMPLE_GRAPH.vertexCount;
   this.vertexLabels = this.createVertexLabels(vertexCount);
-  this.generateRandomGraph(vertexCount);
+  this.buildSampleGraph(vertexCount);
 
   this.createTitleRow();
   this.createGraphArea();
@@ -636,6 +671,43 @@ TopoSortDFS.prototype.generateRandomGraph = function (vertexCount) {
 
   for (var list = 0; list < this.adjacencyList.length; list++) {
     shuffle(this.adjacencyList[list]);
+  }
+};
+
+TopoSortDFS.prototype.buildSampleGraph = function (vertexCount) {
+  var sample = TopoSortDFS.SAMPLE_GRAPH;
+  if (sample.positions && sample.positions.length >= vertexCount) {
+    this.vertexPositions = sample.positions.slice(0, vertexCount);
+  } else {
+    this.vertexPositions = this.computeTemplateLayout(vertexCount);
+  }
+  this.adjacencyList = new Array(vertexCount);
+  this.edgeCurveOverrides = {};
+
+  for (var i = 0; i < vertexCount; i++) {
+    this.adjacencyList[i] = [];
+  }
+
+  var edges = [];
+  for (var e = 0; e < sample.edges.length; e++) {
+    var edge = sample.edges[e];
+    if (edge.from >= vertexCount || edge.to >= vertexCount) {
+      continue;
+    }
+    edges.push({
+      from: edge.from,
+      to: edge.to,
+      curve: 0
+    });
+  }
+
+  this.ensureEdgeSeparation(edges);
+
+  for (var idx = 0; idx < edges.length; idx++) {
+    var finalEdge = edges[idx];
+    this.adjacencyList[finalEdge.from].push(finalEdge.to);
+    this.edgeCurveOverrides[this.edgeKey(finalEdge.from, finalEdge.to)] =
+      finalEdge.curve;
   }
 };
 
