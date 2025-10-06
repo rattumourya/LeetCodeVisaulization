@@ -1251,3 +1251,22 @@ DirectedBFS.prototype.runTraversal = function (startIndex) {
   return this.commands;
 };
 
+DirectedBFS.prototype.disableUI = function () {
+  for (var i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = true;
+  }
+};
+
+DirectedBFS.prototype.enableUI = function () {
+  for (var i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = false;
+  }
+};
+
+var currentAlg;
+
+function init() {
+  var animManag = initCanvas();
+  currentAlg = new DirectedBFS(animManag, canvas.width, canvas.height);
+}
+
