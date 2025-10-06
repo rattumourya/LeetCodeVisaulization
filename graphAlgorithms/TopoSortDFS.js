@@ -142,26 +142,31 @@ TopoSortDFS.SAMPLE_GRAPH = (function () {
 })();
 
 TopoSortDFS.CODE_LINES = [
-  ["private void dfs(int u) {"],
-  ["    visited[u] = true;"],
-  ["    for (int v : adj[u]) {"],
-  ["        if (!visited[v]) {"],
-  ["            dfs(v);"],
+  ["private void dfs(int v, boolean[] visited, Stack<Integer> stack) {"],
+  ["    visited[v] = true;"],
+  ["    for (int neighbor : adj[v]) {"],
+  ["        if (!visited[neighbor]) {"],
+  ["            dfs(neighbor, visited, stack);"],
   ["        }"],
   ["    }"],
-  ["    order.add(u);"],
+  ["    stack.push(v);"],
   ["}"],
-  ["public List<Integer> topoSort(int n) {"],
-  ["    for (int u = 0; u < n; u++) {"],
-  ["        if (!visited[u]) {"],
-  ["            dfs(u);"],
+  ["// Return topological sort as a List<Integer>"],
+  ["List<Integer> topologicalSort() {"],
+  ["    Stack<Integer> stack = new Stack<>();"],
+  ["    boolean[] visited = new boolean[V];"],
+  ["    for (int i = 0; i < V; i++) {"],
+  ["        if (!visited[i]) {"],
+  ["            dfs(i, visited, stack);"],
   ["        }"],
   ["    }"],
-  ["    Collections.reverse(order);"],
-  ["    return order;"],
+  ["    List<Integer> topoOrder = new ArrayList<>();"],
+  ["    while (!stack.isEmpty()) {"],
+  ["        topoOrder.add(stack.pop());"],
+  ["    }"],
+  ["    return topoOrder;"],
   ["}"]
 ];
-
 TopoSortDFS.TEMPLATE_ALLOWED = [
   [false, true, true, false, true, false, false, true, false, false],
   [false, false, true, false, true, true, false, true, false, false],
@@ -205,8 +210,10 @@ TopoSortDFS.prototype.init = function (am, w, h) {
   this.visitedRectIDs = [];
   this.finishRectIDs = [];
   this.vertexRowLabelIDs = [];
+  this.stackCellIDs = [];
   this.orderCellIDs = [];
   this.orderLabelIDs = [];
+  this.stack = [];
   this.codeID = [];
   this.highlightCircleID = -1;
   this.currentCodeLine = -1;
@@ -223,6 +230,7 @@ TopoSortDFS.prototype.init = function (am, w, h) {
   this.finishOrder = [];
   this.topoOrder = [];
   this.finishCounter = 0;
+  this.stackPointer = 0;
   this.nextOrderIndex = 0;
 
   this.graphMode = TopoSortDFS.GRAPH_MODE_SAMPLE;
@@ -933,7 +941,7 @@ TopoSortDFS.prototype.createGraphArea = function () {
 
 TopoSortDFS.prototype.createArrayArea = function () {
   var visitedHeaderID = this.nextIndex++;
-  var finishHeaderID = this.nextIndex++;
+  var stackHeaderID = this.nextIndex++;
   var headerY =
     TopoSortDFS.ARRAY_TOP_Y - TopoSortDFS.ARRAY_CELL_HEIGHT / 2 - TopoSortDFS.ARRAY_HEADER_GAP;
 
@@ -949,13 +957,13 @@ TopoSortDFS.prototype.createArrayArea = function () {
 
   this.cmd(
     "CreateLabel",
-    finishHeaderID,
-    "Finish",
+    stackHeaderID,
+    "Push #",
     TopoSortDFS.ARRAY_BASE_X + TopoSortDFS.ARRAY_COLUMN_SPACING,
     headerY
   );
-  this.cmd("SetTextStyle", finishHeaderID, "bold 20");
-  this.cmd("SetForegroundColor", finishHeaderID, TopoSortDFS.CODE_STANDARD_COLOR);
+  this.cmd("SetTextStyle", stackHeaderID, "bold 20");
+  this.cmd("SetForegroundColor", stackHeaderID, TopoSortDFS.CODE_STANDARD_COLOR);
 
   this.visitedRectIDs = new Array(this.vertexLabels.length);
   this.finishRectIDs = new Array(this.vertexLabels.length);
@@ -1028,28 +1036,29 @@ TopoSortDFS.prototype.createArrayArea = function () {
 
 TopoSortDFS.prototype.createOrderArea = function () {
   var count = this.vertexLabels.length;
+  this.stackCellIDs = new Array(count);
   this.orderCellIDs = new Array(count);
   this.orderLabelIDs = [];
 
-  var labelID = this.nextIndex++;
-  this.orderLabelIDs.push(labelID);
-  var labelY = this.bottomSectionTopY;
+  var stackLabelID = this.nextIndex++;
+  this.orderLabelIDs.push(stackLabelID);
+  var stackLabelY = this.bottomSectionTopY;
   this.cmd(
     "CreateLabel",
-    labelID,
-    "Topological Order",
+    stackLabelID,
+    "Stack (top on right)",
     TopoSortDFS.ORDER_ROW_CENTER_X,
-    labelY
+    stackLabelY
   );
-  this.cmd("SetTextStyle", labelID, "bold 22");
-  this.cmd("SetForegroundColor", labelID, TopoSortDFS.CODE_STANDARD_COLOR);
+  this.cmd("SetTextStyle", stackLabelID, "bold 22");
+  this.cmd("SetForegroundColor", stackLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
 
-  var rowY =
-    labelY +
+  var stackRowY =
+    stackLabelY +
     TopoSortDFS.ORDER_LABEL_GAP +
     TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN;
   if (count <= 0) {
-    this.bottomSectionTopY = rowY + TopoSortDFS.BOTTOM_SECTION_GAP;
+    this.bottomSectionTopY = stackRowY + TopoSortDFS.BOTTOM_SECTION_GAP;
     return;
   }
 
@@ -1060,26 +1069,71 @@ TopoSortDFS.prototype.createOrderArea = function () {
     TopoSortDFS.ORDER_ROW_CENTER_X - totalWidth / 2 + TopoSortDFS.ORDER_CELL_WIDTH / 2;
 
   for (var i = 0; i < count; i++) {
-    var cellX =
+    var stackCellX =
       startX + i * (TopoSortDFS.ORDER_CELL_WIDTH + TopoSortDFS.ORDER_CELL_SPACING);
-    var cellID = this.nextIndex++;
-    this.orderCellIDs[i] = cellID;
+    var stackCellID = this.nextIndex++;
+    this.stackCellIDs[i] = stackCellID;
     this.cmd(
       "CreateRectangle",
-      cellID,
+      stackCellID,
       "",
       TopoSortDFS.ORDER_CELL_WIDTH,
       TopoSortDFS.ORDER_CELL_HEIGHT,
-      cellX,
-      rowY
+      stackCellX,
+      stackRowY
     );
-    this.cmd("SetForegroundColor", cellID, TopoSortDFS.ORDER_RECT_BORDER);
-    this.cmd("SetBackgroundColor", cellID, TopoSortDFS.ORDER_RECT_COLOR);
-    this.cmd("SetTextColor", cellID, TopoSortDFS.ORDER_RECT_TEXT_COLOR);
+    this.cmd("SetForegroundColor", stackCellID, TopoSortDFS.ORDER_RECT_BORDER);
+    this.cmd("SetBackgroundColor", stackCellID, TopoSortDFS.ORDER_RECT_COLOR);
+    this.cmd("SetTextColor", stackCellID, TopoSortDFS.ORDER_RECT_TEXT_COLOR);
+  }
+
+  var orderLabelID = this.nextIndex++;
+  this.orderLabelIDs.push(orderLabelID);
+  var orderLabelY =
+    stackRowY +
+    TopoSortDFS.ORDER_CELL_HEIGHT / 2 +
+    TopoSortDFS.ORDER_LABEL_GAP +
+    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN;
+  this.cmd(
+    "CreateLabel",
+    orderLabelID,
+    "Topological Order",
+    TopoSortDFS.ORDER_ROW_CENTER_X,
+    orderLabelY
+  );
+  this.cmd("SetTextStyle", orderLabelID, "bold 22");
+  this.cmd("SetForegroundColor", orderLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
+
+  var orderRowY =
+    orderLabelY +
+    TopoSortDFS.ORDER_LABEL_GAP +
+    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN;
+
+  for (var j = 0; j < count; j++) {
+    var orderCellX =
+      startX + j * (TopoSortDFS.ORDER_CELL_WIDTH + TopoSortDFS.ORDER_CELL_SPACING);
+    var orderCellID = this.nextIndex++;
+    this.orderCellIDs[j] = orderCellID;
+    this.cmd(
+      "CreateRectangle",
+      orderCellID,
+      "",
+      TopoSortDFS.ORDER_CELL_WIDTH,
+      TopoSortDFS.ORDER_CELL_HEIGHT,
+      orderCellX,
+      orderRowY
+    );
+    this.cmd("SetForegroundColor", orderCellID, TopoSortDFS.ORDER_RECT_BORDER);
+    this.cmd("SetBackgroundColor", orderCellID, TopoSortDFS.ORDER_RECT_COLOR);
+    this.cmd("SetTextColor", orderCellID, TopoSortDFS.ORDER_RECT_TEXT_COLOR);
   }
 
   this.bottomSectionTopY =
-    rowY + TopoSortDFS.ORDER_CELL_HEIGHT / 2 + TopoSortDFS.BOTTOM_SECTION_GAP;
+    orderRowY + TopoSortDFS.ORDER_CELL_HEIGHT / 2 + TopoSortDFS.BOTTOM_SECTION_GAP;
+  this.stack = [];
+  this.stackPointer = 0;
+  this.topoOrder = [];
+  this.nextOrderIndex = 0;
 };
 
 TopoSortDFS.prototype.setVisitedCellHighlight = function (index, active) {
@@ -1334,7 +1388,9 @@ TopoSortDFS.prototype.clearTraversalState = function () {
   this.finishOrder = new Array(count);
   this.topoOrder = [];
   this.finishCounter = 0;
-  this.nextOrderIndex = count - 1;
+  this.stack = [];
+  this.stackPointer = 0;
+  this.nextOrderIndex = 0;
 
   for (var i = 0; i < count; i++) {
     this.visited[i] = false;
@@ -1394,6 +1450,13 @@ TopoSortDFS.prototype.clearTraversalState = function () {
     }
   }
 
+  for (var k = 0; k < this.stackCellIDs.length; k++) {
+    var stackCellID = this.stackCellIDs[k];
+    this.cmd("SetText", stackCellID, "");
+    this.cmd("SetBackgroundColor", stackCellID, TopoSortDFS.ORDER_RECT_COLOR);
+    this.cmd("SetForegroundColor", stackCellID, TopoSortDFS.ORDER_RECT_BORDER);
+  }
+
   for (var j = 0; j < this.orderCellIDs.length; j++) {
     var cellID = this.orderCellIDs[j];
     this.cmd("SetText", cellID, "");
@@ -1448,28 +1511,100 @@ TopoSortDFS.prototype.recordFinish = function (vertex) {
     );
   }
 
+  this.pushToStack(vertex, label);
+};
+
+TopoSortDFS.prototype.pushToStack = function (vertex, label) {
+  if (
+    !this.stackCellIDs ||
+    this.stackPointer < 0 ||
+    this.stackPointer >= this.stackCellIDs.length
+  ) {
+    return;
+  }
+
+  var cellID = this.stackCellIDs[this.stackPointer];
+  var displayLabel = label != null ? label : this.vertexLabels[vertex];
+  if (this.statusDisplayID >= 0) {
+    this.cmd(
+      "SetText",
+      this.statusDisplayID,
+      "Push " + displayLabel + " onto stack"
+    );
+  }
+  this.stack[this.stackPointer] = vertex;
+  this.cmd("SetText", cellID, displayLabel);
+  this.cmd(
+    "SetBackgroundColor",
+    cellID,
+    TopoSortDFS.ORDER_RECT_HIGHLIGHT_FILL
+  );
+  this.cmd(
+    "SetForegroundColor",
+    cellID,
+    TopoSortDFS.ORDER_RECT_HIGHLIGHT_BORDER
+  );
+  this.cmd("Step");
+  this.cmd("SetForegroundColor", cellID, TopoSortDFS.ORDER_RECT_BORDER);
+  this.stackPointer++;
+};
+
+TopoSortDFS.prototype.popStackToOrder = function () {
+  if (
+    !this.stackCellIDs ||
+    !this.orderCellIDs ||
+    this.stackPointer <= 0
+  ) {
+    return null;
+  }
+
+  this.stackPointer--;
+  var vertex = this.stack[this.stackPointer];
+  if (vertex === undefined || vertex === null) {
+    this.stack[this.stackPointer] = undefined;
+    return null;
+  }
+  var label = this.vertexLabels[vertex];
+  var stackCellID = this.stackCellIDs[this.stackPointer];
+
+  this.cmd(
+    "SetForegroundColor",
+    stackCellID,
+    TopoSortDFS.ORDER_RECT_HIGHLIGHT_BORDER
+  );
+  this.cmd(
+    "SetBackgroundColor",
+    stackCellID,
+    TopoSortDFS.ORDER_RECT_HIGHLIGHT_FILL
+  );
+  this.cmd("Step");
+
+  this.cmd("SetText", stackCellID, "");
+  this.cmd("SetBackgroundColor", stackCellID, TopoSortDFS.ORDER_RECT_COLOR);
+  this.cmd("SetForegroundColor", stackCellID, TopoSortDFS.ORDER_RECT_BORDER);
+  this.stack[this.stackPointer] = undefined;
+
   if (this.nextOrderIndex >= 0 && this.nextOrderIndex < this.orderCellIDs.length) {
-    var cellID = this.orderCellIDs[this.nextOrderIndex];
+    var orderCellID = this.orderCellIDs[this.nextOrderIndex];
     this.topoOrder[this.nextOrderIndex] = vertex;
-    this.cmd("SetText", cellID, label);
+    this.cmd("SetText", orderCellID, label);
     this.cmd(
       "SetBackgroundColor",
-      cellID,
+      orderCellID,
       TopoSortDFS.ORDER_RECT_HIGHLIGHT_FILL
     );
     this.cmd(
       "SetForegroundColor",
-      cellID,
+      orderCellID,
       TopoSortDFS.ORDER_RECT_HIGHLIGHT_BORDER
     );
     this.cmd("Step");
-    this.cmd(
-      "SetForegroundColor",
-      cellID,
-      TopoSortDFS.ORDER_RECT_BORDER
-    );
-    this.nextOrderIndex--;
+    this.cmd("SetForegroundColor", orderCellID, TopoSortDFS.ORDER_RECT_BORDER);
+    this.nextOrderIndex++;
   }
+
+  this.stack.length = this.stackPointer;
+  return vertex;
 };
 
 TopoSortDFS.prototype.clearEdgeHighlights = function () {
@@ -1669,15 +1804,21 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
   this.clearTraversalState();
   this.disableUI();
 
-  this.highlightCodeLine(9);
+  this.highlightCodeLine(10);
+  this.cmd("Step");
+
+  this.highlightCodeLine(11);
+  this.cmd("Step");
+
+  this.highlightCodeLine(12);
   this.cmd("Step");
 
   var count = this.vertexLabels.length;
   for (var u = 0; u < count; u++) {
-    this.highlightCodeLine(10);
+    this.highlightCodeLine(13);
     this.cmd("Step");
 
-    this.highlightCodeLine(11);
+    this.highlightCodeLine(14);
     this.cmd("Step");
 
     if (!this.visited[u]) {
@@ -1691,22 +1832,59 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
       this.cmd("Move", this.highlightCircleID, pos.x, pos.y);
       this.cmd("Step");
 
-      this.highlightCodeLine(12);
+      this.highlightCodeLine(15);
       this.cmd("Step");
 
       this.dfsVisit(u);
 
       this.cmd("SetAlpha", this.highlightCircleID, 0);
     }
+
+    this.highlightCodeLine(16);
+    this.cmd("Step");
   }
 
-  this.highlightCodeLine(14);
+  this.highlightCodeLine(17);
   this.cmd("Step");
 
-  this.highlightCodeLine(15);
+  this.highlightCodeLine(18);
   this.cmd("Step");
 
-  this.highlightCodeLine(16);
+  this.highlightCodeLine(19);
+  this.cmd("Step");
+
+  if (this.stackPointer > 0 && this.statusDisplayID >= 0) {
+    this.cmd(
+      "SetText",
+      this.statusDisplayID,
+      "Pop vertices from stack to build order"
+    );
+  }
+
+  while (this.stackPointer > 0) {
+    this.highlightCodeLine(20);
+    this.cmd("Step");
+
+    var popped = this.popStackToOrder();
+    if (popped !== null && this.statusDisplayID >= 0) {
+      this.cmd(
+        "SetText",
+        this.statusDisplayID,
+        "Pop " + this.vertexLabels[popped] + " to output"
+      );
+    }
+
+    this.highlightCodeLine(21);
+    this.cmd("Step");
+
+    this.highlightCodeLine(19);
+    this.cmd("Step");
+  }
+
+  this.highlightCodeLine(22);
+  this.cmd("Step");
+
+  this.highlightCodeLine(23);
   this.cmd("Step");
 
   this.highlightCodeLine(-1);
