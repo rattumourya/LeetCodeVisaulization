@@ -688,6 +688,21 @@ TopoSortDFS.prototype.ensureEdgeSeparation = function (edgeList) {
       return a.toPos.x - b.toPos.x;
     });
 
+    var offsetPattern = [];
+    if (bucketEdges.length % 2 === 1) {
+      offsetPattern.push(0);
+      for (var step = 1; step <= (bucketEdges.length - 1) / 2; step++) {
+        offsetPattern.unshift(-step);
+        offsetPattern.push(step);
+      }
+    } else {
+      for (var half = 0; half < bucketEdges.length / 2; half++) {
+        var offset = half + 0.5;
+        offsetPattern.unshift(-offset);
+        offsetPattern.push(offset);
+      }
+    }
+
     for (var idx = 0; idx < bucketEdges.length; idx++) {
       var entry = bucketEdges[idx];
       var dx = entry.toPos.x - entry.fromPos.x;
@@ -696,10 +711,14 @@ TopoSortDFS.prototype.ensureEdgeSeparation = function (edgeList) {
         sign =
           entry.fromPos.x <= TopoSortDFS.GRAPH_AREA_CENTER_X ? 1 : -1;
       }
+
+      var offsetValue = offsetPattern[idx];
+      var direction = offsetValue >= 0 ? 1 : -1;
       var magnitude =
         TopoSortDFS.CURVE_BASE_MAGNITUDE +
-        idx * TopoSortDFS.CURVE_INCREMENT;
-      entry.edge.curve = sign * magnitude;
+        Math.abs(offsetValue) * TopoSortDFS.CURVE_INCREMENT;
+
+      entry.edge.curve = sign * direction * magnitude;
     }
   }
 };
