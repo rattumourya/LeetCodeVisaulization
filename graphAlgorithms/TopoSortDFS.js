@@ -103,6 +103,10 @@ TopoSortDFS.HIGHLIGHT_COLOR = "#ff3b30";
 TopoSortDFS.DEFAULT_STATUS_TEXT =
   "Vertices are added to the order when recursion unwinds.";
 
+TopoSortDFS.GRAPH_MODE_SAMPLE = "sample";
+TopoSortDFS.GRAPH_MODE_RANDOM = "random";
+TopoSortDFS.RANDOM_VERTEX_COUNT = 7;
+
 TopoSortDFS.SAMPLE_GRAPH = (function () {
   var topY = TopoSortDFS.ROW2_START_Y + 110;
   var middleY = topY + 180;
@@ -221,6 +225,8 @@ TopoSortDFS.prototype.init = function (am, w, h) {
   this.finishCounter = 0;
   this.nextOrderIndex = 0;
 
+  this.graphMode = TopoSortDFS.GRAPH_MODE_SAMPLE;
+
   this.implementAction(this.reset.bind(this), 0);
 };
 
@@ -232,7 +238,7 @@ TopoSortDFS.prototype.addControls = function () {
   this.runButton.onclick = this.runCallback.bind(this);
 
   this.newGraphButton = addControlToAlgorithmBar("Button", "New DAG");
-  this.newGraphButton.onclick = this.resetCallback.bind(this);
+  this.newGraphButton.onclick = this.newGraphCallback.bind(this);
 
   this.controls.push(this.runButton, this.newGraphButton);
 };
@@ -256,9 +262,18 @@ TopoSortDFS.prototype.setup = function () {
   this.edgeMeta = {};
   this.edgeCurveOverrides = {};
 
-  var vertexCount = TopoSortDFS.SAMPLE_GRAPH.vertexCount;
+  var vertexCount;
+  if (this.graphMode === TopoSortDFS.GRAPH_MODE_RANDOM) {
+    vertexCount = TopoSortDFS.RANDOM_VERTEX_COUNT;
+  } else {
+    vertexCount = TopoSortDFS.SAMPLE_GRAPH.vertexCount;
+  }
   this.vertexLabels = this.createVertexLabels(vertexCount);
-  this.buildSampleGraph(vertexCount);
+  if (this.graphMode === TopoSortDFS.GRAPH_MODE_RANDOM) {
+    this.generateRandomGraph(vertexCount);
+  } else {
+    this.buildSampleGraph(vertexCount);
+  }
 
   this.createTitleRow();
   this.createGraphArea();
@@ -275,6 +290,11 @@ TopoSortDFS.prototype.setup = function () {
 };
 
 TopoSortDFS.prototype.resetCallback = function () {
+  this.implementAction(this.reset.bind(this), 0);
+};
+
+TopoSortDFS.prototype.newGraphCallback = function () {
+  this.graphMode = TopoSortDFS.GRAPH_MODE_RANDOM;
   this.implementAction(this.reset.bind(this), 0);
 };
 
