@@ -1110,8 +1110,14 @@ BipartiteCheck.prototype.generateRandomGraph = function (vertexCount) {
     if (u === v) {
       return false;
     }
+    if (!allowed[u] || !allowed[v]) {
+      return false;
+    }
     var a = Math.min(u, v);
     var b = Math.max(u, v);
+    if (!allowed[a] || !allowed[a][b]) {
+      return false;
+    }
     var key = a + "-" + b;
     if (existing[key]) {
       return false;
@@ -1129,63 +1135,84 @@ BipartiteCheck.prototype.generateRandomGraph = function (vertexCount) {
     return true;
   };
 
-  for (var v = 1; v < vertexCount; v++) {
-    var neighbors = [];
-    for (var u = 0; u < vertexCount; u++) {
-      if (allowed[v] && allowed[v][u]) {
-        neighbors.push(u);
-      }
-    }
-    if (neighbors.length > 0) {
-      for (var t = neighbors.length - 1; t >= 0; t--) {
-        var swap = Math.floor(Math.random() * (t + 1));
-        var candidate = neighbors[swap];
-        neighbors[swap] = neighbors[t];
-        neighbors[t] = candidate;
-        if (addEdge(candidate, v)) {
-          break;
-        }
+  var partitionA = [0, 2, 4, 7, 9];
+  var partitionB = [1, 3, 5, 6, 8];
+
+  var makeBipartite = Math.random() < 0.5;
+  this.lastGraphWasBipartite = makeBipartite;
+
+  var baseEdges = [
+    [0, 1],
+    [2, 1],
+    [2, 3],
+    [4, 1],
+    [4, 5],
+    [2, 6],
+    [4, 8],
+    [7, 8],
+    [9, 5]
+  ];
+
+  for (var b = 0; b < baseEdges.length; b++) {
+    addEdge(baseEdges[b][0], baseEdges[b][1]);
+  }
+
+  var crossPairs = [];
+  for (var i = 0; i < partitionA.length; i++) {
+    for (var j = 0; j < partitionB.length; j++) {
+      var aVertex = partitionA[i];
+      var bVertex = partitionB[j];
+      if (allowed[aVertex] && allowed[aVertex][bVertex]) {
+        crossPairs.push([aVertex, bVertex]);
       }
     }
   }
 
-  var edgePercent = 0.45;
-  for (var i = 0; i < vertexCount; i++) {
-    for (var j = i + 1; j < vertexCount; j++) {
-      if (!allowed[i] || !allowed[i][j]) {
-        continue;
-      }
-      if (existing[i + "-" + j]) {
-        continue;
-      }
-      if (Math.random() <= edgePercent) {
-        addEdge(i, j);
-      }
+  for (var shuffle = crossPairs.length - 1; shuffle > 0; shuffle--) {
+    var swapIndex = Math.floor(Math.random() * (shuffle + 1));
+    var temp = crossPairs[shuffle];
+    crossPairs[shuffle] = crossPairs[swapIndex];
+    crossPairs[swapIndex] = temp;
+  }
+
+  var crossProbability = makeBipartite ? 0.6 : 0.5;
+  for (var c = 0; c < crossPairs.length; c++) {
+    if (Math.random() <= crossProbability) {
+      addEdge(crossPairs[c][0], crossPairs[c][1]);
     }
   }
 
-  var hasCurve = false;
-  for (var e = 0; e < edges.length; e++) {
-    if (Math.abs(edges[e].curve) > 0.01) {
-      hasCurve = true;
-      break;
-    }
-  }
-  if (!hasCurve) {
-    for (var r = 0; r < vertexCount && !hasCurve; r++) {
-      for (var c = r + 1; c < vertexCount && !hasCurve; c++) {
-        if (!allowed[r] || !allowed[r][c]) {
-          continue;
-        }
-        if (
-          curves[r] &&
-          typeof curves[r][c] === "number" &&
-          Math.abs(curves[r][c]) > 0.01
-        ) {
-          if (addEdge(r, c)) {
-            hasCurve = true;
+  if (!makeBipartite) {
+    var samePairs = [];
+    var collectSamePairs = function (group) {
+      for (var x = 0; x < group.length; x++) {
+        for (var y = x + 1; y < group.length; y++) {
+          var first = group[x];
+          var second = group[y];
+          if (allowed[first] && allowed[first][second]) {
+            samePairs.push([first, second]);
           }
         }
+      }
+    };
+
+    collectSamePairs(partitionA);
+    collectSamePairs(partitionB);
+
+    for (var shuffleSame = samePairs.length - 1; shuffleSame > 0; shuffleSame--) {
+      var swapSame = Math.floor(Math.random() * (shuffleSame + 1));
+      var tempSame = samePairs[shuffleSame];
+      samePairs[shuffleSame] = samePairs[swapSame];
+      samePairs[swapSame] = tempSame;
+    }
+
+    if (samePairs.length > 0) {
+      addEdge(samePairs[0][0], samePairs[0][1]);
+    }
+
+    for (var s = 1; s < samePairs.length; s++) {
+      if (Math.random() <= 0.35) {
+        addEdge(samePairs[s][0], samePairs[s][1]);
       }
     }
   }
