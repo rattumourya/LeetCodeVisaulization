@@ -42,6 +42,10 @@ TopoSortDFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 // Minimum curvature magnitude to keep opposite-direction edges visually parallel.
 TopoSortDFS.MIN_PARALLEL_SEPARATION = 0.42;
 TopoSortDFS.PARALLEL_EDGE_GAP = 0.18;
+TopoSortDFS.CURVE_EPSILON = 0.01;
+TopoSortDFS.CURVE_BASE_MAGNITUDE = 0.28;
+TopoSortDFS.CURVE_INCREMENT = 0.14;
+TopoSortDFS.ANGLE_BUCKET_SCALE = 16;
 
 TopoSortDFS.ARRAY_BASE_X = 720;
 TopoSortDFS.ARRAY_COLUMN_SPACING = 80;
@@ -60,6 +64,7 @@ TopoSortDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 TopoSortDFS.ARRAY_HEADER_GAP = 20;
 TopoSortDFS.ORDER_ROW_CENTER_X = TopoSortDFS.CANVAS_WIDTH / 2;
 TopoSortDFS.ORDER_LABEL_GAP = 28;
+TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 16;
 TopoSortDFS.ORDER_CELL_WIDTH = 60;
 TopoSortDFS.ORDER_CELL_HEIGHT = 48;
 TopoSortDFS.ORDER_CELL_SPACING = 12;
@@ -99,22 +104,22 @@ TopoSortDFS.DEFAULT_STATUS_TEXT =
   "Vertices are added to the order when recursion unwinds.";
 
 TopoSortDFS.CODE_LINES = [
-  ["void dfs(int u) {"],
+  ["private void dfs(int u) {"],
   ["    visited[u] = true;"],
   ["    for (int v : adj[u]) {"],
   ["        if (!visited[v]) {"],
   ["            dfs(v);"],
   ["        }"],
   ["    }"],
-  ["    order.push_back(u);"],
+  ["    order.add(u);"],
   ["}"],
-  ["vector<int> topoSort() {"],
-  ["    for (int u = 0; u < n; ++u) {"],
+  ["public List<Integer> topoSort(int n) {"],
+  ["    for (int u = 0; u < n; u++) {"],
   ["        if (!visited[u]) {"],
   ["            dfs(u);"],
   ["        }"],
   ["    }"],
-  ["    reverse(order.begin(), order.end());"],
+  ["    Collections.reverse(order);"],
   ["    return order;"],
   ["}"]
 ];
@@ -620,6 +625,8 @@ TopoSortDFS.prototype.generateRandomGraph = function (vertexCount) {
         : -TopoSortDFS.BIDIRECTIONAL_CURVE;
   }
 
+  this.ensureEdgeSeparation(directedEdges);
+
   for (var listIndex = 0; listIndex < directedEdges.length; listIndex++) {
     var finalEdge = directedEdges[listIndex];
     this.adjacencyList[finalEdge.from].push(finalEdge.to);
@@ -629,6 +636,71 @@ TopoSortDFS.prototype.generateRandomGraph = function (vertexCount) {
 
   for (var list = 0; list < this.adjacencyList.length; list++) {
     shuffle(this.adjacencyList[list]);
+  }
+};
+
+TopoSortDFS.prototype.ensureEdgeSeparation = function (edgeList) {
+  if (!edgeList || edgeList.length === 0) {
+    return;
+  }
+
+  var groups = {};
+  for (var i = 0; i < edgeList.length; i++) {
+    var edge = edgeList[i];
+    if (!edge) {
+      continue;
+    }
+    if (Math.abs(edge.curve) > TopoSortDFS.CURVE_EPSILON) {
+      continue;
+    }
+    var fromPos = this.vertexPositions[edge.from];
+    var toPos = this.vertexPositions[edge.to];
+    if (!fromPos || !toPos) {
+      continue;
+    }
+    var angle = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x);
+    var bucketKey =
+      edge.from + ":" + Math.round(angle * TopoSortDFS.ANGLE_BUCKET_SCALE);
+    if (!groups[bucketKey]) {
+      groups[bucketKey] = [];
+    }
+    groups[bucketKey].push({
+      edge: edge,
+      fromPos: fromPos,
+      toPos: toPos
+    });
+  }
+
+  for (var key in groups) {
+    if (!Object.prototype.hasOwnProperty.call(groups, key)) {
+      continue;
+    }
+    var bucketEdges = groups[key];
+    if (bucketEdges.length <= 1) {
+      continue;
+    }
+
+    bucketEdges.sort(function (a, b) {
+      var dy = a.toPos.y - b.toPos.y;
+      if (Math.abs(dy) > 1) {
+        return dy;
+      }
+      return a.toPos.x - b.toPos.x;
+    });
+
+    for (var idx = 0; idx < bucketEdges.length; idx++) {
+      var entry = bucketEdges[idx];
+      var dx = entry.toPos.x - entry.fromPos.x;
+      var sign = dx >= 0 ? 1 : -1;
+      if (Math.abs(dx) < 1) {
+        sign =
+          entry.fromPos.x <= TopoSortDFS.GRAPH_AREA_CENTER_X ? 1 : -1;
+      }
+      var magnitude =
+        TopoSortDFS.CURVE_BASE_MAGNITUDE +
+        idx * TopoSortDFS.CURVE_INCREMENT;
+      entry.edge.curve = sign * magnitude;
+    }
   }
 };
 
@@ -851,17 +923,21 @@ TopoSortDFS.prototype.createOrderArea = function () {
 
   var labelID = this.nextIndex++;
   this.orderLabelIDs.push(labelID);
+  var labelY = this.bottomSectionTopY;
   this.cmd(
     "CreateLabel",
     labelID,
     "Topological Order",
     TopoSortDFS.ORDER_ROW_CENTER_X,
-    this.bottomSectionTopY
+    labelY
   );
   this.cmd("SetTextStyle", labelID, "bold 22");
   this.cmd("SetForegroundColor", labelID, TopoSortDFS.CODE_STANDARD_COLOR);
 
-  var rowY = this.bottomSectionTopY + TopoSortDFS.ORDER_LABEL_GAP;
+  var rowY =
+    labelY +
+    TopoSortDFS.ORDER_LABEL_GAP +
+    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN;
   if (count <= 0) {
     this.bottomSectionTopY = rowY + TopoSortDFS.BOTTOM_SECTION_GAP;
     return;
