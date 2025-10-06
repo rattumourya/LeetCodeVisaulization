@@ -25,7 +25,7 @@ BipartiteCheck.TITLE_Y = BipartiteCheck.ROW1_CENTER_Y - 40;
 BipartiteCheck.START_INFO_Y = BipartiteCheck.ROW1_CENTER_Y + 36;
 BipartiteCheck.STATUS_INFO_Y = BipartiteCheck.START_INFO_Y + 40;
 
-BipartiteCheck.GRAPH_AREA_CENTER_X = 340;
+BipartiteCheck.GRAPH_AREA_CENTER_X = 320;
 BipartiteCheck.GRAPH_NODE_RADIUS = 22;
 BipartiteCheck.GRAPH_NODE_COLOR = "#e3f2fd";
 BipartiteCheck.GRAPH_NODE_BORDER = "#0b3954";
@@ -42,8 +42,8 @@ BipartiteCheck.EDGE_THICKNESS = 3;
 BipartiteCheck.EDGE_ACTIVE_THICKNESS = 2;
 BipartiteCheck.EDGE_TREE_THICKNESS = 6;
 
-BipartiteCheck.ARRAY_BASE_X = 680;
-BipartiteCheck.ARRAY_COLUMN_SPACING = 80;
+BipartiteCheck.ARRAY_BASE_X = 640;
+BipartiteCheck.ARRAY_COLUMN_SPACING = 90;
 BipartiteCheck.ARRAY_TOP_Y = BipartiteCheck.ROW2_START_Y + 90;
 BipartiteCheck.ARRAY_CELL_HEIGHT = 52;
 BipartiteCheck.ARRAY_CELL_WIDTH = 60;
@@ -55,7 +55,6 @@ BipartiteCheck.ARRAY_RECT_HIGHLIGHT_BORDER = "#d62828";
 BipartiteCheck.ARRAY_RECT_BORDER_THICKNESS = 1;
 BipartiteCheck.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
 BipartiteCheck.ARRAY_TEXT_COLOR = "#2b2d42";
-BipartiteCheck.ARRAY_VISITED_FILL = "#b3e5fc";
 BipartiteCheck.ARRAY_COLOR_FILL_A = "#d8eefe";
 BipartiteCheck.ARRAY_COLOR_FILL_B = "#ffe5f1";
 BipartiteCheck.ARRAY_HEADER_GAP = 20;
@@ -68,7 +67,7 @@ BipartiteCheck.CODE_STANDARD_COLOR = "#1d3557";
 BipartiteCheck.CODE_HIGHLIGHT_COLOR = "#e63946";
 BipartiteCheck.CODE_FONT = "bold 22";
 
-BipartiteCheck.RECURSION_AREA_CENTER_X = 660;
+BipartiteCheck.RECURSION_AREA_CENTER_X = 640;
 BipartiteCheck.RECURSION_HEADER_HEIGHT = 44;
 BipartiteCheck.RECURSION_LABEL_MARGIN = 14;
 BipartiteCheck.RECURSION_AREA_BOTTOM_MARGIN = 30;
@@ -90,9 +89,9 @@ BipartiteCheck.STATUS_FAIL_COLOR = "#c1121f";
 BipartiteCheck.HIGHLIGHT_COLOR = "#ff3b30";
 
 BipartiteCheck.COLOR_LABELS = {
-  0: { text: "0", fill: BipartiteCheck.ARRAY_COLOR_FILL_A },
-  1: { text: "1", fill: BipartiteCheck.ARRAY_COLOR_FILL_B },
-  UNCOLORED: { text: "None", fill: BipartiteCheck.ARRAY_RECT_COLOR }
+  "-1": { text: "-1", fill: BipartiteCheck.ARRAY_RECT_COLOR },
+  "0": { text: "0", fill: BipartiteCheck.ARRAY_COLOR_FILL_A },
+  "1": { text: "1", fill: BipartiteCheck.ARRAY_COLOR_FILL_B }
 };
 
 BipartiteCheck.CODE_LINES = [
@@ -154,7 +153,6 @@ BipartiteCheck.prototype.init = function (am, w, h) {
   this.edgeStates = {};
   this.edgeMeta = {};
   this.vertexIDs = [];
-  this.visitedRectIDs = [];
   this.colorRectIDs = [];
   this.parentRectIDs = [];
   this.vertexRowLabelIDs = [];
@@ -171,7 +169,6 @@ BipartiteCheck.prototype.init = function (am, w, h) {
   this.bottomSectionTopY =
     BipartiteCheck.ROW3_START_Y + BipartiteCheck.CODE_TOP_PADDING;
 
-  this.visited = [];
   this.colorState = [];
   this.parents = [];
   this.conflictPair = null;
@@ -380,7 +377,6 @@ BipartiteCheck.prototype.createGraphArea = function () {
 };
 
 BipartiteCheck.prototype.createArrayArea = function () {
-  var visitedHeaderID = this.nextIndex++;
   var colorHeaderID = this.nextIndex++;
   var parentHeaderID = this.nextIndex++;
   var headerY =
@@ -390,19 +386,9 @@ BipartiteCheck.prototype.createArrayArea = function () {
 
   this.cmd(
     "CreateLabel",
-    visitedHeaderID,
-    "Visited",
-    BipartiteCheck.ARRAY_BASE_X,
-    headerY
-  );
-  this.cmd("SetTextStyle", visitedHeaderID, "bold 20");
-  this.cmd("SetForegroundColor", visitedHeaderID, BipartiteCheck.CODE_STANDARD_COLOR);
-
-  this.cmd(
-    "CreateLabel",
     colorHeaderID,
     "Color",
-    BipartiteCheck.ARRAY_BASE_X + BipartiteCheck.ARRAY_COLUMN_SPACING,
+    BipartiteCheck.ARRAY_BASE_X,
     headerY
   );
   this.cmd("SetTextStyle", colorHeaderID, "bold 20");
@@ -412,13 +398,12 @@ BipartiteCheck.prototype.createArrayArea = function () {
     "CreateLabel",
     parentHeaderID,
     "Parent",
-    BipartiteCheck.ARRAY_BASE_X + 2 * BipartiteCheck.ARRAY_COLUMN_SPACING,
+    BipartiteCheck.ARRAY_BASE_X + BipartiteCheck.ARRAY_COLUMN_SPACING,
     headerY
   );
   this.cmd("SetTextStyle", parentHeaderID, "bold 20");
   this.cmd("SetForegroundColor", parentHeaderID, BipartiteCheck.CODE_STANDARD_COLOR);
 
-  this.visitedRectIDs = new Array(this.vertexLabels.length);
   this.colorRectIDs = new Array(this.vertexLabels.length);
   this.parentRectIDs = new Array(this.vertexLabels.length);
   this.vertexRowLabelIDs = new Array(this.vertexLabels.length);
@@ -432,47 +417,32 @@ BipartiteCheck.prototype.createArrayArea = function () {
       "CreateLabel",
       vertexLabelID,
       this.vertexLabels[i],
-      BipartiteCheck.ARRAY_BASE_X - 58,
+      BipartiteCheck.ARRAY_BASE_X - 60,
       rowY,
       0
     );
     this.cmd("SetTextStyle", vertexLabelID, "bold 20");
     this.cmd("SetForegroundColor", vertexLabelID, BipartiteCheck.START_INFO_COLOR);
 
-    var visitedID = this.nextIndex++;
-    this.visitedRectIDs[i] = visitedID;
-    this.cmd(
-      "CreateRectangle",
-      visitedID,
-      "F",
-      BipartiteCheck.ARRAY_CELL_WIDTH,
-      BipartiteCheck.ARRAY_CELL_INNER_HEIGHT,
-      BipartiteCheck.ARRAY_BASE_X,
-      rowY
-    );
-    this.cmd("SetForegroundColor", visitedID, BipartiteCheck.ARRAY_RECT_BORDER);
-    this.cmd("SetBackgroundColor", visitedID, BipartiteCheck.ARRAY_RECT_COLOR);
-    this.cmd("SetTextColor", visitedID, BipartiteCheck.ARRAY_TEXT_COLOR);
-    this.cmd(
-      "SetRectangleLineThickness",
-      visitedID,
-      BipartiteCheck.ARRAY_RECT_BORDER_THICKNESS
-    );
-
     var colorID = this.nextIndex++;
     this.colorRectIDs[i] = colorID;
     this.cmd(
       "CreateRectangle",
       colorID,
-      BipartiteCheck.COLOR_LABELS.UNCOLORED.text,
+      BipartiteCheck.COLOR_LABELS["-1"].text,
       BipartiteCheck.ARRAY_CELL_WIDTH,
       BipartiteCheck.ARRAY_CELL_INNER_HEIGHT,
-      BipartiteCheck.ARRAY_BASE_X + BipartiteCheck.ARRAY_COLUMN_SPACING,
+      BipartiteCheck.ARRAY_BASE_X,
       rowY
     );
     this.cmd("SetForegroundColor", colorID, BipartiteCheck.ARRAY_RECT_BORDER);
     this.cmd("SetBackgroundColor", colorID, BipartiteCheck.ARRAY_RECT_COLOR);
     this.cmd("SetTextColor", colorID, BipartiteCheck.ARRAY_TEXT_COLOR);
+    this.cmd(
+      "SetRectangleLineThickness",
+      colorID,
+      BipartiteCheck.ARRAY_RECT_BORDER_THICKNESS
+    );
 
     var parentID = this.nextIndex++;
     this.parentRectIDs[i] = parentID;
@@ -482,12 +452,17 @@ BipartiteCheck.prototype.createArrayArea = function () {
       "-",
       BipartiteCheck.ARRAY_CELL_WIDTH,
       BipartiteCheck.ARRAY_CELL_INNER_HEIGHT,
-      BipartiteCheck.ARRAY_BASE_X + 2 * BipartiteCheck.ARRAY_COLUMN_SPACING,
+      BipartiteCheck.ARRAY_BASE_X + BipartiteCheck.ARRAY_COLUMN_SPACING,
       rowY
     );
     this.cmd("SetForegroundColor", parentID, BipartiteCheck.ARRAY_RECT_BORDER);
     this.cmd("SetBackgroundColor", parentID, BipartiteCheck.ARRAY_RECT_COLOR);
     this.cmd("SetTextColor", parentID, BipartiteCheck.ARRAY_TEXT_COLOR);
+    this.cmd(
+      "SetRectangleLineThickness",
+      parentID,
+      BipartiteCheck.ARRAY_RECT_BORDER_THICKNESS
+    );
   }
 
   var lastRowIndex = this.vertexLabels.length - 1;
@@ -500,21 +475,6 @@ BipartiteCheck.prototype.createArrayArea = function () {
   }
 };
 
-BipartiteCheck.prototype.setVisitedCellHighlight = function (index, active) {
-  if (index < 0 || index >= this.visitedRectIDs.length) {
-    return;
-  }
-  var color = active
-    ? BipartiteCheck.ARRAY_RECT_HIGHLIGHT_BORDER
-    : BipartiteCheck.ARRAY_RECT_BORDER;
-  var thickness = active
-    ? BipartiteCheck.ARRAY_RECT_HIGHLIGHT_THICKNESS
-    : BipartiteCheck.ARRAY_RECT_BORDER_THICKNESS;
-  var rectID = this.visitedRectIDs[index];
-  this.cmd("SetForegroundColor", rectID, color);
-  this.cmd("SetRectangleLineThickness", rectID, thickness);
-};
-
 BipartiteCheck.prototype.colorKeyForValue = function (value) {
   if (value === 0 || value === "0") {
     return "0";
@@ -522,15 +482,12 @@ BipartiteCheck.prototype.colorKeyForValue = function (value) {
   if (value === 1 || value === "1") {
     return "1";
   }
-  return "UNCOLORED";
+  return "-1";
 };
 
 BipartiteCheck.prototype.getColorInfo = function (value) {
-  if (value === null || value === undefined) {
-    return BipartiteCheck.COLOR_LABELS.UNCOLORED;
-  }
   var key = this.colorKeyForValue(value);
-  return BipartiteCheck.COLOR_LABELS[key] || BipartiteCheck.COLOR_LABELS.UNCOLORED;
+  return BipartiteCheck.COLOR_LABELS[key] || BipartiteCheck.COLOR_LABELS["-1"];
 };
 
 BipartiteCheck.prototype.updateColorCell = function (index, value) {
@@ -542,7 +499,21 @@ BipartiteCheck.prototype.updateColorCell = function (index, value) {
   this.cmd("SetText", rectID, info.text);
   this.cmd("SetBackgroundColor", rectID, info.fill);
   this.cmd("SetTextColor", rectID, BipartiteCheck.ARRAY_TEXT_COLOR);
-  this.cmd("SetForegroundColor", rectID, BipartiteCheck.ARRAY_RECT_BORDER);
+};
+
+BipartiteCheck.prototype.setColorCellHighlight = function (index, active) {
+  if (!this.colorRectIDs || index < 0 || index >= this.colorRectIDs.length) {
+    return;
+  }
+  var rectID = this.colorRectIDs[index];
+  var borderColor = active
+    ? BipartiteCheck.ARRAY_RECT_HIGHLIGHT_BORDER
+    : BipartiteCheck.ARRAY_RECT_BORDER;
+  var thickness = active
+    ? BipartiteCheck.ARRAY_RECT_HIGHLIGHT_THICKNESS
+    : BipartiteCheck.ARRAY_RECT_BORDER_THICKNESS;
+  this.cmd("SetForegroundColor", rectID, borderColor);
+  this.cmd("SetRectangleLineThickness", rectID, thickness);
 };
 
 BipartiteCheck.prototype.applyVertexColor = function (index, value) {
@@ -551,10 +522,11 @@ BipartiteCheck.prototype.applyVertexColor = function (index, value) {
   }
   var fill = BipartiteCheck.GRAPH_NODE_COLOR;
   var textColor = BipartiteCheck.GRAPH_NODE_TEXT;
-  if (value !== null && value !== undefined) {
-    fill = value === 0
-      ? BipartiteCheck.GRAPH_NODE_COLOR_A
-      : BipartiteCheck.GRAPH_NODE_COLOR_B;
+  if (value === 0 || value === "0") {
+    fill = BipartiteCheck.GRAPH_NODE_COLOR_A;
+    textColor = BipartiteCheck.GRAPH_NODE_BORDER;
+  } else if (value === 1 || value === "1") {
+    fill = BipartiteCheck.GRAPH_NODE_COLOR_B;
     textColor = BipartiteCheck.GRAPH_NODE_BORDER;
   }
   this.cmd("SetBackgroundColor", this.vertexIDs[index], fill);
@@ -574,43 +546,6 @@ BipartiteCheck.prototype.setVertexConflict = function (index) {
     "SetTextColor",
     this.vertexIDs[index],
     BipartiteCheck.GRAPH_NODE_CONFLICT_TEXT
-  );
-};
-
-BipartiteCheck.prototype.markVisited = function (index) {
-  if (!this.visited || index < 0 || index >= this.visited.length) {
-    return;
-  }
-  if (!this.visited[index]) {
-    this.visited[index] = true;
-    this.cmd("SetText", this.visitedRectIDs[index], "T");
-    this.cmd(
-      "SetBackgroundColor",
-      this.visitedRectIDs[index],
-      BipartiteCheck.ARRAY_VISITED_FILL
-    );
-  }
-};
-
-BipartiteCheck.prototype.resetVisitedCell = function (index) {
-  if (!this.visitedRectIDs || index < 0 || index >= this.visitedRectIDs.length) {
-    return;
-  }
-  this.cmd("SetText", this.visitedRectIDs[index], "F");
-  this.cmd(
-    "SetBackgroundColor",
-    this.visitedRectIDs[index],
-    BipartiteCheck.ARRAY_RECT_COLOR
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.visitedRectIDs[index],
-    BipartiteCheck.ARRAY_RECT_BORDER
-  );
-  this.cmd(
-    "SetRectangleLineThickness",
-    this.visitedRectIDs[index],
-    BipartiteCheck.ARRAY_RECT_BORDER_THICKNESS
   );
 };
 
@@ -855,17 +790,15 @@ BipartiteCheck.prototype.highlightCodeLine = function (lineIndex) {
 };
 
 BipartiteCheck.prototype.clearTraversalState = function () {
-  this.visited = new Array(this.vertexLabels.length);
   this.colorState = new Array(this.vertexLabels.length);
   this.parents = new Array(this.vertexLabels.length);
   for (var i = 0; i < this.vertexLabels.length; i++) {
-    this.visited[i] = false;
-    this.colorState[i] = null;
+    this.colorState[i] = -1;
     this.parents[i] = null;
-    this.resetVisitedCell(i);
-    this.updateColorCell(i, null);
+    this.updateColorCell(i, -1);
+    this.setColorCellHighlight(i, false);
     this.cmd("SetText", this.parentRectIDs[i], "-");
-    this.applyVertexColor(i, null);
+    this.applyVertexColor(i, -1);
   }
   this.setStatus("Status: Ready", false);
   this.conflictPair = null;
@@ -1499,7 +1432,7 @@ BipartiteCheck.prototype.runTraversal = function (startIndex) {
 
   for (var idx = 0; idx < order.length && success; idx++) {
     var vertex = order[idx];
-    if (this.colorState[vertex] !== null) {
+    if (this.colorState[vertex] !== -1) {
       continue;
     }
 
@@ -1541,16 +1474,15 @@ BipartiteCheck.prototype.dfsColor = function (u, colorValue) {
   this.cmd("Step");
 
   this.highlightCodeLine(1);
-  this.setVisitedCellHighlight(u, true);
+  this.setColorCellHighlight(u, true);
   this.cmd("Step");
 
-  this.markVisited(u);
   this.colorState[u] = colorValue;
   this.updateColorCell(u, colorValue);
   this.applyVertexColor(u, colorValue);
   this.cmd("Step");
 
-  this.setVisitedCellHighlight(u, false);
+  this.setColorCellHighlight(u, false);
 
   this.highlightCodeLine(2);
   this.cmd("Step");
@@ -1567,10 +1499,10 @@ BipartiteCheck.prototype.dfsColor = function (u, colorValue) {
     this.setEdgeActive(u, v, true);
     this.cmd("Step");
 
-    this.setVisitedCellHighlight(v, true);
+    this.setColorCellHighlight(v, true);
     this.cmd("Step");
 
-    if (this.colorState[v] === null) {
+    if (this.colorState[v] === -1) {
       this.highlightCodeLine(4);
       this.parents[v] = u;
       this.cmd(
@@ -1591,7 +1523,7 @@ BipartiteCheck.prototype.dfsColor = function (u, colorValue) {
       if (!result) {
         this.highlightCodeLine(5);
         this.cmd("Step");
-        this.setVisitedCellHighlight(v, false);
+        this.setColorCellHighlight(v, false);
         this.setEdgeActive(u, v, false);
         this.cmd("Step");
         this.popRecursionFrame();
@@ -1605,7 +1537,7 @@ BipartiteCheck.prototype.dfsColor = function (u, colorValue) {
       this.markEdgeAsConflict(u, v);
       this.setVertexConflict(u);
       this.setVertexConflict(v);
-      this.setVisitedCellHighlight(v, false);
+      this.setColorCellHighlight(v, false);
       this.setEdgeActive(u, v, false);
 
       var conflictMessage =
@@ -1623,7 +1555,7 @@ BipartiteCheck.prototype.dfsColor = function (u, colorValue) {
       return false;
     }
 
-    this.setVisitedCellHighlight(v, false);
+    this.setColorCellHighlight(v, false);
     this.setEdgeActive(u, v, false);
     this.highlightCodeLine(2);
     this.cmd("Step");
