@@ -25,7 +25,7 @@ BipartiteCheck.TITLE_Y = BipartiteCheck.ROW1_CENTER_Y - 40;
 BipartiteCheck.START_INFO_Y = BipartiteCheck.ROW1_CENTER_Y + 36;
 BipartiteCheck.STATUS_INFO_Y = BipartiteCheck.START_INFO_Y + 40;
 
-BipartiteCheck.GRAPH_AREA_CENTER_X = 360;
+BipartiteCheck.GRAPH_AREA_CENTER_X = 340;
 BipartiteCheck.GRAPH_NODE_RADIUS = 22;
 BipartiteCheck.GRAPH_NODE_COLOR = "#e3f2fd";
 BipartiteCheck.GRAPH_NODE_BORDER = "#0b3954";
@@ -42,7 +42,7 @@ BipartiteCheck.EDGE_THICKNESS = 3;
 BipartiteCheck.EDGE_ACTIVE_THICKNESS = 2;
 BipartiteCheck.EDGE_TREE_THICKNESS = 6;
 
-BipartiteCheck.ARRAY_BASE_X = 720;
+BipartiteCheck.ARRAY_BASE_X = 680;
 BipartiteCheck.ARRAY_COLUMN_SPACING = 80;
 BipartiteCheck.ARRAY_TOP_Y = BipartiteCheck.ROW2_START_Y + 90;
 BipartiteCheck.ARRAY_CELL_HEIGHT = 52;
@@ -90,8 +90,8 @@ BipartiteCheck.STATUS_FAIL_COLOR = "#c1121f";
 BipartiteCheck.HIGHLIGHT_COLOR = "#ff3b30";
 
 BipartiteCheck.COLOR_LABELS = {
-  A: { text: "Color A", fill: BipartiteCheck.ARRAY_COLOR_FILL_A },
-  B: { text: "Color B", fill: BipartiteCheck.ARRAY_COLOR_FILL_B },
+  0: { text: "0", fill: BipartiteCheck.ARRAY_COLOR_FILL_A },
+  1: { text: "1", fill: BipartiteCheck.ARRAY_COLOR_FILL_B },
   UNCOLORED: { text: "None", fill: BipartiteCheck.ARRAY_RECT_COLOR }
 };
 
@@ -516,7 +516,13 @@ BipartiteCheck.prototype.setVisitedCellHighlight = function (index, active) {
 };
 
 BipartiteCheck.prototype.colorKeyForValue = function (value) {
-  return value === 0 ? "A" : "B";
+  if (value === 0 || value === "0") {
+    return "0";
+  }
+  if (value === 1 || value === "1") {
+    return "1";
+  }
+  return "UNCOLORED";
 };
 
 BipartiteCheck.prototype.getColorInfo = function (value) {
@@ -1138,7 +1144,7 @@ BipartiteCheck.prototype.markEdgeAsConflict = function (u, v) {
 
 BipartiteCheck.prototype.computeTemplateLayout = function (vertexCount) {
   var layout = [];
-  var baseX = 180;
+  var baseX = 160;
   var stepX = 130;
   var baseY = BipartiteCheck.ROW2_START_Y + 120;
   var rowSpacing = 150;
