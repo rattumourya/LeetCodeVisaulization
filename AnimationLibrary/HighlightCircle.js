@@ -44,13 +44,40 @@ HighlightCircle.prototype.constructor = HighlightCircle;
 
 HighlightCircle.prototype.draw = function(ctx)
 {
-	ctx.globalAlpha = this.alpha;
-	ctx.strokeStyle = this.foregroundColor;
-	ctx.lineWidth = this.thickness;
-	ctx.beginPath();
-	ctx.arc(this.x,this.y,this.radius,0,Math.PI*2, true);
-	ctx.closePath();
-	ctx.stroke();
+        var baseAlpha = typeof this.alpha === "number" ? this.alpha : 1;
+        var drawAlpha = baseAlpha;
+        var drawRadius = this.radius;
+        var drawThickness = this.thickness;
+
+        if (this.highlighted)
+        {
+                var diff = typeof this.highlightDiff === "number" ? this.highlightDiff : this.minHeightDiff;
+                var range = this.range > 0 ? this.range : 1;
+                var normalized = (diff - this.minHeightDiff) / range;
+                if (normalized < 0) {
+                        normalized = 0;
+                } else if (normalized > 1) {
+                        normalized = 1;
+                }
+
+                var minAlpha = 0.35;
+                var alphaRange = 0.45;
+                drawAlpha = (minAlpha + alphaRange * normalized) * baseAlpha;
+                if (drawAlpha > 1) {
+                        drawAlpha = 1;
+                }
+
+                drawRadius = this.radius + diff * 0.35;
+                drawThickness = this.thickness + 1.5;
+        }
+
+        ctx.globalAlpha = drawAlpha;
+        ctx.strokeStyle = this.foregroundColor;
+        ctx.lineWidth = drawThickness;
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,drawRadius,0,Math.PI*2, true);
+        ctx.closePath();
+        ctx.stroke();
 }
 
 
