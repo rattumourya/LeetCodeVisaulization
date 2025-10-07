@@ -62,7 +62,9 @@ TopoSortDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
 TopoSortDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 TopoSortDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 TopoSortDFS.ARRAY_HEADER_GAP = 20;
-TopoSortDFS.ORDER_LEFT_X = TopoSortDFS.CODE_START_X;
+TopoSortDFS.ARRAY_HORIZONTAL_GAP = 80;
+TopoSortDFS.CANVAS_SIDE_PADDING = 40;
+TopoSortDFS.BOTTOM_PANEL_TOP_PADDING = 36;
 TopoSortDFS.ORDER_LABEL_GAP = 8;
 TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 4;
 TopoSortDFS.ORDER_LABEL_FONT_SIZE = 22;
@@ -78,6 +80,8 @@ TopoSortDFS.ORDER_RECT_HIGHLIGHT_BORDER = "#ffb703";
 TopoSortDFS.ORDER_RECT_HIGHLIGHT_FILL = "#ffe8b6";
 TopoSortDFS.BOTTOM_SECTION_GAP = 16;
 TopoSortDFS.CODE_TOP_PADDING = 4;
+TopoSortDFS.STACK_SECTION_RAISE = 28;
+TopoSortDFS.STACK_ORDER_VERTICAL_GAP = 32;
 
 TopoSortDFS.CODE_START_X = 80;
 TopoSortDFS.CODE_LINE_HEIGHT = 30;
@@ -227,7 +231,7 @@ TopoSortDFS.prototype.init = function (am, w, h) {
   this.activeRecursionIndex = -1;
   this.recursionDepth = 0;
   this.bottomSectionTopY =
-    TopoSortDFS.ROW3_START_Y + TopoSortDFS.CODE_TOP_PADDING;
+    TopoSortDFS.ROW3_START_Y + TopoSortDFS.BOTTOM_PANEL_TOP_PADDING;
 
   this.visited = [];
   this.finishOrder = [];
@@ -1043,73 +1047,19 @@ TopoSortDFS.prototype.createOrderArea = function () {
   this.orderCellIDs = new Array(count);
   this.orderLabelIDs = [];
 
-  var stackLabelID = this.nextIndex++;
-  this.orderLabelIDs.push(stackLabelID);
-  var stackLabelY = this.bottomSectionTopY;
-  var stackLabelX = TopoSortDFS.ORDER_LEFT_X;
-  this.cmd(
-    "CreateLabel",
-    stackLabelID,
-    "Stack (top on right)",
-    stackLabelX,
-    stackLabelY,
-    0
-  );
-  this.cmd("SetTextStyle", stackLabelID, TopoSortDFS.ORDER_LABEL_FONT);
-  this.cmd("SetForegroundColor", stackLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
-
+  var baseLabelY = this.bottomSectionTopY - TopoSortDFS.STACK_SECTION_RAISE;
+  var stackLabelY = baseLabelY;
   var stackRowTop =
     stackLabelY +
     TopoSortDFS.ORDER_LABEL_FONT_SIZE +
     TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN +
     TopoSortDFS.ORDER_LABEL_GAP;
   var stackRowY = stackRowTop + TopoSortDFS.ORDER_CELL_HEIGHT / 2;
-  if (count <= 0) {
-    this.bottomSectionTopY = stackRowTop + TopoSortDFS.BOTTOM_SECTION_GAP;
-    return;
-  }
 
-  var startX = TopoSortDFS.ORDER_LEFT_X;
-
-  for (var i = 0; i < count; i++) {
-    var stackCellX =
-      startX + i * (TopoSortDFS.ORDER_CELL_WIDTH + TopoSortDFS.ORDER_CELL_SPACING);
-    var stackCellID = this.nextIndex++;
-    this.stackCellIDs[i] = stackCellID;
-    this.cmd(
-      "CreateRectangle",
-      stackCellID,
-      "",
-      TopoSortDFS.ORDER_CELL_WIDTH,
-      TopoSortDFS.ORDER_CELL_HEIGHT,
-      stackCellX,
-      stackRowY,
-      "left",
-      "center"
-    );
-    this.cmd("SetForegroundColor", stackCellID, TopoSortDFS.ORDER_RECT_BORDER);
-    this.cmd("SetBackgroundColor", stackCellID, TopoSortDFS.ORDER_RECT_COLOR);
-    this.cmd("SetTextColor", stackCellID, TopoSortDFS.ORDER_RECT_TEXT_COLOR);
-  }
-
-  var orderLabelID = this.nextIndex++;
-  this.orderLabelIDs.push(orderLabelID);
   var orderLabelY =
     stackRowTop +
     TopoSortDFS.ORDER_CELL_HEIGHT +
-    TopoSortDFS.ORDER_LABEL_GAP;
-  var orderLabelX = TopoSortDFS.ORDER_LEFT_X;
-  this.cmd(
-    "CreateLabel",
-    orderLabelID,
-    "Topological Order",
-    orderLabelX,
-    orderLabelY,
-    0
-  );
-  this.cmd("SetTextStyle", orderLabelID, TopoSortDFS.ORDER_LABEL_FONT);
-  this.cmd("SetForegroundColor", orderLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
-
+    TopoSortDFS.STACK_ORDER_VERTICAL_GAP;
   var orderRowTop =
     orderLabelY +
     TopoSortDFS.ORDER_LABEL_FONT_SIZE +
@@ -1117,25 +1067,91 @@ TopoSortDFS.prototype.createOrderArea = function () {
     TopoSortDFS.ORDER_LABEL_GAP;
   var orderRowY = orderRowTop + TopoSortDFS.ORDER_CELL_HEIGHT / 2;
 
-  for (var j = 0; j < count; j++) {
-    var orderCellX =
-      startX + j * (TopoSortDFS.ORDER_CELL_WIDTH + TopoSortDFS.ORDER_CELL_SPACING);
-    var orderCellID = this.nextIndex++;
-    this.orderCellIDs[j] = orderCellID;
-    this.cmd(
-      "CreateRectangle",
-      orderCellID,
-      "",
-      TopoSortDFS.ORDER_CELL_WIDTH,
-      TopoSortDFS.ORDER_CELL_HEIGHT,
-      orderCellX,
-      orderRowY,
-      "left",
-      "center"
-    );
-    this.cmd("SetForegroundColor", orderCellID, TopoSortDFS.ORDER_RECT_BORDER);
-    this.cmd("SetBackgroundColor", orderCellID, TopoSortDFS.ORDER_RECT_COLOR);
-    this.cmd("SetTextColor", orderCellID, TopoSortDFS.ORDER_RECT_TEXT_COLOR);
+  var arrayWidth =
+    count > 0
+      ? count * TopoSortDFS.ORDER_CELL_WIDTH +
+        Math.max(0, count - 1) * TopoSortDFS.ORDER_CELL_SPACING
+      : 0;
+  var availableWidth =
+    TopoSortDFS.CANVAS_WIDTH - 2 * TopoSortDFS.CANVAS_SIDE_PADDING;
+
+  var arrayStartX =
+    TopoSortDFS.CANVAS_SIDE_PADDING +
+    Math.max(0, (availableWidth - arrayWidth) / 2);
+  var labelCenterX = arrayStartX + arrayWidth / 2;
+
+  var stackLabelID = this.nextIndex++;
+  this.orderLabelIDs.push(stackLabelID);
+  this.cmd(
+    "CreateLabel",
+    stackLabelID,
+    "Stack (top on right)",
+    labelCenterX,
+    stackLabelY,
+    0
+  );
+  this.cmd("SetTextStyle", stackLabelID, TopoSortDFS.ORDER_LABEL_FONT);
+  this.cmd("SetForegroundColor", stackLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
+
+  if (count > 0) {
+    for (var i = 0; i < count; i++) {
+      var stackCellX =
+        arrayStartX +
+        i * (TopoSortDFS.ORDER_CELL_WIDTH + TopoSortDFS.ORDER_CELL_SPACING);
+      var stackCellID = this.nextIndex++;
+      this.stackCellIDs[i] = stackCellID;
+      this.cmd(
+        "CreateRectangle",
+        stackCellID,
+        "",
+        TopoSortDFS.ORDER_CELL_WIDTH,
+        TopoSortDFS.ORDER_CELL_HEIGHT,
+        stackCellX,
+        stackRowY,
+        "left",
+        "center"
+      );
+      this.cmd("SetForegroundColor", stackCellID, TopoSortDFS.ORDER_RECT_BORDER);
+      this.cmd("SetBackgroundColor", stackCellID, TopoSortDFS.ORDER_RECT_COLOR);
+      this.cmd("SetTextColor", stackCellID, TopoSortDFS.ORDER_RECT_TEXT_COLOR);
+    }
+  }
+
+  var orderLabelID = this.nextIndex++;
+  this.orderLabelIDs.push(orderLabelID);
+  this.cmd(
+    "CreateLabel",
+    orderLabelID,
+    "Topological Order",
+    labelCenterX,
+    orderLabelY,
+    0
+  );
+  this.cmd("SetTextStyle", orderLabelID, TopoSortDFS.ORDER_LABEL_FONT);
+  this.cmd("SetForegroundColor", orderLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
+
+  if (count > 0) {
+    for (var j = 0; j < count; j++) {
+      var orderCellX =
+        arrayStartX +
+        j * (TopoSortDFS.ORDER_CELL_WIDTH + TopoSortDFS.ORDER_CELL_SPACING);
+      var orderCellID = this.nextIndex++;
+      this.orderCellIDs[j] = orderCellID;
+      this.cmd(
+        "CreateRectangle",
+        orderCellID,
+        "",
+        TopoSortDFS.ORDER_CELL_WIDTH,
+        TopoSortDFS.ORDER_CELL_HEIGHT,
+        orderCellX,
+        orderRowY,
+        "left",
+        "center"
+      );
+      this.cmd("SetForegroundColor", orderCellID, TopoSortDFS.ORDER_RECT_BORDER);
+      this.cmd("SetBackgroundColor", orderCellID, TopoSortDFS.ORDER_RECT_COLOR);
+      this.cmd("SetTextColor", orderCellID, TopoSortDFS.ORDER_RECT_TEXT_COLOR);
+    }
   }
 
   this.bottomSectionTopY =
