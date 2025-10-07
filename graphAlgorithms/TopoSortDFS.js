@@ -49,7 +49,7 @@ TopoSortDFS.ANGLE_BUCKET_SCALE = 16;
 
 TopoSortDFS.ARRAY_BASE_X = 720;
 TopoSortDFS.ARRAY_COLUMN_SPACING = 80;
-TopoSortDFS.ARRAY_TOP_Y = TopoSortDFS.ROW2_START_Y + 90;
+TopoSortDFS.ARRAY_TOP_Y = TopoSortDFS.ROW2_START_Y + 70;
 TopoSortDFS.ARRAY_CELL_HEIGHT = 52;
 TopoSortDFS.ARRAY_CELL_WIDTH = 60;
 TopoSortDFS.ARRAY_CELL_INNER_HEIGHT = 42;
@@ -62,9 +62,12 @@ TopoSortDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
 TopoSortDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 TopoSortDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 TopoSortDFS.ARRAY_HEADER_GAP = 20;
-TopoSortDFS.ORDER_ROW_CENTER_X = TopoSortDFS.CANVAS_WIDTH / 2;
-TopoSortDFS.ORDER_LABEL_GAP = 28;
-TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 16;
+TopoSortDFS.ORDER_LEFT_X = TopoSortDFS.CODE_START_X;
+TopoSortDFS.ORDER_LABEL_GAP = 12;
+TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 8;
+TopoSortDFS.ORDER_LABEL_FONT_SIZE = 22;
+TopoSortDFS.ORDER_LABEL_FONT =
+  "bold " + TopoSortDFS.ORDER_LABEL_FONT_SIZE;
 TopoSortDFS.ORDER_CELL_WIDTH = 60;
 TopoSortDFS.ORDER_CELL_HEIGHT = 48;
 TopoSortDFS.ORDER_CELL_SPACING = 12;
@@ -73,8 +76,8 @@ TopoSortDFS.ORDER_RECT_BORDER = "#1d3557";
 TopoSortDFS.ORDER_RECT_TEXT_COLOR = "#1d3557";
 TopoSortDFS.ORDER_RECT_HIGHLIGHT_BORDER = "#ffb703";
 TopoSortDFS.ORDER_RECT_HIGHLIGHT_FILL = "#ffe8b6";
-TopoSortDFS.BOTTOM_SECTION_GAP = 56;
-TopoSortDFS.CODE_TOP_PADDING = 12;
+TopoSortDFS.BOTTOM_SECTION_GAP = 36;
+TopoSortDFS.CODE_TOP_PADDING = 8;
 
 TopoSortDFS.CODE_START_X = 80;
 TopoSortDFS.CODE_LINE_HEIGHT = 30;
@@ -1043,30 +1046,30 @@ TopoSortDFS.prototype.createOrderArea = function () {
   var stackLabelID = this.nextIndex++;
   this.orderLabelIDs.push(stackLabelID);
   var stackLabelY = this.bottomSectionTopY;
+  var stackLabelX = TopoSortDFS.ORDER_LEFT_X;
   this.cmd(
     "CreateLabel",
     stackLabelID,
     "Stack (top on right)",
-    TopoSortDFS.ORDER_ROW_CENTER_X,
-    stackLabelY
+    stackLabelX,
+    stackLabelY,
+    0
   );
-  this.cmd("SetTextStyle", stackLabelID, "bold 22");
+  this.cmd("SetTextStyle", stackLabelID, TopoSortDFS.ORDER_LABEL_FONT);
   this.cmd("SetForegroundColor", stackLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
 
-  var stackRowY =
+  var stackRowTop =
     stackLabelY +
-    TopoSortDFS.ORDER_LABEL_GAP +
-    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN;
+    TopoSortDFS.ORDER_LABEL_FONT_SIZE +
+    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN +
+    TopoSortDFS.ORDER_LABEL_GAP;
+  var stackRowY = stackRowTop + TopoSortDFS.ORDER_CELL_HEIGHT / 2;
   if (count <= 0) {
-    this.bottomSectionTopY = stackRowY + TopoSortDFS.BOTTOM_SECTION_GAP;
+    this.bottomSectionTopY = stackRowTop + TopoSortDFS.BOTTOM_SECTION_GAP;
     return;
   }
 
-  var totalWidth =
-    count * TopoSortDFS.ORDER_CELL_WIDTH +
-    (count - 1) * TopoSortDFS.ORDER_CELL_SPACING;
-  var startX =
-    TopoSortDFS.ORDER_ROW_CENTER_X - totalWidth / 2 + TopoSortDFS.ORDER_CELL_WIDTH / 2;
+  var startX = TopoSortDFS.ORDER_LEFT_X + TopoSortDFS.ORDER_CELL_WIDTH / 2;
 
   for (var i = 0; i < count; i++) {
     var stackCellX =
@@ -1090,24 +1093,27 @@ TopoSortDFS.prototype.createOrderArea = function () {
   var orderLabelID = this.nextIndex++;
   this.orderLabelIDs.push(orderLabelID);
   var orderLabelY =
-    stackRowY +
-    TopoSortDFS.ORDER_CELL_HEIGHT / 2 +
-    TopoSortDFS.ORDER_LABEL_GAP +
-    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN;
+    stackRowTop +
+    TopoSortDFS.ORDER_CELL_HEIGHT +
+    TopoSortDFS.ORDER_LABEL_GAP;
+  var orderLabelX = TopoSortDFS.ORDER_LEFT_X;
   this.cmd(
     "CreateLabel",
     orderLabelID,
     "Topological Order",
-    TopoSortDFS.ORDER_ROW_CENTER_X,
-    orderLabelY
+    orderLabelX,
+    orderLabelY,
+    0
   );
-  this.cmd("SetTextStyle", orderLabelID, "bold 22");
+  this.cmd("SetTextStyle", orderLabelID, TopoSortDFS.ORDER_LABEL_FONT);
   this.cmd("SetForegroundColor", orderLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
 
-  var orderRowY =
+  var orderRowTop =
     orderLabelY +
-    TopoSortDFS.ORDER_LABEL_GAP +
-    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN;
+    TopoSortDFS.ORDER_LABEL_FONT_SIZE +
+    TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN +
+    TopoSortDFS.ORDER_LABEL_GAP;
+  var orderRowY = orderRowTop + TopoSortDFS.ORDER_CELL_HEIGHT / 2;
 
   for (var j = 0; j < count; j++) {
     var orderCellX =
@@ -1129,7 +1135,7 @@ TopoSortDFS.prototype.createOrderArea = function () {
   }
 
   this.bottomSectionTopY =
-    orderRowY + TopoSortDFS.ORDER_CELL_HEIGHT / 2 + TopoSortDFS.BOTTOM_SECTION_GAP;
+    orderRowTop + TopoSortDFS.ORDER_CELL_HEIGHT + TopoSortDFS.BOTTOM_SECTION_GAP;
   this.stack = [];
   this.stackPointer = 0;
   this.topoOrder = [];
