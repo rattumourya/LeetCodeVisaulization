@@ -41,6 +41,8 @@ UndirectedBFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 // Minimum curvature magnitude to keep opposite-direction edges visually parallel.
 UndirectedBFS.MIN_PARALLEL_SEPARATION = 0.42;
 UndirectedBFS.PARALLEL_EDGE_GAP = 0.18;
+UndirectedBFS.FRONTIER_BLINK_BRIGHT_ALPHA = 1;
+UndirectedBFS.FRONTIER_BLINK_DIM_ALPHA = 0.7;
 
 UndirectedBFS.ARRAY_BASE_X = 720;
 UndirectedBFS.ARRAY_COLUMN_SPACING = 80;
@@ -165,6 +167,7 @@ UndirectedBFS.prototype.init = function (am, w, h) {
   this.edgeCurveOverrides = {};
   this.vertexLevelColors = [];
   this.vertexEdgeColors = [];
+  this.vertexHighlightColors = [];
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
@@ -177,6 +180,8 @@ UndirectedBFS.prototype.init = function (am, w, h) {
   this.queueContents = [];
   this.frontierHighlightIDs = {};
   this.frontierHighlightList = [];
+  this.frontierBlinkStates = {};
+  this.activeFrontierVertex = null;
   this.levelLegendEntries = [];
   this.levelLegendAnchorY = null;
   this.bottomSectionTopY =
@@ -224,6 +229,8 @@ UndirectedBFS.prototype.reset = function () {
   this.nextIndex = 0;
   this.frontierHighlightIDs = {};
   this.frontierHighlightList = [];
+  this.frontierBlinkStates = {};
+  this.activeFrontierVertex = null;
   this.levelLegendEntries = [];
   this.levelLegendAnchorY = null;
   if (
@@ -467,6 +474,7 @@ UndirectedBFS.prototype.createGraphArea = function () {
   this.vertexIDs = new Array(this.vertexLabels.length);
   this.vertexLevelColors = new Array(this.vertexLabels.length);
   this.vertexEdgeColors = new Array(this.vertexLabels.length);
+  this.vertexHighlightColors = new Array(this.vertexLabels.length);
   if (!this.edgePairs) {
     this.edgePairs = [];
   }
@@ -489,6 +497,7 @@ UndirectedBFS.prototype.createGraphArea = function () {
     this.cmd("SetHighlight", id, 0);
     this.vertexLevelColors[i] = null;
     this.vertexEdgeColors[i] = null;
+    this.vertexHighlightColors[i] = null;
   }
 
   for (var e = 0; e < this.edgePairs.length; e++) {
@@ -821,17 +830,27 @@ UndirectedBFS.prototype.clearFrontierHighlights = function () {
   }
   this.frontierHighlightList = [];
   this.frontierHighlightIDs = {};
+  this.frontierBlinkStates = {};
+  this.activeFrontierVertex = null;
 };
 
-UndirectedBFS.prototype.createHighlightCircleAtPosition = function (x, y) {
+UndirectedBFS.prototype.createHighlightCircleAtPosition = function (
+  x,
+  y,
+  color
+) {
   if (typeof x !== "number" || typeof y !== "number") {
     return -1;
   }
   var circleID = this.nextIndex++;
+  var highlightColor =
+    typeof color === "string" && color.length > 0
+      ? color
+      : UndirectedBFS.HIGHLIGHT_COLOR;
   this.cmd(
     "CreateHighlightCircle",
     circleID,
-    UndirectedBFS.HIGHLIGHT_COLOR,
+    highlightColor,
     Math.round(x),
     Math.round(y),
     UndirectedBFS.HIGHLIGHT_RADIUS
@@ -855,11 +874,40 @@ UndirectedBFS.prototype.ensureFrontierHighlight = function (vertexIndex) {
   if (!position) {
     return -1;
   }
-  var circleID = this.createHighlightCircleAtPosition(position.x, position.y);
+  var highlightColor = this.getVertexHighlightColor(vertexIndex);
+  var circleID = this.createHighlightCircleAtPosition(
+    position.x,
+    position.y,
+    highlightColor
+  );
   if (circleID !== -1) {
     this.frontierHighlightIDs[vertexIndex] = circleID;
   }
   return circleID;
+};
+
+UndirectedBFS.prototype.setFrontierHighlightColor = function (
+  vertexIndex,
+  color
+) {
+  if (typeof vertexIndex !== "number") {
+    return;
+  }
+  if (!this.frontierHighlightIDs) {
+    this.frontierHighlightIDs = {};
+  }
+  var circleID = this.frontierHighlightIDs[vertexIndex];
+  if (typeof circleID === "undefined") {
+    circleID = this.ensureFrontierHighlight(vertexIndex);
+  }
+  if (circleID === -1) {
+    return;
+  }
+  var targetColor =
+    typeof color === "string" && color.length > 0
+      ? color
+      : this.getVertexHighlightColor(vertexIndex);
+  this.cmd("SetForegroundColor", circleID, targetColor);
 };
 
 UndirectedBFS.prototype.createFrontierHighlightFromParent = function (
@@ -879,7 +927,12 @@ UndirectedBFS.prototype.createFrontierHighlightFromParent = function (
     return -1;
   }
 
-  var circleID = this.createHighlightCircleAtPosition(parentPos.x, parentPos.y);
+  var highlightColor = this.getVertexHighlightColor(vertexIndex);
+  var circleID = this.createHighlightCircleAtPosition(
+    parentPos.x,
+    parentPos.y,
+    highlightColor
+  );
   if (circleID === -1) {
     return -1;
   }
@@ -898,6 +951,9 @@ UndirectedBFS.prototype.removeFrontierHighlight = function (vertexIndex) {
   if (typeof circleID === "undefined") {
     return -1;
   }
+  if (this.frontierBlinkStates) {
+    delete this.frontierBlinkStates[vertexIndex];
+  }
   delete this.frontierHighlightIDs[vertexIndex];
   if (this.frontierHighlightList) {
     for (var i = 0; i < this.frontierHighlightList.length; i++) {
@@ -909,6 +965,71 @@ UndirectedBFS.prototype.removeFrontierHighlight = function (vertexIndex) {
   }
   this.cmd("SetAlpha", circleID, 0);
   return circleID;
+};
+
+UndirectedBFS.prototype.setActiveFrontierVertex = function (vertexIndex) {
+  this.activeFrontierVertex = typeof vertexIndex === "number" ? vertexIndex : null;
+  if (typeof this.activeFrontierVertex !== "number") {
+    return;
+  }
+  if (!this.frontierBlinkStates) {
+    this.frontierBlinkStates = {};
+  }
+  var circleID = this.ensureFrontierHighlight(this.activeFrontierVertex);
+  if (circleID === -1) {
+    this.activeFrontierVertex = null;
+    return;
+  }
+  this.setFrontierHighlightColor(
+    this.activeFrontierVertex,
+    UndirectedBFS.HIGHLIGHT_COLOR
+  );
+  this.frontierBlinkStates[this.activeFrontierVertex] = "bright";
+  this.cmd(
+    "SetAlpha",
+    circleID,
+    UndirectedBFS.FRONTIER_BLINK_BRIGHT_ALPHA
+  );
+};
+
+UndirectedBFS.prototype.toggleFrontierBlink = function (vertexIndex) {
+  if (typeof vertexIndex !== "number") {
+    return;
+  }
+  if (!this.frontierBlinkStates) {
+    this.frontierBlinkStates = {};
+  }
+  var circleID = this.frontierHighlightIDs[vertexIndex];
+  if (typeof circleID === "undefined") {
+    circleID = this.ensureFrontierHighlight(vertexIndex);
+    if (circleID === -1) {
+      return;
+    }
+  }
+  var currentState = this.frontierBlinkStates[vertexIndex];
+  var nextState = currentState === "dim" ? "bright" : "dim";
+  var nextAlpha =
+    nextState === "bright"
+      ? UndirectedBFS.FRONTIER_BLINK_BRIGHT_ALPHA
+      : UndirectedBFS.FRONTIER_BLINK_DIM_ALPHA;
+  this.frontierBlinkStates[vertexIndex] = nextState;
+  this.cmd("SetAlpha", circleID, nextAlpha);
+};
+
+UndirectedBFS.prototype.stepWithActiveBlink = function () {
+  if (typeof this.activeFrontierVertex === "number") {
+    this.toggleFrontierBlink(this.activeFrontierVertex);
+  }
+  this.cmd("Step");
+};
+
+UndirectedBFS.prototype.finishActiveFrontierVertex = function () {
+  if (typeof this.activeFrontierVertex !== "number") {
+    return -1;
+  }
+  var vertexIndex = this.activeFrontierVertex;
+  this.activeFrontierVertex = null;
+  return this.removeFrontierHighlight(vertexIndex);
 };
 
 UndirectedBFS.prototype.removeFrontierHighlightsForLevel = function (vertexList) {
@@ -962,6 +1083,12 @@ UndirectedBFS.prototype.clearTraversalState = function () {
     }
     if (this.vertexEdgeColors && i < this.vertexEdgeColors.length) {
       this.vertexEdgeColors[i] = null;
+    }
+    if (
+      this.vertexHighlightColors &&
+      i < this.vertexHighlightColors.length
+    ) {
+      this.vertexHighlightColors[i] = null;
     }
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], UndirectedBFS.ARRAY_RECT_COLOR);
@@ -1367,6 +1494,13 @@ UndirectedBFS.prototype.applyVertexLevelColor = function (vertexIndex, depth) {
   if (this.vertexEdgeColors && vertexIndex < this.vertexEdgeColors.length) {
     this.vertexEdgeColors[vertexIndex] = derivedEdgeColor;
   }
+  var highlightColor = this.deriveHighlightColor(derivedEdgeColor || color);
+  if (
+    this.vertexHighlightColors &&
+    vertexIndex < this.vertexHighlightColors.length
+  ) {
+    this.vertexHighlightColors[vertexIndex] = highlightColor;
+  }
   this.cmd(
     "SetBackgroundColor",
     this.vertexIDs[vertexIndex],
@@ -1399,6 +1533,30 @@ UndirectedBFS.prototype.getVertexEdgeColor = function (vertexIndex) {
   return null;
 };
 
+UndirectedBFS.prototype.getVertexHighlightColor = function (vertexIndex) {
+  if (
+    this.vertexHighlightColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexHighlightColors.length &&
+    typeof this.vertexHighlightColors[vertexIndex] === "string"
+  ) {
+    return this.vertexHighlightColors[vertexIndex];
+  }
+  var edgeColor = this.getVertexEdgeColor(vertexIndex);
+  if (typeof edgeColor === "string" && edgeColor.length > 0) {
+    return this.deriveHighlightColor(edgeColor);
+  }
+  if (
+    this.vertexLevelColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexLevelColors.length &&
+    typeof this.vertexLevelColors[vertexIndex] === "string"
+  ) {
+    return this.deriveHighlightColor(this.vertexLevelColors[vertexIndex]);
+  }
+  return UndirectedBFS.HIGHLIGHT_COLOR;
+};
+
 UndirectedBFS.prototype.deriveEdgeColor = function (nodeColor) {
   if (typeof nodeColor !== "string") {
     return UndirectedBFS.EDGE_VISITED_COLOR;
@@ -1410,6 +1568,21 @@ UndirectedBFS.prototype.deriveEdgeColor = function (nodeColor) {
   var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
   hsl.s = Math.min(1, hsl.s + 0.2);
   hsl.l = Math.max(0, Math.min(1, hsl.l - 0.18));
+  var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+  return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
+};
+
+UndirectedBFS.prototype.deriveHighlightColor = function (baseColor) {
+  if (typeof baseColor !== "string") {
+    return UndirectedBFS.HIGHLIGHT_COLOR;
+  }
+  var rgb = this.parseHexColor(baseColor);
+  if (!rgb) {
+    return baseColor;
+  }
+  var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.s = Math.min(1, hsl.s + 0.25);
+  hsl.l = Math.max(0, Math.min(1, hsl.l * 0.6));
   var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
   return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
 };
@@ -1768,8 +1941,6 @@ UndirectedBFS.prototype.runTraversal = function (startIndex) {
 UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
   var queue = [];
   var vertexDepths = new Array(this.vertexLabels.length);
-  var levelVertices = {};
-  var currentDepth = 0;
 
   this.prepareLevelLegend(startIndex);
 
@@ -1803,7 +1974,6 @@ UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
   this.highlightCodeLine(4);
   queue.push(startIndex);
   vertexDepths[startIndex] = 0;
-  levelVertices[0] = [startIndex];
   this.enqueueQueueVertex(startIndex);
   this.ensureFrontierHighlight(startIndex);
   this.cmd("Step");
@@ -1818,20 +1988,16 @@ UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
     if (typeof vertexDepths[u] === "number") {
       uDepth = vertexDepths[u];
     }
-    this.cmd("Step");
+    this.setActiveFrontierVertex(u);
+    this.stepWithActiveBlink();
 
     this.highlightCodeLine(7);
     queue.shift();
     this.dequeueQueueVertex();
-    this.cmd("Step");
-
-    if (uDepth > currentDepth) {
-      this.removeFrontierHighlightsForLevel(levelVertices[currentDepth]);
-      currentDepth = uDepth;
-    }
+    this.stepWithActiveBlink();
 
     this.highlightCodeLine(8);
-    this.cmd("Step");
+    this.stepWithActiveBlink();
 
     var neighbors = this.adjacencyList[u];
     for (var i = 0; i < neighbors.length; i++) {
@@ -1841,11 +2007,11 @@ UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
       if (shouldHighlightEdge) {
         this.highlightEdge(u, v, true);
       }
-      this.cmd("Step");
+      this.stepWithActiveBlink();
 
       this.highlightCodeLine(9);
       this.setVisitedCellHighlight(v, true);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
 
       if (!this.visited[v]) {
         this.highlightCodeLine(10);
@@ -1860,7 +2026,7 @@ UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
         vertexDepths[v] = vDepth;
         var levelColor = this.applyVertexLevelColor(v, vDepth);
         this.ensureLevelLegendEntry(vDepth, levelColor);
-        this.cmd("Step");
+        this.stepWithActiveBlink();
 
         this.highlightCodeLine(11);
         this.parentArr[v] = u;
@@ -1869,35 +2035,33 @@ UndirectedBFS.prototype.bfsTraversal = function (startIndex) {
         this.setEdgeTreeState(u, v, true, edgeColor);
         this.setEdgeDirection(u, v, true);
         this.highlightEdge(u, v, true);
-        this.cmd("Step");
+        this.stepWithActiveBlink();
 
         this.highlightCodeLine(12);
         queue.push(v);
-        if (!levelVertices[vDepth]) {
-          levelVertices[vDepth] = [];
-        }
-        levelVertices[vDepth].push(v);
         this.enqueueQueueVertex(v);
         this.createFrontierHighlightFromParent(u, v);
-        this.cmd("Step");
+        this.stepWithActiveBlink();
       }
 
       this.highlightCodeLine(13);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
 
       this.setVisitedCellHighlight(v, false);
       this.highlightEdge(u, v, false);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
 
       this.highlightCodeLine(8);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
     }
 
     this.highlightCodeLine(14);
+    var removedCircleID = this.finishActiveFrontierVertex();
+    if (removedCircleID !== -1) {
+      this.cmd("Delete", removedCircleID);
+    }
     this.cmd("Step");
   }
-
-  this.removeFrontierHighlightsForLevel(levelVertices[currentDepth]);
 
   this.highlightCodeLine(15);
   this.cmd("Step");
