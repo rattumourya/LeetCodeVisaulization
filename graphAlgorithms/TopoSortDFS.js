@@ -1072,12 +1072,7 @@ TopoSortDFS.prototype.createOrderArea = function () {
       ? count * TopoSortDFS.ORDER_CELL_WIDTH +
         Math.max(0, count - 1) * TopoSortDFS.ORDER_CELL_SPACING
       : 0;
-  var availableWidth =
-    TopoSortDFS.CANVAS_WIDTH - 2 * TopoSortDFS.CANVAS_SIDE_PADDING;
-
-  var arrayStartX =
-    TopoSortDFS.CANVAS_SIDE_PADDING +
-    Math.max(0, (availableWidth - arrayWidth) / 2);
+  var arrayStartX = TopoSortDFS.CODE_START_X;
   var labelCenterX = arrayStartX + arrayWidth / 2;
 
   var stackLabelID = this.nextIndex++;
@@ -1108,7 +1103,7 @@ TopoSortDFS.prototype.createOrderArea = function () {
         TopoSortDFS.ORDER_CELL_HEIGHT,
         stackCellX,
         stackRowY,
-        "left",
+        "center",
         "center"
       );
       this.cmd("SetForegroundColor", stackCellID, TopoSortDFS.ORDER_RECT_BORDER);
@@ -1145,7 +1140,7 @@ TopoSortDFS.prototype.createOrderArea = function () {
         TopoSortDFS.ORDER_CELL_HEIGHT,
         orderCellX,
         orderRowY,
-        "left",
+        "center",
         "center"
       );
       this.cmd("SetForegroundColor", orderCellID, TopoSortDFS.ORDER_RECT_BORDER);
@@ -1356,7 +1351,7 @@ TopoSortDFS.prototype.pushRecursionFrame = function (vertex) {
   }
 
   var frameID = this.recursionFrameIDs[this.recursionDepth];
-  var text = "dfs(" + this.vertexLabels[vertex] + ")";
+  var text = "dfs(" + this.vertexLabels[vertex] + ", visited, stack)";
   this.cmd("SetText", frameID, text);
   this.cmd("SetAlpha", frameID, 1);
   this.cmd(
