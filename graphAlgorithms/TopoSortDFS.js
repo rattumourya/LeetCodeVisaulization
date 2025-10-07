@@ -63,8 +63,8 @@ TopoSortDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 TopoSortDFS.ARRAY_VISITED_FILL = "#b3e5fc";
 TopoSortDFS.ARRAY_HEADER_GAP = 20;
 TopoSortDFS.ORDER_LEFT_X = TopoSortDFS.CODE_START_X;
-TopoSortDFS.ORDER_LABEL_GAP = 12;
-TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 8;
+TopoSortDFS.ORDER_LABEL_GAP = 8;
+TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 4;
 TopoSortDFS.ORDER_LABEL_FONT_SIZE = 22;
 TopoSortDFS.ORDER_LABEL_FONT =
   "bold " + TopoSortDFS.ORDER_LABEL_FONT_SIZE;
@@ -76,8 +76,8 @@ TopoSortDFS.ORDER_RECT_BORDER = "#1d3557";
 TopoSortDFS.ORDER_RECT_TEXT_COLOR = "#1d3557";
 TopoSortDFS.ORDER_RECT_HIGHLIGHT_BORDER = "#ffb703";
 TopoSortDFS.ORDER_RECT_HIGHLIGHT_FILL = "#ffe8b6";
-TopoSortDFS.BOTTOM_SECTION_GAP = 36;
-TopoSortDFS.CODE_TOP_PADDING = 8;
+TopoSortDFS.BOTTOM_SECTION_GAP = 16;
+TopoSortDFS.CODE_TOP_PADDING = 4;
 
 TopoSortDFS.CODE_START_X = 80;
 TopoSortDFS.CODE_LINE_HEIGHT = 30;
@@ -236,7 +236,7 @@ TopoSortDFS.prototype.init = function (am, w, h) {
   this.stackPointer = 0;
   this.nextOrderIndex = 0;
 
-  this.graphMode = TopoSortDFS.GRAPH_MODE_SAMPLE;
+  this.graphMode = TopoSortDFS.GRAPH_MODE_RANDOM;
 
   this.implementAction(this.reset.bind(this), 0);
 };
@@ -1069,7 +1069,7 @@ TopoSortDFS.prototype.createOrderArea = function () {
     return;
   }
 
-  var startX = TopoSortDFS.ORDER_LEFT_X + TopoSortDFS.ORDER_CELL_WIDTH / 2;
+  var startX = TopoSortDFS.ORDER_LEFT_X;
 
   for (var i = 0; i < count; i++) {
     var stackCellX =
@@ -1083,7 +1083,9 @@ TopoSortDFS.prototype.createOrderArea = function () {
       TopoSortDFS.ORDER_CELL_WIDTH,
       TopoSortDFS.ORDER_CELL_HEIGHT,
       stackCellX,
-      stackRowY
+      stackRowY,
+      "left",
+      "center"
     );
     this.cmd("SetForegroundColor", stackCellID, TopoSortDFS.ORDER_RECT_BORDER);
     this.cmd("SetBackgroundColor", stackCellID, TopoSortDFS.ORDER_RECT_COLOR);
@@ -1127,7 +1129,9 @@ TopoSortDFS.prototype.createOrderArea = function () {
       TopoSortDFS.ORDER_CELL_WIDTH,
       TopoSortDFS.ORDER_CELL_HEIGHT,
       orderCellX,
-      orderRowY
+      orderRowY,
+      "left",
+      "center"
     );
     this.cmd("SetForegroundColor", orderCellID, TopoSortDFS.ORDER_RECT_BORDER);
     this.cmd("SetBackgroundColor", orderCellID, TopoSortDFS.ORDER_RECT_COLOR);
