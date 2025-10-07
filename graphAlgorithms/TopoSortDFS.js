@@ -89,11 +89,14 @@ TopoSortDFS.CODE_STANDARD_COLOR = "#1d3557";
 TopoSortDFS.CODE_HIGHLIGHT_COLOR = "#e63946";
 TopoSortDFS.CODE_FONT = "bold 18";
 
-TopoSortDFS.RECURSION_AREA_CENTER_X = 660;
+TopoSortDFS.RECURSION_FRAME_WIDTH = 320;
+TopoSortDFS.RECURSION_AREA_CENTER_X =
+  TopoSortDFS.CANVAS_WIDTH -
+  TopoSortDFS.CANVAS_SIDE_PADDING -
+  TopoSortDFS.RECURSION_FRAME_WIDTH / 2;
 TopoSortDFS.RECURSION_HEADER_HEIGHT = 44;
 TopoSortDFS.RECURSION_LABEL_MARGIN = 14;
 TopoSortDFS.RECURSION_AREA_BOTTOM_MARGIN = 30;
-TopoSortDFS.RECURSION_FRAME_WIDTH = 320;
 TopoSortDFS.RECURSION_FRAME_HEIGHT = 34;
 TopoSortDFS.RECURSION_FRAME_MIN_HEIGHT = 22;
 TopoSortDFS.RECURSION_FRAME_SPACING = 10;
@@ -158,7 +161,6 @@ TopoSortDFS.CODE_LINES = [
   ["    }"],
   ["    stack.push(v);"],
   ["}"],
-  ["// Return topological sort as a List<Integer>"],
   ["List<Integer> topologicalSort() {"],
   ["    Stack<Integer> stack = new Stack<>();"],
   ["    boolean[] visited = new boolean[V];"],
@@ -1083,7 +1085,7 @@ TopoSortDFS.prototype.createOrderArea = function () {
     "Stack (top on right)",
     labelCenterX,
     stackLabelY,
-    0
+    1
   );
   this.cmd("SetTextStyle", stackLabelID, TopoSortDFS.ORDER_LABEL_FONT);
   this.cmd("SetForegroundColor", stackLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
@@ -1120,7 +1122,7 @@ TopoSortDFS.prototype.createOrderArea = function () {
     "Topological Order",
     labelCenterX,
     orderLabelY,
-    0
+    1
   );
   this.cmd("SetTextStyle", orderLabelID, TopoSortDFS.ORDER_LABEL_FONT);
   this.cmd("SetForegroundColor", orderLabelID, TopoSortDFS.CODE_STANDARD_COLOR);
@@ -1275,7 +1277,7 @@ TopoSortDFS.prototype.createRecursionArea = function () {
     "Call Stack",
     TopoSortDFS.RECURSION_AREA_CENTER_X,
     this.bottomSectionTopY + TopoSortDFS.RECURSION_HEADER_HEIGHT / 2,
-    0
+    1
   );
   this.cmd(
     "SetForegroundColor",
