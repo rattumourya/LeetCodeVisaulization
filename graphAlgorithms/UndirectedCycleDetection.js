@@ -150,6 +150,15 @@ UndirectedCycleDetection.prototype.init = function (am, w, h) {
   this.controls = [];
   this.addControls();
 
+  if (this.animationManager && this.animationManager.setAllLayers) {
+    this.animationManager.setAllLayers([
+      0,
+      UndirectedCycleDetection.ACTIVE_VERTEX_RING_LAYER,
+      UndirectedCycleDetection.GRAPH_NODE_LAYER,
+      UndirectedCycleDetection.TRAVERSAL_HIGHLIGHT_LAYER
+    ]);
+  }
+
   this.vertexLabels = [];
   this.vertexPositions = [];
   this.adjacencyList = [];
