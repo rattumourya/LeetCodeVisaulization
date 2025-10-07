@@ -41,6 +41,8 @@ DirectedBFS.BIDIRECTIONAL_EXTRA_OFFSET = 0.12;
 // Minimum curvature magnitude to keep opposite-direction edges visually parallel.
 DirectedBFS.MIN_PARALLEL_SEPARATION = 0.42;
 DirectedBFS.PARALLEL_EDGE_GAP = 0.18;
+DirectedBFS.FRONTIER_BLINK_BRIGHT_ALPHA = 1;
+DirectedBFS.FRONTIER_BLINK_DIM_ALPHA = 0.7;
 
 DirectedBFS.ARRAY_BASE_X = 720;
 DirectedBFS.ARRAY_COLUMN_SPACING = 80;
@@ -67,62 +69,43 @@ DirectedBFS.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedBFS.CODE_FONT = "bold 22";
 
 DirectedBFS.QUEUE_AREA_CENTER_X = 660;
-DirectedBFS.QUEUE_HEADER_HEIGHT = 44;
-DirectedBFS.QUEUE_LABEL_MARGIN = 14;
-DirectedBFS.QUEUE_AREA_BOTTOM_MARGIN = 30;
-DirectedBFS.QUEUE_FRAME_WIDTH = 320;
-DirectedBFS.QUEUE_FRAME_HEIGHT = 34;
-DirectedBFS.QUEUE_FRAME_MIN_HEIGHT = 22;
-DirectedBFS.QUEUE_FRAME_SPACING = 10;
-DirectedBFS.QUEUE_FRAME_MIN_SPACING = 6;
+DirectedBFS.QUEUE_TOP_Y = DirectedBFS.ROW3_START_Y - 120;
+DirectedBFS.QUEUE_SLOT_WIDTH = 60;
+DirectedBFS.QUEUE_SLOT_HEIGHT = 42;
+DirectedBFS.QUEUE_SLOT_SPACING = 12;
+DirectedBFS.QUEUE_SLOT_GAP = DirectedBFS.QUEUE_SLOT_WIDTH + DirectedBFS.QUEUE_SLOT_SPACING;
+DirectedBFS.QUEUE_HEADER_GAP = 46;
 DirectedBFS.QUEUE_RECT_COLOR = "#f8f9fa";
 DirectedBFS.QUEUE_RECT_BORDER = "#1d3557";
 DirectedBFS.QUEUE_RECT_ACTIVE_BORDER = "#e63946";
+DirectedBFS.QUEUE_RECT_BORDER_THICKNESS = 1;
+DirectedBFS.QUEUE_RECT_ACTIVE_THICKNESS = 3;
 DirectedBFS.QUEUE_TEXT_COLOR = "#1d3557";
 DirectedBFS.QUEUE_FONT = "bold 18";
 
 DirectedBFS.TITLE_COLOR = "#1d3557";
 DirectedBFS.START_INFO_COLOR = "#264653";
 DirectedBFS.HIGHLIGHT_COLOR = "#ff3b30";
-DirectedBFS.LEGEND_BASE_X = 80;
-DirectedBFS.LEGEND_RECT_WIDTH = 34;
-DirectedBFS.LEGEND_RECT_HEIGHT = 18;
-DirectedBFS.LEGEND_SPACING = 12;
-DirectedBFS.LEGEND_TEXT_GAP = 14;
-DirectedBFS.LEGEND_FONT = "bold 14";
-DirectedBFS.LEGEND_TEXT_COLOR = "#1d3557";
-DirectedBFS.LEGEND_DEFAULT_BASE_Y = DirectedBFS.ROW2_START_Y + 120;
-
-DirectedBFS.LEVEL_COLORS = [
-  "#c6e2ff",
-  "#d0f4de",
-  "#ffeacc",
-  "#e8d7ff",
-  "#f0f4c3",
-  "#c8f7f4",
-  "#dbe7ff",
-  "#f2e7fe"
-];
 
 DirectedBFS.CODE_LINES = [
-    ["void bfs(int start) {"],
-    ["    queue<int> q;"],
-    ["    visited[start] = true;"],
-    ["    parentArr[start] = -1;"],
-    ["    q.push(start);"],
-    ["    while (!q.empty()) {"],
-    ["        int u = q.front();"],
-    ["        q.pop();"],
-    ["        for (int v : adj[u]) {"],
-    ["            if (!visited[v]) {"],
-    ["                visited[v] = true;"],
-    ["                parentArr[v] = u;"],
-    ["                q.push(v);"],
-    ["            }"],
-    ["        }"],
-    ["    }"],
-    ["}"]
-  ];
+  ["void bfs(int start) {"],
+  ["    queue<int> q;"],
+  ["    visited[start] = true;"],
+  ["    parentArr[start] = -1;"],
+  ["    q.push(start);"],
+  ["    while (!q.empty()) {"],
+  ["        int u = q.front();"],
+  ["        q.pop();"],
+  ["        for (int v : adj[u]) {"],
+  ["            if (!visited[v]) {"],
+  ["                visited[v] = true;"],
+  ["                parentArr[v] = u;"],
+  ["                q.push(v);"],
+  ["            }"],
+  ["        }"],
+  ["    }"],
+  ["}"],
+];
 
 DirectedBFS.TEMPLATE_ALLOWED = [
   [false, true, true, false, true, false, false, true, false, false],
@@ -134,7 +117,7 @@ DirectedBFS.TEMPLATE_ALLOWED = [
   [false, false, true, true, false, true, false, false, false, true],
   [true, false, false, false, true, false, false, false, true, false],
   [false, false, false, false, true, true, false, true, false, true],
-  [false, false, false, false, false, true, true, false, true, false]
+  [false, false, false, false, false, true, true, false, true, false],
 ];
 
 DirectedBFS.EDGE_CURVES = [
@@ -147,7 +130,7 @@ DirectedBFS.EDGE_CURVES = [
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
 DirectedBFS.prototype.init = function (am, w, h) {
@@ -165,12 +148,14 @@ DirectedBFS.prototype.init = function (am, w, h) {
   this.edgeCurveOverrides = {};
   this.vertexLevelColors = [];
   this.vertexEdgeColors = [];
+  this.vertexHighlightColors = [];
   this.vertexIDs = [];
   this.frontierHighlightStates = {};
   this.visitedRectIDs = [];
   this.parentRectIDs = [];
   this.vertexRowLabelIDs = [];
   this.codeID = [];
+  this.highlightCircleID = -1;
   this.currentCodeLine = -1;
   this.startDisplayID = -1;
   this.queueHeaderID = -1;
@@ -206,16 +191,6 @@ DirectedBFS.prototype.addControls = function () {
   this.newGraphButton = addControlToAlgorithmBar("Button", "New Graph");
   this.newGraphButton.onclick = this.resetCallback.bind(this);
 
-  var radioButtons = addRadioButtonGroupToAlgorithmBar(
-    ["Directed Graph", "Undirected Graph"],
-    "GraphType"
-  );
-  this.directedGraphButton = radioButtons[0];
-  this.undirectedGraphButton = radioButtons[1];
-  this.directedGraphButton.checked = true;
-  this.directedGraphButton.disabled = true;
-  this.undirectedGraphButton.disabled = true;
-
   this.controls.push(this.startField, this.startButton, this.newGraphButton);
 };
 
@@ -238,11 +213,6 @@ DirectedBFS.prototype.reset = function () {
 DirectedBFS.prototype.setup = function () {
   this.commands = [];
 
-  this.edgePairs = [];
-  this.edgeStates = {};
-  this.edgeMeta = {};
-  this.edgeCurveOverrides = {};
-
   var vertexCount = 10;
   this.vertexLabels = this.createVertexLabels(vertexCount);
   this.generateRandomGraph(vertexCount);
@@ -250,8 +220,8 @@ DirectedBFS.prototype.setup = function () {
   this.createTitleRow();
   this.createGraphArea();
   this.createArrayArea();
-  this.createCodeDisplay();
   this.createQueueArea();
+  this.createCodeDisplay();
 
   this.highlightCodeLine(-1);
 
@@ -402,7 +372,7 @@ DirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
       to: to,
       min: edge.u,
       max: edge.v,
-      curve: 0
+      curve: 0,
     };
     directedEdges.push(record);
     baseRecords[b] = record;
@@ -463,7 +433,7 @@ DirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
           to: neighbor,
           min: Math.min(ensure, neighbor),
           max: Math.max(ensure, neighbor),
-          curve: 0
+          curve: 0,
         });
         directedMap[ensureKey] = true;
         outDegree[ensure]++;
@@ -491,7 +461,7 @@ DirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
           to: to,
           min: Math.min(from, to),
           max: Math.max(from, to),
-          curve: 0
+          curve: 0,
         });
         directedMap[key] = true;
         outDegree[from]++;
@@ -531,7 +501,7 @@ DirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
             to: c,
             min: a,
             max: c,
-            curve: 0
+            curve: 0,
           });
           directedMap[a + "->" + c] = true;
           hasCurveCandidate = true;
@@ -541,7 +511,7 @@ DirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
             to: a,
             min: a,
             max: c,
-            curve: 0
+            curve: 0,
           });
           directedMap[c + "->" + a] = true;
           hasCurveCandidate = true;
@@ -557,127 +527,92 @@ DirectedBFS.prototype.generateRandomGraph = function (vertexCount) {
     if (!pairBuckets[bucketKey]) {
       pairBuckets[bucketKey] = {
         edges: [],
-        min: entry.min,
-        max: entry.max
       };
     }
     pairBuckets[bucketKey].edges.push(entry);
   }
 
-  var hasCurveEdge = false;
-  var applyCurves = function (list, baseCurveValue, orientationSign) {
-    if (!list.length) {
-      return;
-    }
-    list[0].curve = baseCurveValue;
-    if (Math.abs(baseCurveValue) > 0.01) {
-      hasCurveEdge = true;
-    }
-    var baseSign;
-    if (Math.abs(baseCurveValue) > 0.01) {
-      baseSign = baseCurveValue >= 0 ? 1 : -1;
+  var adjustCurve = function (baseCurve, offsetIndex) {
+    if (Math.abs(baseCurve) < DirectedBFS.MIN_PARALLEL_SEPARATION) {
+      var sign = baseCurve >= 0 ? 1 : -1;
+      baseCurve =
+        sign *
+        Math.max(
+          DirectedBFS.MIN_PARALLEL_SEPARATION,
+          Math.abs(baseCurve) + offsetIndex * DirectedBFS.PARALLEL_EDGE_GAP
+        );
     } else {
-      baseSign = orientationSign >= 0 ? 1 : -1;
+      baseCurve += offsetIndex * DirectedBFS.PARALLEL_EDGE_GAP;
     }
-    for (var idx = 1; idx < list.length; idx++) {
-      var magnitude = Math.abs(baseCurveValue);
-      var offsetIndex;
-      if (magnitude < 0.01) {
-        magnitude = DirectedBFS.BIDIRECTIONAL_CURVE;
-        offsetIndex = idx - 1;
-      } else {
-        offsetIndex = idx;
-      }
-      var offset = DirectedBFS.BIDIRECTIONAL_EXTRA_OFFSET * offsetIndex;
-      var curveValue = baseSign * (magnitude + offset);
-      list[idx].curve = curveValue;
-      if (Math.abs(curveValue) > 0.01) {
-        hasCurveEdge = true;
-      }
-    }
+    return baseCurve;
   };
 
   for (var bucketKey in pairBuckets) {
-    if (!Object.prototype.hasOwnProperty.call(pairBuckets, bucketKey)) {
+    if (!pairBuckets.hasOwnProperty(bucketKey)) {
       continue;
     }
     var bucket = pairBuckets[bucketKey];
-    var baseCurve = baseCurveForPair(bucket.min, bucket.max);
-    var forward = [];
-    var backward = [];
-    for (var bi = 0; bi < bucket.edges.length; bi++) {
-      var edgeRecord = bucket.edges[bi];
-      if (edgeRecord.from === bucket.min && edgeRecord.to === bucket.max) {
-        forward.push(edgeRecord);
+    var edges = bucket.edges;
+    if (!edges || edges.length === 0) {
+      continue;
+    }
+
+    edges.sort(function (a, b) {
+      return a.from - b.from;
+    });
+
+    var baseParts = bucketKey.split("-");
+    var min = parseInt(baseParts[0], 10);
+    var max = parseInt(baseParts[1], 10);
+    var baseCurve = baseCurveForPair(min, max);
+
+    if (edges.length === 1) {
+      edges[0].curve = baseCurve;
+    } else if (edges.length === 2) {
+      var forward = edges[0];
+      var backward = edges[1];
+      if (forward.from === backward.to && forward.to === backward.from) {
+        forward.curve = baseCurve + DirectedBFS.BIDIRECTIONAL_EXTRA_OFFSET;
+        backward.curve = -(
+          baseCurve + DirectedBFS.BIDIRECTIONAL_EXTRA_OFFSET
+        );
       } else {
-        backward.push(edgeRecord);
+        for (var e = 0; e < edges.length; e++) {
+          edges[e].curve = adjustCurve(baseCurve, e);
+        }
+      }
+    } else {
+      for (var multi = 0; multi < edges.length; multi++) {
+        edges[multi].curve = adjustCurve(baseCurve, multi);
       }
     }
-
-    if (forward.length > 0 && backward.length > 0) {
-      var baseSign = 1;
-      if (Math.abs(baseCurve) > 0.01) {
-        baseSign = baseCurve >= 0 ? 1 : -1;
-      }
-      var minParallel = DirectedBFS.MIN_PARALLEL_SEPARATION;
-      var magnitude = Math.abs(baseCurve);
-      if (magnitude < minParallel) {
-        magnitude = minParallel;
-      }
-      if (magnitude < 0.01) {
-        magnitude = minParallel;
-      }
-      var forwardCurve = baseSign * magnitude;
-      var backwardCurve = baseSign * (magnitude + DirectedBFS.PARALLEL_EDGE_GAP);
-      applyCurves(forward, forwardCurve, baseSign);
-      applyCurves(backward, backwardCurve, baseSign);
-    } else if (forward.length > 0) {
-      var curveValue = Math.abs(baseCurve) < 0.01 ? 0 : baseCurve;
-      applyCurves(forward, curveValue, 1);
-    } else if (backward.length > 0) {
-      var reverseCurve = Math.abs(baseCurve) < 0.01 ? 0 : -baseCurve;
-      applyCurves(backward, reverseCurve, -1);
-    }
   }
 
-  if (!hasCurveEdge && directedEdges.length > 0) {
-    var fallbackEdge = directedEdges[0];
-    fallbackEdge.curve =
-      fallbackEdge.from === fallbackEdge.min
-        ? DirectedBFS.BIDIRECTIONAL_CURVE
-        : -DirectedBFS.BIDIRECTIONAL_CURVE;
+  for (var edgeIdx = 0; edgeIdx < directedEdges.length; edgeIdx++) {
+    var edgeInfo = directedEdges[edgeIdx];
+    this.adjacencyList[edgeInfo.from].push(edgeInfo.to);
+    var curveKey = this.edgeKey(edgeInfo.from, edgeInfo.to);
+    this.edgeCurveOverrides[curveKey] = edgeInfo.curve;
   }
 
-  for (var listIndex = 0; listIndex < directedEdges.length; listIndex++) {
-    var finalEdge = directedEdges[listIndex];
-    this.adjacencyList[finalEdge.from].push(finalEdge.to);
-    this.edgeCurveOverrides[this.edgeKey(finalEdge.from, finalEdge.to)] =
-      finalEdge.curve;
-  }
-
-  for (var list = 0; list < this.adjacencyList.length; list++) {
-    shuffle(this.adjacencyList[list]);
+  for (var vtx = 0; vtx < this.adjacencyList.length; vtx++) {
+    this.adjacencyList[vtx].sort(function (a, b) {
+      return a - b;
+    });
   }
 };
 
 DirectedBFS.prototype.computeTemplateLayout = function (vertexCount) {
   var layout = [];
-  var baseX = 200;
-  var stepX = 130;
-  var baseY = DirectedBFS.ROW2_START_Y + 120;
-  var rowSpacing = 150;
-  var rowPattern = [4, 3, 4, 3, 4];
+  var radius = 220;
+  var centerX = DirectedBFS.GRAPH_AREA_CENTER_X;
+  var centerY = DirectedBFS.ROW2_START_Y + 240;
 
-  for (var row = 0, index = 0; row < rowPattern.length; row++) {
-    var count = rowPattern[row];
-    var startX = count === 4 ? baseX : baseX + stepX / 2;
-    var y = baseY + row * rowSpacing;
-    for (var col = 0; col < count && index < vertexCount; col++, index++) {
-      layout.push({ x: startX + col * stepX, y: y });
-    }
-    if (layout.length >= vertexCount) {
-      break;
-    }
+  for (var i = 0; i < vertexCount; i++) {
+    var angle = (2 * Math.PI * i) / vertexCount - Math.PI / 2;
+    var x = centerX + radius * Math.cos(angle);
+    var y = centerY + radius * Math.sin(angle);
+    layout.push({ x: Math.round(x), y: Math.round(y) });
   }
 
   return layout;
@@ -709,10 +644,40 @@ DirectedBFS.prototype.createTitleRow = function () {
   this.cmd("SetForegroundColor", this.startDisplayID, DirectedBFS.START_INFO_COLOR);
 };
 
+DirectedBFS.prototype.edgeKey = function (from, to) {
+  return from + "->" + to;
+};
+
+DirectedBFS.prototype.getEdgeCurve = function (from, to) {
+  var override = this.edgeCurveOverrides[this.edgeKey(from, to)];
+  if (typeof override === "number") {
+    return override;
+  }
+  var min = Math.min(from, to);
+  var max = Math.max(from, to);
+  if (
+    DirectedBFS.EDGE_CURVES[min] &&
+    typeof DirectedBFS.EDGE_CURVES[min][max] === "number"
+  ) {
+    var curve = DirectedBFS.EDGE_CURVES[min][max];
+    if (from > to) {
+      curve = -curve;
+    }
+    return curve;
+  }
+  return 0;
+};
+
+DirectedBFS.prototype.getReverseEdgeMeta = function (from, to) {
+  var key = this.edgeKey(to, from);
+  return this.edgeMeta[key] || null;
+};
+
 DirectedBFS.prototype.createGraphArea = function () {
   this.vertexIDs = new Array(this.vertexLabels.length);
   this.vertexLevelColors = new Array(this.vertexLabels.length);
   this.vertexEdgeColors = new Array(this.vertexLabels.length);
+  this.vertexHighlightColors = new Array(this.vertexLabels.length);
   this.edgePairs = [];
 
   for (var i = 0; i < this.vertexLabels.length; i++) {
@@ -733,6 +698,7 @@ DirectedBFS.prototype.createGraphArea = function () {
     this.cmd("SetHighlight", id, 0);
     this.vertexLevelColors[i] = null;
     this.vertexEdgeColors[i] = null;
+    this.vertexHighlightColors[i] = null;
   }
 
   for (var from = 0; from < this.adjacencyList.length; from++) {
@@ -742,7 +708,7 @@ DirectedBFS.prototype.createGraphArea = function () {
       var pair = { from: from, to: to, curve: curve };
       var key = this.edgeKey(from, to);
       this.edgePairs.push(pair);
-      this.edgeStates[key] = { tree: false, color: null };
+      this.edgeStates[key] = { tree: false };
       this.edgeMeta[key] = pair;
       this.cmd(
         "Connect",
@@ -768,6 +734,17 @@ DirectedBFS.prototype.createGraphArea = function () {
     }
   }
 
+  this.highlightCircleID = this.nextIndex++;
+  var startPos = this.vertexPositions[0];
+  this.cmd(
+    "CreateHighlightCircle",
+    this.highlightCircleID,
+    DirectedBFS.HIGHLIGHT_COLOR,
+    startPos.x,
+    startPos.y,
+    DirectedBFS.HIGHLIGHT_RADIUS
+  );
+  this.cmd("SetAlpha", this.highlightCircleID, 0);
 };
 
 DirectedBFS.prototype.createArrayArea = function () {
@@ -828,54 +805,79 @@ DirectedBFS.prototype.createArrayArea = function () {
       rowY
     );
     this.cmd("SetForegroundColor", visitedID, DirectedBFS.ARRAY_RECT_BORDER);
-    this.cmd("SetBackgroundColor", visitedID, DirectedBFS.ARRAY_RECT_COLOR);
-    this.cmd("SetTextColor", visitedID, DirectedBFS.ARRAY_TEXT_COLOR);
     this.cmd(
       "SetRectangleLineThickness",
       visitedID,
       DirectedBFS.ARRAY_RECT_BORDER_THICKNESS
     );
+    this.cmd("SetTextColor", visitedID, DirectedBFS.ARRAY_TEXT_COLOR);
+    this.cmd("SetBackgroundColor", visitedID, DirectedBFS.ARRAY_RECT_COLOR);
 
     var parentID = this.nextIndex++;
     this.parentRectIDs[i] = parentID;
     this.cmd(
       "CreateRectangle",
       parentID,
-      "-",
+      "",
       DirectedBFS.ARRAY_CELL_WIDTH,
       DirectedBFS.ARRAY_CELL_INNER_HEIGHT,
       DirectedBFS.ARRAY_BASE_X + DirectedBFS.ARRAY_COLUMN_SPACING,
       rowY
     );
     this.cmd("SetForegroundColor", parentID, DirectedBFS.ARRAY_RECT_BORDER);
-    this.cmd("SetBackgroundColor", parentID, DirectedBFS.ARRAY_RECT_COLOR);
+    this.cmd(
+      "SetRectangleLineThickness",
+      parentID,
+      DirectedBFS.ARRAY_RECT_BORDER_THICKNESS
+    );
     this.cmd("SetTextColor", parentID, DirectedBFS.ARRAY_TEXT_COLOR);
-  }
-
-  var lastRowIndex = this.vertexLabels.length - 1;
-  if (lastRowIndex >= 0) {
-    var lastCenterY =
-      DirectedBFS.ARRAY_TOP_Y + lastRowIndex * DirectedBFS.ARRAY_CELL_HEIGHT;
-    var arrayBottomY =
-      lastCenterY + DirectedBFS.ARRAY_CELL_INNER_HEIGHT / 2;
-    this.bottomSectionTopY =
-      arrayBottomY + DirectedBFS.BOTTOM_SECTION_GAP;
+    this.cmd("SetBackgroundColor", parentID, DirectedBFS.ARRAY_RECT_COLOR);
   }
 };
 
-DirectedBFS.prototype.setVisitedCellHighlight = function (index, active) {
-  if (index < 0 || index >= this.visitedRectIDs.length) {
-    return;
+DirectedBFS.prototype.createQueueArea = function () {
+  this.queueRectIDs = new Array(this.vertexLabels.length);
+  this.queueData = [];
+
+  this.queueLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.queueLabelID,
+    "Queue",
+    DirectedBFS.QUEUE_AREA_CENTER_X,
+    DirectedBFS.QUEUE_TOP_Y - DirectedBFS.QUEUE_HEADER_GAP,
+    0
+  );
+  this.cmd("SetTextStyle", this.queueLabelID, "bold 20");
+  this.cmd("SetForegroundColor", this.queueLabelID, DirectedBFS.CODE_STANDARD_COLOR);
+
+  var spacing = DirectedBFS.QUEUE_SLOT_GAP;
+  var offset = ((this.vertexLabels.length - 1) * spacing) / 2;
+  for (var i = 0; i < this.vertexLabels.length; i++) {
+    var rectID = this.nextIndex++;
+    this.queueRectIDs[i] = rectID;
+    var x = DirectedBFS.QUEUE_AREA_CENTER_X + i * spacing - offset;
+    var y = DirectedBFS.QUEUE_TOP_Y;
+    this.cmd(
+      "CreateRectangle",
+      rectID,
+      "",
+      DirectedBFS.QUEUE_SLOT_WIDTH,
+      DirectedBFS.QUEUE_SLOT_HEIGHT,
+      x,
+      y
+    );
+    this.cmd("SetForegroundColor", rectID, DirectedBFS.QUEUE_RECT_BORDER);
+    this.cmd(
+      "SetRectangleLineThickness",
+      rectID,
+      DirectedBFS.QUEUE_RECT_BORDER_THICKNESS
+    );
+    this.cmd("SetBackgroundColor", rectID, DirectedBFS.QUEUE_RECT_COLOR);
+    this.cmd("SetTextColor", rectID, DirectedBFS.QUEUE_TEXT_COLOR);
+    this.cmd("SetTextStyle", rectID, DirectedBFS.QUEUE_FONT);
+    this.cmd("SetHighlight", rectID, 0);
   }
-  var color = active
-    ? DirectedBFS.ARRAY_RECT_HIGHLIGHT_BORDER
-    : DirectedBFS.ARRAY_RECT_BORDER;
-  var thickness = active
-    ? DirectedBFS.ARRAY_RECT_HIGHLIGHT_THICKNESS
-    : DirectedBFS.ARRAY_RECT_BORDER_THICKNESS;
-  var rectID = this.visitedRectIDs[index];
-  this.cmd("SetForegroundColor", rectID, color);
-  this.cmd("SetRectangleLineThickness", rectID, thickness);
 };
 
 DirectedBFS.prototype.createCodeDisplay = function () {
@@ -893,160 +895,6 @@ DirectedBFS.prototype.createCodeDisplay = function () {
   for (var i = 0; i < this.codeID.length; i++) {
     for (var j = 0; j < this.codeID[i].length; j++) {
       this.cmd("SetTextStyle", this.codeID[i][j], DirectedBFS.CODE_FONT);
-    }
-  }
-};
-
-DirectedBFS.prototype.computeQueueLayout = function (frameCount) {
-  var layout = {
-    height: DirectedBFS.QUEUE_FRAME_HEIGHT,
-    spacing: DirectedBFS.QUEUE_FRAME_SPACING,
-    startY:
-      this.bottomSectionTopY +
-      DirectedBFS.QUEUE_HEADER_HEIGHT +
-      DirectedBFS.QUEUE_LABEL_MARGIN +
-      DirectedBFS.QUEUE_FRAME_HEIGHT / 2
-  };
-
-  if (frameCount <= 0) {
-    return layout;
-  }
-
-  var availableHeight =
-    DirectedBFS.CANVAS_HEIGHT -
-    (this.bottomSectionTopY +
-      DirectedBFS.QUEUE_HEADER_HEIGHT +
-      DirectedBFS.QUEUE_LABEL_MARGIN +
-      DirectedBFS.QUEUE_AREA_BOTTOM_MARGIN);
-
-  if (availableHeight <= 0) {
-    return layout;
-  }
-
-  var spacing = frameCount === 1 ? 0 : layout.spacing;
-  var height = Math.min(
-    DirectedBFS.QUEUE_FRAME_HEIGHT,
-    Math.max(
-      DirectedBFS.QUEUE_FRAME_MIN_HEIGHT,
-      Math.floor(
-        (availableHeight - (frameCount - 1) * spacing) / Math.max(frameCount, 1)
-      )
-    )
-  );
-
-  var totalHeight = height * frameCount + spacing * (frameCount - 1);
-  if (totalHeight > availableHeight) {
-    spacing = Math.max(
-      DirectedBFS.QUEUE_FRAME_MIN_SPACING,
-      Math.floor(
-        (availableHeight - height * frameCount) / Math.max(1, frameCount - 1)
-      )
-    );
-    if (spacing < 0) {
-      spacing = 0;
-    }
-    height = Math.max(
-      DirectedBFS.QUEUE_FRAME_MIN_HEIGHT,
-      Math.floor(
-        (availableHeight - (frameCount - 1) * spacing) / Math.max(frameCount, 1)
-      )
-    );
-  }
-
-  layout.height = height;
-  layout.spacing = spacing;
-  layout.startY =
-    this.bottomSectionTopY +
-    DirectedBFS.QUEUE_HEADER_HEIGHT +
-    DirectedBFS.QUEUE_LABEL_MARGIN +
-    height / 2;
-
-  return layout;
-};
-
-DirectedBFS.prototype.createQueueArea = function () {
-  var frameCount = this.vertexLabels.length;
-  var layout = this.computeQueueLayout(frameCount);
-
-  this.queueHeaderID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.queueHeaderID,
-    "Queue",
-    DirectedBFS.QUEUE_AREA_CENTER_X,
-    this.bottomSectionTopY + DirectedBFS.QUEUE_HEADER_HEIGHT / 2,
-    0
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.queueHeaderID,
-    DirectedBFS.CODE_STANDARD_COLOR
-  );
-  this.cmd("SetTextStyle", this.queueHeaderID, "bold 22");
-
-  this.queueFrameIDs = [];
-  var y = layout.startY;
-
-  for (var i = 0; i < frameCount; i++) {
-    var rectID = this.nextIndex++;
-    this.cmd(
-      "CreateRectangle",
-      rectID,
-      "",
-      DirectedBFS.QUEUE_FRAME_WIDTH,
-      layout.height,
-      DirectedBFS.QUEUE_AREA_CENTER_X,
-      y
-    );
-    this.cmd(
-      "SetBackgroundColor",
-      rectID,
-      DirectedBFS.QUEUE_RECT_COLOR
-    );
-    this.cmd("SetForegroundColor", rectID, DirectedBFS.QUEUE_RECT_BORDER);
-    this.cmd("SetAlpha", rectID, 0);
-    this.cmd("SetTextColor", rectID, DirectedBFS.QUEUE_TEXT_COLOR);
-    this.cmd("SetTextStyle", rectID, DirectedBFS.QUEUE_FONT);
-
-    this.queueFrameIDs.push(rectID);
-    y += layout.height + layout.spacing;
-  }
-
-  this.resetQueueArea();
-};
-
-DirectedBFS.prototype.resetQueueArea = function () {
-  this.queueContents = [];
-  for (var i = 0; i < this.queueFrameIDs.length; i++) {
-    var frameID = this.queueFrameIDs[i];
-    this.cmd("SetAlpha", frameID, 0);
-    this.cmd("SetText", frameID, "");
-    this.cmd("SetForegroundColor", frameID, DirectedBFS.QUEUE_RECT_BORDER);
-  }
-};
-
-DirectedBFS.prototype.updateQueueDisplay = function () {
-  var frontHighlightColor = DirectedBFS.QUEUE_RECT_ACTIVE_BORDER;
-  var defaultColor = DirectedBFS.QUEUE_RECT_BORDER;
-  for (var i = 0; i < this.queueFrameIDs.length; i++) {
-    var frameID = this.queueFrameIDs[i];
-    if (i < this.queueContents.length) {
-      var vertexIndex = this.queueContents[i];
-      var label =
-        vertexIndex >= 0 && vertexIndex < this.vertexLabels.length
-          ? this.vertexLabels[vertexIndex]
-          : "";
-      this.cmd("SetText", frameID, label);
-      this.cmd("SetAlpha", frameID, 1);
-    } else {
-      this.cmd("SetText", frameID, "");
-      this.cmd("SetAlpha", frameID, 0);
-    }
-
-    if (i === 0 && this.queueContents.length > 0) {
-      this.cmd("SetForegroundColor", frameID, frontHighlightColor);
-    } else {
-      this.cmd("SetForegroundColor", frameID, defaultColor);
     }
   }
 };
@@ -1089,15 +937,19 @@ DirectedBFS.prototype.clearFrontierHighlights = function () {
   this.frontierHighlightStates = {};
 };
 
-DirectedBFS.prototype.createHighlightCircleAtPosition = function (x, y) {
+DirectedBFS.prototype.createHighlightCircleAtPosition = function (x, y, color) {
   if (typeof x !== "number" || typeof y !== "number") {
     return -1;
   }
   var circleID = this.nextIndex++;
+  var highlightColor =
+    typeof color === "string" && color.length > 0
+      ? color
+      : DirectedBFS.HIGHLIGHT_COLOR;
   this.cmd(
     "CreateHighlightCircle",
     circleID,
-    DirectedBFS.HIGHLIGHT_COLOR,
+    highlightColor,
     Math.round(x),
     Math.round(y),
     DirectedBFS.HIGHLIGHT_RADIUS
@@ -1106,8 +958,15 @@ DirectedBFS.prototype.createHighlightCircleAtPosition = function (x, y) {
   if (!this.frontierHighlightList) {
     this.frontierHighlightList = [];
   }
-  this.frontierHighlightList.push(circleID);
-  return circleID;
+  var color = active
+    ? DirectedBFS.ARRAY_RECT_HIGHLIGHT_BORDER
+    : DirectedBFS.ARRAY_RECT_BORDER;
+  var thickness = active
+    ? DirectedBFS.ARRAY_RECT_HIGHLIGHT_THICKNESS
+    : DirectedBFS.ARRAY_RECT_BORDER_THICKNESS;
+  var rectID = this.visitedRectIDs[index];
+  this.cmd("SetForegroundColor", rectID, color);
+  this.cmd("SetRectangleLineThickness", rectID, thickness);
 };
 
 DirectedBFS.prototype.setFrontierHighlightState = function (vertexIndex, active) {
@@ -1178,7 +1037,12 @@ DirectedBFS.prototype.createFrontierHighlightFromParent = function (
     return -1;
   }
 
-  var circleID = this.createHighlightCircleAtPosition(parentPos.x, parentPos.y);
+  var highlightColor = this.getVertexHighlightColor(vertexIndex);
+  var circleID = this.createHighlightCircleAtPosition(
+    parentPos.x,
+    parentPos.y,
+    highlightColor
+  );
   if (circleID === -1) {
     return -1;
   }
@@ -1213,6 +1077,16 @@ DirectedBFS.prototype.releaseFrontierHighlight = function (vertexIndex, showStep
         break;
       }
     }
+    this.cmd("SetText", rectID, text);
+    var isFront = i === 0 && this.queueData.length > 0;
+    var color = isFront
+      ? DirectedBFS.QUEUE_RECT_ACTIVE_BORDER
+      : DirectedBFS.QUEUE_RECT_BORDER;
+    var thickness = isFront
+      ? DirectedBFS.QUEUE_RECT_ACTIVE_THICKNESS
+      : DirectedBFS.QUEUE_RECT_BORDER_THICKNESS;
+    this.cmd("SetForegroundColor", rectID, color);
+    this.cmd("SetRectangleLineThickness", rectID, thickness);
   }
   if (this.frontierHighlightStates) {
     this.frontierHighlightStates[vertexIndex] = false;
@@ -1239,29 +1113,19 @@ DirectedBFS.prototype.removeFrontierHighlightsForLevel = function (vertexList) {
   vertexList.length = 0;
 };
 
-DirectedBFS.prototype.highlightCodeLine = function (lineIndex) {
-  if (this.currentCodeLine >= 0) {
-    this.cmd(
-      "SetForegroundColor",
-      this.codeID[this.currentCodeLine][0],
-      DirectedBFS.CODE_STANDARD_COLOR
-    );
+DirectedBFS.prototype.dequeueDisplay = function () {
+  if (this.queueData.length === 0) {
+    return -1;
   }
-  this.currentCodeLine = lineIndex;
-  if (lineIndex >= 0) {
-    this.cmd(
-      "SetForegroundColor",
-      this.codeID[lineIndex][0],
-      DirectedBFS.CODE_HIGHLIGHT_COLOR
-    );
-  }
+  var value = this.queueData.shift();
+  this.renderQueue();
+  return value;
 };
 
 DirectedBFS.prototype.clearTraversalState = function () {
-  this.clearFrontierHighlights();
-  this.resetLevelLegends();
   this.visited = new Array(this.vertexLabels.length);
   this.parentArr = new Array(this.vertexLabels.length);
+
   for (var i = 0; i < this.vertexLabels.length; i++) {
     this.visited[i] = false;
     this.parentArr[i] = null;
@@ -1271,13 +1135,17 @@ DirectedBFS.prototype.clearTraversalState = function () {
     if (this.vertexEdgeColors && i < this.vertexEdgeColors.length) {
       this.vertexEdgeColors[i] = null;
     }
+    if (
+      this.vertexHighlightColors &&
+      i < this.vertexHighlightColors.length
+    ) {
+      this.vertexHighlightColors[i] = null;
+    }
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedBFS.ARRAY_RECT_COLOR);
-    this.cmd(
-      "SetForegroundColor",
-      this.visitedRectIDs[i],
-      DirectedBFS.ARRAY_RECT_BORDER
-    );
+    this.cmd("SetText", this.parentRectIDs[i], "");
+    this.cmd("SetBackgroundColor", this.parentRectIDs[i], DirectedBFS.ARRAY_RECT_COLOR);
+    this.cmd("SetForegroundColor", this.visitedRectIDs[i], DirectedBFS.ARRAY_RECT_BORDER);
     this.cmd(
       "SetRectangleLineThickness",
       this.visitedRectIDs[i],
@@ -1299,6 +1167,8 @@ DirectedBFS.prototype.clearTraversalState = function () {
   this.resetEdgeStates();
   this.clearEdgeHighlights();
   this.resetQueueArea();
+  this.frontierBlinkStates = {};
+  this.activeFrontierVertex = null;
 };
 
 DirectedBFS.prototype.resetLevelLegends = function () {
@@ -1375,105 +1245,44 @@ DirectedBFS.prototype.ensureLevelLegendEntry = function (depth, color) {
     var x = DirectedBFS.LEGEND_BASE_X;
 
     this.cmd(
-      "CreateRectangle",
-      rectID,
-      "",
-      DirectedBFS.LEGEND_RECT_WIDTH,
-      DirectedBFS.LEGEND_RECT_HEIGHT,
-      x,
-      y
+      "SetRectangleLineThickness",
+      this.parentRectIDs[i],
+      DirectedBFS.ARRAY_RECT_BORDER_THICKNESS
     );
-    this.cmd("SetForegroundColor", rectID, DirectedBFS.GRAPH_NODE_BORDER);
-    this.cmd("SetBackgroundColor", rectID, fillColor);
+    this.cmd("SetBackgroundColor", this.vertexIDs[i], DirectedBFS.GRAPH_NODE_COLOR);
+    this.cmd("SetTextColor", this.vertexIDs[i], DirectedBFS.GRAPH_NODE_TEXT);
+    this.cmd("SetHighlight", this.vertexIDs[i], 0);
+  }
 
-    var labelID = this.nextIndex++;
-    var labelText = "Level " + depth;
-    var labelX =
-      x + DirectedBFS.LEGEND_RECT_WIDTH / 2 + DirectedBFS.LEGEND_TEXT_GAP;
+  for (var k = 0; k < this.edgePairs.length; k++) {
+    var info = this.edgePairs[k];
+    var fromID = this.vertexIDs[info.from];
+    var toID = this.vertexIDs[info.to];
+    this.cmd("SetEdgeColor", fromID, toID, DirectedBFS.EDGE_COLOR);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedBFS.EDGE_THICKNESS);
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    var key = this.edgeKey(info.from, info.to);
+    this.edgeStates[key] = { tree: false };
+  }
 
-    this.cmd("CreateLabel", labelID, labelText, labelX, y, 0);
-    this.cmd("SetTextStyle", labelID, DirectedBFS.LEGEND_FONT);
-    this.cmd("SetForegroundColor", labelID, DirectedBFS.LEGEND_TEXT_COLOR);
+  this.cmd("SetAlpha", this.highlightCircleID, 0);
+  this.resetQueueDisplay();
+  this.highlightCodeLine(-1);
+};
 
-    entry = { rectID: rectID, labelID: labelID, color: fillColor };
-    this.levelLegendEntries[depth] = entry;
+DirectedBFS.prototype.markVertexVisited = function (index) {
+  if (index < 0 || index >= this.vertexIDs.length) {
     return;
   }
-
-  if (typeof color === "string") {
-    this.cmd("SetBackgroundColor", entry.rectID, fillColor);
-    entry.color = fillColor;
-  }
+  this.visited[index] = true;
+  this.cmd("SetText", this.visitedRectIDs[index], "T");
+  this.cmd("SetBackgroundColor", this.visitedRectIDs[index], DirectedBFS.ARRAY_VISITED_FILL);
+  this.cmd("SetBackgroundColor", this.vertexIDs[index], DirectedBFS.GRAPH_NODE_VISITED_COLOR);
+  this.cmd("SetTextColor", this.vertexIDs[index], DirectedBFS.GRAPH_NODE_VISITED_TEXT_COLOR);
 };
 
-DirectedBFS.prototype.clearEdgeHighlights = function () {
-  if (!this.edgePairs) {
-    return;
-  }
-  for (var i = 0; i < this.edgePairs.length; i++) {
-    var edge = this.edgePairs[i];
-    this.highlightEdge(edge.from, edge.to, false);
-  }
-};
-
-DirectedBFS.prototype.edgeKey = function (from, to) {
-  return from + "->" + to;
-};
-
-DirectedBFS.prototype.getEdgeCurve = function (from, to) {
-  var key = this.edgeKey(from, to);
-  if (
-    this.edgeCurveOverrides &&
-    Object.prototype.hasOwnProperty.call(this.edgeCurveOverrides, key)
-  ) {
-    return this.edgeCurveOverrides[key];
-  }
-  if (
-    DirectedBFS.EDGE_CURVES[from] &&
-    typeof DirectedBFS.EDGE_CURVES[from][to] === "number"
-  ) {
-    return DirectedBFS.EDGE_CURVES[from][to];
-  }
-  return 0;
-};
-
-DirectedBFS.prototype.updateEdgeBaseColor = function (from, to) {
-  if (
-    !this.vertexIDs ||
-    from < 0 ||
-    to < 0 ||
-    from >= this.vertexIDs.length ||
-    to >= this.vertexIDs.length
-  ) {
-    return;
-  }
-  var key = this.edgeKey(from, to);
-  var baseColor = DirectedBFS.EDGE_COLOR;
-  if (this.edgeStates[key] && this.edgeStates[key].tree) {
-    baseColor =
-      this.edgeStates[key].color || DirectedBFS.EDGE_VISITED_COLOR;
-  }
-  this.cmd("SetEdgeColor", this.vertexIDs[from], this.vertexIDs[to], baseColor);
-};
-
-DirectedBFS.prototype.setEdgeTreeState = function (from, to, isTree, color) {
-  var key = this.edgeKey(from, to);
-  if (!this.edgeStates[key]) {
-    this.edgeStates[key] = { tree: false, color: null };
-  }
-  this.edgeStates[key].tree = isTree;
-  if (isTree) {
-    if (typeof color === "string") {
-      this.edgeStates[key].color = color;
-    }
-  } else {
-    this.edgeStates[key].color = null;
-  }
-  this.updateEdgeBaseColor(from, to);
-};
-
-DirectedBFS.prototype.resetEdgeStates = function () {
-  if (!this.edgePairs) {
+DirectedBFS.prototype.setParentValue = function (child, parent) {
+  if (child < 0 || child >= this.parentRectIDs.length) {
     return;
   }
   for (var i = 0; i < this.edgePairs.length; i++) {
@@ -1525,6 +1334,13 @@ DirectedBFS.prototype.applyVertexLevelColor = function (vertexIndex, depth) {
   if (this.vertexEdgeColors && vertexIndex < this.vertexEdgeColors.length) {
     this.vertexEdgeColors[vertexIndex] = derivedEdgeColor;
   }
+  var highlightColor = this.deriveHighlightColor(derivedEdgeColor || color);
+  if (
+    this.vertexHighlightColors &&
+    vertexIndex < this.vertexHighlightColors.length
+  ) {
+    this.vertexHighlightColors[vertexIndex] = highlightColor;
+  }
   this.cmd(
     "SetBackgroundColor",
     this.vertexIDs[vertexIndex],
@@ -1557,6 +1373,30 @@ DirectedBFS.prototype.getVertexEdgeColor = function (vertexIndex) {
   return null;
 };
 
+DirectedBFS.prototype.getVertexHighlightColor = function (vertexIndex) {
+  if (
+    this.vertexHighlightColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexHighlightColors.length &&
+    typeof this.vertexHighlightColors[vertexIndex] === "string"
+  ) {
+    return this.vertexHighlightColors[vertexIndex];
+  }
+  var edgeColor = this.getVertexEdgeColor(vertexIndex);
+  if (typeof edgeColor === "string" && edgeColor.length > 0) {
+    return this.deriveHighlightColor(edgeColor);
+  }
+  if (
+    this.vertexLevelColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexLevelColors.length &&
+    typeof this.vertexLevelColors[vertexIndex] === "string"
+  ) {
+    return this.deriveHighlightColor(this.vertexLevelColors[vertexIndex]);
+  }
+  return DirectedBFS.HIGHLIGHT_COLOR;
+};
+
 DirectedBFS.prototype.deriveEdgeColor = function (nodeColor) {
   if (typeof nodeColor !== "string") {
     return DirectedBFS.EDGE_VISITED_COLOR;
@@ -1568,6 +1408,21 @@ DirectedBFS.prototype.deriveEdgeColor = function (nodeColor) {
   var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
   hsl.s = Math.min(1, hsl.s + 0.2);
   hsl.l = Math.max(0, Math.min(1, hsl.l - 0.18));
+  var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+  return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
+};
+
+DirectedBFS.prototype.deriveHighlightColor = function (baseColor) {
+  if (typeof baseColor !== "string") {
+    return DirectedBFS.HIGHLIGHT_COLOR;
+  }
+  var rgb = this.parseHexColor(baseColor);
+  if (!rgb) {
+    return baseColor;
+  }
+  var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.s = Math.min(1, hsl.s + 0.25);
+  hsl.l = Math.max(0, Math.min(1, hsl.l * 0.6));
   var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
   return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
 };
@@ -1670,119 +1525,44 @@ DirectedBFS.prototype.hslToRgb = function (h, s, l) {
 };
 
 DirectedBFS.prototype.highlightEdge = function (from, to, active) {
-  if (
-    !this.vertexIDs ||
-    from < 0 ||
-    to < 0 ||
-    from >= this.vertexIDs.length ||
-    to >= this.vertexIDs.length
-  ) {
-    return;
-  }
   var fromID = this.vertexIDs[from];
   var toID = this.vertexIDs[to];
-  if (active) {
-    this.updateEdgeBaseColor(from, to);
-    this.cmd(
-      "SetEdgeThickness",
-      fromID,
-      toID,
-      DirectedBFS.EDGE_HIGHLIGHT_THICKNESS
-    );
-    this.cmd("SetEdgeHighlight", fromID, toID, 1);
-  } else {
-    this.cmd("SetEdgeHighlight", fromID, toID, 0);
-    this.cmd("SetEdgeThickness", fromID, toID, DirectedBFS.EDGE_THICKNESS);
-    this.updateEdgeBaseColor(from, to);
-  }
+  var thickness = active
+    ? DirectedBFS.EDGE_HIGHLIGHT_THICKNESS + 1
+    : DirectedBFS.EDGE_THICKNESS;
+  this.cmd("SetEdgeHighlight", fromID, toID, active ? 1 : 0);
+  this.cmd("SetEdgeThickness", fromID, toID, thickness);
 };
 
-DirectedBFS.prototype.animateHighlightTraversal = function (
-  circleID,
-  fromIndex,
-  toIndex,
-  preferKey
-) {
-  if (typeof circleID !== "number" || circleID < 0) {
+DirectedBFS.prototype.setTreeEdge = function (from, to) {
+  var fromID = this.vertexIDs[from];
+  var toID = this.vertexIDs[to];
+  this.cmd("SetEdgeColor", fromID, toID, DirectedBFS.EDGE_VISITED_COLOR);
+  this.cmd("SetEdgeThickness", fromID, toID, DirectedBFS.EDGE_THICKNESS + 1);
+  var key = this.edgeKey(from, to);
+  this.edgeStates[key] = { tree: true };
+};
+
+DirectedBFS.prototype.moveHighlightCircleToVertex = function (index) {
+  if (index < 0 || index >= this.vertexPositions.length) {
     return;
   }
-  if (fromIndex === toIndex) {
-    return;
-  }
-
-  var startPos = this.vertexPositions[fromIndex];
-  var endPos = this.vertexPositions[toIndex];
-  if (!startPos || !endPos) {
-    return;
-  }
-  var curve = 0;
-  var hasCurve = false;
-
-  if (typeof preferKey === "string") {
-    var preferredMeta = this.edgeMeta[preferKey];
-    if (preferredMeta) {
-      curve = preferredMeta.curve;
-      if (
-        preferredMeta.from !== fromIndex ||
-        preferredMeta.to !== toIndex
-      ) {
-        curve = -curve;
-      }
-      hasCurve = true;
-    }
-  }
-
-  if (!hasCurve) {
-    var key = this.edgeKey(fromIndex, toIndex);
-    var meta = this.edgeMeta[key];
-    if (meta) {
-      curve = meta.curve;
-      hasCurve = true;
-    } else {
-      var reverseMeta = this.edgeMeta[this.edgeKey(toIndex, fromIndex)];
-      if (reverseMeta) {
-        curve = -reverseMeta.curve;
-        hasCurve = true;
-      }
-    }
-  }
-
-  if (Math.abs(curve) < 0.01) {
-    this.cmd("Move", circleID, Math.round(endPos.x), Math.round(endPos.y));
-    return;
-  }
-
-  var dx = endPos.x - startPos.x;
-  var dy = endPos.y - startPos.y;
-  var midX = (startPos.x + endPos.x) / 2;
-  var midY = (startPos.y + endPos.y) / 2;
-  var controlX = midX - dy * curve;
-  var controlY = midY + dx * curve;
-
-  this.cmd(
-    "MoveAlongCurve",
-    circleID,
-    Math.round(controlX),
-    Math.round(controlY),
-    Math.round(endPos.x),
-    Math.round(endPos.y)
-  );
+  var pos = this.vertexPositions[index];
+  this.cmd("Move", this.highlightCircleID, Math.round(pos.x), Math.round(pos.y));
 };
 
 DirectedBFS.prototype.getStartFieldValue = function () {
   if (!this.startField) {
     return "";
   }
-
-  var field = this.startField;
-  if (typeof field.value === "string") {
-    return field.value;
+  if (typeof this.startField.value === "string") {
+    return this.startField.value;
   }
-  if (field.value !== undefined && field.value !== null) {
-    return String(field.value);
+  if (this.startField.value !== undefined && this.startField.value !== null) {
+    return String(this.startField.value);
   }
-  if (field.getAttribute) {
-    var attr = field.getAttribute("value");
+  if (this.startField.getAttribute) {
+    var attr = this.startField.getAttribute("value");
     if (typeof attr === "string") {
       return attr;
     }
@@ -1794,7 +1574,6 @@ DirectedBFS.prototype.setStartFieldValue = function (text) {
   if (!this.startField) {
     return;
   }
-
   var value = typeof text === "string" ? text : "";
   if (typeof this.startField.value !== "undefined") {
     this.startField.value = value;
@@ -1818,25 +1597,18 @@ DirectedBFS.prototype.cleanInputLabel = function (inputLabel) {
   if (typeof inputLabel !== "string") {
     return "";
   }
-
   var start = 0;
-  while (
-    start < inputLabel.length &&
-    this.isWhitespaceChar(inputLabel.charAt(start))
-  ) {
+  while (start < inputLabel.length && this.isWhitespaceChar(inputLabel.charAt(start))) {
     start++;
   }
-
   var end = inputLabel.length - 1;
   while (end >= start && this.isWhitespaceChar(inputLabel.charAt(end))) {
     end--;
   }
-
   var trimmed = "";
   for (var i = start; i <= end; i++) {
     trimmed += inputLabel.charAt(i);
   }
-
   return trimmed;
 };
 
@@ -1860,23 +1632,19 @@ DirectedBFS.prototype.startCallback = function () {
   ) {
     return;
   }
-
   var raw = this.cleanInputLabel(this.getStartFieldValue());
   var label = "";
   if (raw.length > 0) {
     label = raw.charAt(0).toUpperCase();
   }
-
   var index = -1;
   if (label.length > 0) {
     index = this.findVertexIndex(label);
   }
-
   if (index === -1) {
     index = 0;
     label = this.vertexLabels[0];
   }
-
   this.setStartFieldValue(label);
   this.implementAction(this.runTraversal.bind(this), index);
 };
@@ -1908,30 +1676,19 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
 
   this.highlightCodeLine(0);
   this.cmd("Step");
-
   this.highlightCodeLine(1);
   this.cmd("Step");
-
   this.highlightCodeLine(2);
   this.setVisitedCellHighlight(startIndex, true);
   this.cmd("Step");
-  if (!this.visited[startIndex]) {
-    this.visited[startIndex] = true;
-    this.cmd("SetText", this.visitedRectIDs[startIndex], "T");
-    this.cmd(
-      "SetBackgroundColor",
-      this.visitedRectIDs[startIndex],
-      DirectedBFS.ARRAY_VISITED_FILL
-    );
-    var startColor = this.applyVertexLevelColor(startIndex, 0);
-    this.ensureLevelLegendEntry(0, startColor);
-    this.cmd("Step");
-  }
+  this.markVertexVisited(startIndex);
   this.setVisitedCellHighlight(startIndex, false);
 
   this.highlightCodeLine(3);
-  this.cmd("SetText", this.parentRectIDs[startIndex], "-");
+  this.setParentCellHighlight(startIndex, true);
   this.cmd("Step");
+  this.setParentValue(startIndex, -1);
+  this.setParentCellHighlight(startIndex, false);
 
   this.highlightCodeLine(4);
   queue.push(startIndex);
@@ -1940,17 +1697,18 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
   this.activateFrontierHighlight(startIndex);
   this.cmd("Step");
 
-  while (queue.length > 0) {
-    this.highlightCodeLine(5);
-    this.cmd("Step");
+  this.highlightCodeLine(5);
+  this.cmd("Step");
 
+  while (this.queueData.length > 0) {
     this.highlightCodeLine(6);
     var u = queue[0];
     var uDepth = 0;
     if (typeof vertexDepths[u] === "number") {
       uDepth = vertexDepths[u];
     }
-    this.cmd("Step");
+    this.setActiveFrontierVertex(u);
+    this.stepWithActiveBlink();
 
     this.highlightCodeLine(7);
     queue.shift();
@@ -1958,20 +1716,23 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
     this.cmd("Step");
 
     this.highlightCodeLine(8);
-    this.cmd("Step");
+    this.stepWithActiveBlink();
 
-    var neighbors = this.adjacencyList[u];
+    var neighbors = this.adjacencyList[current];
     for (var i = 0; i < neighbors.length; i++) {
       var v = neighbors[i];
 
-      this.highlightEdge(u, v, true);
-      this.cmd("Step");
+      var shouldHighlightEdge = !this.visited[v];
+      if (shouldHighlightEdge) {
+        this.highlightEdge(u, v, true);
+      }
+      this.stepWithActiveBlink();
 
       this.highlightCodeLine(9);
       this.setVisitedCellHighlight(v, true);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
 
-      if (!this.visited[v]) {
+      if (!this.visited[neighbor]) {
         this.highlightCodeLine(10);
         this.visited[v] = true;
         this.cmd("SetText", this.visitedRectIDs[v], "T");
@@ -1984,34 +1745,39 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
         vertexDepths[v] = vDepth;
         var levelColor = this.applyVertexLevelColor(v, vDepth);
         this.ensureLevelLegendEntry(vDepth, levelColor);
-        this.cmd("Step");
+        this.stepWithActiveBlink();
 
         this.highlightCodeLine(11);
         this.parentArr[v] = u;
         this.cmd("SetText", this.parentRectIDs[v], this.vertexLabels[u]);
         var edgeColor = this.getVertexEdgeColor(v) || levelColor;
         this.setEdgeTreeState(u, v, true, edgeColor);
-        this.cmd("Step");
+        this.highlightEdge(u, v, true);
+        this.stepWithActiveBlink();
 
         this.highlightCodeLine(12);
         queue.push(v);
         this.enqueueQueueVertex(v);
         this.createFrontierHighlightFromParent(u, v);
-        this.cmd("Step");
+        this.stepWithActiveBlink();
       }
 
       this.highlightCodeLine(13);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
 
       this.setVisitedCellHighlight(v, false);
       this.highlightEdge(u, v, false);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
 
       this.highlightCodeLine(8);
-      this.cmd("Step");
+      this.stepWithActiveBlink();
     }
 
     this.highlightCodeLine(14);
+    var removedCircleID = this.finishActiveFrontierVertex();
+    if (removedCircleID !== -1) {
+      this.cmd("Delete", removedCircleID);
+    }
     this.cmd("Step");
 
     this.releaseFrontierHighlight(u, true);
@@ -2020,8 +1786,7 @@ DirectedBFS.prototype.bfsTraversal = function (startIndex) {
   this.highlightCodeLine(15);
   this.cmd("Step");
 
-  this.highlightCodeLine(16);
-  this.cmd("Step");
+  return this.commands;
 };
 
 DirectedBFS.prototype.disableUI = function () {
@@ -2042,3 +1807,4 @@ function init() {
   var animManag = initCanvas();
   currentAlg = new DirectedBFS(animManag, canvas.width, canvas.height);
 }
+
