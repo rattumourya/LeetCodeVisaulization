@@ -1,4 +1,4 @@
-// Custom visualization for Dijkstra's algorithm on a directed graph using a 9:16 canvas.
+// Custom visualization for a BFS traversal on a directed graph using a 9:16 canvas.
 
 function DirectedDijkstra(am, w, h) {
   this.init(am, w, h);
@@ -12,7 +12,7 @@ DirectedDijkstra.CANVAS_WIDTH = 900;
 DirectedDijkstra.CANVAS_HEIGHT = 1600;
 
 DirectedDijkstra.ROW1_HEIGHT = 240;
-DirectedDijkstra.ROW2_HEIGHT = 760;
+DirectedDijkstra.ROW2_HEIGHT = 640;
 DirectedDijkstra.ROW3_HEIGHT =
   DirectedDijkstra.CANVAS_HEIGHT - DirectedDijkstra.ROW1_HEIGHT - DirectedDijkstra.ROW2_HEIGHT;
 
@@ -56,54 +56,56 @@ DirectedDijkstra.ARRAY_TEXT_COLOR = "#2b2d42";
 DirectedDijkstra.ARRAY_VISITED_FILL = "#b3e5fc";
 DirectedDijkstra.ARRAY_UPDATE_FILL = "#ffe8d6";
 DirectedDijkstra.ARRAY_HEADER_GAP = 20;
-DirectedDijkstra.BOTTOM_SECTION_GAP = 56;
-DirectedDijkstra.CODE_TOP_PADDING = 12;
+DirectedDijkstra.BOTTOM_SECTION_TOP_OFFSET = 12;
+DirectedDijkstra.CODE_TOP_PADDING = 6;
 
-DirectedDijkstra.CODE_START_X = 120;
-DirectedDijkstra.CODE_LINE_HEIGHT = 32;
+DirectedDijkstra.CODE_START_X = 90;
+DirectedDijkstra.CODE_LINE_HEIGHT = 34;
 DirectedDijkstra.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
-DirectedDijkstra.CODE_FONT = "bold 22";
+DirectedDijkstra.CODE_FONT = "bold 24";
 
 DirectedDijkstra.PRIORITY_QUEUE_SLOT_COUNT = 9;
-DirectedDijkstra.QUEUE_AREA_CENTER_X = 650;
-DirectedDijkstra.QUEUE_TOP_Y = DirectedDijkstra.ROW3_START_Y + 120;
-DirectedDijkstra.QUEUE_SLOT_WIDTH = 220;
-DirectedDijkstra.QUEUE_SLOT_HEIGHT = 44;
-DirectedDijkstra.QUEUE_SLOT_SPACING = 10;
-DirectedDijkstra.QUEUE_HEADER_GAP = 52;
+DirectedDijkstra.QUEUE_AREA_CENTER_X = 720;
+DirectedDijkstra.QUEUE_TOP_Y = DirectedDijkstra.ROW3_START_Y + 42;
+DirectedDijkstra.QUEUE_SLOT_WIDTH = 210;
+DirectedDijkstra.QUEUE_SLOT_HEIGHT = 46;
+DirectedDijkstra.QUEUE_SLOT_SPACING = 12;
+DirectedDijkstra.QUEUE_HEADER_GAP = 44;
 DirectedDijkstra.QUEUE_RECT_COLOR = "#f8f9fa";
 DirectedDijkstra.QUEUE_RECT_BORDER = "#1d3557";
 DirectedDijkstra.QUEUE_RECT_ACTIVE_BORDER = "#e76f51";
 DirectedDijkstra.QUEUE_RECT_BORDER_THICKNESS = 1;
 DirectedDijkstra.QUEUE_RECT_ACTIVE_THICKNESS = 3;
 DirectedDijkstra.QUEUE_TEXT_COLOR = "#1d3557";
-DirectedDijkstra.QUEUE_FONT = "bold 18";
+DirectedDijkstra.QUEUE_FONT = "bold 20";
 
 DirectedDijkstra.TITLE_COLOR = "#1d3557";
 DirectedDijkstra.START_INFO_COLOR = "#264653";
 DirectedDijkstra.HIGHLIGHT_COLOR = "#ff3b30";
+DirectedDijkstra.PATH_EDGE_COLOR = "#ff9f1c";
+DirectedDijkstra.PATH_EDGE_THICKNESS = 6;
+DirectedDijkstra.PATH_NODE_COLOR = "#ffe066";
+DirectedDijkstra.PATH_NODE_TEXT_COLOR = "#1d3557";
 
 DirectedDijkstra.CODE_LINES = [
-  ["void dijkstra(int start) {"],
+  ["void bfs(int start) {"],
   ["    Arrays.fill(dist, INF);"],
   ["    Arrays.fill(parent, -1);"],
   ["    Arrays.fill(visited, false);"],
+  ["    Queue<Integer> queue = new LinkedList<>();"],
+  ["    visited[start] = true;"],
   ["    dist[start] = 0;"],
-  ["    PriorityQueue<Node> pq = new PriorityQueue<>();"],
-  ["    pq.offer(new Node(start, 0));"],
-  ["    while (!pq.isEmpty()) {"],
-  ["        Node current = pq.poll();"],
-  ["        int u = current.vertex;"],
-  ["        if (visited[u]) { continue; }"],
-  ["        visited[u] = true;"],
+  ["    queue.offer(start);"],
+  ["    while (!queue.isEmpty()) {"],
+  ["        int u = queue.poll();"],
   ["        for (Edge edge : adj[u]) {"],
   ["            int v = edge.to;"],
-  ["            int weight = edge.weight;"],
-  ["            if (dist[u] + weight < dist[v]) {"],
-  ["                dist[v] = dist[u] + weight;"],
+  ["            if (!visited[v]) {"],
+  ["                visited[v] = true;"],
+  ["                dist[v] = dist[u] + 1;"],
   ["                parent[v] = u;"],
-  ["                pq.offer(new Node(v, dist[v]));"],
+  ["                queue.offer(v);"],
   ["            }"],
   ["        }"],
   ["    }"],
@@ -187,8 +189,9 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
   this.queueLabelID = -1;
   this.priorityQueueData = [];
   this.priorityQueueActiveIndex = -1;
+  this.lastTemplateIndex = -1;
   this.bottomSectionTopY =
-    DirectedDijkstra.ROW3_START_Y + DirectedDijkstra.CODE_TOP_PADDING;
+    DirectedDijkstra.ROW3_START_Y + DirectedDijkstra.BOTTOM_SECTION_TOP_OFFSET;
 
   this.visited = [];
   this.distance = [];
@@ -201,7 +204,7 @@ DirectedDijkstra.prototype.addControls = function () {
   addLabelToAlgorithmBar("Start Vertex:");
   this.startField = addControlToAlgorithmBar("Text", "A");
   this.startField.size = 4;
-  this.startButton = addControlToAlgorithmBar("Button", "Run Dijkstra");
+  this.startButton = addControlToAlgorithmBar("Button", "Run BFS");
   this.startButton.onclick = this.startCallback.bind(this);
   this.startField.onkeydown = this.returnSubmit(
     this.startField,
@@ -234,10 +237,30 @@ DirectedDijkstra.prototype.reset = function () {
 };
 
 DirectedDijkstra.prototype.selectTemplate = function () {
-  var template =
-    DirectedDijkstra.TEMPLATES[
-      Math.floor(Math.random() * DirectedDijkstra.TEMPLATES.length)
-    ];
+  var templates = DirectedDijkstra.TEMPLATES;
+  if (!templates || templates.length === 0) {
+    this.vertexLabels = [];
+    this.vertexPositions = [];
+    this.adjacencyList = [];
+    this.edgePairs = [];
+    this.edgeStates = {};
+    this.edgeMeta = {};
+    this.edgeCurveOverrides = {};
+    return;
+  }
+
+  var templateIndex = 0;
+  if (templates.length === 1) {
+    templateIndex = 0;
+  } else {
+    do {
+      templateIndex = Math.floor(Math.random() * templates.length);
+    } while (templateIndex === this.lastTemplateIndex);
+  }
+
+  this.lastTemplateIndex = templateIndex;
+
+  var template = templates[templateIndex];
 
   var vertexCount = template.vertexCount;
   this.vertexLabels = this.buildVertexLabels(vertexCount);
@@ -246,7 +269,7 @@ DirectedDijkstra.prototype.selectTemplate = function () {
   this.edgePairs = [];
   this.edgeStates = {};
   this.edgeMeta = {};
-  this.edgeCurveOverrides = template.curveOverrides || {};
+  this.edgeCurveOverrides = {};
 
   for (var i = 0; i < vertexCount; i++) {
     this.adjacencyList[i] = [];
@@ -264,6 +287,57 @@ DirectedDijkstra.prototype.selectTemplate = function () {
     }
     this.adjacencyList[edge.from].push({ to: edge.to, weight: edge.weight });
   }
+
+  this.applyAutomaticCurveOverrides();
+
+  if (template.curveOverrides) {
+    for (var key in template.curveOverrides) {
+      if (template.curveOverrides.hasOwnProperty(key)) {
+        this.edgeCurveOverrides[key] = template.curveOverrides[key];
+      }
+    }
+  }
+};
+
+DirectedDijkstra.prototype.applyAutomaticCurveOverrides = function () {
+  var pairTracker = {};
+
+  for (var from = 0; from < this.adjacencyList.length; from++) {
+    for (var i = 0; i < this.adjacencyList[from].length; i++) {
+      var neighbor = this.adjacencyList[from][i];
+      var to = neighbor.to;
+      var edgeKey = this.edgeKey(from, to);
+
+      if (this.edgeCurveOverrides.hasOwnProperty(edgeKey)) {
+        continue;
+      }
+
+      if (to < 0 || to >= this.adjacencyList.length) {
+        continue;
+      }
+
+      var reverseExists = false;
+      for (var j = 0; j < this.adjacencyList[to].length; j++) {
+        if (this.adjacencyList[to][j].to === from) {
+          reverseExists = true;
+          break;
+        }
+      }
+
+      if (!reverseExists) {
+        continue;
+      }
+
+      var canonicalKey = from < to ? from + ":" + to : to + ":" + from;
+      if (pairTracker[canonicalKey]) {
+        continue;
+      }
+
+      this.edgeCurveOverrides[this.edgeKey(from, to)] = DirectedDijkstra.BIDIRECTIONAL_CURVE;
+      this.edgeCurveOverrides[this.edgeKey(to, from)] = -DirectedDijkstra.BIDIRECTIONAL_CURVE;
+      pairTracker[canonicalKey] = true;
+    }
+  }
 };
 
 DirectedDijkstra.prototype.buildVertexLabels = function (vertexCount) {
@@ -276,7 +350,7 @@ DirectedDijkstra.prototype.buildVertexLabels = function (vertexCount) {
 
 DirectedDijkstra.prototype.computeCircularLayout = function (vertexCount) {
   var layout = [];
-  var radius = 220;
+  var radius = 240;
   var centerX = DirectedDijkstra.GRAPH_AREA_CENTER_X;
   var centerY = DirectedDijkstra.ROW2_START_Y + 240;
 
@@ -295,7 +369,7 @@ DirectedDijkstra.prototype.createTitleRow = function () {
   this.cmd(
     "CreateLabel",
     titleID,
-    "Dijkstra Shortest Paths (Directed Graph)",
+    "Directed Graph BFS Traversal",
     DirectedDijkstra.CANVAS_WIDTH / 2,
     DirectedDijkstra.TITLE_Y,
     1
@@ -528,7 +602,7 @@ DirectedDijkstra.prototype.createPriorityQueueArea = function () {
   this.cmd(
     "CreateLabel",
     this.queueLabelID,
-    "Priority Queue (min dist)",
+    "Priority queue (min heap)",
     DirectedDijkstra.QUEUE_AREA_CENTER_X,
     DirectedDijkstra.QUEUE_TOP_Y - DirectedDijkstra.QUEUE_HEADER_GAP,
     0
@@ -770,12 +844,6 @@ DirectedDijkstra.prototype.updatePriorityQueueDisplay = function () {
 
 DirectedDijkstra.prototype.pushToPriorityQueue = function (vertex, distance) {
   this.priorityQueueData.push({ vertex: vertex, distance: distance });
-  this.priorityQueueData.sort(function (a, b) {
-    if (a.distance !== b.distance) {
-      return a.distance - b.distance;
-    }
-    return a.vertex - b.vertex;
-  });
   this.updatePriorityQueueDisplay();
 };
 
@@ -860,76 +928,68 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   this.cmd("Step");
 
   this.highlightCodeLine(4);
+  this.cmd("Step");
+
+  this.highlightCodeLine(5);
+  this.markVertexVisited(startIndex);
+  this.cmd("Step");
+
+  this.highlightCodeLine(6);
   this.setDistanceValue(startIndex, 0, true);
   this.cmd("Step");
   this.cmd("SetBackgroundColor", this.distanceRectIDs[startIndex], DirectedDijkstra.ARRAY_RECT_COLOR);
 
-  this.highlightCodeLine(5);
-  this.cmd("Step");
-
-  this.highlightCodeLine(6);
+  this.highlightCodeLine(7);
   this.pushToPriorityQueue(startIndex, 0);
   this.cmd("Step");
 
   while (this.priorityQueueData.length > 0) {
-    this.highlightCodeLine(7);
+    this.highlightCodeLine(8);
     this.cmd("Step");
 
     this.updatePriorityQueueDisplay();
     this.setPriorityQueueActive(0);
     this.cmd("Step");
 
-    this.highlightCodeLine(8);
+    this.highlightCodeLine(9);
     var entry = this.popFromPriorityQueue();
+    this.setPriorityQueueActive(-1);
     if (!entry) {
       break;
     }
     var currentVertex = entry.vertex;
-    var currentDistance = entry.distance;
+    var currentDistance = this.distance[currentVertex];
 
-    this.highlightCodeLine(9);
     this.moveHighlightCircleToVertex(currentVertex);
     this.cmd("Step");
 
     this.highlightCodeLine(10);
-    if (this.visited[currentVertex]) {
-      this.cmd("Step");
-      this.highlightCodeLine(21);
-      this.cmd("Step");
-      continue;
-    }
-
-    this.highlightCodeLine(11);
-    this.markVertexVisited(currentVertex);
     this.cmd("Step");
 
     for (var i = 0; i < this.adjacencyList[currentVertex].length; i++) {
       var neighbor = this.adjacencyList[currentVertex][i];
       var nextVertex = neighbor.to;
-      var weight = neighbor.weight;
 
-      this.highlightCodeLine(12);
+      this.highlightCodeLine(11);
       this.highlightEdge(currentVertex, nextVertex, true);
       this.cmd("Step");
 
-      this.highlightCodeLine(13);
-      this.cmd("Step");
-
-      this.highlightCodeLine(14);
-      this.cmd("Step");
-
-      var newDistance = currentDistance + weight;
-      this.highlightCodeLine(15);
+      this.highlightCodeLine(12);
       this.setDistanceCellHighlight(nextVertex, true);
       this.cmd("Step");
 
-      if (newDistance < this.distance[nextVertex]) {
-        this.highlightCodeLine(16);
+      if (!this.visited[nextVertex]) {
+        this.highlightCodeLine(13);
+        this.markVertexVisited(nextVertex);
+        this.cmd("Step");
+
+        this.highlightCodeLine(14);
+        var newDistance = currentDistance + 1;
         this.setDistanceValue(nextVertex, newDistance, true);
         this.cmd("Step");
         this.cmd("SetBackgroundColor", this.distanceRectIDs[nextVertex], DirectedDijkstra.ARRAY_RECT_COLOR);
 
-        this.highlightCodeLine(17);
+        this.highlightCodeLine(15);
         var previousParent = this.parent[nextVertex];
         if (previousParent !== -1) {
           this.setTreeEdge(previousParent, nextVertex, false);
@@ -939,31 +999,117 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
         this.setTreeEdge(currentVertex, nextVertex, true);
         this.cmd("Step");
 
-        this.highlightCodeLine(18);
+        this.highlightCodeLine(16);
         this.pushToPriorityQueue(nextVertex, newDistance);
         this.cmd("Step");
       }
 
-      this.highlightCodeLine(19);
+      this.highlightCodeLine(17);
       this.cmd("Step");
 
       this.setDistanceCellHighlight(nextVertex, false);
       this.highlightEdge(currentVertex, nextVertex, false);
       this.cmd("Step");
     }
-
-    this.highlightCodeLine(20);
-    this.cmd("Step");
   }
 
-  this.highlightCodeLine(21);
+  this.highlightCodeLine(18);
   this.cmd("Step");
-  this.highlightCodeLine(22);
+
+  this.highlightCodeLine(19);
   this.cmd("Step");
+
+  this.highlightCodeLine(20);
+  this.cmd("Step");
+
   this.highlightCodeLine(-1);
   this.cmd("SetAlpha", this.highlightCircleID, 0);
 
+  var targetIndex = this.choosePathTargetIndex(startIndex);
+  if (targetIndex !== -1) {
+    this.highlightIdentifiedPath(startIndex, targetIndex);
+  }
+
   return this.commands;
+};
+
+DirectedDijkstra.prototype.choosePathTargetIndex = function (startIndex) {
+  var bestIndex = -1;
+  var bestDistance = -1;
+
+  for (var i = 0; i < this.distance.length; i++) {
+    if (i === startIndex) {
+      continue;
+    }
+    if (this.distance[i] === Infinity) {
+      continue;
+    }
+    if (this.distance[i] > bestDistance) {
+      bestDistance = this.distance[i];
+      bestIndex = i;
+    }
+  }
+
+  return bestIndex;
+};
+
+DirectedDijkstra.prototype.highlightIdentifiedPath = function (startIndex, targetIndex) {
+  if (
+    targetIndex < 0 ||
+    targetIndex >= this.vertexIDs.length ||
+    this.distance[targetIndex] === Infinity
+  ) {
+    return;
+  }
+
+  var path = [];
+  var current = targetIndex;
+  while (current !== -1) {
+    path.push(current);
+    if (current === startIndex) {
+      break;
+    }
+    current = this.parent[current];
+  }
+
+  if (path.length === 0 || path[path.length - 1] !== startIndex) {
+    return;
+  }
+
+  path.reverse();
+
+  for (var i = 0; i < path.length; i++) {
+    var vertex = path[i];
+    this.cmd(
+      "SetBackgroundColor",
+      this.vertexIDs[vertex],
+      DirectedDijkstra.PATH_NODE_COLOR
+    );
+    this.cmd(
+      "SetTextColor",
+      this.vertexIDs[vertex],
+      DirectedDijkstra.PATH_NODE_TEXT_COLOR
+    );
+    this.cmd("Step");
+  }
+
+  for (var j = 0; j < path.length - 1; j++) {
+    var from = path[j];
+    var to = path[j + 1];
+    this.cmd(
+      "SetEdgeColor",
+      this.vertexIDs[from],
+      this.vertexIDs[to],
+      DirectedDijkstra.PATH_EDGE_COLOR
+    );
+    this.cmd(
+      "SetEdgeThickness",
+      this.vertexIDs[from],
+      this.vertexIDs[to],
+      DirectedDijkstra.PATH_EDGE_THICKNESS
+    );
+    this.cmd("Step");
+  }
 };
 
 DirectedDijkstra.prototype.startCallback = function () {
