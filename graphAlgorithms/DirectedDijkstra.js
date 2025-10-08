@@ -24,7 +24,7 @@ DirectedDijkstra.ROW3_START_Y =
 DirectedDijkstra.TITLE_Y = DirectedDijkstra.ROW1_CENTER_Y - 40;
 DirectedDijkstra.START_INFO_Y = DirectedDijkstra.ROW1_CENTER_Y + 40;
 
-DirectedDijkstra.GRAPH_AREA_CENTER_X = 360;
+DirectedDijkstra.GRAPH_AREA_CENTER_X = 320;
 DirectedDijkstra.GRAPH_NODE_RADIUS = 22;
 DirectedDijkstra.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDijkstra.GRAPH_NODE_BORDER = "#0b3954";
@@ -41,8 +41,8 @@ DirectedDijkstra.EDGE_ACTIVE_THICKNESS = 5;
 DirectedDijkstra.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDijkstra.PARALLEL_EDGE_GAP = 0.18;
 
-DirectedDijkstra.ARRAY_BASE_X = 720;
-DirectedDijkstra.ARRAY_COLUMN_SPACING = 92;
+DirectedDijkstra.ARRAY_BASE_X = 650;
+DirectedDijkstra.ARRAY_COLUMN_SPACING = 88;
 DirectedDijkstra.ARRAY_TOP_Y = DirectedDijkstra.ROW2_START_Y + 90;
 DirectedDijkstra.ARRAY_CELL_HEIGHT = 52;
 DirectedDijkstra.ARRAY_CELL_WIDTH = 70;
@@ -66,7 +66,7 @@ DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedDijkstra.CODE_FONT = "bold 22";
 
 DirectedDijkstra.PRIORITY_QUEUE_SLOT_COUNT = 9;
-DirectedDijkstra.QUEUE_AREA_CENTER_X = 720;
+DirectedDijkstra.QUEUE_AREA_CENTER_X = 650;
 DirectedDijkstra.QUEUE_TOP_Y = DirectedDijkstra.ROW3_START_Y + 120;
 DirectedDijkstra.QUEUE_SLOT_WIDTH = 220;
 DirectedDijkstra.QUEUE_SLOT_HEIGHT = 44;
@@ -86,25 +86,28 @@ DirectedDijkstra.HIGHLIGHT_COLOR = "#ff3b30";
 
 DirectedDijkstra.CODE_LINES = [
   ["void dijkstra(int start) {"],
-  ["    dist.assign(n, INF);"],
-  ["    parent.assign(n, -1);"],
+  ["    Arrays.fill(dist, INF);"],
+  ["    Arrays.fill(parent, -1);"],
+  ["    Arrays.fill(visited, false);"],
   ["    dist[start] = 0;"],
-  ["    priority_queue<pair<int,int>, vector<...>, greater<...>> pq;"],
-  ["    pq.push({0, start});"],
-  ["    while (!pq.empty()) {"],
-  ["        auto [d, u] = pq.top();"],
-  ["        pq.pop();"],
-  ["        if (visited[u]) continue;"],
+  ["    PriorityQueue<Node> pq = new PriorityQueue<>();"],
+  ["    pq.offer(new Node(start, 0));"],
+  ["    while (!pq.isEmpty()) {"],
+  ["        Node current = pq.poll();"],
+  ["        int u = current.vertex;"],
+  ["        if (visited[u]) { continue; }"],
   ["        visited[u] = true;"],
-  ["        for (auto [v, w] : adj[u]) {"],
-  ["            if (dist[u] + w < dist[v]) {"],
-  ["                dist[v] = dist[u] + w;"],
+  ["        for (Edge edge : adj[u]) {"],
+  ["            int v = edge.to;"],
+  ["            int weight = edge.weight;"],
+  ["            if (dist[u] + weight < dist[v]) {"],
+  ["                dist[v] = dist[u] + weight;"],
   ["                parent[v] = u;"],
-  ["                pq.push({dist[v], v});"],
+  ["                pq.offer(new Node(v, dist[v]));"],
   ["            }"],
   ["        }"],
   ["    }"],
-  ["}"],
+  ["}"]
 ];
 
 DirectedDijkstra.TEMPLATES = [
@@ -854,41 +857,49 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   this.cmd("Step");
 
   this.highlightCodeLine(3);
+  this.cmd("Step");
+
+  this.highlightCodeLine(4);
   this.setDistanceValue(startIndex, 0, true);
   this.cmd("Step");
   this.cmd("SetBackgroundColor", this.distanceRectIDs[startIndex], DirectedDijkstra.ARRAY_RECT_COLOR);
 
   this.highlightCodeLine(5);
+  this.cmd("Step");
+
+  this.highlightCodeLine(6);
   this.pushToPriorityQueue(startIndex, 0);
   this.cmd("Step");
 
   while (this.priorityQueueData.length > 0) {
-    this.highlightCodeLine(6);
+    this.highlightCodeLine(7);
     this.cmd("Step");
 
     this.updatePriorityQueueDisplay();
     this.setPriorityQueueActive(0);
     this.cmd("Step");
 
-    this.highlightCodeLine(7);
+    this.highlightCodeLine(8);
     var entry = this.popFromPriorityQueue();
     if (!entry) {
       break;
     }
     var currentVertex = entry.vertex;
     var currentDistance = entry.distance;
+
+    this.highlightCodeLine(9);
     this.moveHighlightCircleToVertex(currentVertex);
     this.cmd("Step");
 
-    this.highlightCodeLine(9);
+    this.highlightCodeLine(10);
     if (this.visited[currentVertex]) {
       this.cmd("Step");
-      this.highlightCodeLine(17);
+      this.highlightCodeLine(21);
       this.cmd("Step");
       continue;
     }
 
-    this.highlightCodeLine(10);
+    this.highlightCodeLine(11);
     this.markVertexVisited(currentVertex);
     this.cmd("Step");
 
@@ -897,22 +908,28 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
       var nextVertex = neighbor.to;
       var weight = neighbor.weight;
 
-      this.highlightCodeLine(11);
+      this.highlightCodeLine(12);
       this.highlightEdge(currentVertex, nextVertex, true);
       this.cmd("Step");
 
+      this.highlightCodeLine(13);
+      this.cmd("Step");
+
+      this.highlightCodeLine(14);
+      this.cmd("Step");
+
       var newDistance = currentDistance + weight;
-      this.highlightCodeLine(12);
+      this.highlightCodeLine(15);
       this.setDistanceCellHighlight(nextVertex, true);
       this.cmd("Step");
 
       if (newDistance < this.distance[nextVertex]) {
-        this.highlightCodeLine(13);
+        this.highlightCodeLine(16);
         this.setDistanceValue(nextVertex, newDistance, true);
         this.cmd("Step");
         this.cmd("SetBackgroundColor", this.distanceRectIDs[nextVertex], DirectedDijkstra.ARRAY_RECT_COLOR);
 
-        this.highlightCodeLine(14);
+        this.highlightCodeLine(17);
         var previousParent = this.parent[nextVertex];
         if (previousParent !== -1) {
           this.setTreeEdge(previousParent, nextVertex, false);
@@ -922,12 +939,12 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
         this.setTreeEdge(currentVertex, nextVertex, true);
         this.cmd("Step");
 
-        this.highlightCodeLine(15);
+        this.highlightCodeLine(18);
         this.pushToPriorityQueue(nextVertex, newDistance);
         this.cmd("Step");
       }
 
-      this.highlightCodeLine(16);
+      this.highlightCodeLine(19);
       this.cmd("Step");
 
       this.setDistanceCellHighlight(nextVertex, false);
@@ -935,13 +952,13 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
       this.cmd("Step");
     }
 
-    this.highlightCodeLine(17);
+    this.highlightCodeLine(20);
     this.cmd("Step");
   }
 
-  this.highlightCodeLine(18);
+  this.highlightCodeLine(21);
   this.cmd("Step");
-  this.highlightCodeLine(19);
+  this.highlightCodeLine(22);
   this.cmd("Step");
   this.highlightCodeLine(-1);
   this.cmd("SetAlpha", this.highlightCircleID, 0);
