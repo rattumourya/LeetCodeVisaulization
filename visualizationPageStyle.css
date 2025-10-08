@@ -130,3 +130,9 @@ EM {text-decoration: bold;}
    margin: 10px auto;
 }
 
+.VisualizationMainPage .intro {
+        margin: 0 20px 15px;
+        color: #004d26;
+        font-style: italic;
+}
+
