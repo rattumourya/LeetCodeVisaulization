@@ -226,6 +226,14 @@ DirectedDijkstra.prototype.addControls = function () {
 };
 
 DirectedDijkstra.prototype.reset = function () {
+  if (
+    this.animationManager &&
+    this.animationManager.animatedObjects &&
+    typeof this.animationManager.animatedObjects.clearAllObjects === "function"
+  ) {
+    this.animationManager.animatedObjects.clearAllObjects();
+  }
+
   this.commands = [];
   this.nextIndex = 0;
 
@@ -270,6 +278,10 @@ DirectedDijkstra.prototype.selectTemplate = function () {
     signature = this.computeTemplateSignature(template);
   }
 
+  if (signature && this.lastGraphSignature && signature === this.lastGraphSignature) {
+    signature = this.forceDifferentTemplateSignature(template, signature);
+  }
+
   this.lastGraphSignature = signature;
 
   var vertexCount = template.vertexCount;
@@ -307,6 +319,49 @@ DirectedDijkstra.prototype.selectTemplate = function () {
       }
     }
   }
+};
+
+DirectedDijkstra.prototype.forceDifferentTemplateSignature = function (template, signature) {
+  if (!template || !template.edges || template.edges.length === 0) {
+    return signature;
+  }
+
+  var baselineSignature = signature;
+  var maxAttempts = template.edges.length * DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS;
+
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    var edgeIndex = attempt % template.edges.length;
+    var edge = template.edges[edgeIndex];
+    var originalWeight = edge.weight;
+    var newWeight = originalWeight;
+
+    var rerollAttempts = DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS;
+    while (rerollAttempts-- > 0 && newWeight === originalWeight) {
+      newWeight = this.randomIntInRange(
+        DirectedDijkstra.RANDOM_WEIGHT_MIN,
+        DirectedDijkstra.RANDOM_WEIGHT_MAX
+      );
+    }
+
+    if (newWeight === originalWeight) {
+      if (DirectedDijkstra.RANDOM_WEIGHT_MIN === DirectedDijkstra.RANDOM_WEIGHT_MAX) {
+        return signature;
+      }
+      newWeight =
+        originalWeight === DirectedDijkstra.RANDOM_WEIGHT_MAX
+          ? DirectedDijkstra.RANDOM_WEIGHT_MIN
+          : originalWeight + 1;
+    }
+
+    edge.weight = newWeight;
+
+    signature = this.computeTemplateSignature(template);
+    if (signature !== baselineSignature) {
+      break;
+    }
+  }
+
+  return signature;
 };
 
 DirectedDijkstra.prototype.generateRandomTemplate = function () {
