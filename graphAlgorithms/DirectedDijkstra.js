@@ -24,7 +24,7 @@ DirectedDijkstra.ROW3_START_Y =
 DirectedDijkstra.TITLE_Y = DirectedDijkstra.ROW1_CENTER_Y - 40;
 DirectedDijkstra.START_INFO_Y = DirectedDijkstra.ROW1_CENTER_Y + 40;
 
-DirectedDijkstra.GRAPH_AREA_CENTER_X = 320;
+DirectedDijkstra.GRAPH_AREA_CENTER_X = 340;
 DirectedDijkstra.GRAPH_NODE_RADIUS = 22;
 DirectedDijkstra.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDijkstra.GRAPH_NODE_BORDER = "#0b3954";
@@ -63,7 +63,27 @@ DirectedDijkstra.CODE_START_X = 60;
 DirectedDijkstra.CODE_LINE_HEIGHT = 34;
 DirectedDijkstra.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
-DirectedDijkstra.CODE_FONT = "bold 24";
+DirectedDijkstra.CODE_FONT = "bold 22";
+
+DirectedDijkstra.LEGEND_BASE_X = 90;
+DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
+DirectedDijkstra.LEGEND_RECT_HEIGHT = 18;
+DirectedDijkstra.LEGEND_SPACING = 12;
+DirectedDijkstra.LEGEND_TEXT_GAP = 16;
+DirectedDijkstra.LEGEND_FONT = "bold 14";
+DirectedDijkstra.LEGEND_TEXT_COLOR = "#1d3557";
+DirectedDijkstra.LEGEND_DEFAULT_BASE_Y = DirectedDijkstra.ROW2_START_Y + 120;
+
+DirectedDijkstra.LEVEL_COLORS = [
+  "#c6e2ff",
+  "#d0f4de",
+  "#ffeacc",
+  "#e8d7ff",
+  "#f0f4c3",
+  "#c8f7f4",
+  "#dbe7ff",
+  "#f2e7fe",
+];
 
 DirectedDijkstra.PRIORITY_QUEUE_SLOT_COUNT = 9;
 DirectedDijkstra.QUEUE_AREA_CENTER_X = 760;
@@ -182,6 +202,13 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
   this.edgeStates = {};
   this.edgeMeta = {};
   this.edgeCurveOverrides = {};
+  this.vertexLevels = [];
+  this.vertexLevelColors = [];
+  this.vertexEdgeColors = [];
+  this.vertexHighlightColors = [];
+  this.levelLegendEntries = [];
+  this.levelLegendAnchorY = null;
+  this.activeStartIndex = -1;
   this.vertexIDs = [];
   this.visitedRectIDs = [];
   this.distanceRectIDs = [];
@@ -609,7 +636,7 @@ DirectedDijkstra.prototype.createGraphArea = function () {
       var pair = { from: from, to: neighbor.to, curve: curve, weight: neighbor.weight };
       var key = this.edgeKey(from, neighbor.to);
       this.edgePairs.push(pair);
-      this.edgeStates[key] = { tree: false };
+      this.edgeStates[key] = { tree: false, color: null };
       this.edgeMeta[key] = pair;
       this.cmd(
         "Connect",
@@ -847,14 +874,26 @@ DirectedDijkstra.prototype.createCodeDisplay = function () {
 };
 
 DirectedDijkstra.prototype.resetAlgorithmState = function () {
-  this.visited = new Array(this.vertexLabels.length);
-  this.distance = new Array(this.vertexLabels.length);
-  this.parent = new Array(this.vertexLabels.length);
+  this.resetLevelLegend();
+  this.activeStartIndex = -1;
 
-  for (var i = 0; i < this.vertexLabels.length; i++) {
+  var length = this.vertexLabels.length;
+  this.visited = new Array(length);
+  this.distance = new Array(length);
+  this.parent = new Array(length);
+  this.vertexLevels = new Array(length);
+  this.vertexLevelColors = new Array(length);
+  this.vertexEdgeColors = new Array(length);
+  this.vertexHighlightColors = new Array(length);
+
+  for (var i = 0; i < length; i++) {
     this.visited[i] = false;
     this.distance[i] = Infinity;
     this.parent[i] = -1;
+    this.vertexLevels[i] = -1;
+    this.vertexLevelColors[i] = null;
+    this.vertexEdgeColors[i] = null;
+    this.vertexHighlightColors[i] = null;
 
     this.cmd("SetText", this.visitedRectIDs[i], "F");
     this.cmd("SetBackgroundColor", this.visitedRectIDs[i], DirectedDijkstra.ARRAY_RECT_COLOR);
@@ -895,6 +934,344 @@ DirectedDijkstra.prototype.resetAlgorithmState = function () {
   this.cmd("SetAlpha", this.highlightCircleID, 0);
 };
 
+DirectedDijkstra.prototype.resetLevelLegend = function () {
+  if (!this.levelLegendEntries || this.levelLegendEntries.length === 0) {
+    this.levelLegendEntries = [];
+    this.levelLegendAnchorY = null;
+    return;
+  }
+
+  for (var i = 0; i < this.levelLegendEntries.length; i++) {
+    var entry = this.levelLegendEntries[i];
+    if (!entry) {
+      continue;
+    }
+    if (typeof entry.rectID === "number") {
+      this.cmd("Delete", entry.rectID);
+    }
+    if (typeof entry.labelID === "number") {
+      this.cmd("Delete", entry.labelID);
+    }
+  }
+
+  this.levelLegendEntries = [];
+  this.levelLegendAnchorY = null;
+};
+
+DirectedDijkstra.prototype.prepareLevelLegend = function (startIndex) {
+  if (!this.vertexPositions || this.vertexPositions.length === 0) {
+    this.levelLegendAnchorY = DirectedDijkstra.LEGEND_DEFAULT_BASE_Y;
+    return;
+  }
+
+  if (
+    typeof startIndex === "number" &&
+    startIndex >= 0 &&
+    startIndex < this.vertexPositions.length &&
+    this.vertexPositions[startIndex]
+  ) {
+    this.levelLegendAnchorY = this.vertexPositions[startIndex].y;
+  } else {
+    this.levelLegendAnchorY = DirectedDijkstra.LEGEND_DEFAULT_BASE_Y;
+  }
+};
+
+DirectedDijkstra.prototype.getLevelLegendY = function (level) {
+  var baseY =
+    typeof this.levelLegendAnchorY === "number"
+      ? this.levelLegendAnchorY
+      : DirectedDijkstra.LEGEND_DEFAULT_BASE_Y;
+  return (
+    baseY +
+    level * (DirectedDijkstra.LEGEND_RECT_HEIGHT + DirectedDijkstra.LEGEND_SPACING)
+  );
+};
+
+DirectedDijkstra.prototype.ensureLevelLegendEntry = function (level, color) {
+  if (typeof level !== "number" || level < 0) {
+    return;
+  }
+
+  if (!this.levelLegendEntries) {
+    this.levelLegendEntries = [];
+  }
+
+  if (typeof this.levelLegendAnchorY !== "number") {
+    this.prepareLevelLegend(this.activeStartIndex || 0);
+  }
+
+  var entry = this.levelLegendEntries[level];
+  var fillColor = typeof color === "string" ? color : DirectedDijkstra.GRAPH_NODE_COLOR;
+
+  if (!entry) {
+    var rectID = this.nextIndex++;
+    var labelID = this.nextIndex++;
+    var y = this.getLevelLegendY(level);
+
+    this.cmd(
+      "CreateRectangle",
+      rectID,
+      "",
+      DirectedDijkstra.LEGEND_RECT_WIDTH,
+      DirectedDijkstra.LEGEND_RECT_HEIGHT,
+      DirectedDijkstra.LEGEND_BASE_X,
+      y
+    );
+    this.cmd("SetForegroundColor", rectID, DirectedDijkstra.GRAPH_NODE_BORDER);
+    this.cmd("SetBackgroundColor", rectID, fillColor);
+
+    var labelX =
+      DirectedDijkstra.LEGEND_BASE_X +
+      DirectedDijkstra.LEGEND_RECT_WIDTH / 2 +
+      DirectedDijkstra.LEGEND_TEXT_GAP;
+    this.cmd(
+      "CreateLabel",
+      labelID,
+      "Level " + level,
+      labelX,
+      y,
+      0
+    );
+    this.cmd("SetTextStyle", labelID, DirectedDijkstra.LEGEND_FONT);
+    this.cmd("SetForegroundColor", labelID, DirectedDijkstra.LEGEND_TEXT_COLOR);
+
+    this.levelLegendEntries[level] = {
+      rectID: rectID,
+      labelID: labelID,
+      color: fillColor,
+    };
+    return;
+  }
+
+  if (entry.color !== fillColor) {
+    this.cmd("SetBackgroundColor", entry.rectID, fillColor);
+    entry.color = fillColor;
+  }
+};
+
+DirectedDijkstra.prototype.getLevelColor = function (level) {
+  if (!DirectedDijkstra.LEVEL_COLORS || DirectedDijkstra.LEVEL_COLORS.length === 0) {
+    return DirectedDijkstra.GRAPH_NODE_VISITED_COLOR;
+  }
+  var index = level % DirectedDijkstra.LEVEL_COLORS.length;
+  if (index < 0) {
+    index += DirectedDijkstra.LEVEL_COLORS.length;
+  }
+  return DirectedDijkstra.LEVEL_COLORS[index];
+};
+
+DirectedDijkstra.prototype.setVertexLevel = function (vertexIndex, level) {
+  if (!this.vertexLevels || vertexIndex < 0 || vertexIndex >= this.vertexLevels.length) {
+    return null;
+  }
+  if (typeof level !== "number" || level < 0) {
+    level = 0;
+  }
+  this.vertexLevels[vertexIndex] = level;
+  var color = this.getLevelColor(level);
+  if (this.vertexLevelColors && vertexIndex < this.vertexLevelColors.length) {
+    this.vertexLevelColors[vertexIndex] = color;
+  }
+  var edgeColor = this.deriveEdgeColor(color);
+  if (this.vertexEdgeColors && vertexIndex < this.vertexEdgeColors.length) {
+    this.vertexEdgeColors[vertexIndex] = edgeColor;
+  }
+  var highlightColor = this.deriveHighlightColor(edgeColor || color);
+  if (this.vertexHighlightColors && vertexIndex < this.vertexHighlightColors.length) {
+    this.vertexHighlightColors[vertexIndex] = highlightColor;
+  }
+  return color;
+};
+
+DirectedDijkstra.prototype.applyVertexLevelColor = function (vertexIndex, level) {
+  if (!this.vertexIDs || vertexIndex < 0 || vertexIndex >= this.vertexIDs.length) {
+    return DirectedDijkstra.GRAPH_NODE_VISITED_COLOR;
+  }
+
+  if (
+    (!this.vertexLevelColors || !this.vertexLevelColors[vertexIndex]) &&
+    typeof level === "number"
+  ) {
+    this.setVertexLevel(vertexIndex, level);
+  }
+
+  var color =
+    this.vertexLevelColors && this.vertexLevelColors[vertexIndex]
+      ? this.vertexLevelColors[vertexIndex]
+      : this.getLevelColor(level || 0);
+
+  this.cmd("SetBackgroundColor", this.vertexIDs[vertexIndex], color);
+  this.cmd(
+    "SetTextColor",
+    this.vertexIDs[vertexIndex],
+    DirectedDijkstra.GRAPH_NODE_VISITED_TEXT_COLOR
+  );
+
+  return color;
+};
+
+DirectedDijkstra.prototype.getVertexEdgeColor = function (vertexIndex) {
+  if (
+    this.vertexEdgeColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexEdgeColors.length &&
+    typeof this.vertexEdgeColors[vertexIndex] === "string"
+  ) {
+    return this.vertexEdgeColors[vertexIndex];
+  }
+
+  if (
+    this.vertexLevelColors &&
+    vertexIndex >= 0 &&
+    vertexIndex < this.vertexLevelColors.length &&
+    typeof this.vertexLevelColors[vertexIndex] === "string"
+  ) {
+    return this.deriveEdgeColor(this.vertexLevelColors[vertexIndex]);
+  }
+
+  return null;
+};
+
+DirectedDijkstra.prototype.deriveEdgeColor = function (nodeColor) {
+  if (typeof nodeColor !== "string") {
+    return DirectedDijkstra.EDGE_TREE_COLOR;
+  }
+  var rgb = this.parseHexColor(nodeColor);
+  if (!rgb) {
+    return nodeColor;
+  }
+  var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.s = Math.min(1, hsl.s + 0.2);
+  hsl.l = Math.max(0, Math.min(1, hsl.l - 0.18));
+  var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+  return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
+};
+
+DirectedDijkstra.prototype.deriveHighlightColor = function (baseColor) {
+  if (typeof baseColor !== "string") {
+    return DirectedDijkstra.HIGHLIGHT_COLOR;
+  }
+  var rgb = this.parseHexColor(baseColor);
+  if (!rgb) {
+    return baseColor;
+  }
+  var hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
+  hsl.s = Math.min(1, hsl.s + 0.25);
+  hsl.l = Math.max(0, Math.min(1, hsl.l * 0.6));
+  var derivedRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+  return this.rgbToHex(derivedRgb.r, derivedRgb.g, derivedRgb.b);
+};
+
+DirectedDijkstra.prototype.parseHexColor = function (hex) {
+  if (typeof hex !== "string") {
+    return null;
+  }
+  var cleaned = hex.trim();
+  if (cleaned.charAt(0) === "#") {
+    cleaned = cleaned.substring(1);
+  }
+  if (cleaned.length === 3) {
+    cleaned =
+      cleaned.charAt(0) +
+      cleaned.charAt(0) +
+      cleaned.charAt(1) +
+      cleaned.charAt(1) +
+      cleaned.charAt(2) +
+      cleaned.charAt(2);
+  }
+  if (cleaned.length !== 6) {
+    return null;
+  }
+  var r = parseInt(cleaned.substring(0, 2), 16);
+  var g = parseInt(cleaned.substring(2, 4), 16);
+  var b = parseInt(cleaned.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    return null;
+  }
+  return { r: r, g: g, b: b };
+};
+
+DirectedDijkstra.prototype.rgbToHsl = function (r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  var max = Math.max(r, g, b);
+  var min = Math.min(r, g, b);
+  var h;
+  var s;
+  var l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    var d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      default:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+
+  return { h: h, s: s, l: l };
+};
+
+DirectedDijkstra.prototype.hslToRgb = function (h, s, l) {
+  var r;
+  var g;
+  var b;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    var hue2rgb = function (p, q, t) {
+      if (t < 0) {
+        t += 1;
+      }
+      if (t > 1) {
+        t -= 1;
+      }
+      if (t < 1 / 6) {
+        return p + (q - p) * 6 * t;
+      }
+      if (t < 1 / 2) {
+        return q;
+      }
+      if (t < 2 / 3) {
+        return p + (q - p) * (2 / 3 - t) * 6;
+      }
+      return p;
+    };
+
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  return {
+    r: Math.round(r * 255),
+    g: Math.round(g * 255),
+    b: Math.round(b * 255),
+  };
+};
+
+DirectedDijkstra.prototype.rgbToHex = function (r, g, b) {
+  var toHex = function (value) {
+    var hex = value.toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+  return "#" + toHex(r) + toHex(g) + toHex(b);
+};
+
 DirectedDijkstra.prototype.resetTreeEdges = function () {
   for (var k = 0; k < this.edgePairs.length; k++) {
     var info = this.edgePairs[k];
@@ -910,7 +1287,10 @@ DirectedDijkstra.prototype.resetTreeEdges = function () {
       this.vertexIDs[info.to],
       DirectedDijkstra.EDGE_THICKNESS
     );
-    this.edgeStates[this.edgeKey(info.from, info.to)] = { tree: false };
+    this.edgeStates[this.edgeKey(info.from, info.to)] = {
+      tree: false,
+      color: null,
+    };
   }
 };
 
@@ -1095,27 +1475,53 @@ DirectedDijkstra.prototype.moveHighlightCircleToVertex = function (index) {
 DirectedDijkstra.prototype.highlightEdge = function (from, to, active) {
   var fromID = this.vertexIDs[from];
   var toID = this.vertexIDs[to];
-  var color = active
-    ? DirectedDijkstra.EDGE_ACTIVE_COLOR
-    : this.edgeStates[this.edgeKey(from, to)] && this.edgeStates[this.edgeKey(from, to)].tree
-    ? DirectedDijkstra.EDGE_TREE_COLOR
-    : DirectedDijkstra.EDGE_COLOR;
-  var thickness = active
-    ? DirectedDijkstra.EDGE_ACTIVE_THICKNESS
-    : this.edgeStates[this.edgeKey(from, to)] && this.edgeStates[this.edgeKey(from, to)].tree
-    ? DirectedDijkstra.EDGE_TREE_THICKNESS
-    : DirectedDijkstra.EDGE_THICKNESS;
-  this.cmd("SetEdgeColor", fromID, toID, color);
-  this.cmd("SetEdgeThickness", fromID, toID, thickness);
+  if (active) {
+    this.cmd("SetEdgeColor", fromID, toID, DirectedDijkstra.EDGE_ACTIVE_COLOR);
+    this.cmd("SetEdgeThickness", fromID, toID, DirectedDijkstra.EDGE_ACTIVE_THICKNESS);
+    return;
+  }
+
+  this.refreshEdgeAppearance(from, to);
 };
 
 DirectedDijkstra.prototype.setTreeEdge = function (from, to, isTreeEdge) {
   var key = this.edgeKey(from, to);
   if (!this.edgeStates[key]) {
-    this.edgeStates[key] = { tree: false };
+    this.edgeStates[key] = { tree: false, color: null };
   }
   this.edgeStates[key].tree = isTreeEdge;
-  this.highlightEdge(from, to, false);
+  if (isTreeEdge) {
+    var color = this.getVertexEdgeColor(to) || DirectedDijkstra.EDGE_TREE_COLOR;
+    this.edgeStates[key].color = color;
+  } else {
+    this.edgeStates[key].color = null;
+  }
+  this.refreshEdgeAppearance(from, to);
+};
+
+DirectedDijkstra.prototype.refreshEdgeAppearance = function (from, to) {
+  if (
+    !this.vertexIDs ||
+    from < 0 ||
+    to < 0 ||
+    from >= this.vertexIDs.length ||
+    to >= this.vertexIDs.length
+  ) {
+    return;
+  }
+
+  var key = this.edgeKey(from, to);
+  var state = this.edgeStates ? this.edgeStates[key] : null;
+  var baseColor = DirectedDijkstra.EDGE_COLOR;
+  var thickness = DirectedDijkstra.EDGE_THICKNESS;
+
+  if (state && state.tree) {
+    baseColor = state.color || this.getVertexEdgeColor(to) || DirectedDijkstra.EDGE_TREE_COLOR;
+    thickness = DirectedDijkstra.EDGE_TREE_THICKNESS;
+  }
+
+  this.cmd("SetEdgeColor", this.vertexIDs[from], this.vertexIDs[to], baseColor);
+  this.cmd("SetEdgeThickness", this.vertexIDs[from], this.vertexIDs[to], thickness);
 };
 
 DirectedDijkstra.prototype.markVertexVisited = function (index) {
@@ -1125,16 +1531,89 @@ DirectedDijkstra.prototype.markVertexVisited = function (index) {
   this.visited[index] = true;
   this.cmd("SetText", this.visitedRectIDs[index], "T");
   this.cmd("SetBackgroundColor", this.visitedRectIDs[index], DirectedDijkstra.ARRAY_VISITED_FILL);
-  this.cmd(
-    "SetBackgroundColor",
-    this.vertexIDs[index],
-    DirectedDijkstra.GRAPH_NODE_VISITED_COLOR
-  );
-  this.cmd(
-    "SetTextColor",
-    this.vertexIDs[index],
-    DirectedDijkstra.GRAPH_NODE_VISITED_TEXT_COLOR
-  );
+  var level =
+    this.vertexLevels && this.vertexLevels[index] >= 0
+      ? this.vertexLevels[index]
+      : 0;
+  var color = this.applyVertexLevelColor(index, level);
+  this.ensureLevelLegendEntry(level, color);
+};
+
+DirectedDijkstra.prototype.buildPathToVertex = function (vertexIndex) {
+  var path = [];
+  if (
+    typeof vertexIndex !== "number" ||
+    vertexIndex < 0 ||
+    !this.parent ||
+    vertexIndex >= this.parent.length
+  ) {
+    return path;
+  }
+
+  var current = vertexIndex;
+  var guard = 0;
+  var limit = this.parent.length + 2;
+  var stop = typeof this.activeStartIndex === "number" ? this.activeStartIndex : -1;
+
+  while (current !== -1 && guard < limit) {
+    path.push(current);
+    if ((stop >= 0 && current === stop) || this.parent[current] === -1) {
+      break;
+    }
+    current = this.parent[current];
+    guard++;
+  }
+
+  if (path.length === 0) {
+    return path;
+  }
+
+  var tail = path[path.length - 1];
+  if (stop >= 0) {
+    if (tail !== stop) {
+      return [];
+    }
+  } else if (this.parent[tail] !== -1) {
+    return [];
+  }
+
+  path.reverse();
+  return path;
+};
+
+DirectedDijkstra.prototype.animateRelaxationPath = function (targetVertex) {
+  var path = this.buildPathToVertex(targetVertex);
+  if (!path || path.length < 2) {
+    return;
+  }
+
+  var edges = [];
+  for (var i = 0; i < path.length - 1; i++) {
+    edges.push({ from: path[i], to: path[i + 1] });
+  }
+
+  for (var j = 0; j < edges.length; j++) {
+    var segment = edges[j];
+    this.cmd(
+      "SetEdgeColor",
+      this.vertexIDs[segment.from],
+      this.vertexIDs[segment.to],
+      DirectedDijkstra.EDGE_ACTIVE_COLOR
+    );
+    this.cmd(
+      "SetEdgeThickness",
+      this.vertexIDs[segment.from],
+      this.vertexIDs[segment.to],
+      DirectedDijkstra.EDGE_ACTIVE_THICKNESS
+    );
+    this.cmd("Step");
+  }
+
+  for (var k = 0; k < edges.length; k++) {
+    this.refreshEdgeAppearance(edges[k].from, edges[k].to);
+  }
+
+  this.cmd("Step");
 };
 
 DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
@@ -1145,6 +1624,10 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   }
 
   this.resetAlgorithmState();
+  this.activeStartIndex = startIndex;
+  this.prepareLevelLegend(startIndex);
+  var startColor = this.setVertexLevel(startIndex, 0);
+  this.ensureLevelLegendEntry(0, startColor);
 
   var startLabel = this.vertexLabels[startIndex];
   this.startField.value = startLabel;
@@ -1250,9 +1733,17 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
           this.setTreeEdge(previousParent, nextVertex, false);
         }
         this.parent[nextVertex] = currentVertex;
+        var childLevel =
+          this.vertexLevels && this.vertexLevels[currentVertex] >= 0
+            ? this.vertexLevels[currentVertex] + 1
+            : 1;
+        var levelColor = this.setVertexLevel(nextVertex, childLevel);
+        this.ensureLevelLegendEntry(childLevel, levelColor);
         this.setParentValue(nextVertex, currentVertex);
         this.setTreeEdge(currentVertex, nextVertex, true);
         this.cmd("Step");
+
+        this.animateRelaxationPath(nextVertex);
 
         this.highlightCodeLine(19);
         this.pushToPriorityQueue(nextVertex, newDistance);
