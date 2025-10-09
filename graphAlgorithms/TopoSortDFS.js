@@ -1843,6 +1843,13 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
     this.highlightCodeLine(13);
     this.cmd("Step");
 
+    var startPos = this.vertexPositions[u];
+    if (startPos) {
+      this.cmd("SetAlpha", this.highlightCircleID, 1);
+      this.cmd("Move", this.highlightCircleID, startPos.x, startPos.y);
+      this.cmd("Step");
+    }
+
     if (!this.visited[u]) {
       this.highlightCodeLine(14);
       this.cmd("Step");
@@ -1852,13 +1859,18 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
         this.statusDisplayID,
         "Starting DFS from " + this.vertexLabels[u]
       );
-      var pos = this.vertexPositions[u];
-      this.cmd("SetAlpha", this.highlightCircleID, 1);
-      this.cmd("Move", this.highlightCircleID, pos.x, pos.y);
-      this.cmd("Step");
 
       this.dfsVisit(u);
 
+      this.cmd("SetAlpha", this.highlightCircleID, 0);
+    } else {
+      if (this.statusDisplayID >= 0) {
+        this.cmd(
+          "SetText",
+          this.statusDisplayID,
+          this.vertexLabels[u] + " already visited — skip DFS"
+        );
+      }
       this.cmd("SetAlpha", this.highlightCircleID, 0);
     }
 
