@@ -24,8 +24,8 @@ DirectedDijkstra.ROW3_START_Y =
 DirectedDijkstra.TITLE_Y = DirectedDijkstra.ROW1_CENTER_Y - 40;
 DirectedDijkstra.START_INFO_Y = DirectedDijkstra.ROW1_CENTER_Y + 40;
 
-DirectedDijkstra.GRAPH_AREA_CENTER_X = 340;
-DirectedDijkstra.GRAPH_NODE_RADIUS = 22;
+DirectedDijkstra.GRAPH_AREA_CENTER_X = 360;
+DirectedDijkstra.GRAPH_NODE_RADIUS = 20;
 DirectedDijkstra.GRAPH_NODE_COLOR = "#e3f2fd";
 DirectedDijkstra.GRAPH_NODE_BORDER = "#0b3954";
 DirectedDijkstra.GRAPH_NODE_TEXT = "#003049";
@@ -60,12 +60,12 @@ DirectedDijkstra.BOTTOM_SECTION_TOP_OFFSET = -20;
 DirectedDijkstra.CODE_TOP_PADDING = 12;
 
 DirectedDijkstra.CODE_START_X = 60;
-DirectedDijkstra.CODE_LINE_HEIGHT = 34;
+DirectedDijkstra.CODE_LINE_HEIGHT = 30;
 DirectedDijkstra.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
-DirectedDijkstra.CODE_FONT = "bold 22";
+DirectedDijkstra.CODE_FONT = "bold 18";
 
-DirectedDijkstra.LEGEND_BASE_X = 90;
+DirectedDijkstra.LEGEND_BASE_X = 80;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
 DirectedDijkstra.LEGEND_RECT_HEIGHT = 18;
 DirectedDijkstra.LEGEND_SPACING = 12;
@@ -73,6 +73,8 @@ DirectedDijkstra.LEGEND_TEXT_GAP = 16;
 DirectedDijkstra.LEGEND_FONT = "bold 14";
 DirectedDijkstra.LEGEND_TEXT_COLOR = "#1d3557";
 DirectedDijkstra.LEGEND_DEFAULT_BASE_Y = DirectedDijkstra.ROW2_START_Y + 120;
+DirectedDijkstra.LEGEND_MIN_X = 60;
+DirectedDijkstra.LEGEND_GRAPH_GAP = 60;
 
 DirectedDijkstra.LEVEL_COLORS = [
   "#c6e2ff",
@@ -110,6 +112,8 @@ DirectedDijkstra.PATH_NODE_TEXT_COLOR = "#1d3557";
 DirectedDijkstra.RANDOM_WEIGHT_MIN = 1;
 DirectedDijkstra.RANDOM_WEIGHT_MAX = 9;
 DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS = 10;
+DirectedDijkstra.CUMULATIVE_FONT = "bold 20";
+DirectedDijkstra.CUMULATIVE_LABEL_OFFSET_Y = -34;
 
 DirectedDijkstra.CODE_LINES = [
   ["void dijkstra(int start) {"],
@@ -208,6 +212,7 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
   this.vertexHighlightColors = [];
   this.levelLegendEntries = [];
   this.levelLegendAnchorY = null;
+  this.legendBaseX = DirectedDijkstra.LEGEND_BASE_X;
   this.activeStartIndex = -1;
   this.vertexIDs = [];
   this.visitedRectIDs = [];
@@ -218,6 +223,8 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
   this.codeID = [];
   this.highlightCircleID = -1;
   this.currentCodeLine = -1;
+  this.cumulativeLabelID = -1;
+  this.cumulativeContext = null;
   this.startDisplayID = -1;
   this.queueLabelID = -1;
   this.priorityQueueData = [];
@@ -263,6 +270,9 @@ DirectedDijkstra.prototype.reset = function () {
 
   this.commands = [];
   this.nextIndex = 0;
+  this.legendBaseX = DirectedDijkstra.LEGEND_BASE_X;
+  this.cumulativeLabelID = -1;
+  this.cumulativeContext = null;
 
   this.selectTemplate();
   this.createTitleRow();
@@ -553,7 +563,7 @@ DirectedDijkstra.prototype.buildVertexLabels = function (vertexCount) {
 
 DirectedDijkstra.prototype.computeCircularLayout = function (vertexCount) {
   var layout = [];
-  var radius = 240;
+  var radius = 210;
   var centerX = DirectedDijkstra.GRAPH_AREA_CENTER_X;
   var centerY = DirectedDijkstra.ROW2_START_Y + 240;
 
@@ -610,6 +620,8 @@ DirectedDijkstra.prototype.createGraphArea = function () {
   this.edgePairs = [];
   this.edgeStates = {};
   this.edgeMeta = {};
+
+  this.updateLegendBaseX();
 
   for (var i = 0; i < this.vertexLabels.length; i++) {
     var id = this.nextIndex++;
@@ -814,6 +826,43 @@ DirectedDijkstra.prototype.createPriorityQueueArea = function () {
   this.cmd("SetForegroundColor", this.queueLabelID, DirectedDijkstra.CODE_STANDARD_COLOR);
 };
 
+DirectedDijkstra.prototype.getLegendBaseX = function () {
+  if (typeof this.legendBaseX === "number") {
+    return this.legendBaseX;
+  }
+  return DirectedDijkstra.LEGEND_BASE_X;
+};
+
+DirectedDijkstra.prototype.updateLegendBaseX = function () {
+  if (!this.vertexPositions || this.vertexPositions.length === 0) {
+    this.legendBaseX = DirectedDijkstra.LEGEND_BASE_X;
+    return;
+  }
+
+  var minX = Infinity;
+  for (var i = 0; i < this.vertexPositions.length; i++) {
+    var pos = this.vertexPositions[i];
+    if (!pos) {
+      continue;
+    }
+    if (pos.x < minX) {
+      minX = pos.x;
+    }
+  }
+
+  if (minX === Infinity) {
+    this.legendBaseX = DirectedDijkstra.LEGEND_BASE_X;
+    return;
+  }
+
+  var candidate =
+    minX - DirectedDijkstra.GRAPH_NODE_RADIUS - DirectedDijkstra.LEGEND_GRAPH_GAP;
+  if (candidate < DirectedDijkstra.LEGEND_MIN_X) {
+    candidate = DirectedDijkstra.LEGEND_MIN_X;
+  }
+  this.legendBaseX = candidate;
+};
+
 DirectedDijkstra.prototype.ensurePriorityQueueCapacity = function (desiredLength) {
   while (this.priorityQueueRectIDs.length < desiredLength) {
     var rectID = this.nextIndex++;
@@ -875,6 +924,7 @@ DirectedDijkstra.prototype.createCodeDisplay = function () {
 
 DirectedDijkstra.prototype.resetAlgorithmState = function () {
   this.resetLevelLegend();
+  this.clearCumulativeSumDisplay();
   this.activeStartIndex = -1;
 
   var length = this.vertexLabels.length;
@@ -1007,6 +1057,7 @@ DirectedDijkstra.prototype.ensureLevelLegendEntry = function (level, color) {
     var rectID = this.nextIndex++;
     var labelID = this.nextIndex++;
     var y = this.getLevelLegendY(level);
+    var baseX = this.getLegendBaseX();
 
     this.cmd(
       "CreateRectangle",
@@ -1014,14 +1065,14 @@ DirectedDijkstra.prototype.ensureLevelLegendEntry = function (level, color) {
       "",
       DirectedDijkstra.LEGEND_RECT_WIDTH,
       DirectedDijkstra.LEGEND_RECT_HEIGHT,
-      DirectedDijkstra.LEGEND_BASE_X,
+      baseX,
       y
     );
     this.cmd("SetForegroundColor", rectID, DirectedDijkstra.GRAPH_NODE_BORDER);
     this.cmd("SetBackgroundColor", rectID, fillColor);
 
     var labelX =
-      DirectedDijkstra.LEGEND_BASE_X +
+      baseX +
       DirectedDijkstra.LEGEND_RECT_WIDTH / 2 +
       DirectedDijkstra.LEGEND_TEXT_GAP;
     this.cmd(
@@ -1377,6 +1428,157 @@ DirectedDijkstra.prototype.setDistanceCellHighlight = function (index, active) {
   this.cmd("SetForegroundColor", rectID, color);
 };
 
+DirectedDijkstra.prototype.clearCumulativeSumDisplay = function () {
+  if (typeof this.cumulativeLabelID === "number" && this.cumulativeLabelID >= 0) {
+    this.cmd("Delete", this.cumulativeLabelID);
+  }
+  this.cumulativeLabelID = -1;
+  this.cumulativeContext = null;
+};
+
+DirectedDijkstra.prototype.describeCumulativeSum = function (
+  fromIndex,
+  toIndex,
+  currentDistance,
+  weight,
+  newDistance
+) {
+  var fromLabel =
+    this.vertexLabels && fromIndex >= 0 && fromIndex < this.vertexLabels.length
+      ? this.vertexLabels[fromIndex]
+      : String(fromIndex);
+  var toLabel =
+    this.vertexLabels && toIndex >= 0 && toIndex < this.vertexLabels.length
+      ? this.vertexLabels[toIndex]
+      : String(toIndex);
+  var distText = currentDistance === Infinity ? "\u221E" : String(currentDistance);
+  var weightText = typeof weight === "number" ? String(weight) : "?";
+  var result =
+    "dist[" +
+    fromLabel +
+    "] " +
+    distText +
+    " + w(" +
+    fromLabel +
+    "," +
+    toLabel +
+    ") " +
+    weightText;
+  if (typeof newDistance === "number" && newDistance !== Infinity) {
+    result += " = " + newDistance;
+  }
+  return result;
+};
+
+DirectedDijkstra.prototype.showCumulativeSum = function (
+  fromIndex,
+  toIndex,
+  weight,
+  newDistance
+) {
+  this.clearCumulativeSumDisplay();
+
+  if (
+    !this.vertexPositions ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= this.vertexPositions.length ||
+    toIndex >= this.vertexPositions.length
+  ) {
+    return;
+  }
+
+  var fromPos = this.vertexPositions[fromIndex];
+  var toPos = this.vertexPositions[toIndex];
+  if (!fromPos || !toPos) {
+    return;
+  }
+
+  var labelX = (fromPos.x + toPos.x) / 2;
+  var labelY =
+    (fromPos.y + toPos.y) / 2 + DirectedDijkstra.CUMULATIVE_LABEL_OFFSET_Y;
+  var currentDistance =
+    this.distance && fromIndex < this.distance.length
+      ? this.distance[fromIndex]
+      : Infinity;
+  var text = this.describeCumulativeSum(
+    fromIndex,
+    toIndex,
+    currentDistance,
+    weight,
+    newDistance
+  );
+
+  this.cumulativeContext = {
+    fromIndex: fromIndex,
+    toIndex: toIndex,
+    weight: weight,
+    newDistance: newDistance,
+    currentDistance: currentDistance,
+  };
+
+  this.cumulativeLabelID = this.nextIndex++;
+  this.cmd("CreateLabel", this.cumulativeLabelID, text, labelX, labelY, 0);
+  this.cmd("SetTextStyle", this.cumulativeLabelID, DirectedDijkstra.CUMULATIVE_FONT);
+  this.cmd(
+    "SetForegroundColor",
+    this.cumulativeLabelID,
+    DirectedDijkstra.CODE_HIGHLIGHT_COLOR
+  );
+};
+
+DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
+  toIndex,
+  shouldRelax
+) {
+  if (
+    typeof this.cumulativeLabelID !== "number" ||
+    this.cumulativeLabelID < 0 ||
+    !this.cumulativeContext
+  ) {
+    return;
+  }
+
+  if (
+    typeof toIndex === "number" &&
+    typeof this.cumulativeContext.toIndex === "number" &&
+    toIndex !== this.cumulativeContext.toIndex
+  ) {
+    return;
+  }
+
+  var fromIndex = this.cumulativeContext.fromIndex;
+  var currentDistance = this.cumulativeContext.currentDistance;
+  var weight = this.cumulativeContext.weight;
+  var newDistance = this.cumulativeContext.newDistance;
+  var baseText = this.describeCumulativeSum(
+    fromIndex,
+    this.cumulativeContext.toIndex,
+    currentDistance,
+    weight,
+    newDistance
+  );
+
+  var toLabel =
+    this.vertexLabels &&
+    this.cumulativeContext.toIndex >= 0 &&
+    this.cumulativeContext.toIndex < this.vertexLabels.length
+      ? this.vertexLabels[this.cumulativeContext.toIndex]
+      : String(this.cumulativeContext.toIndex);
+  var existing =
+    this.distance &&
+    this.cumulativeContext.toIndex >= 0 &&
+    this.cumulativeContext.toIndex < this.distance.length
+      ? this.formatDistance(this.distance[this.cumulativeContext.toIndex])
+      : "\u221E";
+
+  var comparison = shouldRelax
+    ? " < dist[" + toLabel + "] " + existing + " \u2192 update"
+    : " \u2265 dist[" + toLabel + "] " + existing + " \u2192 skip";
+
+  this.cmd("SetText", this.cumulativeLabelID, baseText + comparison);
+};
+
 DirectedDijkstra.prototype.setPriorityQueueActive = function (slotIndex) {
   if (slotIndex >= 0) {
     this.resetQueueHighlights();
@@ -1606,8 +1808,9 @@ DirectedDijkstra.prototype.animateRelaxationPath = function (targetVertex) {
       this.vertexIDs[segment.to],
       DirectedDijkstra.EDGE_ACTIVE_THICKNESS
     );
-    this.cmd("Step");
   }
+
+  this.cmd("Step");
 
   for (var k = 0; k < edges.length; k++) {
     this.refreshEdgeAppearance(edges[k].from, edges[k].to);
@@ -1682,11 +1885,13 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
     var currentVertex = entry.vertex;
 
     this.moveHighlightCircleToVertex(currentVertex);
+    this.clearCumulativeSumDisplay();
     this.cmd("Step");
 
     if (this.visited[currentVertex]) {
       this.highlightCodeLine(10);
       this.cmd("Step");
+      this.clearCumulativeSumDisplay();
       continue;
     }
 
@@ -1711,10 +1916,12 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
       this.highlightCodeLine(15);
       var newDistance = this.distance[currentVertex] + neighbor.weight;
       this.setDistanceCellHighlight(nextVertex, true);
+      this.showCumulativeSum(currentVertex, nextVertex, neighbor.weight, newDistance);
       this.cmd("Step");
 
       this.highlightCodeLine(16);
       var shouldRelax = newDistance < this.distance[nextVertex];
+      this.updateCumulativeSumDecision(nextVertex, shouldRelax);
       this.cmd("Step");
 
       if (shouldRelax) {
@@ -1754,10 +1961,13 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
       this.cmd("Step");
 
       this.setDistanceCellHighlight(nextVertex, false);
+      this.clearCumulativeSumDisplay();
       this.highlightEdge(currentVertex, nextVertex, false);
       this.cmd("Step");
     }
   }
+
+  this.clearCumulativeSumDisplay();
 
   this.highlightCodeLine(21);
   this.cmd("Step");
