@@ -1069,13 +1069,13 @@ TopoSortDFS.prototype.createOrderArea = function () {
     TopoSortDFS.ORDER_LABEL_GAP;
   var orderRowY = orderRowTop + TopoSortDFS.ORDER_CELL_HEIGHT / 2;
 
-  var arrayWidth =
+  var arraySpan =
     count > 0
-      ? count * TopoSortDFS.ORDER_CELL_WIDTH +
-        Math.max(0, count - 1) * TopoSortDFS.ORDER_CELL_SPACING
+      ? Math.max(0, count - 1) *
+          (TopoSortDFS.ORDER_CELL_WIDTH + TopoSortDFS.ORDER_CELL_SPACING)
       : 0;
   var arrayStartX = TopoSortDFS.CODE_START_X;
-  var labelCenterX = arrayStartX + arrayWidth / 2;
+  var labelCenterX = arrayStartX + arraySpan / 2;
 
   var stackLabelID = this.nextIndex++;
   this.orderLabelIDs.push(stackLabelID);
@@ -1841,10 +1841,10 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
     this.highlightCodeLine(13);
     this.cmd("Step");
 
-    this.highlightCodeLine(14);
-    this.cmd("Step");
-
     if (!this.visited[u]) {
+      this.highlightCodeLine(14);
+      this.cmd("Step");
+
       this.cmd(
         "SetText",
         this.statusDisplayID,
@@ -1855,13 +1855,13 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
       this.cmd("Move", this.highlightCircleID, pos.x, pos.y);
       this.cmd("Step");
 
-      this.highlightCodeLine(15);
-      this.cmd("Step");
-
       this.dfsVisit(u);
 
       this.cmd("SetAlpha", this.highlightCircleID, 0);
     }
+
+    this.highlightCodeLine(15);
+    this.cmd("Step");
 
     this.highlightCodeLine(16);
     this.cmd("Step");
@@ -1873,9 +1873,6 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
   this.highlightCodeLine(18);
   this.cmd("Step");
 
-  this.highlightCodeLine(19);
-  this.cmd("Step");
-
   if (this.stackPointer > 0 && this.statusDisplayID >= 0) {
     this.cmd(
       "SetText",
@@ -1885,7 +1882,10 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
   }
 
   while (this.stackPointer > 0) {
-    this.highlightCodeLine(20);
+    this.highlightCodeLine(18);
+    this.cmd("Step");
+
+    this.highlightCodeLine(19);
     this.cmd("Step");
 
     var popped = this.popStackToOrder();
@@ -1897,17 +1897,14 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
       );
     }
 
-    this.highlightCodeLine(21);
-    this.cmd("Step");
-
-    this.highlightCodeLine(19);
+    this.highlightCodeLine(20);
     this.cmd("Step");
   }
 
-  this.highlightCodeLine(22);
+  this.highlightCodeLine(21);
   this.cmd("Step");
 
-  this.highlightCodeLine(23);
+  this.highlightCodeLine(22);
   this.cmd("Step");
 
   this.highlightCodeLine(-1);
