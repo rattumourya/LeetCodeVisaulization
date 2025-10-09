@@ -1845,8 +1845,14 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
 
     var startPos = this.vertexPositions[u];
     if (startPos) {
+      this.cmd("SetAlpha", this.highlightCircleID, 0);
+      this.cmd(
+        "SetPosition",
+        this.highlightCircleID,
+        Math.round(startPos.x),
+        Math.round(startPos.y)
+      );
       this.cmd("SetAlpha", this.highlightCircleID, 1);
-      this.cmd("Move", this.highlightCircleID, startPos.x, startPos.y);
       this.cmd("Step");
     }
 
