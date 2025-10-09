@@ -22,15 +22,18 @@ DirectedDijkstra.ROW3_START_Y =
   DirectedDijkstra.ROW1_HEIGHT + DirectedDijkstra.ROW2_HEIGHT;
 
 DirectedDijkstra.TITLE_Y = DirectedDijkstra.ROW1_CENTER_Y - 40;
-DirectedDijkstra.START_INFO_Y = DirectedDijkstra.ROW1_CENTER_Y + 40;
+DirectedDijkstra.INFO_PANEL_Y = DirectedDijkstra.TITLE_Y + 52;
+DirectedDijkstra.START_INFO_Y = DirectedDijkstra.ROW1_CENTER_Y + 70;
 
 DirectedDijkstra.GRAPH_AREA_CENTER_X = 360;
-DirectedDijkstra.GRAPH_NODE_RADIUS = 20;
-DirectedDijkstra.GRAPH_NODE_COLOR = "#e3f2fd";
-DirectedDijkstra.GRAPH_NODE_BORDER = "#0b3954";
-DirectedDijkstra.GRAPH_NODE_TEXT = "#003049";
+DirectedDijkstra.GRAPH_NODE_RADIUS = 18;
+DirectedDijkstra.GRAPH_NODE_COLOR = "#1e88e5";
+DirectedDijkstra.GRAPH_NODE_BORDER = "#0d47a1";
+DirectedDijkstra.GRAPH_NODE_TEXT = "#ffffff";
 DirectedDijkstra.GRAPH_NODE_VISITED_COLOR = "#66bb6a";
 DirectedDijkstra.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
+DirectedDijkstra.START_NODE_COLOR = "#43a047";
+DirectedDijkstra.START_NODE_TEXT_COLOR = "#0b3d1f";
 DirectedDijkstra.HIGHLIGHT_RADIUS = DirectedDijkstra.GRAPH_NODE_RADIUS;
 DirectedDijkstra.EDGE_COLOR = "#4a4e69";
 DirectedDijkstra.EDGE_TREE_COLOR = "#2a9d8f";
@@ -65,6 +68,16 @@ DirectedDijkstra.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedDijkstra.CODE_FONT = "bold 18";
 
+DirectedDijkstra.INFO_PANEL_WIDTH = 760;
+DirectedDijkstra.INFO_PANEL_HEIGHT = 70;
+DirectedDijkstra.INFO_PANEL_FILL = "#eef2ff";
+DirectedDijkstra.INFO_PANEL_BORDER = "#1d3557";
+DirectedDijkstra.INFO_PANEL_TEXT_COLOR = "#1d3557";
+DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS = 2;
+DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT =
+  "Info: The min-heap always extracts the closest distance.\nOrange comparisons show when a path improves.";
+DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 16";
+
 DirectedDijkstra.LEGEND_BASE_X = 80;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
 DirectedDijkstra.LEGEND_RECT_HEIGHT = 18;
@@ -87,7 +100,7 @@ DirectedDijkstra.LEVEL_COLORS = [
   "#f2e7fe",
 ];
 
-DirectedDijkstra.PRIORITY_QUEUE_SLOT_COUNT = 9;
+DirectedDijkstra.PRIORITY_QUEUE_SLOT_COUNT = 14;
 DirectedDijkstra.QUEUE_AREA_CENTER_X = 760;
 DirectedDijkstra.QUEUE_TOP_Y = DirectedDijkstra.ROW3_START_Y + 28;
 DirectedDijkstra.QUEUE_SLOT_WIDTH = 200;
@@ -114,6 +127,17 @@ DirectedDijkstra.RANDOM_WEIGHT_MAX = 9;
 DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS = 10;
 DirectedDijkstra.CUMULATIVE_FONT = "bold 20";
 DirectedDijkstra.CUMULATIVE_LABEL_OFFSET_Y = -34;
+DirectedDijkstra.CUSTOM_LAYOUT_POINTS = [
+  { x: 150, y: DirectedDijkstra.ROW2_START_Y + 210 },
+  { x: 230, y: DirectedDijkstra.ROW2_START_Y + 140 },
+  { x: 240, y: DirectedDijkstra.ROW2_START_Y + 310 },
+  { x: 300, y: DirectedDijkstra.ROW2_START_Y + 220 },
+  { x: 370, y: DirectedDijkstra.ROW2_START_Y + 140 },
+  { x: 370, y: DirectedDijkstra.ROW2_START_Y + 310 },
+  { x: 460, y: DirectedDijkstra.ROW2_START_Y + 150 },
+  { x: 460, y: DirectedDijkstra.ROW2_START_Y + 300 },
+  { x: 550, y: DirectedDijkstra.ROW2_START_Y + 220 },
+];
 
 DirectedDijkstra.CODE_LINES = [
   ["void dijkstra(int start) {"],
@@ -144,51 +168,24 @@ DirectedDijkstra.CODE_LINES = [
 
 DirectedDijkstra.TEMPLATES = [
   {
-    vertexCount: 6,
+    vertexCount: 9,
+    labels: ["s", "a", "h", "f", "b", "e", "c", "g", "d"],
     edges: [
-      { from: 0, to: 1, weight: 4 },
-      { from: 0, to: 2, weight: 8 },
-      { from: 0, to: 3, weight: 6 },
+      { from: 0, to: 1, weight: 5 },
+      { from: 0, to: 2, weight: 2 },
       { from: 1, to: 2, weight: 2 },
-      { from: 1, to: 4, weight: 5 },
-      { from: 2, to: 3, weight: 3 },
-      { from: 2, to: 4, weight: 7 },
-      { from: 2, to: 5, weight: 9 },
-      { from: 3, to: 4, weight: 2 },
-      { from: 3, to: 5, weight: 4 },
-      { from: 4, to: 5, weight: 1 },
-    ],
-  },
-  {
-    vertexCount: 6,
-    edges: [
-      { from: 0, to: 1, weight: 3 },
-      { from: 0, to: 2, weight: 7 },
-      { from: 0, to: 3, weight: 5 },
-      { from: 1, to: 2, weight: 1 },
-      { from: 1, to: 4, weight: 4 },
-      { from: 2, to: 3, weight: 2 },
-      { from: 2, to: 4, weight: 6 },
-      { from: 2, to: 5, weight: 8 },
-      { from: 3, to: 5, weight: 3 },
-      { from: 4, to: 3, weight: 4 },
-      { from: 4, to: 5, weight: 2 },
-    ],
-  },
-  {
-    vertexCount: 6,
-    edges: [
-      { from: 0, to: 1, weight: 6 },
-      { from: 0, to: 2, weight: 5 },
-      { from: 0, to: 3, weight: 9 },
-      { from: 1, to: 2, weight: 2 },
+      { from: 1, to: 3, weight: 3 },
       { from: 1, to: 4, weight: 7 },
       { from: 2, to: 3, weight: 4 },
-      { from: 2, to: 5, weight: 6 },
-      { from: 3, to: 4, weight: 3 },
-      { from: 3, to: 5, weight: 5 },
-      { from: 4, to: 5, weight: 2 },
-      { from: 4, to: 2, weight: 3 },
+      { from: 2, to: 5, weight: 9 },
+      { from: 3, to: 4, weight: 2 },
+      { from: 3, to: 5, weight: 6 },
+      { from: 4, to: 6, weight: 8 },
+      { from: 4, to: 5, weight: 5 },
+      { from: 4, to: 7, weight: 7 },
+      { from: 5, to: 7, weight: 2 },
+      { from: 6, to: 8, weight: 4 },
+      { from: 7, to: 8, weight: 3 },
     ],
   },
 ];
@@ -227,6 +224,8 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
   this.cumulativeContext = null;
   this.startDisplayID = -1;
   this.queueLabelID = -1;
+  this.infoPanelRectID = -1;
+  this.infoPanelTextID = -1;
   this.priorityQueueData = [];
   this.priorityQueueActiveIndex = -1;
   this.lastGraphSignature = null;
@@ -242,7 +241,7 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
 
 DirectedDijkstra.prototype.addControls = function () {
   addLabelToAlgorithmBar("Start Vertex:");
-  this.startField = addControlToAlgorithmBar("Text", "A");
+  this.startField = addControlToAlgorithmBar("Text", "0");
   this.startField.size = 4;
   this.startButton = addControlToAlgorithmBar("Button", "Run Dijkstra");
   this.startButton.onclick = this.startCallback.bind(this);
@@ -322,7 +321,11 @@ DirectedDijkstra.prototype.selectTemplate = function () {
   this.lastGraphSignature = signature;
 
   var vertexCount = template.vertexCount;
-  this.vertexLabels = this.buildVertexLabels(vertexCount);
+  if (template.labels && template.labels.length === vertexCount) {
+    this.vertexLabels = template.labels.slice();
+  } else {
+    this.vertexLabels = this.buildVertexLabels(vertexCount);
+  }
   this.vertexPositions = this.computeCircularLayout(vertexCount);
   this.adjacencyList = new Array(vertexCount);
   this.edgePairs = [];
@@ -410,7 +413,39 @@ DirectedDijkstra.prototype.generateRandomTemplate = function () {
   if (!base) {
     return null;
   }
-  return this.remapTemplate(base);
+
+  var edges = [];
+  for (var i = 0; i < base.edges.length; i++) {
+    var original = base.edges[i];
+    edges.push({
+      from: original.from,
+      to: original.to,
+      weight: this.randomIntInRange(
+        DirectedDijkstra.RANDOM_WEIGHT_MIN,
+        DirectedDijkstra.RANDOM_WEIGHT_MAX
+      ),
+    });
+  }
+
+  var curveOverrides = null;
+  if (base.curveOverrides) {
+    curveOverrides = {};
+    for (var key in base.curveOverrides) {
+      if (base.curveOverrides.hasOwnProperty(key)) {
+        curveOverrides[key] = base.curveOverrides[key];
+      }
+    }
+  }
+
+  return {
+    vertexCount: base.vertexCount,
+    labels:
+      base.labels && base.labels.length === base.vertexCount
+        ? base.labels.slice()
+        : null,
+    edges: edges,
+    curveOverrides: curveOverrides,
+  };
 };
 
 DirectedDijkstra.prototype.remapTemplate = function (base) {
@@ -556,19 +591,31 @@ DirectedDijkstra.prototype.applyAutomaticCurveOverrides = function () {
 DirectedDijkstra.prototype.buildVertexLabels = function (vertexCount) {
   var labels = [];
   for (var i = 0; i < vertexCount; i++) {
-    labels.push(String.fromCharCode(65 + i));
+    labels.push(String(i));
   }
   return labels;
 };
 
 DirectedDijkstra.prototype.computeCircularLayout = function (vertexCount) {
+  if (
+    DirectedDijkstra.CUSTOM_LAYOUT_POINTS &&
+    vertexCount <= DirectedDijkstra.CUSTOM_LAYOUT_POINTS.length
+  ) {
+    var customLayout = [];
+    for (var i = 0; i < vertexCount; i++) {
+      var point = DirectedDijkstra.CUSTOM_LAYOUT_POINTS[i];
+      customLayout.push({ x: point.x, y: point.y });
+    }
+    return customLayout;
+  }
+
   var layout = [];
   var radius = 210;
   var centerX = DirectedDijkstra.GRAPH_AREA_CENTER_X;
   var centerY = DirectedDijkstra.ROW2_START_Y + 240;
 
-  for (var i = 0; i < vertexCount; i++) {
-    var angle = (2 * Math.PI * i) / vertexCount - Math.PI / 2;
+  for (var j = 0; j < vertexCount; j++) {
+    var angle = (2 * Math.PI * j) / vertexCount - Math.PI / 2;
     var x = centerX + radius * Math.cos(angle);
     var y = centerY + radius * Math.sin(angle);
     layout.push({ x: Math.round(x), y: Math.round(y) });
@@ -590,17 +637,66 @@ DirectedDijkstra.prototype.createTitleRow = function () {
   this.cmd("SetTextStyle", titleID, "bold 34");
   this.cmd("SetForegroundColor", titleID, DirectedDijkstra.TITLE_COLOR);
 
+  this.createInfoPanel();
+
+  var defaultStartLabel =
+    this.vertexLabels && this.vertexLabels.length > 0 ? this.vertexLabels[0] : "0";
   this.startDisplayID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.startDisplayID,
-    "Start Vertex: A",
+    "Start Vertex: " + defaultStartLabel,
     DirectedDijkstra.CANVAS_WIDTH / 2,
     DirectedDijkstra.START_INFO_Y,
     1
   );
   this.cmd("SetTextStyle", this.startDisplayID, "bold 24");
   this.cmd("SetForegroundColor", this.startDisplayID, DirectedDijkstra.START_INFO_COLOR);
+};
+
+DirectedDijkstra.prototype.createInfoPanel = function () {
+  this.infoPanelRectID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.infoPanelRectID,
+    "",
+    DirectedDijkstra.INFO_PANEL_WIDTH,
+    DirectedDijkstra.INFO_PANEL_HEIGHT,
+    DirectedDijkstra.CANVAS_WIDTH / 2,
+    DirectedDijkstra.INFO_PANEL_Y
+  );
+  this.cmd("SetForegroundColor", this.infoPanelRectID, DirectedDijkstra.INFO_PANEL_BORDER);
+  this.cmd("SetBackgroundColor", this.infoPanelRectID, DirectedDijkstra.INFO_PANEL_FILL);
+  this.cmd(
+    "SetRectangleLineThickness",
+    this.infoPanelRectID,
+    DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS
+  );
+
+  this.infoPanelTextID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.infoPanelTextID,
+    DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT,
+    DirectedDijkstra.CANVAS_WIDTH / 2,
+    DirectedDijkstra.INFO_PANEL_Y,
+    0
+  );
+  this.cmd("SetTextStyle", this.infoPanelTextID, DirectedDijkstra.INFO_PANEL_TEXT_STYLE);
+  this.cmd("SetForegroundColor", this.infoPanelTextID, DirectedDijkstra.INFO_PANEL_TEXT_COLOR);
+};
+
+DirectedDijkstra.prototype.setInfoPanelText = function (text) {
+  if (typeof text !== "string" || text.length === 0) {
+    text = DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT;
+  }
+  if (this.infoPanelTextID !== -1) {
+    this.cmd("SetText", this.infoPanelTextID, text);
+  }
+};
+
+DirectedDijkstra.prototype.resetInfoPanel = function () {
+  this.setInfoPanelText(DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT);
 };
 
 DirectedDijkstra.prototype.edgeKey = function (from, to) {
@@ -925,6 +1021,7 @@ DirectedDijkstra.prototype.createCodeDisplay = function () {
 DirectedDijkstra.prototype.resetAlgorithmState = function () {
   this.resetLevelLegend();
   this.clearCumulativeSumDisplay();
+  this.resetInfoPanel();
   this.activeStartIndex = -1;
 
   var length = this.vertexLabels.length;
@@ -976,6 +1073,27 @@ DirectedDijkstra.prototype.resetAlgorithmState = function () {
       this.parentRectIDs[i],
       DirectedDijkstra.ARRAY_RECT_BORDER
     );
+  }
+
+  if (this.vertexIDs.length > 0) {
+    this.cmd(
+      "SetBackgroundColor",
+      this.vertexIDs[0],
+      DirectedDijkstra.START_NODE_COLOR
+    );
+    this.cmd(
+      "SetTextColor",
+      this.vertexIDs[0],
+      DirectedDijkstra.START_NODE_TEXT_COLOR
+    );
+  }
+
+  if (this.vertexLabels && this.vertexLabels.length > 0) {
+    var startLabel = this.vertexLabels[0];
+    if (this.startField) {
+      this.startField.value = startLabel;
+    }
+    this.updateStartDisplay(startLabel);
   }
 
   this.resetTreeEdges();
@@ -1863,6 +1981,12 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   this.highlightCodeLine(6);
   this.pushToPriorityQueue(startIndex, 0);
   this.cmd("Step");
+  this.setInfoPanelText(
+    "Initialize " +
+      startLabel +
+      " with distance 0\n"
+      + "and push it into the min-heap."
+  );
 
   while (this.priorityQueueData.length > 0) {
     this.highlightCodeLine(7);
@@ -1883,6 +2007,14 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
     this.cmd("Step");
 
     var currentVertex = entry.vertex;
+    var currentLabel = this.vertexLabels[currentVertex];
+    this.setInfoPanelText(
+      "Extract " +
+        currentLabel +
+        " with distance " +
+        this.formatDistance(entry.distance) +
+        ".\nCheck its outgoing edges."
+    );
 
     this.moveHighlightCircleToVertex(currentVertex);
     this.clearCumulativeSumDisplay();
@@ -1892,12 +2024,18 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
       this.highlightCodeLine(10);
       this.cmd("Step");
       this.clearCumulativeSumDisplay();
+      this.setInfoPanelText(
+        currentLabel + " already processed.\nSkip to the next heap entry."
+      );
       continue;
     }
 
     this.highlightCodeLine(11);
     this.markVertexVisited(currentVertex);
     this.cmd("Step");
+    this.setInfoPanelText(
+      "Lock " + currentLabel + " and examine outgoing edges."
+    );
 
     this.highlightCodeLine(12);
     this.cmd("Step");
@@ -1905,8 +2043,19 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
     for (var i = 0; i < this.adjacencyList[currentVertex].length; i++) {
       var neighbor = this.adjacencyList[currentVertex][i];
       var nextVertex = neighbor.to;
+      var neighborLabel = this.vertexLabels[nextVertex];
+      var previousDistance = this.distance[nextVertex];
 
       this.highlightCodeLine(13);
+      this.setInfoPanelText(
+        "Inspect edge " +
+          currentLabel +
+          " \u2192 " +
+          neighborLabel +
+          " (w=" +
+          neighbor.weight +
+          ")."
+      );
       this.highlightEdge(currentVertex, nextVertex, true);
       this.cmd("Step");
 
@@ -1954,7 +2103,26 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
 
         this.highlightCodeLine(19);
         this.pushToPriorityQueue(nextVertex, newDistance);
+        this.setInfoPanelText(
+          "Better path to " +
+            neighborLabel +
+            " via " +
+            currentLabel +
+            " (cost " +
+            newDistance +
+            ").\nPush it into the min-heap."
+        );
         this.cmd("Step");
+      } else {
+        this.setInfoPanelText(
+          "New cost " +
+            newDistance +
+            " is not better than dist[" +
+            neighborLabel +
+            "] = " +
+            this.formatDistance(previousDistance) +
+            "."
+        );
       }
 
       this.highlightCodeLine(20);
@@ -1984,6 +2152,18 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   var targetIndex = this.choosePathTargetIndex(startIndex);
   if (targetIndex !== -1) {
     this.highlightIdentifiedPath(startIndex, targetIndex);
+    var targetLabel = this.vertexLabels[targetIndex];
+    this.setInfoPanelText(
+      "Dijkstra finished. Shortest path from " +
+        startLabel +
+        " to " +
+        targetLabel +
+        " is highlighted in gold."
+    );
+  } else {
+    this.setInfoPanelText(
+      "Dijkstra finished. Unreachable vertices keep distance \u221E."
+    );
   }
 
   return this.commands;
@@ -2069,9 +2249,12 @@ DirectedDijkstra.prototype.highlightIdentifiedPath = function (startIndex, targe
 };
 
 DirectedDijkstra.prototype.startCallback = function () {
-  var startValue = this.startField.value.trim().toUpperCase();
+  var startValue = this.startField.value.trim();
   if (startValue.length === 0) {
-    startValue = "A";
+    startValue =
+      this.vertexLabels && this.vertexLabels.length > 0
+        ? this.vertexLabels[0]
+        : "0";
   }
   var index = this.vertexLabels.indexOf(startValue);
   if (index === -1) {
