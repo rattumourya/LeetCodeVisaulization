@@ -72,10 +72,11 @@ DijkstraPrim.prototype.addControls =  function()
 
 DijkstraPrim.prototype.init = function(am, runningDijkstra, w, h)
 {
-	this.runningDijkstra = runningDijkstra;
-	this.showEdgeCosts = true;
-	DijkstraPrim.superclass.init.call(this, am, w, h, false, false); // TODO:  add no edge label flag to this?
-	// Setup called in base class init function
+        this.runningDijkstra = runningDijkstra;
+        this.showEdgeCosts = true;
+        var runOnDirectedGraph = (this.runningDijkstra === undefined) ? true : this.runningDijkstra;
+        DijkstraPrim.superclass.init.call(this, am, w, h, runOnDirectedGraph, false); // TODO:  add no edge label flag to this?
+        // Setup called in base class init function
 }
 
 		
