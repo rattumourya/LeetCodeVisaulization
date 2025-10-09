@@ -9,11 +9,11 @@ TopoSortDFS.prototype = new Algorithm();
 TopoSortDFS.prototype.constructor = TopoSortDFS;
 TopoSortDFS.superclass = Algorithm.prototype;
 
-TopoSortDFS.CANVAS_WIDTH = 900;
-TopoSortDFS.CANVAS_HEIGHT = 1600;
+TopoSortDFS.CANVAS_WIDTH = 720;
+TopoSortDFS.CANVAS_HEIGHT = 1280;
 
-TopoSortDFS.ROW1_HEIGHT = 240;
-TopoSortDFS.ROW2_HEIGHT = 760;
+TopoSortDFS.ROW1_HEIGHT = 192;
+TopoSortDFS.ROW2_HEIGHT = 608;
 TopoSortDFS.ROW3_HEIGHT =
   TopoSortDFS.CANVAS_HEIGHT - TopoSortDFS.ROW1_HEIGHT - TopoSortDFS.ROW2_HEIGHT;
 
@@ -25,8 +25,8 @@ TopoSortDFS.ROW3_START_Y =
 TopoSortDFS.TITLE_Y = TopoSortDFS.ROW1_CENTER_Y - 40;
 TopoSortDFS.START_INFO_Y = TopoSortDFS.ROW1_CENTER_Y + 40;
 
-TopoSortDFS.GRAPH_AREA_CENTER_X = 360;
-TopoSortDFS.GRAPH_NODE_RADIUS = 22;
+TopoSortDFS.GRAPH_AREA_CENTER_X = 288;
+TopoSortDFS.GRAPH_NODE_RADIUS = 18;
 TopoSortDFS.GRAPH_NODE_COLOR = "#e3f2fd";
 TopoSortDFS.GRAPH_NODE_BORDER = "#0b3954";
 TopoSortDFS.GRAPH_NODE_TEXT = "#003049";
@@ -47,65 +47,65 @@ TopoSortDFS.CURVE_BASE_MAGNITUDE = 0.28;
 TopoSortDFS.CURVE_INCREMENT = 0.14;
 TopoSortDFS.ANGLE_BUCKET_SCALE = 16;
 
-TopoSortDFS.ARRAY_BASE_X = 720;
-TopoSortDFS.ARRAY_COLUMN_SPACING = 80;
-TopoSortDFS.ARRAY_TOP_Y = TopoSortDFS.ROW2_START_Y + 70;
-TopoSortDFS.ARRAY_CELL_HEIGHT = 52;
-TopoSortDFS.ARRAY_CELL_WIDTH = 60;
-TopoSortDFS.ARRAY_CELL_INNER_HEIGHT = 42;
+TopoSortDFS.ARRAY_BASE_X = 576;
+TopoSortDFS.ARRAY_COLUMN_SPACING = 64;
+TopoSortDFS.ARRAY_TOP_Y = TopoSortDFS.ROW2_START_Y + 56;
+TopoSortDFS.ARRAY_CELL_HEIGHT = 42;
+TopoSortDFS.ARRAY_CELL_WIDTH = 48;
+TopoSortDFS.ARRAY_CELL_INNER_HEIGHT = 34;
 TopoSortDFS.ARRAY_HEADER_HEIGHT = TopoSortDFS.ARRAY_CELL_INNER_HEIGHT;
 TopoSortDFS.ARRAY_RECT_COLOR = "#f1f1f6";
 TopoSortDFS.ARRAY_RECT_BORDER = "#2b2d42";
 TopoSortDFS.ARRAY_RECT_HIGHLIGHT_BORDER = "#d62828";
 TopoSortDFS.ARRAY_RECT_BORDER_THICKNESS = 1;
-TopoSortDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
+TopoSortDFS.ARRAY_RECT_HIGHLIGHT_THICKNESS = 2;
 TopoSortDFS.ARRAY_TEXT_COLOR = "#2b2d42";
 TopoSortDFS.ARRAY_VISITED_FILL = "#b3e5fc";
-TopoSortDFS.ARRAY_HEADER_GAP = 20;
-TopoSortDFS.ARRAY_HORIZONTAL_GAP = 80;
-TopoSortDFS.CANVAS_SIDE_PADDING = 40;
-TopoSortDFS.BOTTOM_PANEL_TOP_PADDING = 36;
-TopoSortDFS.ORDER_LABEL_GAP = 8;
-TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 4;
-TopoSortDFS.ORDER_LABEL_FONT_SIZE = 22;
+TopoSortDFS.ARRAY_HEADER_GAP = 16;
+TopoSortDFS.ARRAY_HORIZONTAL_GAP = 64;
+TopoSortDFS.CANVAS_SIDE_PADDING = 32;
+TopoSortDFS.BOTTOM_PANEL_TOP_PADDING = 28;
+TopoSortDFS.ORDER_LABEL_GAP = 6;
+TopoSortDFS.ORDER_LABEL_BOTTOM_MARGIN = 3;
+TopoSortDFS.ORDER_LABEL_FONT_SIZE = 18;
 TopoSortDFS.ORDER_LABEL_FONT =
   "bold " + TopoSortDFS.ORDER_LABEL_FONT_SIZE;
-TopoSortDFS.ORDER_CELL_WIDTH = 60;
-TopoSortDFS.ORDER_CELL_HEIGHT = 48;
-TopoSortDFS.ORDER_CELL_SPACING = 12;
+TopoSortDFS.ORDER_CELL_WIDTH = 48;
+TopoSortDFS.ORDER_CELL_HEIGHT = 38;
+TopoSortDFS.ORDER_CELL_SPACING = 10;
 TopoSortDFS.ORDER_RECT_COLOR = "#f8f9fa";
 TopoSortDFS.ORDER_RECT_BORDER = "#1d3557";
 TopoSortDFS.ORDER_RECT_TEXT_COLOR = "#1d3557";
 TopoSortDFS.ORDER_RECT_HIGHLIGHT_BORDER = "#ffb703";
 TopoSortDFS.ORDER_RECT_HIGHLIGHT_FILL = "#ffe8b6";
-TopoSortDFS.BOTTOM_SECTION_GAP = 16;
-TopoSortDFS.CODE_TOP_PADDING = 4;
-TopoSortDFS.STACK_SECTION_RAISE = 28;
-TopoSortDFS.STACK_ORDER_VERTICAL_GAP = 32;
+TopoSortDFS.BOTTOM_SECTION_GAP = 12;
+TopoSortDFS.CODE_TOP_PADDING = 3;
+TopoSortDFS.STACK_SECTION_RAISE = 22;
+TopoSortDFS.STACK_ORDER_VERTICAL_GAP = 26;
 
-TopoSortDFS.CODE_START_X = 80;
-TopoSortDFS.CODE_LINE_HEIGHT = 30;
+TopoSortDFS.CODE_START_X = 64;
+TopoSortDFS.CODE_LINE_HEIGHT = 24;
 TopoSortDFS.CODE_STANDARD_COLOR = "#1d3557";
 TopoSortDFS.CODE_HIGHLIGHT_COLOR = "#e63946";
-TopoSortDFS.CODE_FONT = "bold 18";
+TopoSortDFS.CODE_FONT = "bold 16";
 
-TopoSortDFS.RECURSION_FRAME_WIDTH = 320;
+TopoSortDFS.RECURSION_FRAME_WIDTH = 256;
 TopoSortDFS.RECURSION_AREA_CENTER_X =
   TopoSortDFS.CANVAS_WIDTH -
   TopoSortDFS.CANVAS_SIDE_PADDING -
   TopoSortDFS.RECURSION_FRAME_WIDTH / 2;
-TopoSortDFS.RECURSION_HEADER_HEIGHT = 44;
-TopoSortDFS.RECURSION_LABEL_MARGIN = 14;
-TopoSortDFS.RECURSION_AREA_BOTTOM_MARGIN = 30;
-TopoSortDFS.RECURSION_FRAME_HEIGHT = 34;
-TopoSortDFS.RECURSION_FRAME_MIN_HEIGHT = 22;
-TopoSortDFS.RECURSION_FRAME_SPACING = 10;
-TopoSortDFS.RECURSION_FRAME_MIN_SPACING = 6;
+TopoSortDFS.RECURSION_HEADER_HEIGHT = 35;
+TopoSortDFS.RECURSION_LABEL_MARGIN = 11;
+TopoSortDFS.RECURSION_AREA_BOTTOM_MARGIN = 24;
+TopoSortDFS.RECURSION_FRAME_HEIGHT = 27;
+TopoSortDFS.RECURSION_FRAME_MIN_HEIGHT = 18;
+TopoSortDFS.RECURSION_FRAME_SPACING = 8;
+TopoSortDFS.RECURSION_FRAME_MIN_SPACING = 5;
 TopoSortDFS.RECURSION_RECT_COLOR = "#f8f9fa";
 TopoSortDFS.RECURSION_RECT_BORDER = "#1d3557";
 TopoSortDFS.RECURSION_RECT_ACTIVE_BORDER = "#e63946";
 TopoSortDFS.RECURSION_TEXT_COLOR = "#1d3557";
-TopoSortDFS.RECURSION_FONT = "bold 18";
+TopoSortDFS.RECURSION_FONT = "bold 16";
 
 TopoSortDFS.TITLE_COLOR = "#1d3557";
 TopoSortDFS.START_INFO_COLOR = "#264653";
@@ -118,16 +118,16 @@ TopoSortDFS.GRAPH_MODE_RANDOM = "random";
 TopoSortDFS.RANDOM_VERTEX_COUNT = 7;
 
 TopoSortDFS.SAMPLE_GRAPH = (function () {
-  var topY = TopoSortDFS.ROW2_START_Y + 110;
-  var middleY = topY + 180;
-  var bottomY = middleY + 180;
-  var leftX = TopoSortDFS.GRAPH_AREA_CENTER_X - 220;
+  var topY = TopoSortDFS.ROW2_START_Y + 88;
+  var middleY = topY + 144;
+  var bottomY = middleY + 144;
+  var leftX = TopoSortDFS.GRAPH_AREA_CENTER_X - 176;
   var centerX = TopoSortDFS.GRAPH_AREA_CENTER_X;
-  var rightX = TopoSortDFS.GRAPH_AREA_CENTER_X + 220;
-  var midLeftX = TopoSortDFS.GRAPH_AREA_CENTER_X - 90;
-  var midRightX = TopoSortDFS.GRAPH_AREA_CENTER_X + 90;
-  var bottomLeftX = TopoSortDFS.GRAPH_AREA_CENTER_X - 140;
-  var bottomRightX = TopoSortDFS.GRAPH_AREA_CENTER_X + 140;
+  var rightX = TopoSortDFS.GRAPH_AREA_CENTER_X + 176;
+  var midLeftX = TopoSortDFS.GRAPH_AREA_CENTER_X - 72;
+  var midRightX = TopoSortDFS.GRAPH_AREA_CENTER_X + 72;
+  var bottomLeftX = TopoSortDFS.GRAPH_AREA_CENTER_X - 112;
+  var bottomRightX = TopoSortDFS.GRAPH_AREA_CENTER_X + 112;
 
   return {
     vertexCount: 7,
@@ -833,10 +833,10 @@ TopoSortDFS.prototype.ensureEdgeSeparation = function (edgeList) {
 
 TopoSortDFS.prototype.computeTemplateLayout = function (vertexCount) {
   var layout = [];
-  var baseX = 200;
-  var stepX = 130;
-  var baseY = TopoSortDFS.ROW2_START_Y + 120;
-  var rowSpacing = 150;
+  var baseX = 160;
+  var stepX = 104;
+  var baseY = TopoSortDFS.ROW2_START_Y + 96;
+  var rowSpacing = 120;
   var rowPattern = [4, 3, 4, 3, 4];
 
   for (var row = 0, index = 0; row < rowPattern.length; row++) {
@@ -864,7 +864,7 @@ TopoSortDFS.prototype.createTitleRow = function () {
     TopoSortDFS.TITLE_Y,
     1
   );
-  this.cmd("SetTextStyle", titleID, "bold 34");
+  this.cmd("SetTextStyle", titleID, "bold 28");
   this.cmd("SetForegroundColor", titleID, TopoSortDFS.TITLE_COLOR);
 
   this.statusDisplayID = this.nextIndex++;
@@ -876,7 +876,7 @@ TopoSortDFS.prototype.createTitleRow = function () {
     TopoSortDFS.START_INFO_Y,
     1
   );
-  this.cmd("SetTextStyle", this.statusDisplayID, "bold 24");
+  this.cmd("SetTextStyle", this.statusDisplayID, "bold 20");
   this.cmd("SetForegroundColor", this.statusDisplayID, TopoSortDFS.START_INFO_COLOR);
 };
 
@@ -961,7 +961,7 @@ TopoSortDFS.prototype.createArrayArea = function () {
     TopoSortDFS.ARRAY_BASE_X,
     headerY
   );
-  this.cmd("SetTextStyle", visitedHeaderID, "bold 20");
+  this.cmd("SetTextStyle", visitedHeaderID, "bold 16");
   this.cmd("SetForegroundColor", visitedHeaderID, TopoSortDFS.CODE_STANDARD_COLOR);
 
   this.cmd(
@@ -971,7 +971,7 @@ TopoSortDFS.prototype.createArrayArea = function () {
     TopoSortDFS.ARRAY_BASE_X + TopoSortDFS.ARRAY_COLUMN_SPACING,
     headerY
   );
-  this.cmd("SetTextStyle", stackHeaderID, "bold 20");
+  this.cmd("SetTextStyle", stackHeaderID, "bold 16");
   this.cmd("SetForegroundColor", stackHeaderID, TopoSortDFS.CODE_STANDARD_COLOR);
 
   this.visitedRectIDs = new Array(this.vertexLabels.length);
@@ -987,11 +987,11 @@ TopoSortDFS.prototype.createArrayArea = function () {
       "CreateLabel",
       vertexLabelID,
       this.vertexLabels[i],
-      TopoSortDFS.ARRAY_BASE_X - 58,
+      TopoSortDFS.ARRAY_BASE_X - 46,
       rowY,
       0
     );
-    this.cmd("SetTextStyle", vertexLabelID, "bold 20");
+    this.cmd("SetTextStyle", vertexLabelID, "bold 16");
     this.cmd("SetForegroundColor", vertexLabelID, TopoSortDFS.START_INFO_COLOR);
 
     var visitedID = this.nextIndex++;
@@ -1284,7 +1284,7 @@ TopoSortDFS.prototype.createRecursionArea = function () {
     this.recursionHeaderID,
     TopoSortDFS.CODE_STANDARD_COLOR
   );
-  this.cmd("SetTextStyle", this.recursionHeaderID, "bold 22");
+  this.cmd("SetTextStyle", this.recursionHeaderID, "bold 18");
 
   this.recursionFrameIDs = [];
   this.activeRecursionIndex = -1;
