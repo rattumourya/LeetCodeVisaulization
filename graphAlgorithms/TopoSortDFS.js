@@ -47,7 +47,8 @@ TopoSortDFS.CURVE_BASE_MAGNITUDE = 0.28;
 TopoSortDFS.CURVE_INCREMENT = 0.14;
 TopoSortDFS.ANGLE_BUCKET_SCALE = 16;
 
-TopoSortDFS.ARRAY_BASE_X = 576;
+TopoSortDFS.RIGHT_COLUMN_SHIFT = 32;
+TopoSortDFS.ARRAY_BASE_X = 576 + TopoSortDFS.RIGHT_COLUMN_SHIFT;
 TopoSortDFS.ARRAY_COLUMN_SPACING = 64;
 TopoSortDFS.ARRAY_TOP_Y = TopoSortDFS.ROW2_START_Y + 56;
 TopoSortDFS.ARRAY_CELL_HEIGHT = 42;
@@ -93,7 +94,8 @@ TopoSortDFS.RECURSION_FRAME_WIDTH = 256;
 TopoSortDFS.RECURSION_AREA_CENTER_X =
   TopoSortDFS.CANVAS_WIDTH -
   TopoSortDFS.CANVAS_SIDE_PADDING -
-  TopoSortDFS.RECURSION_FRAME_WIDTH / 2;
+  TopoSortDFS.RECURSION_FRAME_WIDTH / 2 +
+  TopoSortDFS.RIGHT_COLUMN_SHIFT;
 TopoSortDFS.RECURSION_HEADER_HEIGHT = 35;
 TopoSortDFS.RECURSION_LABEL_MARGIN = 11;
 TopoSortDFS.RECURSION_AREA_BOTTOM_MARGIN = 24;
@@ -1841,6 +1843,13 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
     this.highlightCodeLine(13);
     this.cmd("Step");
 
+    var startPos = this.vertexPositions[u];
+    if (startPos) {
+      this.cmd("SetAlpha", this.highlightCircleID, 1);
+      this.cmd("Move", this.highlightCircleID, startPos.x, startPos.y);
+      this.cmd("Step");
+    }
+
     if (!this.visited[u]) {
       this.highlightCodeLine(14);
       this.cmd("Step");
@@ -1850,13 +1859,18 @@ TopoSortDFS.prototype.runTopologicalSort = function () {
         this.statusDisplayID,
         "Starting DFS from " + this.vertexLabels[u]
       );
-      var pos = this.vertexPositions[u];
-      this.cmd("SetAlpha", this.highlightCircleID, 1);
-      this.cmd("Move", this.highlightCircleID, pos.x, pos.y);
-      this.cmd("Step");
 
       this.dfsVisit(u);
 
+      this.cmd("SetAlpha", this.highlightCircleID, 0);
+    } else {
+      if (this.statusDisplayID >= 0) {
+        this.cmd(
+          "SetText",
+          this.statusDisplayID,
+          this.vertexLabels[u] + " already visited — skip DFS"
+        );
+      }
       this.cmd("SetAlpha", this.highlightCircleID, 0);
     }
 
