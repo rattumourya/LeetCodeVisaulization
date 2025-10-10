@@ -69,16 +69,18 @@ DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedDijkstra.CODE_FONT = "bold 18";
 
 DirectedDijkstra.INFO_PANEL_WIDTH = 900;
-DirectedDijkstra.INFO_PANEL_HEIGHT = 120;
+DirectedDijkstra.INFO_PANEL_HEIGHT = 130;
 DirectedDijkstra.INFO_PANEL_FILL = "#eef2ff";
 DirectedDijkstra.INFO_PANEL_BORDER = "#1d3557";
 DirectedDijkstra.INFO_PANEL_TEXT_COLOR = "#1d3557";
 DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS = 2;
 DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT =
-  "Info: Dijkstra always settles the unvisited node with the smallest distance from the start.\nOrange edges show when we discover a shorter route.";
+  "Info: Dijkstra always settles the unvisited node with the smallest distance from the start.\n\nWatch the info panel for level-by-level highlights and the gold route that marks the minimum-distance path.";
 DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 18";
-DirectedDijkstra.INFO_PANEL_WRAP_LENGTH = 90;
-DirectedDijkstra.INFO_PANEL_LINE_SPACING = 20;
+DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X = 32;
+DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y = 24;
+DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH = 9.2;
+DirectedDijkstra.INFO_PANEL_LINE_SPACING = 26;
 
 DirectedDijkstra.LEGEND_BASE_X = 120;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
@@ -88,8 +90,8 @@ DirectedDijkstra.LEGEND_TEXT_GAP = 16;
 DirectedDijkstra.LEGEND_FONT = "bold 14";
 DirectedDijkstra.LEGEND_TEXT_COLOR = "#1d3557";
 DirectedDijkstra.LEGEND_DEFAULT_BASE_Y = DirectedDijkstra.ROW2_START_Y + 70;
-DirectedDijkstra.LEGEND_MIN_X = 100;
-DirectedDijkstra.LEGEND_GRAPH_GAP = 90;
+DirectedDijkstra.LEGEND_MIN_X = 70;
+DirectedDijkstra.LEGEND_GRAPH_GAP = 140;
 
 DirectedDijkstra.LEVEL_COLORS = [
   "#c6e2ff",
@@ -126,6 +128,8 @@ DirectedDijkstra.PATH_EDGE_COLOR = "#ff9f1c";
 DirectedDijkstra.PATH_EDGE_THICKNESS = 6;
 DirectedDijkstra.PATH_NODE_COLOR = "#ffe066";
 DirectedDijkstra.PATH_NODE_TEXT_COLOR = "#1d3557";
+DirectedDijkstra.PATH_PREVIEW_EDGE_COLOR = "#48bfe3";
+DirectedDijkstra.PATH_PREVIEW_EDGE_THICKNESS = 4;
 DirectedDijkstra.RANDOM_WEIGHT_MIN = 1;
 DirectedDijkstra.RANDOM_WEIGHT_MAX = 9;
 DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS = 10;
@@ -685,14 +689,15 @@ DirectedDijkstra.prototype.createInfoPanel = function () {
   );
 
   this.infoPanelTextID = this.nextIndex++;
+  var anchor = this.getInfoPanelTextAnchor();
   var defaultText = this.wrapInfoPanelText(DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT);
   this.cmd(
     "CreateLabel",
     this.infoPanelTextID,
     defaultText,
-    DirectedDijkstra.CANVAS_WIDTH / 2,
-    DirectedDijkstra.INFO_PANEL_Y,
-    1
+    anchor.x,
+    anchor.y,
+    0
   );
   this.cmd("SetTextStyle", this.infoPanelTextID, DirectedDijkstra.INFO_PANEL_TEXT_STYLE);
   this.cmd("SetForegroundColor", this.infoPanelTextID, DirectedDijkstra.INFO_PANEL_TEXT_COLOR);
@@ -703,12 +708,42 @@ DirectedDijkstra.prototype.createInfoPanel = function () {
   );
 };
 
+DirectedDijkstra.prototype.getInfoPanelTextAnchor = function () {
+  var panelLeft =
+    DirectedDijkstra.CANVAS_WIDTH / 2 - DirectedDijkstra.INFO_PANEL_WIDTH / 2;
+  var panelTop =
+    DirectedDijkstra.INFO_PANEL_Y - DirectedDijkstra.INFO_PANEL_HEIGHT / 2;
+  return {
+    x: panelLeft + DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X,
+    y: panelTop + DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y,
+  };
+};
+
+DirectedDijkstra.prototype.getInfoPanelWrapLength = function () {
+  var availableWidth =
+    DirectedDijkstra.INFO_PANEL_WIDTH -
+    2 * DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X;
+  var approxWidth = DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH;
+  if (!approxWidth || approxWidth <= 0) {
+    approxWidth = 9;
+  }
+  return Math.max(10, Math.floor(availableWidth / approxWidth));
+};
+
+DirectedDijkstra.prototype.positionInfoPanelText = function () {
+  if (this.infoPanelTextID === -1) {
+    return;
+  }
+  var anchor = this.getInfoPanelTextAnchor();
+  this.cmd("SetPosition", this.infoPanelTextID, anchor.x, anchor.y);
+};
+
 DirectedDijkstra.prototype.wrapInfoPanelText = function (text) {
   if (typeof text !== "string") {
     return "";
   }
 
-  var maxLength = DirectedDijkstra.INFO_PANEL_WRAP_LENGTH;
+  var maxLength = this.getInfoPanelWrapLength();
   if (maxLength <= 0) {
     return text;
   }
@@ -777,6 +812,7 @@ DirectedDijkstra.prototype.setInfoPanelText = function (text) {
   if (this.infoPanelTextID !== -1) {
     var wrapped = this.wrapInfoPanelText(text);
     this.cmd("SetText", this.infoPanelTextID, wrapped);
+    this.positionInfoPanelText();
     this.cmd(
       "SetTextLineSpacing",
       this.infoPanelTextID,
@@ -1083,6 +1119,14 @@ DirectedDijkstra.prototype.ensurePriorityQueueCapacity = function (desiredLength
 DirectedDijkstra.prototype.layoutPriorityQueueRectangles = function () {
   var count = this.priorityQueueRectIDs.length;
   if (count === 0) {
+    if (this.queueLabelID !== -1) {
+      this.cmd(
+        "Move",
+        this.queueLabelID,
+        DirectedDijkstra.QUEUE_AREA_CENTER_X,
+        DirectedDijkstra.QUEUE_TOP_Y - DirectedDijkstra.QUEUE_HEADER_GAP
+      );
+    }
     return;
   }
 
@@ -1091,6 +1135,8 @@ DirectedDijkstra.prototype.layoutPriorityQueueRectangles = function () {
   var maxRows = Math.max(1, Math.floor(availableHeight / slotStep));
   var columns = Math.max(1, Math.ceil(count / maxRows));
   var columnStep = DirectedDijkstra.QUEUE_SLOT_WIDTH + DirectedDijkstra.QUEUE_COLUMN_SPACING;
+  var minX = Infinity;
+  var maxX = -Infinity;
 
   for (var i = 0; i < count; i++) {
     var rectID = this.priorityQueueRectIDs[i];
@@ -1101,6 +1147,25 @@ DirectedDijkstra.prototype.layoutPriorityQueueRectangles = function () {
       (column - (columns - 1) / 2) * columnStep;
     var targetY = DirectedDijkstra.QUEUE_TOP_Y + row * slotStep;
     this.cmd("Move", rectID, targetX, targetY);
+    if (targetX < minX) {
+      minX = targetX;
+    }
+    if (targetX > maxX) {
+      maxX = targetX;
+    }
+  }
+
+  if (this.queueLabelID !== -1) {
+    var labelCenterX =
+      minX === Infinity || maxX === -Infinity
+        ? DirectedDijkstra.QUEUE_AREA_CENTER_X
+        : (minX + maxX) / 2;
+    this.cmd(
+      "Move",
+      this.queueLabelID,
+      labelCenterX,
+      DirectedDijkstra.QUEUE_TOP_Y - DirectedDijkstra.QUEUE_HEADER_GAP
+    );
   }
 };
 
@@ -1969,6 +2034,242 @@ DirectedDijkstra.prototype.buildPathToVertex = function (vertexIndex) {
   return path;
 };
 
+DirectedDijkstra.prototype.buildShortestPathTreeChildren = function () {
+  if (!this.parent || this.parent.length === 0) {
+    return [];
+  }
+
+  var count = this.parent.length;
+  var children = new Array(count);
+  for (var i = 0; i < count; i++) {
+    children[i] = [];
+  }
+
+  for (var vertex = 0; vertex < count; vertex++) {
+    var parentIndex = this.parent[vertex];
+    if (
+      typeof parentIndex !== "number" ||
+      parentIndex < 0 ||
+      parentIndex >= count ||
+      this.distance[vertex] === Infinity
+    ) {
+      continue;
+    }
+    children[parentIndex].push(vertex);
+  }
+
+  if (this.vertexLabels && this.vertexLabels.length === count) {
+    var self = this;
+    for (var j = 0; j < children.length; j++) {
+      if (children[j] && children[j].length > 1) {
+        children[j].sort(function (a, b) {
+          var labelA = self.vertexLabels[a];
+          var labelB = self.vertexLabels[b];
+          if (labelA < labelB) {
+            return -1;
+          }
+          if (labelA > labelB) {
+            return 1;
+          }
+          return a - b;
+        });
+      }
+    }
+  }
+
+  return children;
+};
+
+DirectedDijkstra.prototype.flashCandidatePath = function (path) {
+  if (!path || path.length < 2) {
+    return;
+  }
+
+  for (var i = 0; i < path.length; i++) {
+    var vertex = path[i];
+    if (vertex < 0 || vertex >= this.vertexIDs.length) {
+      continue;
+    }
+    this.cmd("SetHighlight", this.vertexIDs[vertex], 1);
+  }
+
+  for (var j = 0; j < path.length - 1; j++) {
+    var from = path[j];
+    var to = path[j + 1];
+    if (
+      from < 0 ||
+      to < 0 ||
+      from >= this.vertexIDs.length ||
+      to >= this.vertexIDs.length
+    ) {
+      continue;
+    }
+    this.cmd(
+      "SetEdgeColor",
+      this.vertexIDs[from],
+      this.vertexIDs[to],
+      DirectedDijkstra.PATH_PREVIEW_EDGE_COLOR
+    );
+    this.cmd(
+      "SetEdgeThickness",
+      this.vertexIDs[from],
+      this.vertexIDs[to],
+      DirectedDijkstra.PATH_PREVIEW_EDGE_THICKNESS
+    );
+  }
+
+  this.cmd("Step");
+
+  for (var k = 0; k < path.length - 1; k++) {
+    this.refreshEdgeAppearance(path[k], path[k + 1]);
+  }
+
+  for (var m = 0; m < path.length; m++) {
+    var idx = path[m];
+    if (idx < 0 || idx >= this.vertexIDs.length) {
+      continue;
+    }
+    this.cmd("SetHighlight", this.vertexIDs[idx], 0);
+  }
+
+  this.cmd("Step");
+};
+
+DirectedDijkstra.prototype.previewPathToVertex = function (
+  startIndex,
+  targetVertex,
+  startLabel,
+  persistent
+) {
+  if (
+    typeof targetVertex !== "number" ||
+    targetVertex < 0 ||
+    targetVertex >= this.vertexIDs.length ||
+    this.distance[targetVertex] === Infinity
+  ) {
+    return false;
+  }
+
+  var path = this.buildPathToVertex(targetVertex);
+  if (!path || path.length < 2 || path[0] !== startIndex) {
+    return false;
+  }
+
+  var labels = [];
+  for (var i = 0; i < path.length; i++) {
+    labels.push(this.vertexLabels[path[i]]);
+  }
+
+  var targetLabel = this.vertexLabels[targetVertex];
+  var message =
+    "Path to " +
+    targetLabel +
+    ": " +
+    labels.join(" \u2192 ") +
+    ".\nTotal cost = " +
+    this.formatDistance(this.distance[targetVertex]) +
+    ".";
+
+  if (persistent) {
+    message +=
+      "\nThis is the globally shortest route from " + startLabel + ".";
+  } else {
+    message += "\nEdges flash briefly before returning to tree colors.";
+  }
+  this.setInfoPanelText(message);
+
+  if (persistent) {
+    this.highlightIdentifiedPath(startIndex, targetVertex);
+  } else {
+    this.flashCandidatePath(path);
+  }
+
+  return true;
+};
+
+DirectedDijkstra.prototype.highlightAllDiscoveredPaths = function (
+  startIndex,
+  shortestTarget
+) {
+  if (!this.vertexIDs || this.vertexIDs.length === 0) {
+    return;
+  }
+  if (typeof startIndex !== "number" || startIndex < 0) {
+    return;
+  }
+  if (startIndex >= this.vertexIDs.length) {
+    return;
+  }
+
+  var children = this.buildShortestPathTreeChildren();
+  if (!children || children.length === 0) {
+    return;
+  }
+
+  var visited = new Array(this.vertexIDs.length);
+  for (var i = 0; i < visited.length; i++) {
+    visited[i] = false;
+  }
+
+  var queue = [];
+  queue.push({ index: startIndex, level: 0 });
+  visited[startIndex] = true;
+  var front = 0;
+  var startLabel = this.vertexLabels[startIndex];
+
+  while (front < queue.length) {
+    var currentLevel = queue[front].level;
+    var levelNodes = [];
+
+    while (front < queue.length && queue[front].level === currentLevel) {
+      var item = queue[front++];
+      levelNodes.push(item.index);
+      var childList = children[item.index];
+      if (!childList || childList.length === 0) {
+        continue;
+      }
+      for (var j = 0; j < childList.length; j++) {
+        var child = childList[j];
+        if (child < 0 || child >= visited.length || visited[child]) {
+          continue;
+        }
+        visited[child] = true;
+        queue.push({ index: child, level: currentLevel + 1 });
+      }
+    }
+
+    if (levelNodes.length > 0) {
+      var labels = [];
+      for (var k = 0; k < levelNodes.length; k++) {
+        var nodeIndex = levelNodes[k];
+        labels.push(this.vertexLabels[nodeIndex]);
+        this.cmd("SetHighlight", this.vertexIDs[nodeIndex], 1);
+      }
+      this.setInfoPanelText(
+        "BFS level " +
+          currentLevel +
+          ": " +
+          labels.join(", ") +
+          ".\nHighlighting nodes discovered at this depth."
+      );
+      this.cmd("Step");
+      for (var r = 0; r < levelNodes.length; r++) {
+        this.cmd("SetHighlight", this.vertexIDs[levelNodes[r]], 0);
+      }
+    }
+
+    for (var p = 0; p < levelNodes.length; p++) {
+      var vertex = levelNodes[p];
+      if (vertex === startIndex) {
+        continue;
+      }
+      var persistent =
+        typeof shortestTarget === "number" && vertex === shortestTarget;
+      this.previewPathToVertex(startIndex, vertex, startLabel, persistent);
+    }
+  }
+};
+
 DirectedDijkstra.prototype.animateRelaxationPath = function (targetVertex) {
   var path = this.buildPathToVertex(targetVertex);
   if (!path || path.length < 2) {
@@ -2218,19 +2519,20 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   this.cmd("SetAlpha", this.highlightCircleID, 0);
 
   var targetIndex = this.choosePathTargetIndex(startIndex);
+  this.highlightAllDiscoveredPaths(startIndex, targetIndex);
+
   if (targetIndex !== -1) {
-    this.highlightIdentifiedPath(startIndex, targetIndex);
     var targetLabel = this.vertexLabels[targetIndex];
     this.setInfoPanelText(
-      "Dijkstra finished. Shortest path from " +
+      "Dijkstra finished.\nAll discovered tree paths flashed level-by-level, and the gold route from " +
         startLabel +
         " to " +
         targetLabel +
-        " is highlighted in gold."
+        " is the minimum-distance path."
     );
   } else {
     this.setInfoPanelText(
-      "Dijkstra finished. Unreachable vertices keep distance \u221E."
+      "Dijkstra finished.\nNo other vertices were reachable beyond the start node."
     );
   }
 
@@ -2239,7 +2541,7 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
 
 DirectedDijkstra.prototype.choosePathTargetIndex = function (startIndex) {
   var bestIndex = -1;
-  var bestDistance = -1;
+  var bestDistance = Infinity;
 
   for (var i = 0; i < this.distance.length; i++) {
     if (i === startIndex) {
@@ -2248,7 +2550,7 @@ DirectedDijkstra.prototype.choosePathTargetIndex = function (startIndex) {
     if (this.distance[i] === Infinity) {
       continue;
     }
-    if (this.distance[i] > bestDistance) {
+    if (this.distance[i] < bestDistance) {
       bestDistance = this.distance[i];
       bestIndex = i;
     }
