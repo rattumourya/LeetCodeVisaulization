@@ -8,7 +8,7 @@ DirectedDijkstra.prototype = new Algorithm();
 DirectedDijkstra.prototype.constructor = DirectedDijkstra;
 DirectedDijkstra.superclass = Algorithm.prototype;
 
-DirectedDijkstra.CANVAS_WIDTH = 720;
+DirectedDijkstra.CANVAS_WIDTH = 1200;
 DirectedDijkstra.CANVAS_HEIGHT = 1280;
 
 DirectedDijkstra.ROW1_HEIGHT = 260;
@@ -25,11 +25,11 @@ DirectedDijkstra.TITLE_Y = DirectedDijkstra.ROW1_CENTER_Y - 70;
 DirectedDijkstra.INFO_PANEL_Y = DirectedDijkstra.TITLE_Y + 94;
 DirectedDijkstra.START_INFO_Y = DirectedDijkstra.INFO_PANEL_Y + 76;
 
-DirectedDijkstra.GRAPH_AREA_CENTER_X = 255;
+DirectedDijkstra.GRAPH_AREA_CENTER_X = 410;
 DirectedDijkstra.GRAPH_NODE_RADIUS = 18;
-DirectedDijkstra.GRAPH_NODE_COLOR = "#1e88e5";
-DirectedDijkstra.GRAPH_NODE_BORDER = "#0d47a1";
-DirectedDijkstra.GRAPH_NODE_TEXT = "#ffffff";
+DirectedDijkstra.GRAPH_NODE_COLOR = "#e3f2fd";
+DirectedDijkstra.GRAPH_NODE_BORDER = "#0b3954";
+DirectedDijkstra.GRAPH_NODE_TEXT = "#003049";
 DirectedDijkstra.GRAPH_NODE_VISITED_COLOR = "#66bb6a";
 DirectedDijkstra.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
 DirectedDijkstra.START_NODE_COLOR = "#43a047";
@@ -44,8 +44,8 @@ DirectedDijkstra.EDGE_ACTIVE_THICKNESS = 5;
 DirectedDijkstra.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDijkstra.PARALLEL_EDGE_GAP = 0.18;
 
-DirectedDijkstra.ARRAY_BASE_X = 505;
-DirectedDijkstra.ARRAY_COLUMN_SPACING = 80;
+DirectedDijkstra.ARRAY_BASE_X = 820;
+DirectedDijkstra.ARRAY_COLUMN_SPACING = 130;
 DirectedDijkstra.ARRAY_TOP_Y = DirectedDijkstra.ROW2_START_Y + 80;
 DirectedDijkstra.ARRAY_CELL_HEIGHT = 44;
 DirectedDijkstra.ARRAY_CELL_WIDTH = 70;
@@ -68,7 +68,7 @@ DirectedDijkstra.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedDijkstra.CODE_FONT = "bold 18";
 
-DirectedDijkstra.INFO_PANEL_WIDTH = 660;
+DirectedDijkstra.INFO_PANEL_WIDTH = 900;
 DirectedDijkstra.INFO_PANEL_HEIGHT = 120;
 DirectedDijkstra.INFO_PANEL_FILL = "#eef2ff";
 DirectedDijkstra.INFO_PANEL_BORDER = "#1d3557";
@@ -77,19 +77,19 @@ DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS = 2;
 DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT =
   "Info: Dijkstra always settles the unvisited node with the smallest distance from the start.\nOrange edges show when we discover a shorter route.";
 DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 18";
-DirectedDijkstra.INFO_PANEL_WRAP_LENGTH = 58;
+DirectedDijkstra.INFO_PANEL_WRAP_LENGTH = 90;
 DirectedDijkstra.INFO_PANEL_LINE_SPACING = 20;
 
-DirectedDijkstra.LEGEND_BASE_X = 80;
+DirectedDijkstra.LEGEND_BASE_X = 120;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
 DirectedDijkstra.LEGEND_RECT_HEIGHT = 18;
 DirectedDijkstra.LEGEND_SPACING = 12;
 DirectedDijkstra.LEGEND_TEXT_GAP = 16;
 DirectedDijkstra.LEGEND_FONT = "bold 14";
 DirectedDijkstra.LEGEND_TEXT_COLOR = "#1d3557";
-DirectedDijkstra.LEGEND_DEFAULT_BASE_Y = DirectedDijkstra.ROW2_START_Y + 120;
-DirectedDijkstra.LEGEND_MIN_X = 60;
-DirectedDijkstra.LEGEND_GRAPH_GAP = 60;
+DirectedDijkstra.LEGEND_DEFAULT_BASE_Y = DirectedDijkstra.ROW2_START_Y + 70;
+DirectedDijkstra.LEGEND_MIN_X = 100;
+DirectedDijkstra.LEGEND_GRAPH_GAP = 90;
 
 DirectedDijkstra.LEVEL_COLORS = [
   "#c6e2ff",
@@ -103,7 +103,8 @@ DirectedDijkstra.LEVEL_COLORS = [
 ];
 
 DirectedDijkstra.PRIORITY_QUEUE_SLOT_COUNT = 14;
-DirectedDijkstra.QUEUE_AREA_CENTER_X = 470;
+DirectedDijkstra.QUEUE_AREA_CENTER_X =
+  DirectedDijkstra.ARRAY_BASE_X + DirectedDijkstra.ARRAY_COLUMN_SPACING;
 DirectedDijkstra.QUEUE_TOP_Y = DirectedDijkstra.ROW3_START_Y + 20;
 DirectedDijkstra.QUEUE_SLOT_WIDTH = 200;
 DirectedDijkstra.QUEUE_SLOT_HEIGHT = 32;
@@ -131,15 +132,15 @@ DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS = 10;
 DirectedDijkstra.CUMULATIVE_FONT = "bold 20";
 DirectedDijkstra.CUMULATIVE_LABEL_OFFSET_Y = -34;
 DirectedDijkstra.CUSTOM_LAYOUT_POINTS = [
-  { x: 105, y: DirectedDijkstra.ROW2_START_Y + 210 },
-  { x: 185, y: DirectedDijkstra.ROW2_START_Y + 140 },
-  { x: 195, y: DirectedDijkstra.ROW2_START_Y + 310 },
-  { x: 255, y: DirectedDijkstra.ROW2_START_Y + 220 },
-  { x: 315, y: DirectedDijkstra.ROW2_START_Y + 140 },
-  { x: 315, y: DirectedDijkstra.ROW2_START_Y + 310 },
-  { x: 375, y: DirectedDijkstra.ROW2_START_Y + 150 },
-  { x: 375, y: DirectedDijkstra.ROW2_START_Y + 300 },
-  { x: 435, y: DirectedDijkstra.ROW2_START_Y + 220 },
+  { x: 160, y: DirectedDijkstra.ROW2_START_Y + 210 },
+  { x: 280, y: DirectedDijkstra.ROW2_START_Y + 140 },
+  { x: 300, y: DirectedDijkstra.ROW2_START_Y + 310 },
+  { x: 390, y: DirectedDijkstra.ROW2_START_Y + 220 },
+  { x: 480, y: DirectedDijkstra.ROW2_START_Y + 140 },
+  { x: 480, y: DirectedDijkstra.ROW2_START_Y + 310 },
+  { x: 570, y: DirectedDijkstra.ROW2_START_Y + 150 },
+  { x: 570, y: DirectedDijkstra.ROW2_START_Y + 300 },
+  { x: 660, y: DirectedDijkstra.ROW2_START_Y + 220 },
 ];
 
 DirectedDijkstra.CODE_LINES = [
@@ -195,6 +196,15 @@ DirectedDijkstra.TEMPLATES = [
 
 DirectedDijkstra.prototype.init = function (am, w, h) {
   DirectedDijkstra.superclass.init.call(this, am, w, h);
+
+  if (
+    this.animationManager &&
+    this.animationManager.animatedObjects &&
+    this.animationManager.animatedObjects.statusReport
+  ) {
+    this.animationManager.animatedObjects.statusReport.setText("");
+    this.animationManager.animatedObjects.statusReport.addedToScene = false;
+  }
 
   this.controls = [];
   this.addControls();
