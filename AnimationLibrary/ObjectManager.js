@@ -916,16 +916,26 @@ function ObjectManager()
 		
 	}
 
-	this.setTextStyle = function(nodeID, fontStyle)
-	{
-		if (this.Nodes[nodeID] == null || this.Nodes[nodeID] == undefined)
-		{
-			return;
-			throw "setting text of an object that does not exit";
-		}			
-		this.Nodes[nodeID].setTextStyle(fontStyle)
-		
-	}
+        this.setTextStyle = function(nodeID, fontStyle)
+        {
+                if (this.Nodes[nodeID] == null || this.Nodes[nodeID] == undefined)
+                {
+                        return;
+                        throw "setting text of an object that does not exit";
+                }
+                this.Nodes[nodeID].setTextStyle(fontStyle)
+
+        }
+
+        this.setTextLineSpacing = function(nodeID, lineSpacing)
+        {
+                if (this.Nodes[nodeID] == null || this.Nodes[nodeID] == undefined)
+                {
+                        return;
+                }
+                this.Nodes[nodeID].setLineSpacing(lineSpacing);
+
+        }
 	
 
 
