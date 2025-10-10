@@ -2096,6 +2096,65 @@ DirectedDijkstra.prototype.describeCumulativeSum = function (
   return result;
 };
 
+DirectedDijkstra.prototype.buildEdgeEvaluationSummary = function (
+  fromIndex,
+  toIndex,
+  weight,
+  newDistance,
+  previousDistance,
+  shouldRelax
+) {
+  var fromLabel =
+    this.vertexLabels && fromIndex >= 0 && fromIndex < this.vertexLabels.length
+      ? this.vertexLabels[fromIndex]
+      : String(fromIndex);
+  var toLabel =
+    this.vertexLabels && toIndex >= 0 && toIndex < this.vertexLabels.length
+      ? this.vertexLabels[toIndex]
+      : String(toIndex);
+
+  var currentDistance =
+    this.distance && fromIndex >= 0 && fromIndex < this.distance.length
+      ? this.distance[fromIndex]
+      : Infinity;
+  var candidateExpression = this.describeCumulativeSum(
+    fromIndex,
+    toIndex,
+    currentDistance,
+    weight,
+    newDistance
+  );
+
+  var previousText = this.formatDistance(previousDistance);
+  var summary =
+    "Evaluating edge " +
+    fromLabel +
+    " \u2192 " +
+    toLabel +
+    " (w=" +
+    (typeof weight === "number" ? weight : "?") +
+    "). " +
+    "We'll highlight the edge, compute " +
+    candidateExpression +
+    ", and compare it with dist[" +
+    toLabel +
+    "] = " +
+    previousText +
+    ". ";
+
+  if (shouldRelax) {
+    summary +=
+      "The candidate is smaller, so update the distance and parent, flash the refreshed path, and push " +
+      toLabel +
+      " into the priority queue.";
+  } else {
+    summary +=
+      "The candidate is not smaller, so keep the existing distance and simply clear the highlight.";
+  }
+
+  return summary;
+};
+
 DirectedDijkstra.prototype.showCumulativeSum = function (
   fromIndex,
   toIndex,
@@ -2766,111 +2825,80 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
     for (var i = 0; i < this.adjacencyList[currentVertex].length; i++) {
       var neighbor = this.adjacencyList[currentVertex][i];
       var nextVertex = neighbor.to;
-      var neighborLabel = this.vertexLabels[nextVertex];
       var previousDistance = this.distance[nextVertex];
 
       this.highlightCodeLine(13);
-      this.setInfoPanelText(
-        "Inspect edge " +
-          currentLabel +
-          " \u2192 " +
-          neighborLabel +
-          " (w=" +
-          neighbor.weight +
-          ").",
-        function () {
-          this.highlightEdge(currentVertex, nextVertex, true);
-          this.cmd("Step");
-        }.bind(this)
-      );
 
-      this.highlightCodeLine(14);
-      this.cmd("Step");
-
-      this.highlightCodeLine(15);
-      var newDistance = this.distance[currentVertex] + neighbor.weight;
-      this.showCumulativeSum(
+      var currentDistance = this.distance[currentVertex];
+      var newDistance = currentDistance + neighbor.weight;
+      var shouldRelax = newDistance < this.distance[nextVertex];
+      var summaryText = this.buildEdgeEvaluationSummary(
         currentVertex,
         nextVertex,
         neighbor.weight,
         newDistance,
+        previousDistance,
+        shouldRelax
+      );
+
+      this.setInfoPanelText(
+        summaryText,
         function () {
+          this.highlightEdge(currentVertex, nextVertex, true);
+          this.cmd("Step");
+
+          this.highlightCodeLine(14);
+          this.cmd("Step");
+
+          this.highlightCodeLine(15);
           this.setDistanceCellHighlight(nextVertex, true);
           this.cmd("Step");
-        }.bind(this)
-      );
 
-      this.highlightCodeLine(16);
-      var shouldRelax = newDistance < this.distance[nextVertex];
-      this.updateCumulativeSumDecision(
-        nextVertex,
-        shouldRelax,
-        function () {
+          this.highlightCodeLine(16);
+          this.cmd("Step");
+
+          if (shouldRelax) {
+            this.highlightCodeLine(17);
+            this.setDistanceValue(nextVertex, newDistance, true);
+            this.cmd("Step");
+            this.cmd(
+              "SetBackgroundColor",
+              this.distanceRectIDs[nextVertex],
+              DirectedDijkstra.ARRAY_RECT_COLOR
+            );
+
+            this.highlightCodeLine(18);
+            var previousParent = this.parent[nextVertex];
+            if (previousParent !== -1) {
+              this.setTreeEdge(previousParent, nextVertex, false);
+            }
+            this.parent[nextVertex] = currentVertex;
+            var childLevel =
+              this.vertexLevels && this.vertexLevels[currentVertex] >= 0
+                ? this.vertexLevels[currentVertex] + 1
+                : 1;
+            var levelColor = this.setVertexLevel(nextVertex, childLevel);
+            this.ensureLevelLegendEntry(childLevel, levelColor);
+            this.setParentValue(nextVertex, currentVertex);
+            this.setTreeEdge(currentVertex, nextVertex, true);
+            this.cmd("Step");
+
+            this.animateRelaxationPath(nextVertex);
+
+            this.highlightCodeLine(19);
+            this.pushToPriorityQueue(nextVertex, newDistance);
+            this.cmd("Step");
+          }
+
+          this.highlightCodeLine(20);
+          this.cmd("Step");
+
+          this.setDistanceCellHighlight(nextVertex, false);
+          this.clearCumulativeSumDisplay();
+          this.highlightEdge(currentVertex, nextVertex, false);
           this.cmd("Step");
         }.bind(this)
       );
-
-      if (shouldRelax) {
-        this.highlightCodeLine(17);
-        this.setDistanceValue(nextVertex, newDistance, true);
-        this.cmd("Step");
-        this.cmd(
-          "SetBackgroundColor",
-          this.distanceRectIDs[nextVertex],
-          DirectedDijkstra.ARRAY_RECT_COLOR
-        );
-
-        this.highlightCodeLine(18);
-        var previousParent = this.parent[nextVertex];
-        if (previousParent !== -1) {
-          this.setTreeEdge(previousParent, nextVertex, false);
-        }
-        this.parent[nextVertex] = currentVertex;
-        var childLevel =
-          this.vertexLevels && this.vertexLevels[currentVertex] >= 0
-            ? this.vertexLevels[currentVertex] + 1
-            : 1;
-        var levelColor = this.setVertexLevel(nextVertex, childLevel);
-        this.ensureLevelLegendEntry(childLevel, levelColor);
-        this.setParentValue(nextVertex, currentVertex);
-        this.setTreeEdge(currentVertex, nextVertex, true);
-        this.cmd("Step");
-
-        this.animateRelaxationPath(nextVertex);
-
-        this.highlightCodeLine(19);
-        this.setInfoPanelText(
-          "Better path to " +
-            neighborLabel +
-            " via " +
-            currentLabel +
-            " (cost " +
-            newDistance +
-            ").\nPush it into the min-heap.",
-          function () {
-            this.pushToPriorityQueue(nextVertex, newDistance);
-            this.cmd("Step");
-          }.bind(this)
-        );
-      } else {
-        this.setInfoPanelText(
-          "New cost " +
-            newDistance +
-            " is not better than dist[" +
-            neighborLabel +
-            "] = " +
-            this.formatDistance(previousDistance) +
-            "."
-        );
-      }
-
-      this.highlightCodeLine(20);
-      this.cmd("Step");
-
-      this.setDistanceCellHighlight(nextVertex, false);
-      this.clearCumulativeSumDisplay();
-      this.highlightEdge(currentVertex, nextVertex, false);
-      this.cmd("Step");
     }
   }
 
