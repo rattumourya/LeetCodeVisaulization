@@ -82,7 +82,7 @@ DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y = 24;
 DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH = 9.2;
 DirectedDijkstra.INFO_PANEL_LINE_SPACING = 26;
 
-DirectedDijkstra.LEGEND_BASE_X = 80;
+DirectedDijkstra.LEGEND_BASE_X = 120;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
 DirectedDijkstra.LEGEND_RECT_HEIGHT = 18;
 DirectedDijkstra.LEGEND_SPACING = 12;
