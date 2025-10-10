@@ -74,6 +74,8 @@ DirectedDijkstra.INFO_PANEL_FILL = "#eef2ff";
 DirectedDijkstra.INFO_PANEL_BORDER = "#1d3557";
 DirectedDijkstra.INFO_PANEL_TEXT_COLOR = "#1d3557";
 DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS = 2;
+DirectedDijkstra.INFO_PANEL_ALERT_BORDER = "#c62828";
+DirectedDijkstra.INFO_PANEL_ALERT_BORDER_THICKNESS = 3;
 DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT =
   "Info: Dijkstra always settles the unvisited node with the smallest distance from the start. Watch the info panel for level-by-level highlights and the gold route that marks the minimum-distance path.";
 DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 18";
@@ -81,6 +83,16 @@ DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X = 32;
 DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y = 24;
 DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH = 9.2;
 DirectedDijkstra.INFO_PANEL_LINE_SPACING = 26;
+DirectedDijkstra.INFO_PANEL_PROGRESS_HEIGHT = 14;
+DirectedDijkstra.INFO_PANEL_PROGRESS_BOTTOM_PADDING = 20;
+DirectedDijkstra.INFO_PANEL_PROGRESS_TRACK_COLOR = "#fdecea";
+DirectedDijkstra.INFO_PANEL_PROGRESS_TRACK_BORDER = "#f8bbd0";
+DirectedDijkstra.INFO_PANEL_PROGRESS_FILL_COLOR = "#c62828";
+DirectedDijkstra.INFO_PANEL_PROGRESS_FILL_MARGIN = 8;
+DirectedDijkstra.INFO_PANEL_PROGRESS_MIN_STEPS = 2;
+DirectedDijkstra.INFO_PANEL_PROGRESS_BASE_STEPS = 2;
+DirectedDijkstra.INFO_PANEL_PROGRESS_MAX_STEPS = 12;
+DirectedDijkstra.INFO_PANEL_PROGRESS_CHARS_PER_STEP = 28;
 
 DirectedDijkstra.LEGEND_BASE_X = 80;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
@@ -242,6 +254,9 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
   this.queueLabelID = -1;
   this.infoPanelRectID = -1;
   this.infoPanelTextID = -1;
+  this.infoPanelProgressTrackID = -1;
+  this.infoPanelProgressFillID = -1;
+  this.infoPanelPendingActions = [];
   this.priorityQueueData = [];
   this.priorityQueueActiveIndex = -1;
   this.lastGraphSignature = null;
@@ -706,6 +721,8 @@ DirectedDijkstra.prototype.createInfoPanel = function () {
     this.infoPanelTextID,
     DirectedDijkstra.INFO_PANEL_LINE_SPACING
   );
+
+  this.initializeInfoPanelProgressBar();
 };
 
 DirectedDijkstra.prototype.getInfoPanelTextAnchor = function () {
@@ -717,6 +734,278 @@ DirectedDijkstra.prototype.getInfoPanelTextAnchor = function () {
     x: panelLeft + DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X,
     y: panelTop + DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y,
   };
+};
+
+DirectedDijkstra.prototype.initializeInfoPanelProgressBar = function () {
+  var metrics = this.getInfoPanelProgressMetrics();
+  var fillMetrics = this.getInfoPanelProgressFillMetrics(metrics);
+  var trackWidth = Math.max(1, Math.round(metrics.width));
+  var trackCenterX = Math.round(metrics.centerX);
+  var trackCenterY = Math.round(metrics.centerY);
+
+  this.infoPanelProgressTrackID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.infoPanelProgressTrackID,
+    "",
+    trackWidth,
+    DirectedDijkstra.INFO_PANEL_PROGRESS_HEIGHT,
+    trackCenterX,
+    trackCenterY
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.infoPanelProgressTrackID,
+    DirectedDijkstra.INFO_PANEL_PROGRESS_TRACK_BORDER
+  );
+  this.cmd(
+    "SetBackgroundColor",
+    this.infoPanelProgressTrackID,
+    DirectedDijkstra.INFO_PANEL_PROGRESS_TRACK_COLOR
+  );
+  this.cmd("SetRectangleLineThickness", this.infoPanelProgressTrackID, 1);
+  this.cmd("SetAlpha", this.infoPanelProgressTrackID, 0);
+
+  var fillHeight = Math.max(2, DirectedDijkstra.INFO_PANEL_PROGRESS_HEIGHT - 4);
+  var fillWidth = Math.max(1, Math.round(fillMetrics.width));
+  var fillCenterX = Math.round(fillMetrics.centerX);
+
+  this.infoPanelProgressFillID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.infoPanelProgressFillID,
+    "",
+    fillWidth,
+    fillHeight,
+    fillCenterX,
+    trackCenterY
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.infoPanelProgressFillID,
+    DirectedDijkstra.INFO_PANEL_PROGRESS_FILL_COLOR
+  );
+  this.cmd(
+    "SetBackgroundColor",
+    this.infoPanelProgressFillID,
+    DirectedDijkstra.INFO_PANEL_PROGRESS_FILL_COLOR
+  );
+  this.cmd("SetRectangleLineThickness", this.infoPanelProgressFillID, 0);
+  this.cmd("SetAlpha", this.infoPanelProgressFillID, 0);
+};
+
+DirectedDijkstra.prototype.getInfoPanelProgressMetrics = function () {
+  var availableWidth = this.getInfoPanelAvailableWidth();
+  if (availableWidth <= 0) {
+    availableWidth =
+      DirectedDijkstra.INFO_PANEL_WIDTH -
+      2 * DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X;
+  }
+  var panelLeft =
+    DirectedDijkstra.CANVAS_WIDTH / 2 - DirectedDijkstra.INFO_PANEL_WIDTH / 2;
+  var left = panelLeft + DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X;
+  var width = Math.max(40, availableWidth);
+  var centerX = left + width / 2;
+  var centerY =
+    DirectedDijkstra.INFO_PANEL_Y +
+    DirectedDijkstra.INFO_PANEL_HEIGHT / 2 -
+    DirectedDijkstra.INFO_PANEL_PROGRESS_BOTTOM_PADDING;
+  return {
+    left: left,
+    width: width,
+    centerX: centerX,
+    centerY: centerY,
+  };
+};
+
+DirectedDijkstra.prototype.getInfoPanelProgressFillMetrics = function (
+  trackMetrics
+) {
+  var margin = DirectedDijkstra.INFO_PANEL_PROGRESS_FILL_MARGIN;
+  if (typeof margin !== "number" || margin < 0) {
+    margin = 0;
+  }
+  var width = Math.max(2, trackMetrics.width - margin);
+  var left = trackMetrics.left + margin / 2;
+  return {
+    left: left,
+    width: width,
+    centerX: left + width / 2,
+  };
+};
+
+DirectedDijkstra.prototype.layoutInfoPanelProgressBar = function () {
+  if (
+    this.infoPanelProgressTrackID === -1 ||
+    this.infoPanelProgressFillID === -1
+  ) {
+    return null;
+  }
+
+  var trackMetrics = this.getInfoPanelProgressMetrics();
+  var fillMetrics = this.getInfoPanelProgressFillMetrics(trackMetrics);
+
+  this.cmd(
+    "SetPosition",
+    this.infoPanelProgressTrackID,
+    Math.round(trackMetrics.centerX),
+    Math.round(trackMetrics.centerY)
+  );
+  this.cmd(
+    "SetWidth",
+    this.infoPanelProgressTrackID,
+    Math.max(1, Math.round(trackMetrics.width))
+  );
+  this.cmd(
+    "SetPosition",
+    this.infoPanelProgressFillID,
+    Math.round(fillMetrics.centerX),
+    Math.round(trackMetrics.centerY)
+  );
+  this.cmd(
+    "SetWidth",
+    this.infoPanelProgressFillID,
+    Math.max(1, Math.round(fillMetrics.width))
+  );
+
+  return {
+    track: trackMetrics,
+    fill: fillMetrics,
+  };
+};
+
+DirectedDijkstra.prototype.estimateInfoPanelReadSteps = function (text) {
+  if (typeof text !== "string" || text.length === 0) {
+    return 0;
+  }
+
+  var normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length === 0) {
+    return 0;
+  }
+
+  var base = DirectedDijkstra.INFO_PANEL_PROGRESS_BASE_STEPS;
+  if (typeof base !== "number" || base < 0) {
+    base = 0;
+  }
+
+  var per = DirectedDijkstra.INFO_PANEL_PROGRESS_CHARS_PER_STEP;
+  var extra = 0;
+  if (typeof per === "number" && per > 0) {
+    extra = Math.ceil(normalized.length / per);
+  }
+
+  var steps = base + extra;
+  var minSteps = DirectedDijkstra.INFO_PANEL_PROGRESS_MIN_STEPS;
+  if (typeof minSteps !== "number" || minSteps < 0) {
+    minSteps = 0;
+  }
+  var maxSteps = DirectedDijkstra.INFO_PANEL_PROGRESS_MAX_STEPS;
+  if (typeof maxSteps !== "number" || maxSteps <= 0) {
+    maxSteps = steps;
+  }
+
+  steps = Math.max(minSteps, steps);
+  steps = Math.min(maxSteps, steps);
+  return steps;
+};
+
+DirectedDijkstra.prototype.runInfoPanelPendingActions = function () {
+  if (!this.infoPanelPendingActions || this.infoPanelPendingActions.length === 0) {
+    return;
+  }
+  for (var i = 0; i < this.infoPanelPendingActions.length; i++) {
+    var fn = this.infoPanelPendingActions[i];
+    if (typeof fn === "function") {
+      fn.call(this);
+    }
+  }
+  this.infoPanelPendingActions = [];
+};
+
+DirectedDijkstra.prototype.animateInfoPanelReading = function (text) {
+  var metricsInfo = this.layoutInfoPanelProgressBar();
+  var steps = this.estimateInfoPanelReadSteps(text);
+
+  if (!metricsInfo || steps <= 0) {
+    this.runInfoPanelPendingActions();
+    return;
+  }
+
+  var trackMetrics = metricsInfo.track;
+  var fillMetrics = metricsInfo.fill;
+  var fullWidth = fillMetrics.width;
+  var fillLeft = fillMetrics.left;
+  var trackCenterY = Math.round(trackMetrics.centerY);
+  var initialWidth = Math.max(1, Math.round(fullWidth));
+  var initialCenterX = Math.round(fillMetrics.centerX);
+
+  this.cmd(
+    "SetForegroundColor",
+    this.infoPanelRectID,
+    DirectedDijkstra.INFO_PANEL_ALERT_BORDER
+  );
+  this.cmd(
+    "SetRectangleLineThickness",
+    this.infoPanelRectID,
+    DirectedDijkstra.INFO_PANEL_ALERT_BORDER_THICKNESS
+  );
+  this.cmd("SetAlpha", this.infoPanelProgressTrackID, 1);
+  this.cmd("SetAlpha", this.infoPanelProgressFillID, 1);
+  this.cmd("SetWidth", this.infoPanelProgressFillID, initialWidth);
+  this.cmd(
+    "SetPosition",
+    this.infoPanelProgressFillID,
+    initialCenterX,
+    trackCenterY
+  );
+
+  this.cmd("Step");
+
+  var remainingWidth = fullWidth;
+  for (var i = 0; i < steps; i++) {
+    remainingWidth = (fillMetrics.width * (steps - (i + 1))) / steps;
+    if (remainingWidth < 0) {
+      remainingWidth = 0;
+    }
+    var width = Math.max(0, remainingWidth);
+    var roundedWidth = Math.round(width);
+    if (roundedWidth < 1 && width > 0) {
+      roundedWidth = 1;
+    }
+    if (roundedWidth < 1) {
+      roundedWidth = 1;
+    }
+    var centerX = fillLeft + (width <= 0 ? 0 : width / 2);
+    var roundedCenterX = Math.round(centerX);
+    this.cmd(
+      "SetWidth",
+      this.infoPanelProgressFillID,
+      roundedWidth
+    );
+    this.cmd(
+      "SetPosition",
+      this.infoPanelProgressFillID,
+      roundedCenterX,
+      trackCenterY
+    );
+    this.cmd("Step");
+  }
+
+  this.cmd("SetAlpha", this.infoPanelProgressFillID, 0);
+  this.cmd("SetAlpha", this.infoPanelProgressTrackID, 0);
+  this.cmd(
+    "SetForegroundColor",
+    this.infoPanelRectID,
+    DirectedDijkstra.INFO_PANEL_BORDER
+  );
+  this.cmd(
+    "SetRectangleLineThickness",
+    this.infoPanelRectID,
+    DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS
+  );
+
+  this.runInfoPanelPendingActions();
 };
 
 DirectedDijkstra.prototype.getInfoPanelAvailableWidth = function () {
@@ -844,10 +1133,21 @@ DirectedDijkstra.prototype.wrapInfoPanelText = function (text) {
   return lines.join("\n");
 };
 
-DirectedDijkstra.prototype.setInfoPanelText = function (text) {
+DirectedDijkstra.prototype.setInfoPanelText = function (text, afterPause) {
   if (typeof text !== "string" || text.length === 0) {
     text = DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT;
   }
+
+  if (!this.infoPanelPendingActions) {
+    this.infoPanelPendingActions = [];
+  } else {
+    this.infoPanelPendingActions.length = 0;
+  }
+
+  if (typeof afterPause === "function") {
+    this.infoPanelPendingActions.push(afterPause);
+  }
+
   if (this.infoPanelTextID !== -1) {
     var wrapped = this.wrapInfoPanelText(text);
     this.cmd("SetText", this.infoPanelTextID, wrapped);
@@ -857,6 +1157,9 @@ DirectedDijkstra.prototype.setInfoPanelText = function (text) {
       this.infoPanelTextID,
       DirectedDijkstra.INFO_PANEL_LINE_SPACING
     );
+    this.animateInfoPanelReading(wrapped);
+  } else {
+    this.runInfoPanelPendingActions();
   }
 };
 
@@ -1797,7 +2100,8 @@ DirectedDijkstra.prototype.showCumulativeSum = function (
   fromIndex,
   toIndex,
   weight,
-  newDistance
+  newDistance,
+  afterPause
 ) {
   this.cumulativeContext = null;
 
@@ -1822,12 +2126,13 @@ DirectedDijkstra.prototype.showCumulativeSum = function (
     baseText: text,
   };
 
-  this.setInfoPanelText(text);
+  this.setInfoPanelText(text, afterPause);
 };
 
 DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
   toIndex,
-  shouldRelax
+  shouldRelax,
+  afterPause
 ) {
   if (
     !this.cumulativeContext
@@ -1866,7 +2171,7 @@ DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
     ? " < dist[" + toLabel + "] " + existing + " \u2192 update"
     : " \u2265 dist[" + toLabel + "] " + existing + " \u2192 skip";
 
-  this.setInfoPanelText(baseText + "\n" + comparison);
+  this.setInfoPanelText(baseText + "\n" + comparison, afterPause);
 };
 
 DirectedDijkstra.prototype.setPriorityQueueActive = function (slotIndex) {
@@ -2215,13 +2520,16 @@ DirectedDijkstra.prototype.previewPathToVertex = function (
   } else {
     message += "\nEdges flash briefly before returning to tree colors.";
   }
-  this.setInfoPanelText(message);
-
-  if (persistent) {
-    this.highlightIdentifiedPath(startIndex, targetVertex);
-  } else {
-    this.flashCandidatePath(path);
-  }
+  this.setInfoPanelText(
+    message,
+    function () {
+      if (persistent) {
+        this.highlightIdentifiedPath(startIndex, targetVertex);
+      } else {
+        this.flashCandidatePath(path);
+      }
+    }.bind(this)
+  );
 
   return true;
 };
@@ -2279,22 +2587,28 @@ DirectedDijkstra.prototype.highlightAllDiscoveredPaths = function (
 
     if (levelNodes.length > 0) {
       var labels = [];
+      var highlightNodes = [];
       for (var k = 0; k < levelNodes.length; k++) {
         var nodeIndex = levelNodes[k];
         labels.push(this.vertexLabels[nodeIndex]);
-        this.cmd("SetHighlight", this.vertexIDs[nodeIndex], 1);
+        highlightNodes.push(nodeIndex);
       }
       this.setInfoPanelText(
         "BFS level " +
           currentLevel +
           ": " +
           labels.join(", ") +
-          ".\nHighlighting nodes discovered at this depth."
+          ".\nHighlighting nodes discovered at this depth.",
+        function () {
+          for (var h = 0; h < highlightNodes.length; h++) {
+            this.cmd("SetHighlight", this.vertexIDs[highlightNodes[h]], 1);
+          }
+          this.cmd("Step");
+          for (var r = 0; r < highlightNodes.length; r++) {
+            this.cmd("SetHighlight", this.vertexIDs[highlightNodes[r]], 0);
+          }
+        }.bind(this)
       );
-      this.cmd("Step");
-      for (var r = 0; r < levelNodes.length; r++) {
-        this.cmd("SetHighlight", this.vertexIDs[levelNodes[r]], 0);
-      }
     }
 
     for (var p = 0; p < levelNodes.length; p++) {
@@ -2421,12 +2735,13 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
         currentLabel +
         " with distance " +
         this.formatDistance(entry.distance) +
-        ".\nCheck its outgoing edges."
+        ".\nCheck its outgoing edges.",
+      function () {
+        this.moveHighlightCircleToVertex(currentVertex);
+        this.clearCumulativeSumDisplay();
+        this.cmd("Step");
+      }.bind(this)
     );
-
-    this.moveHighlightCircleToVertex(currentVertex);
-    this.clearCumulativeSumDisplay();
-    this.cmd("Step");
 
     if (this.visited[currentVertex]) {
       this.highlightCodeLine(10);
@@ -2462,24 +2777,38 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
           neighborLabel +
           " (w=" +
           neighbor.weight +
-          ")."
+          ").",
+        function () {
+          this.highlightEdge(currentVertex, nextVertex, true);
+          this.cmd("Step");
+        }.bind(this)
       );
-      this.highlightEdge(currentVertex, nextVertex, true);
-      this.cmd("Step");
 
       this.highlightCodeLine(14);
       this.cmd("Step");
 
       this.highlightCodeLine(15);
       var newDistance = this.distance[currentVertex] + neighbor.weight;
-      this.setDistanceCellHighlight(nextVertex, true);
-      this.showCumulativeSum(currentVertex, nextVertex, neighbor.weight, newDistance);
-      this.cmd("Step");
+      this.showCumulativeSum(
+        currentVertex,
+        nextVertex,
+        neighbor.weight,
+        newDistance,
+        function () {
+          this.setDistanceCellHighlight(nextVertex, true);
+          this.cmd("Step");
+        }.bind(this)
+      );
 
       this.highlightCodeLine(16);
       var shouldRelax = newDistance < this.distance[nextVertex];
-      this.updateCumulativeSumDecision(nextVertex, shouldRelax);
-      this.cmd("Step");
+      this.updateCumulativeSumDecision(
+        nextVertex,
+        shouldRelax,
+        function () {
+          this.cmd("Step");
+        }.bind(this)
+      );
 
       if (shouldRelax) {
         this.highlightCodeLine(17);
@@ -2510,7 +2839,6 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
         this.animateRelaxationPath(nextVertex);
 
         this.highlightCodeLine(19);
-        this.pushToPriorityQueue(nextVertex, newDistance);
         this.setInfoPanelText(
           "Better path to " +
             neighborLabel +
@@ -2518,9 +2846,12 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
             currentLabel +
             " (cost " +
             newDistance +
-            ").\nPush it into the min-heap."
+            ").\nPush it into the min-heap.",
+          function () {
+            this.pushToPriorityQueue(nextVertex, newDistance);
+            this.cmd("Step");
+          }.bind(this)
         );
-        this.cmd("Step");
       } else {
         this.setInfoPanelText(
           "New cost " +
