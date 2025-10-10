@@ -77,7 +77,7 @@ DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS = 2;
 DirectedDijkstra.INFO_PANEL_ALERT_BORDER = "#c62828";
 DirectedDijkstra.INFO_PANEL_ALERT_BORDER_THICKNESS = 3;
 DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT =
-  "Info: Dijkstra always settles the unvisited node with the smallest distance from the start. Watch the info panel for level-by-level highlights and the gold route that marks the minimum-distance path.";
+  "Info: Dijkstra always settles the unvisited node with the smallest distance from the start. Watch the info panel as teal tree paths build up and the gold route marks the minimum-distance path.";
 DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 18";
 DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X = 32;
 DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y = 24;
@@ -140,8 +140,10 @@ DirectedDijkstra.PATH_EDGE_COLOR = "#ff9f1c";
 DirectedDijkstra.PATH_EDGE_THICKNESS = 6;
 DirectedDijkstra.PATH_NODE_COLOR = "#ffe066";
 DirectedDijkstra.PATH_NODE_TEXT_COLOR = "#1d3557";
-DirectedDijkstra.PATH_PREVIEW_EDGE_COLOR = "#48bfe3";
-DirectedDijkstra.PATH_PREVIEW_EDGE_THICKNESS = 4;
+DirectedDijkstra.PATH_TREE_NODE_COLOR = "#d7ecff";
+DirectedDijkstra.PATH_TREE_TEXT_COLOR = "#0b3954";
+DirectedDijkstra.PATH_TREE_EDGE_COLOR = "#64b5f6";
+DirectedDijkstra.PATH_TREE_EDGE_THICKNESS = 5;
 DirectedDijkstra.RANDOM_WEIGHT_MIN = 1;
 DirectedDijkstra.RANDOM_WEIGHT_MAX = 9;
 DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS = 10;
@@ -2134,7 +2136,7 @@ DirectedDijkstra.prototype.buildEdgeEvaluationSummary = function (
     " (w=" +
     (typeof weight === "number" ? weight : "?") +
     "). " +
-    "We'll highlight the edge, compute " +
+    "After the countdown finishes we highlight the edge, compute " +
     candidateExpression +
     ", and compare it with dist[" +
     toLabel +
@@ -2153,6 +2155,75 @@ DirectedDijkstra.prototype.buildEdgeEvaluationSummary = function (
   }
 
   return summary;
+};
+
+DirectedDijkstra.prototype.summarizeOutgoingEdges = function (vertexIndex) {
+  var result = { count: 0, text: "" };
+  if (
+    typeof vertexIndex !== "number" ||
+    vertexIndex < 0 ||
+    vertexIndex >= this.adjacencyList.length
+  ) {
+    return result;
+  }
+
+  var neighbors = this.adjacencyList[vertexIndex] || [];
+  if (neighbors.length === 0) {
+    var label =
+      this.vertexLabels && vertexIndex < this.vertexLabels.length
+        ? this.vertexLabels[vertexIndex]
+        : String(vertexIndex);
+    result.text = label + " has no outgoing edges to inspect.";
+    return result;
+  }
+
+  var parts = [];
+  for (var i = 0; i < neighbors.length; i++) {
+    var edge = neighbors[i];
+    var toLabel =
+      this.vertexLabels && edge.to < this.vertexLabels.length
+        ? this.vertexLabels[edge.to]
+        : String(edge.to);
+    var weightText =
+      typeof edge.weight === "number" ? String(edge.weight) : "?";
+    parts.push(toLabel + " (w=" + weightText + ")");
+  }
+
+  result.count = neighbors.length;
+  result.text =
+    "Outgoing edges: " +
+    parts.join(", ") +
+    ". We will evaluate them in a single animation block after the countdown.";
+  return result;
+};
+
+DirectedDijkstra.prototype.buildLevelPathMessage = function (
+  level,
+  labels,
+  startLabel
+) {
+  if (!labels || labels.length === 0) {
+    return "";
+  }
+
+  if (level === 0) {
+    return (
+      "Start vertex " +
+      startLabel +
+      " anchors every discovered path. It stays teal so you can trace each route from the root."
+    );
+  }
+
+  var joined = labels.join(", ");
+  return (
+    "Level " +
+    level +
+    " nodes " +
+    joined +
+    " now glow teal, showing the entire path back to " +
+    startLabel +
+    "."
+  );
 };
 
 DirectedDijkstra.prototype.showCumulativeSum = function (
@@ -2230,7 +2301,7 @@ DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
     ? " < dist[" + toLabel + "] " + existing + " \u2192 update"
     : " \u2265 dist[" + toLabel + "] " + existing + " \u2192 skip";
 
-  this.setInfoPanelText(baseText + "\n" + comparison, afterPause);
+  this.setInfoPanelText(baseText + ". " + comparison, afterPause);
 };
 
 DirectedDijkstra.prototype.setPriorityQueueActive = function (slotIndex) {
@@ -2437,6 +2508,92 @@ DirectedDijkstra.prototype.buildPathToVertex = function (vertexIndex) {
   return path;
 };
 
+DirectedDijkstra.prototype.applyPathHighlight = function (path, palette) {
+  if (!path || path.length === 0) {
+    return false;
+  }
+
+  palette = palette || {};
+  var nodeColor =
+    palette.nodeColor || DirectedDijkstra.PATH_TREE_NODE_COLOR;
+  var textColor =
+    palette.textColor || DirectedDijkstra.PATH_TREE_TEXT_COLOR;
+  var edgeColor = palette.edgeColor || DirectedDijkstra.PATH_TREE_EDGE_COLOR;
+  var edgeThickness =
+    typeof palette.edgeThickness === "number"
+      ? palette.edgeThickness
+      : DirectedDijkstra.PATH_TREE_EDGE_THICKNESS;
+  var seenNodes = palette.seenNodes || null;
+  var seenEdges = palette.seenEdges || null;
+
+  var changed = false;
+
+  for (var i = 0; i < path.length; i++) {
+    var nodeIndex = path[i];
+    if (
+      typeof nodeIndex !== "number" ||
+      nodeIndex < 0 ||
+      nodeIndex >= this.vertexIDs.length
+    ) {
+      continue;
+    }
+    if (!seenNodes || !seenNodes[nodeIndex]) {
+      if (seenNodes) {
+        seenNodes[nodeIndex] = true;
+      }
+      this.cmd(
+        "SetBackgroundColor",
+        this.vertexIDs[nodeIndex],
+        nodeColor
+      );
+      this.cmd("SetTextColor", this.vertexIDs[nodeIndex], textColor);
+      changed = true;
+    }
+  }
+
+  for (var j = 0; j < path.length - 1; j++) {
+    var from = path[j];
+    var to = path[j + 1];
+    if (
+      typeof from !== "number" ||
+      typeof to !== "number" ||
+      from < 0 ||
+      to < 0 ||
+      from >= this.vertexIDs.length ||
+      to >= this.vertexIDs.length
+    ) {
+      continue;
+    }
+    var edgeKey = this.edgeKey(from, to);
+    if (!seenEdges || !seenEdges[edgeKey]) {
+      if (seenEdges) {
+        seenEdges[edgeKey] = true;
+      }
+      if (!this.edgeStates[edgeKey]) {
+        this.edgeStates[edgeKey] = { tree: true, color: edgeColor };
+      } else {
+        this.edgeStates[edgeKey].tree = true;
+        this.edgeStates[edgeKey].color = edgeColor;
+      }
+      this.cmd(
+        "SetEdgeColor",
+        this.vertexIDs[from],
+        this.vertexIDs[to],
+        edgeColor
+      );
+      this.cmd(
+        "SetEdgeThickness",
+        this.vertexIDs[from],
+        this.vertexIDs[to],
+        edgeThickness
+      );
+      changed = true;
+    }
+  }
+
+  return changed;
+};
+
 DirectedDijkstra.prototype.buildShortestPathTreeChildren = function () {
   if (!this.parent || this.parent.length === 0) {
     return [];
@@ -2483,116 +2640,6 @@ DirectedDijkstra.prototype.buildShortestPathTreeChildren = function () {
   return children;
 };
 
-DirectedDijkstra.prototype.flashCandidatePath = function (path) {
-  if (!path || path.length < 2) {
-    return;
-  }
-
-  for (var i = 0; i < path.length; i++) {
-    var vertex = path[i];
-    if (vertex < 0 || vertex >= this.vertexIDs.length) {
-      continue;
-    }
-    this.cmd("SetHighlight", this.vertexIDs[vertex], 1);
-  }
-
-  for (var j = 0; j < path.length - 1; j++) {
-    var from = path[j];
-    var to = path[j + 1];
-    if (
-      from < 0 ||
-      to < 0 ||
-      from >= this.vertexIDs.length ||
-      to >= this.vertexIDs.length
-    ) {
-      continue;
-    }
-    this.cmd(
-      "SetEdgeColor",
-      this.vertexIDs[from],
-      this.vertexIDs[to],
-      DirectedDijkstra.PATH_PREVIEW_EDGE_COLOR
-    );
-    this.cmd(
-      "SetEdgeThickness",
-      this.vertexIDs[from],
-      this.vertexIDs[to],
-      DirectedDijkstra.PATH_PREVIEW_EDGE_THICKNESS
-    );
-  }
-
-  this.cmd("Step");
-
-  for (var k = 0; k < path.length - 1; k++) {
-    this.refreshEdgeAppearance(path[k], path[k + 1]);
-  }
-
-  for (var m = 0; m < path.length; m++) {
-    var idx = path[m];
-    if (idx < 0 || idx >= this.vertexIDs.length) {
-      continue;
-    }
-    this.cmd("SetHighlight", this.vertexIDs[idx], 0);
-  }
-
-  this.cmd("Step");
-};
-
-DirectedDijkstra.prototype.previewPathToVertex = function (
-  startIndex,
-  targetVertex,
-  startLabel,
-  persistent
-) {
-  if (
-    typeof targetVertex !== "number" ||
-    targetVertex < 0 ||
-    targetVertex >= this.vertexIDs.length ||
-    this.distance[targetVertex] === Infinity
-  ) {
-    return false;
-  }
-
-  var path = this.buildPathToVertex(targetVertex);
-  if (!path || path.length < 2 || path[0] !== startIndex) {
-    return false;
-  }
-
-  var labels = [];
-  for (var i = 0; i < path.length; i++) {
-    labels.push(this.vertexLabels[path[i]]);
-  }
-
-  var targetLabel = this.vertexLabels[targetVertex];
-  var message =
-    "Path to " +
-    targetLabel +
-    ": " +
-    labels.join(" \u2192 ") +
-    ".\nTotal cost = " +
-    this.formatDistance(this.distance[targetVertex]) +
-    ".";
-
-  if (persistent) {
-    message +=
-      "\nThis is the globally shortest route from " + startLabel + ".";
-  } else {
-    message += "\nEdges flash briefly before returning to tree colors.";
-  }
-  this.setInfoPanelText(
-    message,
-    function () {
-      if (persistent) {
-        this.highlightIdentifiedPath(startIndex, targetVertex);
-      } else {
-        this.flashCandidatePath(path);
-      }
-    }.bind(this)
-  );
-
-  return true;
-};
-
 DirectedDijkstra.prototype.highlightAllDiscoveredPaths = function (
   startIndex,
   shortestTarget
@@ -2621,7 +2668,20 @@ DirectedDijkstra.prototype.highlightAllDiscoveredPaths = function (
   queue.push({ index: startIndex, level: 0 });
   visited[startIndex] = true;
   var front = 0;
-  var startLabel = this.vertexLabels[startIndex];
+  var startLabel =
+    this.vertexLabels && startIndex < this.vertexLabels.length
+      ? this.vertexLabels[startIndex]
+      : String(startIndex);
+  var paintedNodes = {};
+  var paintedEdges = {};
+  var levelPalette = {
+    nodeColor: DirectedDijkstra.PATH_TREE_NODE_COLOR,
+    textColor: DirectedDijkstra.PATH_TREE_TEXT_COLOR,
+    edgeColor: DirectedDijkstra.PATH_TREE_EDGE_COLOR,
+    edgeThickness: DirectedDijkstra.PATH_TREE_EDGE_THICKNESS,
+    seenNodes: paintedNodes,
+    seenEdges: paintedEdges,
+  };
 
   while (front < queue.length) {
     var currentLevel = queue[front].level;
@@ -2646,38 +2706,68 @@ DirectedDijkstra.prototype.highlightAllDiscoveredPaths = function (
 
     if (levelNodes.length > 0) {
       var labels = [];
-      var highlightNodes = [];
+      var levelPaths = [];
       for (var k = 0; k < levelNodes.length; k++) {
         var nodeIndex = levelNodes[k];
-        labels.push(this.vertexLabels[nodeIndex]);
-        highlightNodes.push(nodeIndex);
+        var label =
+          this.vertexLabels && nodeIndex < this.vertexLabels.length
+            ? this.vertexLabels[nodeIndex]
+            : String(nodeIndex);
+        labels.push(label);
+        var levelPath = this.buildPathToVertex(nodeIndex);
+        if (levelPath && levelPath.length > 0) {
+          levelPaths.push(levelPath);
+        }
       }
+      var levelMessage = this.buildLevelPathMessage(
+        currentLevel,
+        labels,
+        startLabel
+      );
+      if (levelMessage && levelMessage.length > 0) {
+        (function (message, paths, palette) {
+          this.setInfoPanelText(
+            message,
+            function () {
+              var painted = false;
+              for (var idx = 0; idx < paths.length; idx++) {
+                painted =
+                  this.applyPathHighlight(paths[idx], palette) || painted;
+              }
+              if (painted) {
+                this.cmd("Step");
+              }
+            }.bind(this)
+          );
+        }.call(this, levelMessage, levelPaths, levelPalette));
+      }
+    }
+  }
+
+  if (
+    typeof shortestTarget === "number" &&
+    shortestTarget >= 0 &&
+    shortestTarget < this.vertexIDs.length &&
+    this.distance[shortestTarget] !== Infinity
+  ) {
+    var bestPath = this.buildPathToVertex(shortestTarget);
+    if (bestPath && bestPath.length > 1) {
+      var targetLabel = this.vertexLabels[shortestTarget];
+      var bestCost = this.formatDistance(this.distance[shortestTarget]);
+      var highlightMessage =
+        "Shortest path from " +
+        startLabel +
+        " to " +
+        targetLabel +
+        " costs " +
+        bestCost +
+        ". It is highlighted in gold above the teal tree.";
       this.setInfoPanelText(
-        "BFS level " +
-          currentLevel +
-          ": " +
-          labels.join(", ") +
-          ".\nHighlighting nodes discovered at this depth.",
+        highlightMessage,
         function () {
-          for (var h = 0; h < highlightNodes.length; h++) {
-            this.cmd("SetHighlight", this.vertexIDs[highlightNodes[h]], 1);
-          }
-          this.cmd("Step");
-          for (var r = 0; r < highlightNodes.length; r++) {
-            this.cmd("SetHighlight", this.vertexIDs[highlightNodes[r]], 0);
-          }
+          this.highlightIdentifiedPath(startIndex, shortestTarget);
         }.bind(this)
       );
-    }
-
-    for (var p = 0; p < levelNodes.length; p++) {
-      var vertex = levelNodes[p];
-      if (vertex === startIndex) {
-        continue;
-      }
-      var persistent =
-        typeof shortestTarget === "number" && vertex === shortestTarget;
-      this.previewPathToVertex(startIndex, vertex, startLabel, persistent);
     }
   }
 };
@@ -2762,12 +2852,11 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   this.highlightCodeLine(6);
   this.pushToPriorityQueue(startIndex, 0);
   this.cmd("Step");
-  this.setInfoPanelText(
-    "Initialize " +
-      startLabel +
-      " with distance 0\n"
-      + "and push it into the min-heap."
-  );
+    this.setInfoPanelText(
+      "Initialize " +
+        startLabel +
+        " with distance 0 and push it into the min-heap."
+    );
 
   while (this.priorityQueueData.length > 0) {
     this.highlightCodeLine(7);
@@ -2789,12 +2878,19 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
 
     var currentVertex = entry.vertex;
     var currentLabel = this.vertexLabels[currentVertex];
-    this.setInfoPanelText(
+    var neighborSummary = this.summarizeOutgoingEdges(currentVertex);
+    var extractionMessage =
       "Extract " +
-        currentLabel +
-        " with distance " +
-        this.formatDistance(entry.distance) +
-        ".\nCheck its outgoing edges.",
+      currentLabel +
+      " with distance " +
+      this.formatDistance(entry.distance) +
+      ". " +
+      (neighborSummary.count === 0
+        ? currentLabel +
+          " has no outgoing edges, so we simply mark it done and continue."
+        : neighborSummary.text);
+    this.setInfoPanelText(
+      extractionMessage,
       function () {
         this.moveHighlightCircleToVertex(currentVertex);
         this.clearCumulativeSumDisplay();
@@ -2807,7 +2903,7 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
       this.cmd("Step");
       this.clearCumulativeSumDisplay();
       this.setInfoPanelText(
-        currentLabel + " already processed.\nSkip to the next heap entry."
+        currentLabel + " already processed. Skip to the next heap entry."
       );
       continue;
     }
@@ -2815,9 +2911,19 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
     this.highlightCodeLine(11);
     this.markVertexVisited(currentVertex);
     this.cmd("Step");
-    this.setInfoPanelText(
-      "Lock " + currentLabel + " and examine outgoing edges."
-    );
+    if (neighborSummary.count > 0) {
+      this.setInfoPanelText(
+        "Lock " +
+          currentLabel +
+          " as settled. We will now animate each edge comparison in order."
+      );
+    } else {
+      this.setInfoPanelText(
+        "Lock " +
+          currentLabel +
+          " as settled. With no outgoing edges to relax, the heap pop finishes immediately."
+      );
+    }
 
     this.highlightCodeLine(12);
     this.cmd("Step");
@@ -2922,15 +3028,15 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   if (targetIndex !== -1) {
     var targetLabel = this.vertexLabels[targetIndex];
     this.setInfoPanelText(
-      "Dijkstra finished.\nAll discovered tree paths flashed level-by-level, and the gold route from " +
+      "Dijkstra finished. Every reachable tree path now glows teal, and the gold route from " +
         startLabel +
         " to " +
         targetLabel +
-        " is the minimum-distance path."
+        " marks the minimum-distance path."
     );
   } else {
     this.setInfoPanelText(
-      "Dijkstra finished.\nNo other vertices were reachable beyond the start node."
+      "Dijkstra finished. No other vertices were reachable beyond the start node."
     );
   }
 
@@ -2959,6 +3065,7 @@ DirectedDijkstra.prototype.choosePathTargetIndex = function (startIndex) {
 
 DirectedDijkstra.prototype.highlightIdentifiedPath = function (startIndex, targetIndex) {
   if (
+    typeof targetIndex !== "number" ||
     targetIndex < 0 ||
     targetIndex >= this.vertexIDs.length ||
     this.distance[targetIndex] === Infinity
@@ -2966,54 +3073,23 @@ DirectedDijkstra.prototype.highlightIdentifiedPath = function (startIndex, targe
     return;
   }
 
-  var path = [];
-  var current = targetIndex;
-  while (current !== -1) {
-    path.push(current);
-    if (current === startIndex) {
-      break;
-    }
-    current = this.parent[current];
-  }
-
-  if (path.length === 0 || path[path.length - 1] !== startIndex) {
+  var path = this.buildPathToVertex(targetIndex);
+  if (!path || path.length === 0) {
     return;
   }
-
-  path.reverse();
-
-  for (var i = 0; i < path.length; i++) {
-    var vertex = path[i];
-    this.cmd(
-      "SetBackgroundColor",
-      this.vertexIDs[vertex],
-      DirectedDijkstra.PATH_NODE_COLOR
-    );
-    this.cmd(
-      "SetTextColor",
-      this.vertexIDs[vertex],
-      DirectedDijkstra.PATH_NODE_TEXT_COLOR
-    );
-    this.cmd("Step");
+  if (typeof startIndex === "number" && startIndex >= 0) {
+    if (path[0] !== startIndex) {
+      return;
+    }
   }
 
-  for (var j = 0; j < path.length - 1; j++) {
-    var from = path[j];
-    var to = path[j + 1];
-    this.cmd(
-      "SetEdgeColor",
-      this.vertexIDs[from],
-      this.vertexIDs[to],
-      DirectedDijkstra.PATH_EDGE_COLOR
-    );
-    this.cmd(
-      "SetEdgeThickness",
-      this.vertexIDs[from],
-      this.vertexIDs[to],
-      DirectedDijkstra.PATH_EDGE_THICKNESS
-    );
-    this.cmd("Step");
-  }
+  this.applyPathHighlight(path, {
+    nodeColor: DirectedDijkstra.PATH_NODE_COLOR,
+    textColor: DirectedDijkstra.PATH_NODE_TEXT_COLOR,
+    edgeColor: DirectedDijkstra.PATH_EDGE_COLOR,
+    edgeThickness: DirectedDijkstra.PATH_EDGE_THICKNESS,
+  });
+  this.cmd("Step");
 };
 
 DirectedDijkstra.prototype.startCallback = function () {
