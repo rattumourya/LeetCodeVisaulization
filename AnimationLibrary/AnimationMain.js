@@ -982,10 +982,14 @@ function AnimationManager(objectManager)
                                 var oldIndex = this.animatedObjects.getHighlightIndex(id)
 				undoBlock.push(new UndoSetHighlightIndex(id, oldIndex));
 				this.animatedObjects.setHighlightIndex(id,index);
-			} else if (nextCommand[0].toUpperCase() == "SETTEXTSTYLE") {	
-				var id = parseInt(nextCommand[1]);
-				var fontStyle = nextCommand[2];
-				this.animatedObjects.setTextStyle(id,fontStyle);
+                        } else if (nextCommand[0].toUpperCase() == "SETTEXTSTYLE") {
+                                var id = parseInt(nextCommand[1]);
+                                var fontStyle = nextCommand[2];
+                                this.animatedObjects.setTextStyle(id,fontStyle);
+                        } else if (nextCommand[0].toUpperCase() == "SETTEXTLINESPACING") {
+                                var id = parseInt(nextCommand[1]);
+                                var lineSpacing = parseFloat(nextCommand[2]);
+                                this.animatedObjects.setTextLineSpacing(id, lineSpacing);
 			} else
 			{
 	//			throw "Unknown command: " + nextCommand[0];					
