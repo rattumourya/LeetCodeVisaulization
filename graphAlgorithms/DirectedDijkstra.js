@@ -75,14 +75,14 @@ DirectedDijkstra.INFO_PANEL_BORDER = "#1d3557";
 DirectedDijkstra.INFO_PANEL_TEXT_COLOR = "#1d3557";
 DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS = 2;
 DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT =
-  "Info: Dijkstra always settles the unvisited node with the smallest distance from the start.\n\nWatch the info panel for level-by-level highlights and the gold route that marks the minimum-distance path.";
+  "Info: Dijkstra always settles the unvisited node with the smallest distance from the start. Watch the info panel for level-by-level highlights and the gold route that marks the minimum-distance path.";
 DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 18";
 DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X = 32;
 DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y = 24;
 DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH = 9.2;
 DirectedDijkstra.INFO_PANEL_LINE_SPACING = 26;
 
-DirectedDijkstra.LEGEND_BASE_X = 120;
+DirectedDijkstra.LEGEND_BASE_X = 80;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
 DirectedDijkstra.LEGEND_RECT_HEIGHT = 18;
 DirectedDijkstra.LEGEND_SPACING = 12;
@@ -719,15 +719,54 @@ DirectedDijkstra.prototype.getInfoPanelTextAnchor = function () {
   };
 };
 
-DirectedDijkstra.prototype.getInfoPanelWrapLength = function () {
-  var availableWidth =
+DirectedDijkstra.prototype.getInfoPanelAvailableWidth = function () {
+  return (
     DirectedDijkstra.INFO_PANEL_WIDTH -
-    2 * DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X;
-  var approxWidth = DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH;
-  if (!approxWidth || approxWidth <= 0) {
-    approxWidth = 9;
+    2 * DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X
+  );
+};
+
+DirectedDijkstra.prototype.getInfoPanelCanvasContext = function () {
+  if (
+    this.animationManager &&
+    this.animationManager.animatedObjects &&
+    this.animationManager.animatedObjects.ctx
+  ) {
+    return this.animationManager.animatedObjects.ctx;
   }
-  return Math.max(10, Math.floor(availableWidth / approxWidth));
+  return null;
+};
+
+DirectedDijkstra.prototype.getInfoPanelCanvasFont = function () {
+  var style = DirectedDijkstra.INFO_PANEL_TEXT_STYLE;
+  if (!style) {
+    return null;
+  }
+
+  var fontParts = style.split(/\s+/);
+  var weight = "";
+  var size = null;
+
+  for (var i = 0; i < fontParts.length; i++) {
+    var part = fontParts[i];
+    if (!part) {
+      continue;
+    }
+    if (/^[0-9]+$/.test(part)) {
+      size = part;
+    } else {
+      weight = weight.length > 0 ? weight + " " + part : part;
+    }
+  }
+
+  if (!size) {
+    size = "16";
+  }
+
+  if (weight.length > 0) {
+    return weight + " " + size + "px Arial";
+  }
+  return size + "px Arial";
 };
 
 DirectedDijkstra.prototype.positionInfoPanelText = function () {
@@ -743,66 +782,66 @@ DirectedDijkstra.prototype.wrapInfoPanelText = function (text) {
     return "";
   }
 
-  var maxLength = this.getInfoPanelWrapLength();
-  if (maxLength <= 0) {
-    return text;
-  }
-
-  var paragraphs = text.split(/\n/);
-  var needsWrap = false;
-  for (var i = 0; i < paragraphs.length; i++) {
-    if (paragraphs[i].length > maxLength) {
-      needsWrap = true;
-      break;
-    }
-  }
-
-  if (!needsWrap) {
-    return text;
-  }
-
-  var wrapped = [];
-
-  for (var p = 0; p < paragraphs.length; p++) {
-    var paragraph = paragraphs[p];
-    if (paragraph.length === 0) {
-      wrapped.push("");
-      continue;
-    }
-
-    if (paragraph.length <= maxLength) {
-      wrapped.push(paragraph);
-      continue;
-    }
-
-    var words = paragraph.split(/\s+/);
-    var line = "";
-
-    for (var w = 0; w < words.length; w++) {
-      var word = words[w];
-      if (word.length === 0) {
-        continue;
-      }
-
-      var candidate = line.length === 0 ? word : line + " " + word;
-      if (candidate.length > maxLength && line.length > 0) {
-        wrapped.push(line);
-        line = word;
-      } else {
-        line = candidate;
-      }
-    }
-
-    if (line.length > 0) {
-      wrapped.push(line);
-    }
-  }
-
-  if (wrapped.length === 0) {
+  var normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length === 0) {
     return "";
   }
 
-  return wrapped.join("\n");
+  var maxWidth = this.getInfoPanelAvailableWidth();
+  if (maxWidth <= 0) {
+    return normalized;
+  }
+
+  var ctx = this.getInfoPanelCanvasContext();
+  var font = this.getInfoPanelCanvasFont();
+  var useApprox = !ctx || !font;
+  if (!useApprox) {
+    ctx.save();
+    ctx.font = font;
+  }
+
+  var approxWidth = DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH;
+  if (!approxWidth || approxWidth <= 0) {
+    approxWidth = 9;
+  }
+
+  var words = normalized.split(" ");
+  var lines = [];
+  var currentLine = "";
+
+  var measure = function (candidate) {
+    if (!candidate) {
+      return 0;
+    }
+    if (!useApprox) {
+      return ctx.measureText(candidate).width;
+    }
+    return candidate.length * approxWidth;
+  };
+
+  for (var i = 0; i < words.length; i++) {
+    var word = words[i];
+    if (!word) {
+      continue;
+    }
+    var candidate = currentLine.length === 0 ? word : currentLine + " " + word;
+    if (measure(candidate) > maxWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = candidate;
+    }
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  if (!useApprox) {
+    ctx.restore();
+  }
+
+  return lines.join("\n");
 };
 
 DirectedDijkstra.prototype.setInfoPanelText = function (text) {
