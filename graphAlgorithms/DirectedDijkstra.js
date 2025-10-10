@@ -8,11 +8,11 @@ DirectedDijkstra.prototype = new Algorithm();
 DirectedDijkstra.prototype.constructor = DirectedDijkstra;
 DirectedDijkstra.superclass = Algorithm.prototype;
 
-DirectedDijkstra.CANVAS_WIDTH = 900;
-DirectedDijkstra.CANVAS_HEIGHT = 1600;
+DirectedDijkstra.CANVAS_WIDTH = 1200;
+DirectedDijkstra.CANVAS_HEIGHT = 1280;
 
-DirectedDijkstra.ROW1_HEIGHT = 240;
-DirectedDijkstra.ROW2_HEIGHT = 560;
+DirectedDijkstra.ROW1_HEIGHT = 260;
+DirectedDijkstra.ROW2_HEIGHT = 500;
 DirectedDijkstra.ROW3_HEIGHT =
   DirectedDijkstra.CANVAS_HEIGHT - DirectedDijkstra.ROW1_HEIGHT - DirectedDijkstra.ROW2_HEIGHT;
 
@@ -21,15 +21,15 @@ DirectedDijkstra.ROW2_START_Y = DirectedDijkstra.ROW1_HEIGHT;
 DirectedDijkstra.ROW3_START_Y =
   DirectedDijkstra.ROW1_HEIGHT + DirectedDijkstra.ROW2_HEIGHT;
 
-DirectedDijkstra.TITLE_Y = DirectedDijkstra.ROW1_CENTER_Y - 40;
-DirectedDijkstra.INFO_PANEL_Y = DirectedDijkstra.TITLE_Y + 52;
-DirectedDijkstra.START_INFO_Y = DirectedDijkstra.ROW1_CENTER_Y + 70;
+DirectedDijkstra.TITLE_Y = DirectedDijkstra.ROW1_CENTER_Y - 70;
+DirectedDijkstra.INFO_PANEL_Y = DirectedDijkstra.TITLE_Y + 94;
+DirectedDijkstra.START_INFO_Y = DirectedDijkstra.INFO_PANEL_Y + 76;
 
-DirectedDijkstra.GRAPH_AREA_CENTER_X = 360;
+DirectedDijkstra.GRAPH_AREA_CENTER_X = 410;
 DirectedDijkstra.GRAPH_NODE_RADIUS = 18;
-DirectedDijkstra.GRAPH_NODE_COLOR = "#1e88e5";
-DirectedDijkstra.GRAPH_NODE_BORDER = "#0d47a1";
-DirectedDijkstra.GRAPH_NODE_TEXT = "#ffffff";
+DirectedDijkstra.GRAPH_NODE_COLOR = "#e3f2fd";
+DirectedDijkstra.GRAPH_NODE_BORDER = "#0b3954";
+DirectedDijkstra.GRAPH_NODE_TEXT = "#003049";
 DirectedDijkstra.GRAPH_NODE_VISITED_COLOR = "#66bb6a";
 DirectedDijkstra.GRAPH_NODE_VISITED_TEXT_COLOR = "#0b3d1f";
 DirectedDijkstra.START_NODE_COLOR = "#43a047";
@@ -44,12 +44,12 @@ DirectedDijkstra.EDGE_ACTIVE_THICKNESS = 5;
 DirectedDijkstra.BIDIRECTIONAL_CURVE = 0.35;
 DirectedDijkstra.PARALLEL_EDGE_GAP = 0.18;
 
-DirectedDijkstra.ARRAY_BASE_X = 650;
-DirectedDijkstra.ARRAY_COLUMN_SPACING = 88;
-DirectedDijkstra.ARRAY_TOP_Y = DirectedDijkstra.ROW2_START_Y + 90;
-DirectedDijkstra.ARRAY_CELL_HEIGHT = 52;
+DirectedDijkstra.ARRAY_BASE_X = 820;
+DirectedDijkstra.ARRAY_COLUMN_SPACING = 130;
+DirectedDijkstra.ARRAY_TOP_Y = DirectedDijkstra.ROW2_START_Y + 80;
+DirectedDijkstra.ARRAY_CELL_HEIGHT = 44;
 DirectedDijkstra.ARRAY_CELL_WIDTH = 70;
-DirectedDijkstra.ARRAY_CELL_INNER_HEIGHT = 42;
+DirectedDijkstra.ARRAY_CELL_INNER_HEIGHT = 34;
 DirectedDijkstra.ARRAY_RECT_COLOR = "#f1f1f6";
 DirectedDijkstra.ARRAY_RECT_BORDER = "#2b2d42";
 DirectedDijkstra.ARRAY_RECT_HIGHLIGHT_BORDER = "#e76f51";
@@ -59,7 +59,7 @@ DirectedDijkstra.ARRAY_TEXT_COLOR = "#2b2d42";
 DirectedDijkstra.ARRAY_VISITED_FILL = "#b3e5fc";
 DirectedDijkstra.ARRAY_UPDATE_FILL = "#ffe8d6";
 DirectedDijkstra.ARRAY_HEADER_GAP = 20;
-DirectedDijkstra.BOTTOM_SECTION_TOP_OFFSET = -20;
+DirectedDijkstra.BOTTOM_SECTION_TOP_OFFSET = -160;
 DirectedDijkstra.CODE_TOP_PADDING = 12;
 
 DirectedDijkstra.CODE_START_X = 60;
@@ -68,15 +68,19 @@ DirectedDijkstra.CODE_STANDARD_COLOR = "#1d3557";
 DirectedDijkstra.CODE_HIGHLIGHT_COLOR = "#e63946";
 DirectedDijkstra.CODE_FONT = "bold 18";
 
-DirectedDijkstra.INFO_PANEL_WIDTH = 760;
-DirectedDijkstra.INFO_PANEL_HEIGHT = 70;
+DirectedDijkstra.INFO_PANEL_WIDTH = 900;
+DirectedDijkstra.INFO_PANEL_HEIGHT = 130;
 DirectedDijkstra.INFO_PANEL_FILL = "#eef2ff";
 DirectedDijkstra.INFO_PANEL_BORDER = "#1d3557";
 DirectedDijkstra.INFO_PANEL_TEXT_COLOR = "#1d3557";
 DirectedDijkstra.INFO_PANEL_BORDER_THICKNESS = 2;
 DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT =
-  "Info: The min-heap always extracts the closest distance.\nOrange comparisons show when a path improves.";
-DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 16";
+  "Info: Dijkstra always settles the unvisited node with the smallest distance from the start.\n\nWatch the info panel for level-by-level highlights and the gold route that marks the minimum-distance path.";
+DirectedDijkstra.INFO_PANEL_TEXT_STYLE = "bold 18";
+DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X = 32;
+DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y = 24;
+DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH = 9.2;
+DirectedDijkstra.INFO_PANEL_LINE_SPACING = 26;
 
 DirectedDijkstra.LEGEND_BASE_X = 80;
 DirectedDijkstra.LEGEND_RECT_WIDTH = 34;
@@ -85,9 +89,9 @@ DirectedDijkstra.LEGEND_SPACING = 12;
 DirectedDijkstra.LEGEND_TEXT_GAP = 16;
 DirectedDijkstra.LEGEND_FONT = "bold 14";
 DirectedDijkstra.LEGEND_TEXT_COLOR = "#1d3557";
-DirectedDijkstra.LEGEND_DEFAULT_BASE_Y = DirectedDijkstra.ROW2_START_Y + 120;
-DirectedDijkstra.LEGEND_MIN_X = 60;
-DirectedDijkstra.LEGEND_GRAPH_GAP = 60;
+DirectedDijkstra.LEGEND_DEFAULT_BASE_Y = DirectedDijkstra.ROW2_START_Y + 70;
+DirectedDijkstra.LEGEND_MIN_X = 70;
+DirectedDijkstra.LEGEND_GRAPH_GAP = 140;
 
 DirectedDijkstra.LEVEL_COLORS = [
   "#c6e2ff",
@@ -101,19 +105,21 @@ DirectedDijkstra.LEVEL_COLORS = [
 ];
 
 DirectedDijkstra.PRIORITY_QUEUE_SLOT_COUNT = 14;
-DirectedDijkstra.QUEUE_AREA_CENTER_X = 760;
-DirectedDijkstra.QUEUE_TOP_Y = DirectedDijkstra.ROW3_START_Y + 28;
+DirectedDijkstra.QUEUE_AREA_CENTER_X =
+  DirectedDijkstra.ARRAY_BASE_X + DirectedDijkstra.ARRAY_COLUMN_SPACING;
+DirectedDijkstra.QUEUE_TOP_Y = DirectedDijkstra.ROW3_START_Y + 20;
 DirectedDijkstra.QUEUE_SLOT_WIDTH = 200;
-DirectedDijkstra.QUEUE_SLOT_HEIGHT = 48;
-DirectedDijkstra.QUEUE_SLOT_SPACING = 16;
-DirectedDijkstra.QUEUE_HEADER_GAP = 48;
+DirectedDijkstra.QUEUE_SLOT_HEIGHT = 32;
+DirectedDijkstra.QUEUE_SLOT_SPACING = 6;
+DirectedDijkstra.QUEUE_HEADER_GAP = 40;
+DirectedDijkstra.QUEUE_COLUMN_SPACING = 24;
 DirectedDijkstra.QUEUE_RECT_COLOR = "#f8f9fa";
 DirectedDijkstra.QUEUE_RECT_BORDER = "#1d3557";
 DirectedDijkstra.QUEUE_RECT_ACTIVE_BORDER = "#e76f51";
 DirectedDijkstra.QUEUE_RECT_BORDER_THICKNESS = 1;
 DirectedDijkstra.QUEUE_RECT_ACTIVE_THICKNESS = 3;
 DirectedDijkstra.QUEUE_TEXT_COLOR = "#1d3557";
-DirectedDijkstra.QUEUE_FONT = "bold 20";
+DirectedDijkstra.QUEUE_FONT = "bold 16";
 
 DirectedDijkstra.TITLE_COLOR = "#1d3557";
 DirectedDijkstra.START_INFO_COLOR = "#264653";
@@ -122,21 +128,23 @@ DirectedDijkstra.PATH_EDGE_COLOR = "#ff9f1c";
 DirectedDijkstra.PATH_EDGE_THICKNESS = 6;
 DirectedDijkstra.PATH_NODE_COLOR = "#ffe066";
 DirectedDijkstra.PATH_NODE_TEXT_COLOR = "#1d3557";
+DirectedDijkstra.PATH_PREVIEW_EDGE_COLOR = "#48bfe3";
+DirectedDijkstra.PATH_PREVIEW_EDGE_THICKNESS = 4;
 DirectedDijkstra.RANDOM_WEIGHT_MIN = 1;
 DirectedDijkstra.RANDOM_WEIGHT_MAX = 9;
 DirectedDijkstra.RANDOM_TEMPLATE_ATTEMPTS = 10;
 DirectedDijkstra.CUMULATIVE_FONT = "bold 20";
 DirectedDijkstra.CUMULATIVE_LABEL_OFFSET_Y = -34;
 DirectedDijkstra.CUSTOM_LAYOUT_POINTS = [
-  { x: 150, y: DirectedDijkstra.ROW2_START_Y + 210 },
-  { x: 230, y: DirectedDijkstra.ROW2_START_Y + 140 },
-  { x: 240, y: DirectedDijkstra.ROW2_START_Y + 310 },
-  { x: 300, y: DirectedDijkstra.ROW2_START_Y + 220 },
-  { x: 370, y: DirectedDijkstra.ROW2_START_Y + 140 },
-  { x: 370, y: DirectedDijkstra.ROW2_START_Y + 310 },
-  { x: 460, y: DirectedDijkstra.ROW2_START_Y + 150 },
-  { x: 460, y: DirectedDijkstra.ROW2_START_Y + 300 },
-  { x: 550, y: DirectedDijkstra.ROW2_START_Y + 220 },
+  { x: 160, y: DirectedDijkstra.ROW2_START_Y + 210 },
+  { x: 280, y: DirectedDijkstra.ROW2_START_Y + 140 },
+  { x: 300, y: DirectedDijkstra.ROW2_START_Y + 310 },
+  { x: 390, y: DirectedDijkstra.ROW2_START_Y + 220 },
+  { x: 480, y: DirectedDijkstra.ROW2_START_Y + 140 },
+  { x: 480, y: DirectedDijkstra.ROW2_START_Y + 310 },
+  { x: 570, y: DirectedDijkstra.ROW2_START_Y + 150 },
+  { x: 570, y: DirectedDijkstra.ROW2_START_Y + 300 },
+  { x: 660, y: DirectedDijkstra.ROW2_START_Y + 220 },
 ];
 
 DirectedDijkstra.CODE_LINES = [
@@ -193,6 +201,15 @@ DirectedDijkstra.TEMPLATES = [
 DirectedDijkstra.prototype.init = function (am, w, h) {
   DirectedDijkstra.superclass.init.call(this, am, w, h);
 
+  if (
+    this.animationManager &&
+    this.animationManager.animatedObjects &&
+    this.animationManager.animatedObjects.statusReport
+  ) {
+    this.animationManager.animatedObjects.statusReport.setText("");
+    this.animationManager.animatedObjects.statusReport.addedToScene = false;
+  }
+
   this.controls = [];
   this.addControls();
 
@@ -220,7 +237,6 @@ DirectedDijkstra.prototype.init = function (am, w, h) {
   this.codeID = [];
   this.highlightCircleID = -1;
   this.currentCodeLine = -1;
-  this.cumulativeLabelID = -1;
   this.cumulativeContext = null;
   this.startDisplayID = -1;
   this.queueLabelID = -1;
@@ -270,7 +286,6 @@ DirectedDijkstra.prototype.reset = function () {
   this.commands = [];
   this.nextIndex = 0;
   this.legendBaseX = DirectedDijkstra.LEGEND_BASE_X;
-  this.cumulativeLabelID = -1;
   this.cumulativeContext = null;
 
   this.selectTemplate();
@@ -674,16 +689,120 @@ DirectedDijkstra.prototype.createInfoPanel = function () {
   );
 
   this.infoPanelTextID = this.nextIndex++;
+  var anchor = this.getInfoPanelTextAnchor();
+  var defaultText = this.wrapInfoPanelText(DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT);
   this.cmd(
     "CreateLabel",
     this.infoPanelTextID,
-    DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT,
-    DirectedDijkstra.CANVAS_WIDTH / 2,
-    DirectedDijkstra.INFO_PANEL_Y,
+    defaultText,
+    anchor.x,
+    anchor.y,
     0
   );
   this.cmd("SetTextStyle", this.infoPanelTextID, DirectedDijkstra.INFO_PANEL_TEXT_STYLE);
   this.cmd("SetForegroundColor", this.infoPanelTextID, DirectedDijkstra.INFO_PANEL_TEXT_COLOR);
+  this.cmd(
+    "SetTextLineSpacing",
+    this.infoPanelTextID,
+    DirectedDijkstra.INFO_PANEL_LINE_SPACING
+  );
+};
+
+DirectedDijkstra.prototype.getInfoPanelTextAnchor = function () {
+  var panelLeft =
+    DirectedDijkstra.CANVAS_WIDTH / 2 - DirectedDijkstra.INFO_PANEL_WIDTH / 2;
+  var panelTop =
+    DirectedDijkstra.INFO_PANEL_Y - DirectedDijkstra.INFO_PANEL_HEIGHT / 2;
+  return {
+    x: panelLeft + DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X,
+    y: panelTop + DirectedDijkstra.INFO_PANEL_TEXT_PADDING_Y,
+  };
+};
+
+DirectedDijkstra.prototype.getInfoPanelWrapLength = function () {
+  var availableWidth =
+    DirectedDijkstra.INFO_PANEL_WIDTH -
+    2 * DirectedDijkstra.INFO_PANEL_TEXT_PADDING_X;
+  var approxWidth = DirectedDijkstra.INFO_PANEL_APPROX_CHAR_WIDTH;
+  if (!approxWidth || approxWidth <= 0) {
+    approxWidth = 9;
+  }
+  return Math.max(10, Math.floor(availableWidth / approxWidth));
+};
+
+DirectedDijkstra.prototype.positionInfoPanelText = function () {
+  if (this.infoPanelTextID === -1) {
+    return;
+  }
+  var anchor = this.getInfoPanelTextAnchor();
+  this.cmd("SetPosition", this.infoPanelTextID, anchor.x, anchor.y);
+};
+
+DirectedDijkstra.prototype.wrapInfoPanelText = function (text) {
+  if (typeof text !== "string") {
+    return "";
+  }
+
+  var maxLength = this.getInfoPanelWrapLength();
+  if (maxLength <= 0) {
+    return text;
+  }
+
+  var paragraphs = text.split(/\n/);
+  var needsWrap = false;
+  for (var i = 0; i < paragraphs.length; i++) {
+    if (paragraphs[i].length > maxLength) {
+      needsWrap = true;
+      break;
+    }
+  }
+
+  if (!needsWrap) {
+    return text;
+  }
+
+  var wrapped = [];
+
+  for (var p = 0; p < paragraphs.length; p++) {
+    var paragraph = paragraphs[p];
+    if (paragraph.length === 0) {
+      wrapped.push("");
+      continue;
+    }
+
+    if (paragraph.length <= maxLength) {
+      wrapped.push(paragraph);
+      continue;
+    }
+
+    var words = paragraph.split(/\s+/);
+    var line = "";
+
+    for (var w = 0; w < words.length; w++) {
+      var word = words[w];
+      if (word.length === 0) {
+        continue;
+      }
+
+      var candidate = line.length === 0 ? word : line + " " + word;
+      if (candidate.length > maxLength && line.length > 0) {
+        wrapped.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+
+    if (line.length > 0) {
+      wrapped.push(line);
+    }
+  }
+
+  if (wrapped.length === 0) {
+    return "";
+  }
+
+  return wrapped.join("\n");
 };
 
 DirectedDijkstra.prototype.setInfoPanelText = function (text) {
@@ -691,7 +810,14 @@ DirectedDijkstra.prototype.setInfoPanelText = function (text) {
     text = DirectedDijkstra.INFO_PANEL_DEFAULT_TEXT;
   }
   if (this.infoPanelTextID !== -1) {
-    this.cmd("SetText", this.infoPanelTextID, text);
+    var wrapped = this.wrapInfoPanelText(text);
+    this.cmd("SetText", this.infoPanelTextID, wrapped);
+    this.positionInfoPanelText();
+    this.cmd(
+      "SetTextLineSpacing",
+      this.infoPanelTextID,
+      DirectedDijkstra.INFO_PANEL_LINE_SPACING
+    );
   }
 };
 
@@ -918,7 +1044,7 @@ DirectedDijkstra.prototype.createPriorityQueueArea = function () {
     DirectedDijkstra.QUEUE_TOP_Y - DirectedDijkstra.QUEUE_HEADER_GAP,
     0
   );
-  this.cmd("SetTextStyle", this.queueLabelID, "bold 20");
+  this.cmd("SetTextStyle", this.queueLabelID, "bold 18");
   this.cmd("SetForegroundColor", this.queueLabelID, DirectedDijkstra.CODE_STANDARD_COLOR);
 };
 
@@ -991,11 +1117,55 @@ DirectedDijkstra.prototype.ensurePriorityQueueCapacity = function (desiredLength
 };
 
 DirectedDijkstra.prototype.layoutPriorityQueueRectangles = function () {
-  for (var i = 0; i < this.priorityQueueRectIDs.length; i++) {
+  var count = this.priorityQueueRectIDs.length;
+  if (count === 0) {
+    if (this.queueLabelID !== -1) {
+      this.cmd(
+        "Move",
+        this.queueLabelID,
+        DirectedDijkstra.QUEUE_AREA_CENTER_X,
+        DirectedDijkstra.QUEUE_TOP_Y - DirectedDijkstra.QUEUE_HEADER_GAP
+      );
+    }
+    return;
+  }
+
+  var slotStep = DirectedDijkstra.QUEUE_SLOT_HEIGHT + DirectedDijkstra.QUEUE_SLOT_SPACING;
+  var availableHeight = DirectedDijkstra.CANVAS_HEIGHT - DirectedDijkstra.QUEUE_TOP_Y;
+  var maxRows = Math.max(1, Math.floor(availableHeight / slotStep));
+  var columns = Math.max(1, Math.ceil(count / maxRows));
+  var columnStep = DirectedDijkstra.QUEUE_SLOT_WIDTH + DirectedDijkstra.QUEUE_COLUMN_SPACING;
+  var minX = Infinity;
+  var maxX = -Infinity;
+
+  for (var i = 0; i < count; i++) {
     var rectID = this.priorityQueueRectIDs[i];
-    var targetY =
-      DirectedDijkstra.QUEUE_TOP_Y + i * (DirectedDijkstra.QUEUE_SLOT_HEIGHT + DirectedDijkstra.QUEUE_SLOT_SPACING);
-    this.cmd("Move", rectID, DirectedDijkstra.QUEUE_AREA_CENTER_X, targetY);
+    var column = Math.floor(i / maxRows);
+    var row = i % maxRows;
+    var targetX =
+      DirectedDijkstra.QUEUE_AREA_CENTER_X +
+      (column - (columns - 1) / 2) * columnStep;
+    var targetY = DirectedDijkstra.QUEUE_TOP_Y + row * slotStep;
+    this.cmd("Move", rectID, targetX, targetY);
+    if (targetX < minX) {
+      minX = targetX;
+    }
+    if (targetX > maxX) {
+      maxX = targetX;
+    }
+  }
+
+  if (this.queueLabelID !== -1) {
+    var labelCenterX =
+      minX === Infinity || maxX === -Infinity
+        ? DirectedDijkstra.QUEUE_AREA_CENTER_X
+        : (minX + maxX) / 2;
+    this.cmd(
+      "Move",
+      this.queueLabelID,
+      labelCenterX,
+      DirectedDijkstra.QUEUE_TOP_Y - DirectedDijkstra.QUEUE_HEADER_GAP
+    );
   }
 };
 
@@ -1547,10 +1717,6 @@ DirectedDijkstra.prototype.setDistanceCellHighlight = function (index, active) {
 };
 
 DirectedDijkstra.prototype.clearCumulativeSumDisplay = function () {
-  if (typeof this.cumulativeLabelID === "number" && this.cumulativeLabelID >= 0) {
-    this.cmd("Delete", this.cumulativeLabelID);
-  }
-  this.cumulativeLabelID = -1;
   this.cumulativeContext = null;
 };
 
@@ -1594,27 +1760,8 @@ DirectedDijkstra.prototype.showCumulativeSum = function (
   weight,
   newDistance
 ) {
-  this.clearCumulativeSumDisplay();
+  this.cumulativeContext = null;
 
-  if (
-    !this.vertexPositions ||
-    fromIndex < 0 ||
-    toIndex < 0 ||
-    fromIndex >= this.vertexPositions.length ||
-    toIndex >= this.vertexPositions.length
-  ) {
-    return;
-  }
-
-  var fromPos = this.vertexPositions[fromIndex];
-  var toPos = this.vertexPositions[toIndex];
-  if (!fromPos || !toPos) {
-    return;
-  }
-
-  var labelX = (fromPos.x + toPos.x) / 2;
-  var labelY =
-    (fromPos.y + toPos.y) / 2 + DirectedDijkstra.CUMULATIVE_LABEL_OFFSET_Y;
   var currentDistance =
     this.distance && fromIndex < this.distance.length
       ? this.distance[fromIndex]
@@ -1633,16 +1780,10 @@ DirectedDijkstra.prototype.showCumulativeSum = function (
     weight: weight,
     newDistance: newDistance,
     currentDistance: currentDistance,
+    baseText: text,
   };
 
-  this.cumulativeLabelID = this.nextIndex++;
-  this.cmd("CreateLabel", this.cumulativeLabelID, text, labelX, labelY, 0);
-  this.cmd("SetTextStyle", this.cumulativeLabelID, DirectedDijkstra.CUMULATIVE_FONT);
-  this.cmd(
-    "SetForegroundColor",
-    this.cumulativeLabelID,
-    DirectedDijkstra.CODE_HIGHLIGHT_COLOR
-  );
+  this.setInfoPanelText(text);
 };
 
 DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
@@ -1650,8 +1791,6 @@ DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
   shouldRelax
 ) {
   if (
-    typeof this.cumulativeLabelID !== "number" ||
-    this.cumulativeLabelID < 0 ||
     !this.cumulativeContext
   ) {
     return;
@@ -1669,13 +1808,7 @@ DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
   var currentDistance = this.cumulativeContext.currentDistance;
   var weight = this.cumulativeContext.weight;
   var newDistance = this.cumulativeContext.newDistance;
-  var baseText = this.describeCumulativeSum(
-    fromIndex,
-    this.cumulativeContext.toIndex,
-    currentDistance,
-    weight,
-    newDistance
-  );
+  var baseText = this.cumulativeContext.baseText;
 
   var toLabel =
     this.vertexLabels &&
@@ -1694,7 +1827,7 @@ DirectedDijkstra.prototype.updateCumulativeSumDecision = function (
     ? " < dist[" + toLabel + "] " + existing + " \u2192 update"
     : " \u2265 dist[" + toLabel + "] " + existing + " \u2192 skip";
 
-  this.cmd("SetText", this.cumulativeLabelID, baseText + comparison);
+  this.setInfoPanelText(baseText + "\n" + comparison);
 };
 
 DirectedDijkstra.prototype.setPriorityQueueActive = function (slotIndex) {
@@ -1899,6 +2032,242 @@ DirectedDijkstra.prototype.buildPathToVertex = function (vertexIndex) {
 
   path.reverse();
   return path;
+};
+
+DirectedDijkstra.prototype.buildShortestPathTreeChildren = function () {
+  if (!this.parent || this.parent.length === 0) {
+    return [];
+  }
+
+  var count = this.parent.length;
+  var children = new Array(count);
+  for (var i = 0; i < count; i++) {
+    children[i] = [];
+  }
+
+  for (var vertex = 0; vertex < count; vertex++) {
+    var parentIndex = this.parent[vertex];
+    if (
+      typeof parentIndex !== "number" ||
+      parentIndex < 0 ||
+      parentIndex >= count ||
+      this.distance[vertex] === Infinity
+    ) {
+      continue;
+    }
+    children[parentIndex].push(vertex);
+  }
+
+  if (this.vertexLabels && this.vertexLabels.length === count) {
+    var self = this;
+    for (var j = 0; j < children.length; j++) {
+      if (children[j] && children[j].length > 1) {
+        children[j].sort(function (a, b) {
+          var labelA = self.vertexLabels[a];
+          var labelB = self.vertexLabels[b];
+          if (labelA < labelB) {
+            return -1;
+          }
+          if (labelA > labelB) {
+            return 1;
+          }
+          return a - b;
+        });
+      }
+    }
+  }
+
+  return children;
+};
+
+DirectedDijkstra.prototype.flashCandidatePath = function (path) {
+  if (!path || path.length < 2) {
+    return;
+  }
+
+  for (var i = 0; i < path.length; i++) {
+    var vertex = path[i];
+    if (vertex < 0 || vertex >= this.vertexIDs.length) {
+      continue;
+    }
+    this.cmd("SetHighlight", this.vertexIDs[vertex], 1);
+  }
+
+  for (var j = 0; j < path.length - 1; j++) {
+    var from = path[j];
+    var to = path[j + 1];
+    if (
+      from < 0 ||
+      to < 0 ||
+      from >= this.vertexIDs.length ||
+      to >= this.vertexIDs.length
+    ) {
+      continue;
+    }
+    this.cmd(
+      "SetEdgeColor",
+      this.vertexIDs[from],
+      this.vertexIDs[to],
+      DirectedDijkstra.PATH_PREVIEW_EDGE_COLOR
+    );
+    this.cmd(
+      "SetEdgeThickness",
+      this.vertexIDs[from],
+      this.vertexIDs[to],
+      DirectedDijkstra.PATH_PREVIEW_EDGE_THICKNESS
+    );
+  }
+
+  this.cmd("Step");
+
+  for (var k = 0; k < path.length - 1; k++) {
+    this.refreshEdgeAppearance(path[k], path[k + 1]);
+  }
+
+  for (var m = 0; m < path.length; m++) {
+    var idx = path[m];
+    if (idx < 0 || idx >= this.vertexIDs.length) {
+      continue;
+    }
+    this.cmd("SetHighlight", this.vertexIDs[idx], 0);
+  }
+
+  this.cmd("Step");
+};
+
+DirectedDijkstra.prototype.previewPathToVertex = function (
+  startIndex,
+  targetVertex,
+  startLabel,
+  persistent
+) {
+  if (
+    typeof targetVertex !== "number" ||
+    targetVertex < 0 ||
+    targetVertex >= this.vertexIDs.length ||
+    this.distance[targetVertex] === Infinity
+  ) {
+    return false;
+  }
+
+  var path = this.buildPathToVertex(targetVertex);
+  if (!path || path.length < 2 || path[0] !== startIndex) {
+    return false;
+  }
+
+  var labels = [];
+  for (var i = 0; i < path.length; i++) {
+    labels.push(this.vertexLabels[path[i]]);
+  }
+
+  var targetLabel = this.vertexLabels[targetVertex];
+  var message =
+    "Path to " +
+    targetLabel +
+    ": " +
+    labels.join(" \u2192 ") +
+    ".\nTotal cost = " +
+    this.formatDistance(this.distance[targetVertex]) +
+    ".";
+
+  if (persistent) {
+    message +=
+      "\nThis is the globally shortest route from " + startLabel + ".";
+  } else {
+    message += "\nEdges flash briefly before returning to tree colors.";
+  }
+  this.setInfoPanelText(message);
+
+  if (persistent) {
+    this.highlightIdentifiedPath(startIndex, targetVertex);
+  } else {
+    this.flashCandidatePath(path);
+  }
+
+  return true;
+};
+
+DirectedDijkstra.prototype.highlightAllDiscoveredPaths = function (
+  startIndex,
+  shortestTarget
+) {
+  if (!this.vertexIDs || this.vertexIDs.length === 0) {
+    return;
+  }
+  if (typeof startIndex !== "number" || startIndex < 0) {
+    return;
+  }
+  if (startIndex >= this.vertexIDs.length) {
+    return;
+  }
+
+  var children = this.buildShortestPathTreeChildren();
+  if (!children || children.length === 0) {
+    return;
+  }
+
+  var visited = new Array(this.vertexIDs.length);
+  for (var i = 0; i < visited.length; i++) {
+    visited[i] = false;
+  }
+
+  var queue = [];
+  queue.push({ index: startIndex, level: 0 });
+  visited[startIndex] = true;
+  var front = 0;
+  var startLabel = this.vertexLabels[startIndex];
+
+  while (front < queue.length) {
+    var currentLevel = queue[front].level;
+    var levelNodes = [];
+
+    while (front < queue.length && queue[front].level === currentLevel) {
+      var item = queue[front++];
+      levelNodes.push(item.index);
+      var childList = children[item.index];
+      if (!childList || childList.length === 0) {
+        continue;
+      }
+      for (var j = 0; j < childList.length; j++) {
+        var child = childList[j];
+        if (child < 0 || child >= visited.length || visited[child]) {
+          continue;
+        }
+        visited[child] = true;
+        queue.push({ index: child, level: currentLevel + 1 });
+      }
+    }
+
+    if (levelNodes.length > 0) {
+      var labels = [];
+      for (var k = 0; k < levelNodes.length; k++) {
+        var nodeIndex = levelNodes[k];
+        labels.push(this.vertexLabels[nodeIndex]);
+        this.cmd("SetHighlight", this.vertexIDs[nodeIndex], 1);
+      }
+      this.setInfoPanelText(
+        "BFS level " +
+          currentLevel +
+          ": " +
+          labels.join(", ") +
+          ".\nHighlighting nodes discovered at this depth."
+      );
+      this.cmd("Step");
+      for (var r = 0; r < levelNodes.length; r++) {
+        this.cmd("SetHighlight", this.vertexIDs[levelNodes[r]], 0);
+      }
+    }
+
+    for (var p = 0; p < levelNodes.length; p++) {
+      var vertex = levelNodes[p];
+      if (vertex === startIndex) {
+        continue;
+      }
+      var persistent =
+        typeof shortestTarget === "number" && vertex === shortestTarget;
+      this.previewPathToVertex(startIndex, vertex, startLabel, persistent);
+    }
+  }
 };
 
 DirectedDijkstra.prototype.animateRelaxationPath = function (targetVertex) {
@@ -2150,19 +2519,20 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
   this.cmd("SetAlpha", this.highlightCircleID, 0);
 
   var targetIndex = this.choosePathTargetIndex(startIndex);
+  this.highlightAllDiscoveredPaths(startIndex, targetIndex);
+
   if (targetIndex !== -1) {
-    this.highlightIdentifiedPath(startIndex, targetIndex);
     var targetLabel = this.vertexLabels[targetIndex];
     this.setInfoPanelText(
-      "Dijkstra finished. Shortest path from " +
+      "Dijkstra finished.\nAll discovered tree paths flashed level-by-level, and the gold route from " +
         startLabel +
         " to " +
         targetLabel +
-        " is highlighted in gold."
+        " is the minimum-distance path."
     );
   } else {
     this.setInfoPanelText(
-      "Dijkstra finished. Unreachable vertices keep distance \u221E."
+      "Dijkstra finished.\nNo other vertices were reachable beyond the start node."
     );
   }
 
@@ -2171,7 +2541,7 @@ DirectedDijkstra.prototype.runDijkstra = function (startIndex) {
 
 DirectedDijkstra.prototype.choosePathTargetIndex = function (startIndex) {
   var bestIndex = -1;
-  var bestDistance = -1;
+  var bestDistance = Infinity;
 
   for (var i = 0; i < this.distance.length; i++) {
     if (i === startIndex) {
@@ -2180,7 +2550,7 @@ DirectedDijkstra.prototype.choosePathTargetIndex = function (startIndex) {
     if (this.distance[i] === Infinity) {
       continue;
     }
-    if (this.distance[i] > bestDistance) {
+    if (this.distance[i] < bestDistance) {
       bestDistance = this.distance[i];
       bestIndex = i;
     }
