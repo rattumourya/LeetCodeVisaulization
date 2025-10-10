@@ -42,7 +42,8 @@ function AnimatedLabel(id, val, center, initialWidth)
     this.leftWidth = -1;
     this.centerWidth = -1;
     this.highlightIndex = -1;
-	this.fontStyle = 14; 
+        this.fontStyle = 14;
+    this.lineSpacing = 12;
 }
 
 AnimatedLabel.prototype = new AnimatedObject();
@@ -135,11 +136,11 @@ AnimatedLabel.prototype.draw = function(ctx)
 	}
 	else
 	{
-		var offset = (this.centering)?  (1.0 - strList.length) / 2.0 : 0;
-		for (var i = 0; i < strList.length; i++)
-		{
-			ctx.fillText(strList[i], this.x, this.y + offset + i * 12);
-		}		
+                var offset = (this.centering)?  (1.0 - strList.length) / 2.0 : 0;
+                for (var i = 0; i < strList.length; i++)
+                {
+                        ctx.fillText(strList[i], this.x, this.y + offset + i * this.lineSpacing);
+                }
 	}
 	ctx.closePath();
 }
@@ -417,4 +418,11 @@ UndoDeleteLabel.prototype.undoInitialStep = function(world)
 
 AnimatedLabel.prototype.setTextStyle = function(fontStyle) {
     this.fontStyle = fontStyle;
+};
+
+AnimatedLabel.prototype.setLineSpacing = function(lineSpacing) {
+    if (isNaN(lineSpacing)) {
+        return;
+    }
+    this.lineSpacing = lineSpacing;
 };
