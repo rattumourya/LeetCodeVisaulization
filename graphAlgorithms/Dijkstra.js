@@ -130,6 +130,15 @@ DijkstraVisualization.CODE_LINES = [
 DijkstraVisualization.prototype.init = function (am, w, h) {
   DijkstraVisualization.superclass.init.call(this, am, w, h);
 
+  if (
+    typeof objectManager !== "undefined" &&
+    objectManager &&
+    objectManager.statusReport
+  ) {
+    objectManager.statusReport.setText("");
+    objectManager.statusReport.addedToScene = false;
+  }
+
   this.controls = [];
   this.addControls();
 
