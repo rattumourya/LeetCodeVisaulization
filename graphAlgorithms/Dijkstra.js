@@ -46,11 +46,12 @@ DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 DijkstraVisualization.CODE_TITLE_Y = 900;
 DijkstraVisualization.CODE_START_Y = 920;
 DijkstraVisualization.CODE_LINE_HEIGHT = 14;
-DijkstraVisualization.CODE_FONT = "12px 'Courier New'";
+DijkstraVisualization.CODE_FONT = "12px 'Courier New', monospace";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
 DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
 
-DijkstraVisualization.BIDIRECTIONAL_CURVE = 0.18;
+DijkstraVisualization.BIDIRECTIONAL_CURVE_INNER = 0.18;
+DijkstraVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
 
 DijkstraVisualization.TITLE_FONT = "bold 34";
 
@@ -122,6 +123,7 @@ DijkstraVisualization.prototype.init = function (am, w, h) {
 
   this.vertexIDs = [];
   this.edgeMap = {};
+  this.bidirectionalOrientation = {};
   this.distanceCellIDs = [];
   this.knownCellIDs = [];
   this.parentCellIDs = [];
@@ -163,6 +165,7 @@ DijkstraVisualization.prototype.reset = function () {
   this.nextIndex = 0;
   this.vertexIDs = [];
   this.edgeMap = {};
+  this.bidirectionalOrientation = {};
   this.distanceCellIDs = [];
   this.knownCellIDs = [];
   this.parentCellIDs = [];
@@ -405,14 +408,38 @@ DijkstraVisualization.prototype.edgeKey = function (from, to) {
   return from + "->" + to;
 };
 
+DijkstraVisualization.prototype.pairKey = function (a, b) {
+  return a < b ? a + ":" + b : b + ":" + a;
+};
+
 DijkstraVisualization.prototype.shouldCurveEdge = function (from, to) {
-  return this.graphHasEdge(to, from);
+  return from !== to && this.graphHasEdge(to, from);
 };
 
 DijkstraVisualization.prototype.curveForPair = function (from, to) {
-  return from < to
-    ? DijkstraVisualization.BIDIRECTIONAL_CURVE
-    : -DijkstraVisualization.BIDIRECTIONAL_CURVE;
+  var orientation = this.getBidirectionalOrientation(from, to);
+  var magnitude = from < to
+    ? DijkstraVisualization.BIDIRECTIONAL_CURVE_INNER
+    : DijkstraVisualization.BIDIRECTIONAL_CURVE_OUTER;
+  return orientation * magnitude;
+};
+
+DijkstraVisualization.prototype.getBidirectionalOrientation = function (
+  from,
+  to
+) {
+  var key = this.pairKey(from, to);
+  if (this.bidirectionalOrientation.hasOwnProperty(key)) {
+    return this.bidirectionalOrientation[key];
+  }
+
+  var fromVertex = DijkstraVisualization.VERTEX_DATA[from];
+  var toVertex = DijkstraVisualization.VERTEX_DATA[to];
+  var midY = (fromVertex.y + toVertex.y) / 2;
+  var orientation = midY < DijkstraVisualization.TABLE_HEADER_Y ? -1 : 1;
+
+  this.bidirectionalOrientation[key] = orientation;
+  return orientation;
 };
 
 DijkstraVisualization.prototype.graphHasEdge = function (from, to) {
