@@ -46,8 +46,11 @@ DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 DijkstraVisualization.CODE_TITLE_Y = 900;
 DijkstraVisualization.CODE_START_Y = 920;
 DijkstraVisualization.CODE_LINE_HEIGHT = 14;
-DijkstraVisualization.CODE_LEFT_X = DijkstraVisualization.TABLE_COLUMNS[0].x;
-DijkstraVisualization.CODE_FONT = "bold 12px 'Courier New', monospace";
+DijkstraVisualization.CODE_LEFT_X =
+  DijkstraVisualization.TABLE_COLUMNS[0].x -
+  DijkstraVisualization.TABLE_COLUMNS[0].width / 2 +
+  5;
+DijkstraVisualization.CODE_FONT = "bold 13px 'Courier New', monospace";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
 DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
 
@@ -230,10 +233,9 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.statusID = null;
 };
 
-DijkstraVisualization.prototype.updateStatus = function (text) {
-  if (this.statusID !== null && this.statusID >= 0) {
-    this.cmd("SetText", this.statusID, text);
-  }
+DijkstraVisualization.prototype.updateStatus = function () {
+  // Status messaging has been fully removed from the layout.
+  return;
 };
 
 DijkstraVisualization.prototype.createGraph = function () {
