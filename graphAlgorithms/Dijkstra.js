@@ -471,11 +471,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.resetGraphState();
 
   var startLabel = DijkstraVisualization.VERTEX_DATA[startIndex].label;
-  this.cmd(
-    "SetText",
-    this.statusID,
-    "Running Dijkstra from vertex " + startLabel + "."
-  );
+  this.updateStatus("Running Dijkstra from vertex " + startLabel + ".");
 
   var vertexCount = DijkstraVisualization.VERTEX_DATA.length;
   var dist = new Array(vertexCount);
