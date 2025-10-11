@@ -46,9 +46,11 @@ DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 DijkstraVisualization.CODE_TITLE_Y = 900;
 DijkstraVisualization.CODE_START_Y = 920;
 DijkstraVisualization.CODE_LINE_HEIGHT = 14;
-DijkstraVisualization.CODE_FONT = "11px 'Courier New'";
+DijkstraVisualization.CODE_FONT = "12px 'Courier New'";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
 DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
+
+DijkstraVisualization.BIDIRECTIONAL_CURVE = 0.18;
 
 DijkstraVisualization.TITLE_FONT = "bold 34";
 
@@ -249,12 +251,15 @@ DijkstraVisualization.prototype.createGraph = function () {
         to: edge.to,
         weight: edge.weight,
       };
+      var curve = this.shouldCurveEdge(from, edge.to)
+        ? this.curveForPair(from, edge.to)
+        : 0;
       this.cmd(
         "Connect",
         this.vertexIDs[from],
         this.vertexIDs[edge.to],
         DijkstraVisualization.EDGE_COLOR,
-        0,
+        curve,
         1,
         String(edge.weight)
       );
@@ -398,6 +403,26 @@ DijkstraVisualization.prototype.createCodeDisplay = function () {
 
 DijkstraVisualization.prototype.edgeKey = function (from, to) {
   return from + "->" + to;
+};
+
+DijkstraVisualization.prototype.shouldCurveEdge = function (from, to) {
+  return this.graphHasEdge(to, from);
+};
+
+DijkstraVisualization.prototype.curveForPair = function (from, to) {
+  return from < to
+    ? DijkstraVisualization.BIDIRECTIONAL_CURVE
+    : -DijkstraVisualization.BIDIRECTIONAL_CURVE;
+};
+
+DijkstraVisualization.prototype.graphHasEdge = function (from, to) {
+  var adjacency = DijkstraVisualization.GRAPH_EDGES[from] || [];
+  for (var i = 0; i < adjacency.length; i++) {
+    if (adjacency[i].to === to) {
+      return true;
+    }
+  }
+  return false;
 };
 
 DijkstraVisualization.prototype.highlightCodeLine = function (line) {
