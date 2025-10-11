@@ -46,7 +46,7 @@ DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 DijkstraVisualization.CODE_TITLE_Y = 900;
 DijkstraVisualization.CODE_START_Y = 920;
 DijkstraVisualization.CODE_LINE_HEIGHT = 14;
-DijkstraVisualization.CODE_FONT = "12px 'Courier New', monospace";
+DijkstraVisualization.CODE_FONT = "bold 12px 'Courier New', monospace";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
 DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
 
