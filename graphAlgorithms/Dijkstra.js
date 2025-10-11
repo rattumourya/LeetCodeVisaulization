@@ -46,9 +46,18 @@ DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 DijkstraVisualization.CODE_TITLE_Y = 900;
 DijkstraVisualization.CODE_START_Y = 920;
 DijkstraVisualization.CODE_LINE_HEIGHT = 14;
+DijkstraVisualization.CODE_LEFT_X = DijkstraVisualization.TABLE_COLUMNS[0].x;
 DijkstraVisualization.CODE_FONT = "bold 12px 'Courier New', monospace";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
 DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
+
+DijkstraVisualization.PATH_TITLE_FONT = "bold 18";
+DijkstraVisualization.PATH_FONT = "bold 14px 'Courier New', monospace";
+DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
+DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
+DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 360;
+DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
+DijkstraVisualization.PATH_LINE_HEIGHT = 26;
 
 DijkstraVisualization.BIDIRECTIONAL_CURVE_INNER = 0.18;
 DijkstraVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
@@ -129,6 +138,8 @@ DijkstraVisualization.prototype.init = function (am, w, h) {
   this.parentCellIDs = [];
   this.vertexCellIDs = [];
   this.codeID = [];
+  this.pathLabelIDs = [];
+  this.pathsTitleID = -1;
   this.currentCodeLine = -1;
   this.statusID = -1;
   this.titleID = -1;
@@ -171,6 +182,8 @@ DijkstraVisualization.prototype.reset = function () {
   this.parentCellIDs = [];
   this.vertexCellIDs = [];
   this.codeID = [];
+  this.pathLabelIDs = [];
+  this.pathsTitleID = -1;
   this.currentCodeLine = -1;
 
   if (
@@ -375,21 +388,9 @@ DijkstraVisualization.prototype.createTable = function () {
 };
 
 DijkstraVisualization.prototype.createCodeDisplay = function () {
-  var titleID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    titleID,
-    "Java Paradigm",
-    DijkstraVisualization.CANVAS_WIDTH / 2,
-    DijkstraVisualization.CODE_TITLE_Y,
-    1
-  );
-  this.cmd("SetTextStyle", titleID, "bold 22");
-  this.cmd("SetForegroundColor", titleID, "#0b3d91");
-
   this.codeID = this.addCodeToCanvasBase(
     DijkstraVisualization.CODE_LINES,
-    DijkstraVisualization.CANVAS_WIDTH / 2 - 240,
+    DijkstraVisualization.CODE_LEFT_X,
     DijkstraVisualization.CODE_START_Y,
     DijkstraVisualization.CODE_LINE_HEIGHT,
     DijkstraVisualization.CODE_STANDARD_COLOR,
@@ -401,6 +402,86 @@ DijkstraVisualization.prototype.createCodeDisplay = function () {
     for (var j = 0; j < this.codeID[i].length; j++) {
       this.cmd("SetTextStyle", this.codeID[i][j], DijkstraVisualization.CODE_FONT);
     }
+  }
+
+  this.pathsTitleID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.pathsTitleID,
+    "Shortest Paths",
+    DijkstraVisualization.PATH_START_X,
+    DijkstraVisualization.CODE_TITLE_Y,
+    0
+  );
+  this.cmd("SetTextStyle", this.pathsTitleID, DijkstraVisualization.PATH_TITLE_FONT);
+  this.cmd("SetForegroundColor", this.pathsTitleID, DijkstraVisualization.PATH_TITLE_COLOR);
+};
+
+DijkstraVisualization.prototype.clearPathsDisplay = function () {
+  if (!this.pathLabelIDs) {
+    this.pathLabelIDs = [];
+  }
+
+  for (var i = 0; i < this.pathLabelIDs.length; i++) {
+    this.cmd("Delete", this.pathLabelIDs[i]);
+  }
+
+  this.pathLabelIDs = [];
+};
+
+DijkstraVisualization.prototype.buildPathString = function (
+  vertexIndex,
+  parent,
+  startIndex
+) {
+  var labels = [];
+  var current = vertexIndex;
+  var guard = 0;
+  while (current !== -1 && guard <= parent.length) {
+    labels.push(DijkstraVisualization.VERTEX_DATA[current].label);
+    if (current === startIndex) {
+      break;
+    }
+    current = parent[current];
+    guard++;
+  }
+
+  labels.reverse();
+  return labels.join(" → ");
+};
+
+DijkstraVisualization.prototype.displayShortestPaths = function (
+  startIndex,
+  parent,
+  dist
+) {
+  this.clearPathsDisplay();
+
+  if (this.pathsTitleID >= 0) {
+    this.cmd(
+      "SetText",
+      this.pathsTitleID,
+      "Paths from " + DijkstraVisualization.VERTEX_DATA[startIndex].label
+    );
+  }
+
+  for (var i = 0; i < dist.length; i++) {
+    if (dist[i] === Infinity) {
+      continue;
+    }
+
+    var pathText = this.buildPathString(i, parent, startIndex);
+    var pathID = this.nextIndex++;
+    var y =
+      DijkstraVisualization.PATH_START_Y +
+      this.pathLabelIDs.length * DijkstraVisualization.PATH_LINE_HEIGHT;
+
+    this.cmd("CreateLabel", pathID, pathText, DijkstraVisualization.PATH_START_X, y, 0);
+    this.cmd("SetTextStyle", pathID, DijkstraVisualization.PATH_FONT);
+    this.cmd("SetForegroundColor", pathID, DijkstraVisualization.PATH_TEXT_COLOR);
+
+    this.pathLabelIDs.push(pathID);
+    this.cmd("Step");
   }
 };
 
@@ -521,6 +602,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
   this.resetTableState();
   this.resetGraphState();
+  this.clearPathsDisplay();
 
   var startLabel = DijkstraVisualization.VERTEX_DATA[startIndex].label;
   this.updateStatus("Running Dijkstra from vertex " + startLabel + ".");
@@ -686,6 +768,8 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.cmd("Step");
 
   this.highlightCodeLine(-1);
+
+  this.displayShortestPaths(startIndex, parent, dist);
 
   return this.commands;
 };
