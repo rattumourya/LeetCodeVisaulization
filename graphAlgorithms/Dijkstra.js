@@ -12,8 +12,9 @@ DijkstraVisualization.CANVAS_WIDTH = 720;
 DijkstraVisualization.CANVAS_HEIGHT = 1280;
 
 DijkstraVisualization.TITLE_Y = 60;
-DijkstraVisualization.STATUS_Y = 110;
-
+// The prior layout included a status label along the bottom of the canvas.
+// The revised design removes that status strip, so we no longer track
+// coordinates for it.
 DijkstraVisualization.NODE_RADIUS = 32;
 DijkstraVisualization.NODE_COLOR = "#f6f7fb";
 DijkstraVisualization.NODE_BORDER_COLOR = "#283593";
@@ -44,21 +45,20 @@ DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 
 DijkstraVisualization.CODE_TITLE_Y = 900;
 DijkstraVisualization.CODE_START_Y = 920;
-DijkstraVisualization.CODE_LINE_HEIGHT = 16;
-DijkstraVisualization.CODE_FONT = "15px 'Courier New'";
+DijkstraVisualization.CODE_LINE_HEIGHT = 14;
+DijkstraVisualization.CODE_FONT = "11px 'Courier New'";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
 DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
 
-DijkstraVisualization.STATUS_FONT = "bold 22";
 DijkstraVisualization.TITLE_FONT = "bold 34";
 
 DijkstraVisualization.VERTEX_DATA = [
-  { label: "A", x: 150, y: 220 },
-  { label: "B", x: 570, y: 220 },
-  { label: "C", x: 150, y: 380 },
-  { label: "D", x: 570, y: 380 },
-  { label: "E", x: 150, y: 540 },
-  { label: "F", x: 570, y: 540 },
+  { label: "A", x: 150, y: 360 },
+  { label: "B", x: 360, y: 160 },
+  { label: "C", x: 230, y: 500 },
+  { label: "D", x: 520, y: 320 },
+  { label: "E", x: 460, y: 520 },
+  { label: "F", x: 640, y: 420 },
 ];
 
 DijkstraVisualization.GRAPH_EDGES = [
@@ -208,17 +208,14 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.cmd("SetTextStyle", this.titleID, DijkstraVisualization.TITLE_FONT);
   this.cmd("SetForegroundColor", this.titleID, "#102a43");
 
-  this.statusID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.statusID,
-    "Select a start vertex and run the algorithm.",
-    DijkstraVisualization.CANVAS_WIDTH / 2,
-    DijkstraVisualization.STATUS_Y,
-    1
-  );
-  this.cmd("SetTextStyle", this.statusID, DijkstraVisualization.STATUS_FONT);
-  this.cmd("SetForegroundColor", this.statusID, "#1d3557");
+  // Remove the animation status banner from the layout.
+  this.statusID = null;
+};
+
+DijkstraVisualization.prototype.updateStatus = function (text) {
+  if (this.statusID !== null && this.statusID >= 0) {
+    this.cmd("SetText", this.statusID, text);
+  }
 };
 
 DijkstraVisualization.prototype.createGraph = function () {
@@ -539,9 +536,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
     }
 
     this.highlightCodeLine(12);
-    this.cmd(
-      "SetText",
-      this.statusID,
+    this.updateStatus(
       "Processing vertex " +
         DijkstraVisualization.VERTEX_DATA[u].label +
         " with current distance " +
@@ -575,9 +570,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
       this.highlightCodeLine(15);
       var alternative = dist[u] + weight;
-      this.cmd(
-        "SetText",
-        this.statusID,
+      this.updateStatus(
         "Checking edge " +
           fromLabel +
           " → " +
@@ -593,9 +586,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
         dist[v] = alternative;
         parent[v] = u;
         this.updateDistanceCell(v, alternative, true);
-        this.cmd(
-          "SetText",
-          this.statusID,
+        this.updateStatus(
           "Updated distance of " +
             toLabel +
             " to " +
@@ -616,9 +607,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
         pq.push({ vertex: v, distance: alternative });
         this.cmd("Step");
       } else {
-        this.cmd(
-          "SetText",
-          this.statusID,
+        this.updateStatus(
           "Keeping current distance of " +
             toLabel +
             " (" +
@@ -634,9 +623,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
     }
 
     this.highlightCodeLine(20);
-    this.cmd(
-      "SetText",
-      this.statusID,
+    this.updateStatus(
       "Completed processing vertex " +
         DijkstraVisualization.VERTEX_DATA[u].label +
         "."
@@ -645,7 +632,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   }
 
   this.highlightCodeLine(21);
-  this.cmd("SetText", this.statusID, "Dijkstra computation complete.");
+  this.updateStatus("Dijkstra computation complete.");
   this.cmd("Step");
   this.highlightCodeLine(22);
   this.cmd("Step");
