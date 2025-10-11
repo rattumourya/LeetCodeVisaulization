@@ -28,21 +28,21 @@ UndirectedCycleDetection.STATUS_INFO_Y =
 
 UndirectedCycleDetection.GRAPH_AREA_CENTER_X = 360;
 UndirectedCycleDetection.GRAPH_NODE_RADIUS = 22;
-UndirectedCycleDetection.GRAPH_NODE_COLOR = "#0d1b2a";
-UndirectedCycleDetection.GRAPH_NODE_BORDER = "#415a77";
-UndirectedCycleDetection.GRAPH_NODE_TEXT = "#f0f4f8";
-UndirectedCycleDetection.GRAPH_NODE_VISITED_COLOR = "#007f5f";
-UndirectedCycleDetection.GRAPH_NODE_VISITED_TEXT_COLOR = "#f1faee";
-UndirectedCycleDetection.GRAPH_NODE_CYCLE_COLOR = "#9d0208";
-UndirectedCycleDetection.GRAPH_NODE_CYCLE_TEXT_COLOR = "#f8f9fa";
+UndirectedCycleDetection.GRAPH_NODE_COLOR = "#e6f4ff";
+UndirectedCycleDetection.GRAPH_NODE_BORDER = "#1f7a8c";
+UndirectedCycleDetection.GRAPH_NODE_TEXT = "#0b3d91";
+UndirectedCycleDetection.GRAPH_NODE_VISITED_COLOR = "#fef3bd";
+UndirectedCycleDetection.GRAPH_NODE_VISITED_TEXT_COLOR = "#7f4400";
+UndirectedCycleDetection.GRAPH_NODE_CYCLE_COLOR = "#ffd6d9";
+UndirectedCycleDetection.GRAPH_NODE_CYCLE_TEXT_COLOR = "#8b1d3f";
 UndirectedCycleDetection.HIGHLIGHT_RADIUS = UndirectedCycleDetection.GRAPH_NODE_RADIUS;
-UndirectedCycleDetection.ACTIVE_VERTEX_RING_COLOR = "#ff6d00";
+UndirectedCycleDetection.ACTIVE_VERTEX_RING_COLOR = "#ff9e00";
 UndirectedCycleDetection.ACTIVE_VERTEX_RING_RADIUS_OFFSET = 5;
 UndirectedCycleDetection.ACTIVE_VERTEX_RING_LAYER = 5;
 UndirectedCycleDetection.GRAPH_NODE_LAYER = 6;
 UndirectedCycleDetection.TRAVERSAL_HIGHLIGHT_LAYER = 7;
 UndirectedCycleDetection.EDGE_COLOR = "#1d3557";
-UndirectedCycleDetection.EDGE_VISITED_COLOR = "#2b9348";
+UndirectedCycleDetection.EDGE_VISITED_COLOR = "#74c69d";
 UndirectedCycleDetection.EDGE_THICKNESS = 3;
 UndirectedCycleDetection.EDGE_ACTIVE_THICKNESS = 2;
 UndirectedCycleDetection.EDGE_TREE_THICKNESS = 6;
@@ -150,6 +150,15 @@ UndirectedCycleDetection.prototype.init = function (am, w, h) {
   this.controls = [];
   this.addControls();
 
+  if (this.animationManager && this.animationManager.setAllLayers) {
+    this.animationManager.setAllLayers([
+      0,
+      UndirectedCycleDetection.ACTIVE_VERTEX_RING_LAYER,
+      UndirectedCycleDetection.GRAPH_NODE_LAYER,
+      UndirectedCycleDetection.TRAVERSAL_HIGHLIGHT_LAYER
+    ]);
+  }
+
   this.vertexLabels = [];
   this.vertexPositions = [];
   this.adjacencyList = [];
@@ -181,6 +190,9 @@ UndirectedCycleDetection.prototype.init = function (am, w, h) {
   this.parents = [];
   this.cycleFound = false;
   this.cyclePath = [];
+  if (typeof this.nextGraphShouldIncludeCycle !== "boolean") {
+    this.nextGraphShouldIncludeCycle = true;
+  }
 
   this.implementAction(this.reset.bind(this), 0);
 };
@@ -1304,12 +1316,40 @@ UndirectedCycleDetection.prototype.computeTemplateLayout = function (vertexCount
 UndirectedCycleDetection.prototype.generateRandomGraph = function (vertexCount) {
   this.vertexPositions = this.computeTemplateLayout(vertexCount);
 
+  var requireCycle = true;
+  if (typeof this.nextGraphShouldIncludeCycle === "boolean") {
+    requireCycle = this.nextGraphShouldIncludeCycle;
+  }
+  this.nextGraphShouldIncludeCycle = !requireCycle;
+
   var allowed = UndirectedCycleDetection.TEMPLATE_ALLOWED;
   var curves = UndirectedCycleDetection.TEMPLATE_CURVES;
   var edges = [];
   var existing = {};
+  var parents = new Array(vertexCount);
+  for (var idx = 0; idx < vertexCount; idx++) {
+    parents[idx] = idx;
+  }
 
-  var addEdge = function (u, v) {
+  var find = function (x) {
+    while (parents[x] !== x) {
+      parents[x] = parents[parents[x]];
+      x = parents[x];
+    }
+    return x;
+  };
+
+  var union = function (a, b) {
+    var rootA = find(a);
+    var rootB = find(b);
+    if (rootA === rootB) {
+      return false;
+    }
+    parents[rootB] = rootA;
+    return true;
+  };
+
+  var addEdgeCommon = function (u, v) {
     if (u === v) {
       return false;
     }
@@ -1332,6 +1372,15 @@ UndirectedCycleDetection.prototype.generateRandomGraph = function (vertexCount) 
     return true;
   };
 
+  var canAddEdge = function (u, v) {
+    if (u === v) {
+      return false;
+    }
+    var a = Math.min(u, v);
+    var b = Math.max(u, v);
+    return !existing[a + "-" + b];
+  };
+
   for (var v = 1; v < vertexCount; v++) {
     var neighbors = [];
     for (var u = 0; u < vertexCount; u++) {
@@ -1339,31 +1388,75 @@ UndirectedCycleDetection.prototype.generateRandomGraph = function (vertexCount) 
         neighbors.push(u);
       }
     }
-    if (neighbors.length > 0) {
-      for (var t = neighbors.length - 1; t >= 0; t--) {
-        var swap = Math.floor(Math.random() * (t + 1));
-        var candidate = neighbors[swap];
-        neighbors[swap] = neighbors[t];
-        neighbors[t] = candidate;
-        if (addEdge(candidate, v)) {
-          break;
+    for (var t = neighbors.length - 1; t > 0; t--) {
+      var swapIndex = Math.floor(Math.random() * (t + 1));
+      var temp = neighbors[t];
+      neighbors[t] = neighbors[swapIndex];
+      neighbors[swapIndex] = temp;
+    }
+
+    var attached = false;
+    for (var n = 0; n < neighbors.length && !attached; n++) {
+      var candidate = neighbors[n];
+      if (!canAddEdge(candidate, v)) {
+        continue;
+      }
+      if (union(candidate, v)) {
+        attached = addEdgeCommon(candidate, v);
+      }
+    }
+
+    if (!attached) {
+      for (var fallback = 0; fallback < vertexCount && !attached; fallback++) {
+        if (fallback === v) {
+          continue;
+        }
+        if (!allowed[v] || !allowed[v][fallback]) {
+          continue;
+        }
+        if (!canAddEdge(fallback, v)) {
+          continue;
+        }
+        if (union(fallback, v)) {
+          attached = addEdgeCommon(fallback, v);
         }
       }
     }
   }
 
-  var edgePercent = 0.45;
-  for (var i = 0; i < vertexCount; i++) {
-    for (var j = i + 1; j < vertexCount; j++) {
-      if (!allowed[i] || !allowed[i][j]) {
-        continue;
+  if (requireCycle) {
+    var candidatePairs = [];
+    for (var i = 0; i < vertexCount; i++) {
+      for (var j = i + 1; j < vertexCount; j++) {
+        if (!allowed[i] || !allowed[i][j]) {
+          continue;
+        }
+        if (existing[i + "-" + j]) {
+          continue;
+        }
+        candidatePairs.push({ u: i, v: j });
       }
-      if (existing[i + "-" + j]) {
-        continue;
+    }
+
+    for (var c = candidatePairs.length - 1; c > 0; c--) {
+      var randIdx = Math.floor(Math.random() * (c + 1));
+      var swap = candidatePairs[c];
+      candidatePairs[c] = candidatePairs[randIdx];
+      candidatePairs[randIdx] = swap;
+    }
+
+    var extraAdded = false;
+    var additionProbability = 0.45;
+    for (var pairIndex = 0; pairIndex < candidatePairs.length; pairIndex++) {
+      var pair = candidatePairs[pairIndex];
+      if (Math.random() <= additionProbability) {
+        extraAdded = addEdgeCommon(pair.u, pair.v) || extraAdded;
       }
-      if (Math.random() <= edgePercent) {
-        addEdge(i, j);
-      }
+    }
+
+    if (!extraAdded && candidatePairs.length > 0) {
+      var guaranteed = candidatePairs[0];
+      addEdgeCommon(guaranteed.u, guaranteed.v);
     }
   }
 
@@ -1375,18 +1468,49 @@ UndirectedCycleDetection.prototype.generateRandomGraph = function (vertexCount) 
     }
   }
   if (!hasCurve) {
-    for (var r = 0; r < vertexCount && !hasCurve; r++) {
-      for (var c = r + 1; c < vertexCount && !hasCurve; c++) {
-        if (!allowed[r] || !allowed[r][c]) {
-          continue;
-        }
-        if (
-          curves[r] &&
-          typeof curves[r][c] === "number" &&
-          Math.abs(curves[r][c]) > 0.01
-        ) {
-          if (addEdge(r, c)) {
-            hasCurve = true;
+    var appliedExistingCurve = false;
+    for (var edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+      var existingEdge = edges[edgeIndex];
+      var curveValue = 0;
+      if (
+        curves[existingEdge.u] &&
+        typeof curves[existingEdge.u][existingEdge.v] === "number" &&
+        Math.abs(curves[existingEdge.u][existingEdge.v]) > 0.01
+      ) {
+        curveValue = curves[existingEdge.u][existingEdge.v];
+      } else if (
+        curves[existingEdge.v] &&
+        typeof curves[existingEdge.v][existingEdge.u] === "number" &&
+        Math.abs(curves[existingEdge.v][existingEdge.u]) > 0.01
+      ) {
+        curveValue = curves[existingEdge.v][existingEdge.u];
+      }
+
+      if (curveValue !== 0) {
+        existingEdge.curve = curveValue;
+        appliedExistingCurve = true;
+        hasCurve = true;
+        break;
+      }
+    }
+
+    if (!appliedExistingCurve && requireCycle) {
+      for (var r = 0; r < vertexCount && !hasCurve; r++) {
+        for (var cIdx = r + 1; cIdx < vertexCount && !hasCurve; cIdx++) {
+          if (!allowed[r] || !allowed[r][cIdx]) {
+            continue;
+          }
+          if (existing[r + "-" + cIdx]) {
+            continue;
+          }
+          if (
+            curves[r] &&
+            typeof curves[r][cIdx] === "number" &&
+            Math.abs(curves[r][cIdx]) > 0.01
+          ) {
+            if (addEdgeCommon(r, cIdx)) {
+              hasCurve = true;
+            }
           }
         }
       }
