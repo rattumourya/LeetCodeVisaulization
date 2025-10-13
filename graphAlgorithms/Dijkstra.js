@@ -15,7 +15,7 @@ DijkstraVisualization.TITLE_Y = 60;
 // The prior layout included a status label along the bottom of the canvas.
 // The revised design removes that status strip, so we no longer track
 // coordinates for it.
-DijkstraVisualization.NODE_RADIUS = 32;
+DijkstraVisualization.NODE_RADIUS = 26;
 DijkstraVisualization.NODE_COLOR = "#f6f7fb";
 DijkstraVisualization.NODE_BORDER_COLOR = "#283593";
 DijkstraVisualization.NODE_TEXT_COLOR = "#0d1b2a";
@@ -27,7 +27,7 @@ DijkstraVisualization.EDGE_COLOR = "#424874";
 DijkstraVisualization.EDGE_HIGHLIGHT_COLOR = "#ff7043";
 DijkstraVisualization.EDGE_THICKNESS = 3;
 
-DijkstraVisualization.TABLE_HEADER_Y = 560;
+DijkstraVisualization.TABLE_HEADER_Y = 540;
 DijkstraVisualization.TABLE_ROW_HEIGHT = 40;
 DijkstraVisualization.TABLE_FIRST_ROW_Y =
   DijkstraVisualization.TABLE_HEADER_Y + 50;
@@ -43,8 +43,8 @@ DijkstraVisualization.TABLE_HEADER_COLOR = "#1a237e";
 DijkstraVisualization.TABLE_TEXT_COLOR = "#1f2933";
 DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 
-DijkstraVisualization.CODE_TITLE_Y = 860;
-DijkstraVisualization.CODE_START_Y = 880;
+DijkstraVisualization.CODE_TITLE_Y = 840;
+DijkstraVisualization.CODE_START_Y = 860;
 DijkstraVisualization.CODE_LINE_HEIGHT = 14;
 DijkstraVisualization.CODE_LEFT_X =
   DijkstraVisualization.TABLE_COLUMNS[0].x -
@@ -62,21 +62,32 @@ DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 400;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
 DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 
+DijkstraVisualization.INFO_Y = DijkstraVisualization.TITLE_Y + 48;
+DijkstraVisualization.INFO_FONT = "bold 20";
+DijkstraVisualization.INFO_COLOR = "#264653";
+DijkstraVisualization.DEFAULT_INFO_TEXT =
+  "Click 'Run Dijkstra' to watch the animation. Use 'New Graph' for variety.";
+
 DijkstraVisualization.BIDIRECTIONAL_CURVE_INNER = 0.18;
 DijkstraVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
 
 DijkstraVisualization.TITLE_FONT = "bold 34";
 
-DijkstraVisualization.VERTEX_DATA = [
-  { label: "A", x: 150, y: 360 },
-  { label: "B", x: 360, y: 160 },
-  { label: "C", x: 230, y: 500 },
-  { label: "D", x: 520, y: 320 },
-  { label: "E", x: 460, y: 520 },
-  { label: "F", x: 640, y: 420 },
+DijkstraVisualization.GRAPH_MODE_DEFAULT = "default";
+DijkstraVisualization.GRAPH_MODE_RANDOM = "random";
+DijkstraVisualization.MIN_RANDOM_WEIGHT = 1;
+DijkstraVisualization.MAX_RANDOM_WEIGHT = 12;
+
+DijkstraVisualization.DEFAULT_VERTEX_DATA = [
+  { label: "A", x: 150, y: 310 },
+  { label: "B", x: 320, y: 210 },
+  { label: "C", x: 220, y: 440 },
+  { label: "D", x: 500, y: 270 },
+  { label: "E", x: 420, y: 460 },
+  { label: "F", x: 600, y: 360 },
 ];
 
-DijkstraVisualization.GRAPH_EDGES = [
+DijkstraVisualization.DEFAULT_GRAPH_EDGES = [
   [
     { to: 1, weight: 4 },
     { to: 2, weight: 2 },
@@ -99,6 +110,48 @@ DijkstraVisualization.GRAPH_EDGES = [
     { to: 5, weight: 2 },
   ],
   [],
+];
+
+DijkstraVisualization.RANDOM_LAYOUTS = [
+  [
+    { x: 150, y: 300 },
+    { x: 320, y: 200 },
+    { x: 220, y: 430 },
+    { x: 500, y: 260 },
+    { x: 420, y: 450 },
+    { x: 600, y: 350 },
+  ],
+  [
+    { x: 170, y: 320 },
+    { x: 300, y: 210 },
+    { x: 200, y: 460 },
+    { x: 470, y: 280 },
+    { x: 400, y: 480 },
+    { x: 570, y: 360 },
+  ],
+  [
+    { x: 160, y: 340 },
+    { x: 290, y: 220 },
+    { x: 210, y: 470 },
+    { x: 460, y: 300 },
+    { x: 390, y: 500 },
+    { x: 560, y: 380 },
+  ],
+];
+
+DijkstraVisualization.ALLOWED_EDGE_PAIRS = [
+  [0, 1],
+  [0, 2],
+  [0, 3],
+  [1, 2],
+  [1, 3],
+  [1, 4],
+  [2, 3],
+  [2, 4],
+  [2, 5],
+  [3, 4],
+  [3, 5],
+  [4, 5],
 ];
 
 DijkstraVisualization.CODE_LINES = [
@@ -145,16 +198,23 @@ DijkstraVisualization.prototype.init = function (am, w, h) {
   this.vertexIDs = [];
   this.edgeMap = {};
   this.bidirectionalOrientation = {};
+  this.vertexData = [];
+  this.graphEdges = [];
   this.distanceCellIDs = [];
   this.knownCellIDs = [];
   this.parentCellIDs = [];
   this.vertexCellIDs = [];
   this.codeID = [];
   this.pathLabelIDs = [];
+  this.pathLabelsByVertex = {};
+  this.pathOrder = [];
   this.pathsTitleID = -1;
   this.currentCodeLine = -1;
   this.statusID = -1;
   this.titleID = -1;
+  this.infoLabelID = -1;
+
+  this.graphMode = DijkstraVisualization.GRAPH_MODE_DEFAULT;
 
   this.infinitySymbol = "\u221E";
 
@@ -174,13 +234,27 @@ DijkstraVisualization.prototype.addControls = function () {
     false
   );
 
+  this.newGraphButton = addControlToAlgorithmBar("Button", "New Graph");
+  this.newGraphButton.onclick = this.newGraphCallback.bind(this);
+
   this.resetButton = addControlToAlgorithmBar("Button", "Reset Layout");
   this.resetButton.onclick = this.resetCallback.bind(this);
 
-  this.controls.push(this.startField, this.startButton, this.resetButton);
+  this.controls.push(
+    this.startField,
+    this.startButton,
+    this.newGraphButton,
+    this.resetButton
+  );
 };
 
 DijkstraVisualization.prototype.resetCallback = function () {
+  this.graphMode = DijkstraVisualization.GRAPH_MODE_DEFAULT;
+  this.implementAction(this.reset.bind(this), 0);
+};
+
+DijkstraVisualization.prototype.newGraphCallback = function () {
+  this.graphMode = DijkstraVisualization.GRAPH_MODE_RANDOM;
   this.implementAction(this.reset.bind(this), 0);
 };
 
@@ -189,14 +263,20 @@ DijkstraVisualization.prototype.reset = function () {
   this.vertexIDs = [];
   this.edgeMap = {};
   this.bidirectionalOrientation = {};
+  this.vertexData = [];
+  this.graphEdges = [];
   this.distanceCellIDs = [];
   this.knownCellIDs = [];
   this.parentCellIDs = [];
   this.vertexCellIDs = [];
   this.codeID = [];
   this.pathLabelIDs = [];
+  this.pathLabelsByVertex = {};
+  this.pathOrder = [];
   this.pathsTitleID = -1;
   this.currentCodeLine = -1;
+  this.infoLabelID = -1;
+  this.statusID = -1;
 
   if (
     typeof animationManager !== "undefined" &&
@@ -211,6 +291,12 @@ DijkstraVisualization.prototype.reset = function () {
 DijkstraVisualization.prototype.setup = function () {
   this.commands = [];
 
+  if (this.graphMode === DijkstraVisualization.GRAPH_MODE_RANDOM) {
+    this.generateRandomGraph();
+  } else {
+    this.loadDefaultGraph();
+  }
+
   this.createTitle();
   this.createGraph();
   this.createTable();
@@ -218,11 +304,118 @@ DijkstraVisualization.prototype.setup = function () {
   this.highlightCodeLine(-1);
 
   if (this.startField) {
-    this.setStartFieldValue(DijkstraVisualization.VERTEX_DATA[0].label);
+    this.setStartFieldValue(this.vertexData[0].label);
   }
 
   this.cmd("Step");
   return this.commands;
+};
+
+DijkstraVisualization.prototype.cloneGraphEdges = function (edges) {
+  var result = new Array(edges.length);
+  for (var i = 0; i < edges.length; i++) {
+    result[i] = [];
+    if (!edges[i]) {
+      continue;
+    }
+    for (var j = 0; j < edges[i].length; j++) {
+      var edge = edges[i][j];
+      result[i].push({ to: edge.to, weight: edge.weight });
+    }
+  }
+  return result;
+};
+
+DijkstraVisualization.prototype.sortAdjacencyLists = function () {
+  for (var i = 0; i < this.graphEdges.length; i++) {
+    this.graphEdges[i].sort(function (a, b) {
+      return a.to - b.to;
+    });
+  }
+};
+
+DijkstraVisualization.prototype.loadDefaultGraph = function () {
+  this.vertexData = [];
+  for (var i = 0; i < DijkstraVisualization.DEFAULT_VERTEX_DATA.length; i++) {
+    var vertex = DijkstraVisualization.DEFAULT_VERTEX_DATA[i];
+    this.vertexData.push({ label: vertex.label, x: vertex.x, y: vertex.y });
+  }
+
+  this.graphEdges = this.cloneGraphEdges(
+    DijkstraVisualization.DEFAULT_GRAPH_EDGES
+  );
+  this.sortAdjacencyLists();
+};
+
+DijkstraVisualization.prototype.randomWeight = function () {
+  var min = DijkstraVisualization.MIN_RANDOM_WEIGHT;
+  var max = DijkstraVisualization.MAX_RANDOM_WEIGHT;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+DijkstraVisualization.prototype.addDirectedEdge = function (from, to, weight) {
+  if (from === to) {
+    return;
+  }
+
+  var adjacency = this.graphEdges[from];
+  for (var i = 0; i < adjacency.length; i++) {
+    if (adjacency[i].to === to) {
+      adjacency[i].weight = weight;
+      return;
+    }
+  }
+  adjacency.push({ to: to, weight: weight });
+};
+
+DijkstraVisualization.prototype.generateRandomGraph = function () {
+  var layoutIndex = Math.floor(
+    Math.random() * DijkstraVisualization.RANDOM_LAYOUTS.length
+  );
+  var layout = DijkstraVisualization.RANDOM_LAYOUTS[layoutIndex];
+  var vertexCount = DijkstraVisualization.DEFAULT_VERTEX_DATA.length;
+
+  this.vertexData = new Array(vertexCount);
+  for (var i = 0; i < vertexCount; i++) {
+    var vertexTemplate = DijkstraVisualization.DEFAULT_VERTEX_DATA[i];
+    var position = layout[i % layout.length];
+    this.vertexData[i] = {
+      label: vertexTemplate.label,
+      x: position.x,
+      y: position.y,
+    };
+  }
+
+  this.graphEdges = new Array(vertexCount);
+  for (var j = 0; j < vertexCount; j++) {
+    this.graphEdges[j] = [];
+  }
+
+  for (var p = 0; p < DijkstraVisualization.ALLOWED_EDGE_PAIRS.length; p++) {
+    var pair = DijkstraVisualization.ALLOWED_EDGE_PAIRS[p];
+    var from = pair[0];
+    var to = pair[1];
+    var roll = Math.random();
+
+    if (roll < 0.45) {
+      this.addDirectedEdge(from, to, this.randomWeight());
+    }
+    if (roll > 0.55) {
+      this.addDirectedEdge(to, from, this.randomWeight());
+    }
+  }
+
+  for (var v = 0; v < vertexCount; v++) {
+    if (this.graphEdges[v].length === 0) {
+      var candidate = v;
+      while (candidate === v) {
+        candidate = Math.floor(Math.random() * vertexCount);
+      }
+      this.addDirectedEdge(v, candidate, this.randomWeight());
+    }
+  }
+
+  this.sortAdjacencyLists();
 };
 
 DijkstraVisualization.prototype.createTitle = function () {
@@ -238,20 +431,39 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.cmd("SetTextStyle", this.titleID, DijkstraVisualization.TITLE_FONT);
   this.cmd("SetForegroundColor", this.titleID, "#102a43");
 
-  // Remove the animation status banner from the layout.
-  this.statusID = null;
+  this.infoLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.infoLabelID,
+    "",
+    DijkstraVisualization.CANVAS_WIDTH / 2,
+    DijkstraVisualization.INFO_Y,
+    1
+  );
+  this.cmd("SetTextStyle", this.infoLabelID, DijkstraVisualization.INFO_FONT);
+  this.cmd("SetForegroundColor", this.infoLabelID, DijkstraVisualization.INFO_COLOR);
+
+  this.updateStatus(DijkstraVisualization.DEFAULT_INFO_TEXT);
 };
 
-DijkstraVisualization.prototype.updateStatus = function () {
-  // Status messaging has been fully removed from the layout.
-  return;
+DijkstraVisualization.prototype.updateStatus = function (message) {
+  if (this.infoLabelID < 0) {
+    return;
+  }
+
+  var text = message;
+  if (!text) {
+    text = DijkstraVisualization.DEFAULT_INFO_TEXT;
+  }
+
+  this.cmd("SetText", this.infoLabelID, text);
 };
 
 DijkstraVisualization.prototype.createGraph = function () {
-  this.vertexIDs = new Array(DijkstraVisualization.VERTEX_DATA.length);
+  this.vertexIDs = new Array(this.vertexData.length);
 
-  for (var i = 0; i < DijkstraVisualization.VERTEX_DATA.length; i++) {
-    var vertex = DijkstraVisualization.VERTEX_DATA[i];
+  for (var i = 0; i < this.vertexData.length; i++) {
+    var vertex = this.vertexData[i];
     var id = this.nextIndex++;
     this.vertexIDs[i] = id;
     this.cmd(
@@ -268,8 +480,8 @@ DijkstraVisualization.prototype.createGraph = function () {
     this.cmd("SetHighlight", id, 0);
   }
 
-  for (var from = 0; from < DijkstraVisualization.GRAPH_EDGES.length; from++) {
-    var edges = DijkstraVisualization.GRAPH_EDGES[from];
+  for (var from = 0; from < this.graphEdges.length; from++) {
+    var edges = this.graphEdges[from];
     for (var j = 0; j < edges.length; j++) {
       var edge = edges[j];
       var edgeKey = this.edgeKey(from, edge.to);
@@ -322,7 +534,7 @@ DijkstraVisualization.prototype.createTable = function () {
     this.cmd("SetForegroundColor", headerID, DijkstraVisualization.TABLE_HEADER_COLOR);
   }
 
-  var vertexCount = DijkstraVisualization.VERTEX_DATA.length;
+  var vertexCount = this.vertexData.length;
   this.vertexCellIDs = new Array(vertexCount);
   this.knownCellIDs = new Array(vertexCount);
   this.distanceCellIDs = new Array(vertexCount);
@@ -336,7 +548,7 @@ DijkstraVisualization.prototype.createTable = function () {
     this.cmd(
       "CreateRectangle",
       vertexCell,
-      DijkstraVisualization.VERTEX_DATA[i].label,
+      this.vertexData[i].label,
       DijkstraVisualization.TABLE_COLUMNS[0].width,
       DijkstraVisualization.TABLE_ROW_HEIGHT - 6,
       DijkstraVisualization.TABLE_COLUMNS[0].x,
@@ -438,6 +650,8 @@ DijkstraVisualization.prototype.clearPathsDisplay = function () {
   }
 
   this.pathLabelIDs = [];
+  this.pathLabelsByVertex = {};
+  this.pathOrder = [];
 };
 
 DijkstraVisualization.prototype.buildPathString = function (
@@ -449,7 +663,7 @@ DijkstraVisualization.prototype.buildPathString = function (
   var current = vertexIndex;
   var guard = 0;
   while (current !== -1 && guard <= parent.length) {
-    labels.push(DijkstraVisualization.VERTEX_DATA[current].label);
+    labels.push(this.vertexData[current].label);
     if (current === startIndex) {
       break;
     }
@@ -461,38 +675,107 @@ DijkstraVisualization.prototype.buildPathString = function (
   return labels.join(" → ");
 };
 
-DijkstraVisualization.prototype.displayShortestPaths = function (
-  startIndex,
-  parent,
-  dist
-) {
+DijkstraVisualization.prototype.initializePathsPanel = function (startIndex) {
   this.clearPathsDisplay();
 
   if (this.pathsTitleID >= 0) {
     this.cmd(
       "SetText",
       this.pathsTitleID,
-      "Paths from " + DijkstraVisualization.VERTEX_DATA[startIndex].label
+      "Paths from " + this.vertexData[startIndex].label
     );
+  }
+};
+
+DijkstraVisualization.prototype.ensurePathLabel = function (vertexIndex) {
+  if (this.pathLabelsByVertex.hasOwnProperty(vertexIndex)) {
+    return this.pathLabelsByVertex[vertexIndex];
+  }
+
+  var row = this.pathOrder.length;
+  var y =
+    DijkstraVisualization.PATH_START_Y +
+    row * DijkstraVisualization.PATH_LINE_HEIGHT;
+  var id = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    id,
+    "",
+    DijkstraVisualization.PATH_START_X,
+    y,
+    0
+  );
+  this.cmd("SetTextStyle", id, DijkstraVisualization.PATH_FONT);
+  this.cmd("SetForegroundColor", id, DijkstraVisualization.PATH_TEXT_COLOR);
+
+  this.pathLabelsByVertex[vertexIndex] = id;
+  this.pathOrder.push(vertexIndex);
+  this.pathLabelIDs.push(id);
+  return id;
+};
+
+DijkstraVisualization.prototype.composePathLine = function (
+  vertexIndex,
+  parent,
+  startIndex,
+  dist
+) {
+  var vertexLabel = this.vertexData[vertexIndex].label;
+  var parentIndex = parent[vertexIndex];
+  var parentLabel = parentIndex === -1
+    ? "∅"
+    : this.vertexData[parentIndex].label;
+  var pathText = this.buildPathString(vertexIndex, parent, startIndex);
+  var hasPath = pathText && pathText.length > 0;
+  var distance = dist && dist[vertexIndex] !== undefined && dist[vertexIndex] !== Infinity
+    ? dist[vertexIndex]
+    : null;
+
+  var summary = vertexLabel + " ← " + parentLabel;
+  if (hasPath) {
+    summary += " : " + pathText;
+  }
+  if (distance !== null) {
+    summary += " [" + distance + "]";
+  }
+
+  return summary;
+};
+
+DijkstraVisualization.prototype.updateAnimatedPath = function (
+  vertexIndex,
+  parent,
+  startIndex,
+  dist,
+  skipStep
+) {
+  if (!dist || dist[vertexIndex] === Infinity) {
+    return;
+  }
+
+  var existed = this.pathLabelsByVertex.hasOwnProperty(vertexIndex);
+  var labelID = this.ensurePathLabel(vertexIndex);
+  var text = this.composePathLine(vertexIndex, parent, startIndex, dist);
+  this.cmd("SetText", labelID, text);
+  if (!skipStep || !existed) {
+    this.cmd("Step");
+  }
+};
+
+DijkstraVisualization.prototype.finalizePathsDisplay = function (
+  startIndex,
+  parent,
+  dist
+) {
+  if (!dist) {
+    return;
   }
 
   for (var i = 0; i < dist.length; i++) {
     if (dist[i] === Infinity) {
       continue;
     }
-
-    var pathText = this.buildPathString(i, parent, startIndex);
-    var pathID = this.nextIndex++;
-    var y =
-      DijkstraVisualization.PATH_START_Y +
-      this.pathLabelIDs.length * DijkstraVisualization.PATH_LINE_HEIGHT;
-
-    this.cmd("CreateLabel", pathID, pathText, DijkstraVisualization.PATH_START_X, y, 0);
-    this.cmd("SetTextStyle", pathID, DijkstraVisualization.PATH_FONT);
-    this.cmd("SetForegroundColor", pathID, DijkstraVisualization.PATH_TEXT_COLOR);
-
-    this.pathLabelIDs.push(pathID);
-    this.cmd("Step");
+    this.updateAnimatedPath(i, parent, startIndex, dist, true);
   }
 };
 
@@ -525,8 +808,8 @@ DijkstraVisualization.prototype.getBidirectionalOrientation = function (
     return this.bidirectionalOrientation[key];
   }
 
-  var fromVertex = DijkstraVisualization.VERTEX_DATA[from];
-  var toVertex = DijkstraVisualization.VERTEX_DATA[to];
+  var fromVertex = this.vertexData[from];
+  var toVertex = this.vertexData[to];
   var midY = (fromVertex.y + toVertex.y) / 2;
   var orientation = midY < DijkstraVisualization.TABLE_HEADER_Y ? -1 : 1;
 
@@ -535,7 +818,7 @@ DijkstraVisualization.prototype.getBidirectionalOrientation = function (
 };
 
 DijkstraVisualization.prototype.graphHasEdge = function (from, to) {
-  var adjacency = DijkstraVisualization.GRAPH_EDGES[from] || [];
+  var adjacency = this.graphEdges[from] || [];
   for (var i = 0; i < adjacency.length; i++) {
     if (adjacency[i].to === to) {
       return true;
@@ -587,8 +870,8 @@ DijkstraVisualization.prototype.getStartFieldValue = function () {
 
 DijkstraVisualization.prototype.findVertexIndex = function (label) {
   var clean = this.cleanInputLabel(label);
-  for (var i = 0; i < DijkstraVisualization.VERTEX_DATA.length; i++) {
-    if (DijkstraVisualization.VERTEX_DATA[i].label === clean) {
+  for (var i = 0; i < this.vertexData.length; i++) {
+    if (this.vertexData[i].label === clean) {
       return i;
     }
   }
@@ -600,9 +883,9 @@ DijkstraVisualization.prototype.startCallback = function () {
   var index = this.findVertexIndex(value);
   if (index === -1) {
     index = 0;
-    this.setStartFieldValue(DijkstraVisualization.VERTEX_DATA[0].label);
+    this.setStartFieldValue(this.vertexData[0].label);
   } else {
-    this.setStartFieldValue(DijkstraVisualization.VERTEX_DATA[index].label);
+    this.setStartFieldValue(this.vertexData[index].label);
   }
 
   this.implementAction(this.runDijkstra.bind(this), index);
@@ -613,12 +896,12 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
   this.resetTableState();
   this.resetGraphState();
-  this.clearPathsDisplay();
+  this.initializePathsPanel(startIndex);
 
-  var startLabel = DijkstraVisualization.VERTEX_DATA[startIndex].label;
+  var startLabel = this.vertexData[startIndex].label;
   this.updateStatus("Running Dijkstra from vertex " + startLabel + ".");
 
-  var vertexCount = DijkstraVisualization.VERTEX_DATA.length;
+  var vertexCount = this.vertexData.length;
   var dist = new Array(vertexCount);
   var parent = new Array(vertexCount);
   var visited = new Array(vertexCount);
@@ -646,6 +929,8 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.cmd("Step");
   dist[startIndex] = 0;
   this.updateDistanceCell(startIndex, 0, true);
+  this.updateAnimatedPath(startIndex, parent, startIndex, dist);
+  this.updateDistanceCell(startIndex, 0, false);
 
   this.highlightCodeLine(7);
   this.cmd("Step");
@@ -679,7 +964,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
     this.highlightCodeLine(12);
     this.updateStatus(
       "Processing vertex " +
-        DijkstraVisualization.VERTEX_DATA[u].label +
+        this.vertexData[u].label +
         " with current distance " +
         (dist[u] === Infinity ? this.infinitySymbol : dist[u]) +
         "."
@@ -693,14 +978,14 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
     this.highlightCodeLine(13);
     this.cmd("Step");
-    var neighbors = DijkstraVisualization.GRAPH_EDGES[u];
+    var neighbors = this.graphEdges[u];
     var i;
     for (i = 0; i < neighbors.length; i++) {
       var edge = neighbors[i];
       var v = edge.to;
       var weight = edge.weight;
-      var fromLabel = DijkstraVisualization.VERTEX_DATA[u].label;
-      var toLabel = DijkstraVisualization.VERTEX_DATA[v].label;
+      var fromLabel = this.vertexData[u].label;
+      var toLabel = this.vertexData[v].label;
 
       this.highlightCodeLine(13);
       this.cmd("Step");
@@ -744,6 +1029,8 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
         this.cmd("Step");
         this.updateParentCell(v, u, false);
 
+        this.updateAnimatedPath(v, parent, startIndex, dist);
+
         this.highlightCodeLine(18);
         pq.push({ vertex: v, distance: alternative });
         this.cmd("Step");
@@ -766,7 +1053,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
     this.highlightCodeLine(20);
     this.updateStatus(
       "Completed processing vertex " +
-        DijkstraVisualization.VERTEX_DATA[u].label +
+        this.vertexData[u].label +
         "."
     );
     this.cmd("Step");
@@ -780,7 +1067,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
   this.highlightCodeLine(-1);
 
-  this.displayShortestPaths(startIndex, parent, dist);
+  this.finalizePathsDisplay(startIndex, parent, dist);
 
   return this.commands;
 };
@@ -857,7 +1144,7 @@ DijkstraVisualization.prototype.updateParentCell = function (
 ) {
   var parentLabel = parentIndex === -1
     ? "-"
-    : DijkstraVisualization.VERTEX_DATA[parentIndex].label;
+    : this.vertexData[parentIndex].label;
   var shouldHighlight = highlight;
   if (typeof shouldHighlight !== "boolean") {
     shouldHighlight = true;
