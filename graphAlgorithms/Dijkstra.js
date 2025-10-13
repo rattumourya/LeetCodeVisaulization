@@ -50,17 +50,17 @@ DijkstraVisualization.CODE_LEFT_X =
   DijkstraVisualization.TABLE_COLUMNS[0].x -
   DijkstraVisualization.TABLE_COLUMNS[0].width / 2 +
   5;
-DijkstraVisualization.CODE_FONT = "bold 13px 'Courier New', monospace";
+DijkstraVisualization.CODE_FONT = "bold 15px 'Courier New', monospace";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
 DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
 
 DijkstraVisualization.PATH_TITLE_FONT = "bold 18";
-DijkstraVisualization.PATH_FONT = "bold 14px 'Courier New', monospace";
+DijkstraVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
 DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
-DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 360;
+DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 400;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
-DijkstraVisualization.PATH_LINE_HEIGHT = 26;
+DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 
 DijkstraVisualization.BIDIRECTIONAL_CURVE_INNER = 0.18;
 DijkstraVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
