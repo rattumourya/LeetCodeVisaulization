@@ -207,6 +207,10 @@ DijkstraVisualization.prototype.init = function (am, w, h) {
     objectManager.statusReport.addedToScene = false;
   }
 
+  if (this.animationManager && this.animationManager.setAllLayers) {
+    this.animationManager.setAllLayers([0, 1, 2, 3, 4]);
+  }
+
   this.controls = [];
   this.addControls();
 
