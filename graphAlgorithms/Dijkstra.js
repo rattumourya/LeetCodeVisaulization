@@ -69,7 +69,7 @@ DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 DijkstraVisualization.INFO_Y = DijkstraVisualization.TITLE_Y + 48;
 DijkstraVisualization.INFO_FONT = "bold 20";
 DijkstraVisualization.INFO_COLOR = "#000000";
-DijkstraVisualization.INFO_BACKGROUND_COLOR = "#fff9c4";
+DijkstraVisualization.INFO_BACKDROP_COLOR = "#fff9c4";
 DijkstraVisualization.INFO_BACKGROUND_DEFAULT = "#f6f7fb";
 DijkstraVisualization.INFO_HIGHLIGHT_WIDTH = 620;
 DijkstraVisualization.INFO_HIGHLIGHT_HEIGHT = 44;
@@ -228,6 +228,7 @@ DijkstraVisualization.prototype.init = function (am, w, h) {
   this.statusID = -1;
   this.titleID = -1;
   this.infoLabelID = -1;
+  this.infoBackdropID = -1;
   this.infoHighlightID = -1;
   this.infoCursorID = -1;
 
@@ -293,6 +294,7 @@ DijkstraVisualization.prototype.reset = function () {
   this.pathsTitleID = -1;
   this.currentCodeLine = -1;
   this.infoLabelID = -1;
+  this.infoBackdropID = -1;
   this.infoHighlightID = -1;
   this.infoCursorID = -1;
   this.statusID = -1;
@@ -450,6 +452,37 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.cmd("SetTextStyle", this.titleID, DijkstraVisualization.TITLE_FONT);
   this.cmd("SetForegroundColor", this.titleID, "#102a43");
 
+  this.infoBackdropID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.infoBackdropID,
+    "",
+    DijkstraVisualization.INFO_HIGHLIGHT_WIDTH,
+    DijkstraVisualization.INFO_HIGHLIGHT_HEIGHT,
+    DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X,
+    DijkstraVisualization.INFO_Y,
+    "left",
+    "center"
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.infoBackdropID,
+    DijkstraVisualization.INFO_BACKDROP_COLOR
+  );
+  this.cmd(
+    "SetBackgroundColor",
+    this.infoBackdropID,
+    DijkstraVisualization.INFO_BACKDROP_COLOR
+  );
+  this.cmd("SetLayer", this.infoBackdropID, 1);
+  this.cmd("SetAlpha", this.infoBackdropID, 0);
+  this.cmd(
+    "SetPosition",
+    this.infoBackdropID,
+    DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X,
+    DijkstraVisualization.INFO_Y
+  );
+
   this.infoHighlightID = this.nextIndex++;
   this.cmd(
     "CreateRectangle",
@@ -472,7 +505,7 @@ DijkstraVisualization.prototype.createTitle = function () {
     this.infoHighlightID,
     DijkstraVisualization.INFO_BACKGROUND_DEFAULT
   );
-  this.cmd("SetLayer", this.infoHighlightID, 1);
+  this.cmd("SetLayer", this.infoHighlightID, 2);
   this.cmd("SetAlpha", this.infoHighlightID, 0);
   this.cmd(
     "SetPosition",
@@ -504,7 +537,7 @@ DijkstraVisualization.prototype.createTitle = function () {
     this.infoCursorID,
     DijkstraVisualization.INFO_CURSOR_COLOR
   );
-  this.cmd("SetLayer", this.infoCursorID, 2);
+  this.cmd("SetLayer", this.infoCursorID, 3);
   this.cmd("SetAlpha", this.infoCursorID, 0);
 
   this.infoLabelID = this.nextIndex++;
@@ -523,7 +556,7 @@ DijkstraVisualization.prototype.createTitle = function () {
     this.infoLabelID,
     DijkstraVisualization.INFO_BACKGROUND_DEFAULT
   );
-  this.cmd("SetLayer", this.infoLabelID, 3);
+  this.cmd("SetLayer", this.infoLabelID, 4);
 
   this.updateStatus(DijkstraVisualization.DEFAULT_INFO_TEXT, false);
 };
@@ -546,6 +579,7 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
   this.cmd("SetForegroundColor", this.infoLabelID, DijkstraVisualization.INFO_COLOR);
   var highlightExists = this.infoHighlightID >= 0;
   var cursorExists = this.infoCursorID >= 0;
+  var backdropExists = this.infoBackdropID >= 0;
 
   if (!highlightExists || !animate) {
     this.cmd(
@@ -553,6 +587,9 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
       this.infoLabelID,
       DijkstraVisualization.INFO_BACKGROUND_DEFAULT
     );
+    if (backdropExists) {
+      this.cmd("SetAlpha", this.infoBackdropID, 0);
+    }
     if (highlightExists) {
       this.cmd("SetAlpha", this.infoHighlightID, 0);
       this.cmd("SetWidth", this.infoHighlightID, 0);
@@ -566,8 +603,22 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
   this.cmd(
     "SetBackgroundColor",
     this.infoLabelID,
-    DijkstraVisualization.INFO_BACKGROUND_COLOR
+    DijkstraVisualization.INFO_BACKGROUND_DEFAULT
   );
+  if (backdropExists) {
+    this.cmd(
+      "SetPosition",
+      this.infoBackdropID,
+      DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X,
+      DijkstraVisualization.INFO_Y
+    );
+    this.cmd("SetAlpha", this.infoBackdropID, 1);
+    this.cmd(
+      "SetWidth",
+      this.infoBackdropID,
+      DijkstraVisualization.INFO_HIGHLIGHT_WIDTH
+    );
+  }
   this.cmd("SetAlpha", this.infoHighlightID, 0);
   this.cmd(
     "SetPosition",
@@ -632,11 +683,9 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     this.cmd("Step");
   }
 
-  this.cmd(
-    "SetBackgroundColor",
-    this.infoLabelID,
-    DijkstraVisualization.INFO_BACKGROUND_DEFAULT
-  );
+  if (backdropExists) {
+    this.cmd("SetAlpha", this.infoBackdropID, 0);
+  }
   this.cmd("SetAlpha", this.infoHighlightID, 0);
   this.cmd("SetWidth", this.infoHighlightID, 0);
   if (cursorExists) {
