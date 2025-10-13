@@ -61,14 +61,15 @@ DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
 DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
 DijkstraVisualization.PATH_LEFT_COLOR = "#7ec8e3";
 DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 460;
-DijkstraVisualization.PATH_VALUE_START_X = DijkstraVisualization.PATH_START_X + 120;
+DijkstraVisualization.PATH_VALUE_START_X = DijkstraVisualization.PATH_START_X + 100;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
 DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 
 DijkstraVisualization.INFO_Y = DijkstraVisualization.TITLE_Y + 48;
 DijkstraVisualization.INFO_FONT = "bold 20";
-DijkstraVisualization.INFO_COLOR = "#264653";
-DijkstraVisualization.INFO_READING_COLOR = "#e76f51";
+DijkstraVisualization.INFO_COLOR = "#000000";
+DijkstraVisualization.INFO_BACKGROUND_COLOR = "#fff9c4";
+DijkstraVisualization.INFO_BACKGROUND_DEFAULT = "#f6f7fb";
 DijkstraVisualization.DEFAULT_INFO_TEXT =
   "Click 'Run Dijkstra' to watch the animation. Use 'New Graph' for variety.";
 
@@ -446,6 +447,11 @@ DijkstraVisualization.prototype.createTitle = function () {
   );
   this.cmd("SetTextStyle", this.infoLabelID, DijkstraVisualization.INFO_FONT);
   this.cmd("SetForegroundColor", this.infoLabelID, DijkstraVisualization.INFO_COLOR);
+  this.cmd(
+    "SetBackgroundColor",
+    this.infoLabelID,
+    DijkstraVisualization.INFO_BACKGROUND_COLOR
+  );
 
   this.updateStatus(DijkstraVisualization.DEFAULT_INFO_TEXT, false);
 };
@@ -469,20 +475,35 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     this.cmd(
       "SetForegroundColor",
       this.infoLabelID,
-      DijkstraVisualization.INFO_READING_COLOR
+      DijkstraVisualization.INFO_COLOR
+    );
+    this.cmd(
+      "SetBackgroundColor",
+      this.infoLabelID,
+      DijkstraVisualization.INFO_BACKGROUND_COLOR
     );
     this.cmd("Step");
     this.cmd(
-      "SetForegroundColor",
+      "SetBackgroundColor",
       this.infoLabelID,
-      DijkstraVisualization.INFO_COLOR
+      DijkstraVisualization.INFO_BACKGROUND_DEFAULT
     );
     this.cmd("Step");
+    this.cmd(
+      "SetBackgroundColor",
+      this.infoLabelID,
+      DijkstraVisualization.INFO_BACKGROUND_COLOR
+    );
   } else {
     this.cmd(
       "SetForegroundColor",
       this.infoLabelID,
       DijkstraVisualization.INFO_COLOR
+    );
+    this.cmd(
+      "SetBackgroundColor",
+      this.infoLabelID,
+      DijkstraVisualization.INFO_BACKGROUND_COLOR
     );
   }
 };
@@ -781,7 +802,7 @@ DijkstraVisualization.prototype.composePathLine = function (
   var leftPart = vertexLabel + " → " + parentLabel;
   var rightPart = "";
   if (hasPath) {
-    rightPart += " : " + pathText;
+    rightPart += ": " + pathText;
   }
   if (distance !== null) {
     rightPart += " [" + distance + "]";
