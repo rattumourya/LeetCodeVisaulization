@@ -51,20 +51,24 @@ DijkstraVisualization.CODE_LEFT_X =
   DijkstraVisualization.TABLE_COLUMNS[0].width / 2 +
   5;
 DijkstraVisualization.CODE_FONT = "bold 15px 'Courier New', monospace";
+DijkstraVisualization.CODE_HIGHLIGHT_FONT = "bold 17px 'Courier New', monospace";
 DijkstraVisualization.CODE_STANDARD_COLOR = "#102a43";
-DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
+DijkstraVisualization.CODE_HIGHLIGHT_COLOR = "#d50000";
 
 DijkstraVisualization.PATH_TITLE_FONT = "bold 18";
 DijkstraVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
 DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
-DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 400;
+DijkstraVisualization.PATH_LEFT_COLOR = "#7ec8e3";
+DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 460;
+DijkstraVisualization.PATH_VALUE_START_X = DijkstraVisualization.PATH_START_X + 120;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
 DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 
 DijkstraVisualization.INFO_Y = DijkstraVisualization.TITLE_Y + 48;
 DijkstraVisualization.INFO_FONT = "bold 20";
 DijkstraVisualization.INFO_COLOR = "#264653";
+DijkstraVisualization.INFO_READING_COLOR = "#e76f51";
 DijkstraVisualization.DEFAULT_INFO_TEXT =
   "Click 'Run Dijkstra' to watch the animation. Use 'New Graph' for variety.";
 
@@ -443,10 +447,10 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.cmd("SetTextStyle", this.infoLabelID, DijkstraVisualization.INFO_FONT);
   this.cmd("SetForegroundColor", this.infoLabelID, DijkstraVisualization.INFO_COLOR);
 
-  this.updateStatus(DijkstraVisualization.DEFAULT_INFO_TEXT);
+  this.updateStatus(DijkstraVisualization.DEFAULT_INFO_TEXT, false);
 };
 
-DijkstraVisualization.prototype.updateStatus = function (message) {
+DijkstraVisualization.prototype.updateStatus = function (message, animate) {
   if (this.infoLabelID < 0) {
     return;
   }
@@ -457,6 +461,30 @@ DijkstraVisualization.prototype.updateStatus = function (message) {
   }
 
   this.cmd("SetText", this.infoLabelID, text);
+  if (animate === undefined) {
+    animate = true;
+  }
+
+  if (animate) {
+    this.cmd(
+      "SetForegroundColor",
+      this.infoLabelID,
+      DijkstraVisualization.INFO_READING_COLOR
+    );
+    this.cmd("Step");
+    this.cmd(
+      "SetForegroundColor",
+      this.infoLabelID,
+      DijkstraVisualization.INFO_COLOR
+    );
+    this.cmd("Step");
+  } else {
+    this.cmd(
+      "SetForegroundColor",
+      this.infoLabelID,
+      DijkstraVisualization.INFO_COLOR
+    );
+  }
 };
 
 DijkstraVisualization.prototype.createGraph = function () {
@@ -696,22 +724,41 @@ DijkstraVisualization.prototype.ensurePathLabel = function (vertexIndex) {
   var y =
     DijkstraVisualization.PATH_START_Y +
     row * DijkstraVisualization.PATH_LINE_HEIGHT;
-  var id = this.nextIndex++;
+
+  var leftID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
-    id,
+    leftID,
     "",
     DijkstraVisualization.PATH_START_X,
     y,
     0
   );
-  this.cmd("SetTextStyle", id, DijkstraVisualization.PATH_FONT);
-  this.cmd("SetForegroundColor", id, DijkstraVisualization.PATH_TEXT_COLOR);
+  this.cmd("SetTextStyle", leftID, DijkstraVisualization.PATH_FONT);
+  this.cmd("SetForegroundColor", leftID, DijkstraVisualization.PATH_LEFT_COLOR);
 
-  this.pathLabelsByVertex[vertexIndex] = id;
+  var rightID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    rightID,
+    "",
+    DijkstraVisualization.PATH_VALUE_START_X,
+    y,
+    0
+  );
+  this.cmd("SetTextStyle", rightID, DijkstraVisualization.PATH_FONT);
+  this.cmd("SetForegroundColor", rightID, DijkstraVisualization.PATH_TEXT_COLOR);
+
+  var labelPair = {
+    left: leftID,
+    right: rightID,
+  };
+
+  this.pathLabelsByVertex[vertexIndex] = labelPair;
   this.pathOrder.push(vertexIndex);
-  this.pathLabelIDs.push(id);
-  return id;
+  this.pathLabelIDs.push(leftID);
+  this.pathLabelIDs.push(rightID);
+  return labelPair;
 };
 
 DijkstraVisualization.prototype.composePathLine = function (
@@ -731,15 +778,19 @@ DijkstraVisualization.prototype.composePathLine = function (
     ? dist[vertexIndex]
     : null;
 
-  var summary = vertexLabel + " ← " + parentLabel;
+  var leftPart = vertexLabel + " → " + parentLabel;
+  var rightPart = "";
   if (hasPath) {
-    summary += " : " + pathText;
+    rightPart += " : " + pathText;
   }
   if (distance !== null) {
-    summary += " [" + distance + "]";
+    rightPart += " [" + distance + "]";
   }
 
-  return summary;
+  return {
+    left: leftPart,
+    right: rightPart,
+  };
 };
 
 DijkstraVisualization.prototype.updateAnimatedPath = function (
@@ -754,9 +805,10 @@ DijkstraVisualization.prototype.updateAnimatedPath = function (
   }
 
   var existed = this.pathLabelsByVertex.hasOwnProperty(vertexIndex);
-  var labelID = this.ensurePathLabel(vertexIndex);
+  var labelPair = this.ensurePathLabel(vertexIndex);
   var text = this.composePathLine(vertexIndex, parent, startIndex, dist);
-  this.cmd("SetText", labelID, text);
+  this.cmd("SetText", labelPair.left, text.left);
+  this.cmd("SetText", labelPair.right, text.right);
   if (!skipStep || !existed) {
     this.cmd("Step");
   }
@@ -835,6 +887,11 @@ DijkstraVisualization.prototype.highlightCodeLine = function (line) {
         this.codeID[this.currentCodeLine][j],
         DijkstraVisualization.CODE_STANDARD_COLOR
       );
+      this.cmd(
+        "SetTextStyle",
+        this.codeID[this.currentCodeLine][j],
+        DijkstraVisualization.CODE_FONT
+      );
     }
   }
 
@@ -846,6 +903,11 @@ DijkstraVisualization.prototype.highlightCodeLine = function (line) {
         "SetForegroundColor",
         this.codeID[line][k],
         DijkstraVisualization.CODE_HIGHLIGHT_COLOR
+      );
+      this.cmd(
+        "SetTextStyle",
+        this.codeID[line][k],
+        DijkstraVisualization.CODE_HIGHLIGHT_FONT
       );
     }
   }
