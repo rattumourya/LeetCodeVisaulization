@@ -27,8 +27,8 @@ DijkstraVisualization.EDGE_COLOR = "#424874";
 DijkstraVisualization.EDGE_HIGHLIGHT_COLOR = "#ff7043";
 DijkstraVisualization.EDGE_THICKNESS = 3;
 
-DijkstraVisualization.TABLE_HEADER_Y = 600;
-DijkstraVisualization.TABLE_ROW_HEIGHT = 44;
+DijkstraVisualization.TABLE_HEADER_Y = 560;
+DijkstraVisualization.TABLE_ROW_HEIGHT = 40;
 DijkstraVisualization.TABLE_FIRST_ROW_Y =
   DijkstraVisualization.TABLE_HEADER_Y + 50;
 DijkstraVisualization.TABLE_COLUMNS = [
@@ -43,8 +43,8 @@ DijkstraVisualization.TABLE_HEADER_COLOR = "#1a237e";
 DijkstraVisualization.TABLE_TEXT_COLOR = "#1f2933";
 DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
 
-DijkstraVisualization.CODE_TITLE_Y = 900;
-DijkstraVisualization.CODE_START_Y = 920;
+DijkstraVisualization.CODE_TITLE_Y = 860;
+DijkstraVisualization.CODE_START_Y = 880;
 DijkstraVisualization.CODE_LINE_HEIGHT = 14;
 DijkstraVisualization.CODE_LEFT_X =
   DijkstraVisualization.TABLE_COLUMNS[0].x -
