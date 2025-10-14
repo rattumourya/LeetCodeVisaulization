@@ -70,15 +70,19 @@ DijkstraVisualization.INFO_FONT = "bold 20";
 DijkstraVisualization.INFO_COLOR = "#000000";
 DijkstraVisualization.INFO_BACKDROP_COLOR = "#fff9c4";
 DijkstraVisualization.INFO_BACKGROUND_DEFAULT = "#f6f7fb";
+DijkstraVisualization.INFO_HIGHLIGHT_COLOR = "#fff4b8";
 DijkstraVisualization.INFO_HIGHLIGHT_WIDTH = 620;
 DijkstraVisualization.INFO_HIGHLIGHT_HEIGHT = 44;
 DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X =
   DijkstraVisualization.CANVAS_WIDTH / 2 -
   DijkstraVisualization.INFO_HIGHLIGHT_WIDTH / 2;
-DijkstraVisualization.INFO_CURSOR_WIDTH = 28;
+DijkstraVisualization.INFO_CURSOR_WIDTH = 12;
 DijkstraVisualization.INFO_CURSOR_COLOR = "#ffec8b";
 DijkstraVisualization.INFO_CURSOR_ALPHA = 0.85;
-DijkstraVisualization.INFO_HIGHLIGHT_STEPS = 18;
+DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH = 18;
+DijkstraVisualization.INFO_WORD_EXTRA_STEPS = 0;
+DijkstraVisualization.INFO_PUNCTUATION_EXTRA_STEPS = 1;
+DijkstraVisualization.INFO_END_HOLD_STEPS = 1;
 DijkstraVisualization.DEFAULT_INFO_TEXT =
   "Click 'Run Dijkstra' to watch the animation. Use 'New Graph' for variety.";
 
@@ -501,12 +505,12 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.cmd(
     "SetForegroundColor",
     this.infoHighlightID,
-    DijkstraVisualization.INFO_BACKGROUND_DEFAULT
+    DijkstraVisualization.INFO_HIGHLIGHT_COLOR
   );
   this.cmd(
     "SetBackgroundColor",
     this.infoHighlightID,
-    DijkstraVisualization.INFO_BACKGROUND_DEFAULT
+    DijkstraVisualization.INFO_HIGHLIGHT_COLOR
   );
   this.cmd("SetLayer", this.infoHighlightID, 2);
   this.cmd("SetAlpha", this.infoHighlightID, 0);
@@ -574,7 +578,6 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     text = DijkstraVisualization.DEFAULT_INFO_TEXT;
   }
 
-  this.cmd("SetText", this.infoLabelID, text);
   if (animate === undefined) {
     animate = true;
   }
@@ -585,6 +588,7 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
   var backdropExists = this.infoBackdropID >= 0;
 
   if (!highlightExists || !animate) {
+    this.cmd("SetText", this.infoLabelID, text);
     this.cmd(
       "SetBackgroundColor",
       this.infoLabelID,
@@ -603,6 +607,7 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     return;
   }
 
+  this.cmd("SetText", this.infoLabelID, "");
   this.cmd(
     "SetBackgroundColor",
     this.infoLabelID,
@@ -622,69 +627,119 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
       DijkstraVisualization.INFO_HIGHLIGHT_WIDTH
     );
   }
-  this.cmd("SetAlpha", this.infoHighlightID, 0);
+  this.cmd("SetAlpha", this.infoHighlightID, 1);
   this.cmd(
     "SetPosition",
     this.infoHighlightID,
     DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X,
     DijkstraVisualization.INFO_Y
   );
-  this.cmd("SetWidth", this.infoHighlightID, 0);
+  this.cmd(
+    "SetWidth",
+    this.infoHighlightID,
+    DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH
+  );
+
+  var cursorStartX =
+    DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X +
+    DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH;
   if (cursorExists) {
     this.cmd(
       "SetPosition",
       this.infoCursorID,
-      DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X -
-        DijkstraVisualization.INFO_CURSOR_WIDTH / 2,
+      cursorStartX,
       DijkstraVisualization.INFO_Y
     );
-    this.cmd("SetAlpha", this.infoCursorID, 0);
+    this.cmd(
+      "SetAlpha",
+      this.infoCursorID,
+      DijkstraVisualization.INFO_CURSOR_ALPHA
+    );
   }
 
-  this.cmd("Step");
+  var tokens = text.match(/[^\s]+|\s+/g);
+  if (!tokens) {
+    tokens = [text];
+  }
 
-  var steps = Math.max(1, DijkstraVisualization.INFO_HIGHLIGHT_STEPS);
-  for (var i = 0; i < steps; i++) {
-    var progress = (i + 1) / steps;
-    if (progress > 1) {
-      progress = 1;
-    }
-    var sweepWidth =
-      DijkstraVisualization.INFO_HIGHLIGHT_WIDTH * progress;
-    if (sweepWidth > DijkstraVisualization.INFO_HIGHLIGHT_WIDTH) {
-      sweepWidth = DijkstraVisualization.INFO_HIGHLIGHT_WIDTH;
+  var compactLength = text.replace(/\s+/g, "").length;
+  if (compactLength === 0) {
+    compactLength = text.length;
+  }
+  if (compactLength === 0) {
+    compactLength = 1;
+  }
+
+  var revealedChars = 0;
+  var rendered = "";
+  var leftEdge = DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X;
+  var fullWidth = DijkstraVisualization.INFO_HIGHLIGHT_WIDTH;
+
+  for (var t = 0; t < tokens.length; t++) {
+    rendered += tokens[t];
+    this.cmd("SetText", this.infoLabelID, rendered);
+
+    var trimmed = tokens[t].replace(/\s+/g, "");
+    if (trimmed.length === 0) {
+      continue;
     }
 
-    this.cmd("SetAlpha", this.infoHighlightID, 1);
-    this.cmd("SetWidth", this.infoHighlightID, sweepWidth);
+    revealedChars += trimmed.length;
+    if (revealedChars > compactLength) {
+      revealedChars = compactLength;
+    }
+
+    var ratio = revealedChars / compactLength;
+    if (ratio < 0) {
+      ratio = 0;
+    } else if (ratio > 1) {
+      ratio = 1;
+    }
+
+    var highlightWidth = Math.max(
+      DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH,
+      fullWidth * ratio
+    );
+    if (highlightWidth > fullWidth) {
+      highlightWidth = fullWidth;
+    }
+    this.cmd("SetWidth", this.infoHighlightID, highlightWidth);
 
     if (cursorExists) {
-      var cursorX =
-        DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X +
-        sweepWidth +
-        DijkstraVisualization.INFO_CURSOR_WIDTH / 2;
-      if (cursorX >
-        DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X +
-          DijkstraVisualization.INFO_HIGHLIGHT_WIDTH) {
-        cursorX =
-          DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X +
-          DijkstraVisualization.INFO_HIGHLIGHT_WIDTH;
+      var caretX = leftEdge + highlightWidth;
+      if (caretX > leftEdge + fullWidth) {
+        caretX = leftEdge + fullWidth;
       }
       this.cmd(
         "SetPosition",
         this.infoCursorID,
-        cursorX,
+        caretX,
         DijkstraVisualization.INFO_Y
-      );
-      this.cmd(
-        "SetAlpha",
-        this.infoCursorID,
-        DijkstraVisualization.INFO_CURSOR_ALPHA
       );
     }
 
     this.cmd("Step");
+
+    for (
+      var hold = 0;
+      hold < DijkstraVisualization.INFO_WORD_EXTRA_STEPS;
+      hold++
+    ) {
+      this.cmd("Step");
+    }
+
+    if (/[.,!?;:]$/.test(trimmed)) {
+      for (
+        var pause = 0;
+        pause < DijkstraVisualization.INFO_PUNCTUATION_EXTRA_STEPS;
+        pause++
+      ) {
+        this.cmd("Step");
+      }
+    }
   }
+
+  this.cmd("SetText", this.infoLabelID, text);
 
   if (backdropExists) {
     this.cmd("SetAlpha", this.infoBackdropID, 0);
@@ -693,6 +748,14 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
   this.cmd("SetWidth", this.infoHighlightID, 0);
   if (cursorExists) {
     this.cmd("SetAlpha", this.infoCursorID, 0);
+  }
+
+  for (
+    var finishHold = 0;
+    finishHold < DijkstraVisualization.INFO_END_HOLD_STEPS;
+    finishHold++
+  ) {
+    this.cmd("Step");
   }
 };
 
