@@ -26,9 +26,6 @@ DijkstraVisualization.NODE_VISITED_TEXT_COLOR = "#1b4332";
 DijkstraVisualization.EDGE_COLOR = "#424874";
 DijkstraVisualization.EDGE_HIGHLIGHT_COLOR = "#ff7043";
 DijkstraVisualization.EDGE_THICKNESS = 3;
-DijkstraVisualization.EDGE_TREE_COLOR = "#2e7d32";
-DijkstraVisualization.EDGE_TREE_THICKNESS =
-  DijkstraVisualization.EDGE_THICKNESS + 1;
 
 DijkstraVisualization.TABLE_HEADER_Y = 540;
 DijkstraVisualization.TABLE_ROW_HEIGHT = 40;
@@ -62,29 +59,9 @@ DijkstraVisualization.PATH_TITLE_FONT = "bold 18";
 DijkstraVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
 DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
-DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 420;
+DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 480;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
 DijkstraVisualization.PATH_LINE_HEIGHT = 30;
-
-DijkstraVisualization.RELAX_PANEL_WIDTH = 360;
-DijkstraVisualization.RELAX_PANEL_HEIGHT = 132;
-DijkstraVisualization.RELAX_PANEL_X =
-  DijkstraVisualization.CANVAS_WIDTH / 2;
-DijkstraVisualization.RELAX_PANEL_Y =
-  DijkstraVisualization.TABLE_HEADER_Y -
-  DijkstraVisualization.RELAX_PANEL_HEIGHT -
-  16;
-DijkstraVisualization.RELAX_HEADER_FONT = "bold 19";
-DijkstraVisualization.RELAX_TEXT_FONT =
-  "bold 15px 'Courier New', monospace";
-DijkstraVisualization.RELAX_RESULT_FONT = "bold 16";
-DijkstraVisualization.RELAX_TEXT_COLOR = "#102a43";
-DijkstraVisualization.RELAX_IMPROVE_COLOR = "#2e7d32";
-DijkstraVisualization.RELAX_KEEP_COLOR = "#0d47a1";
-DijkstraVisualization.RELAX_EQUAL_COLOR = "#f57c00";
-DijkstraVisualization.RELAX_PANEL_BACKGROUND = "#f1f5f9";
-DijkstraVisualization.RELAX_PANEL_BORDER = "#94a3b8";
-DijkstraVisualization.RELAX_ROW_SPACING = 26;
 
 DijkstraVisualization.INFO_Y = DijkstraVisualization.TITLE_Y + 48;
 DijkstraVisualization.INFO_FONT = "bold 20";
@@ -373,13 +350,6 @@ DijkstraVisualization.prototype.reset = function () {
   this.infoProgressTrackID = -1;
   this.infoProgressCoverID = -1;
   this.statusID = -1;
-  this.relaxPanelID = -1;
-  this.relaxHeaderID = -1;
-  this.relaxEdgeLabelID = -1;
-  this.relaxCandidateID = -1;
-  this.relaxCurrentID = -1;
-  this.relaxResultID = -1;
-  this.treeParentForVertex = [];
 
   if (
     typeof animationManager !== "undefined" &&
@@ -403,7 +373,6 @@ DijkstraVisualization.prototype.setup = function () {
   this.createTitle();
   this.createGraph();
   this.createTable();
-  this.createRelaxationPanel();
   this.createCodeDisplay();
   this.highlightCodeLine(-1);
 
@@ -875,190 +844,6 @@ DijkstraVisualization.prototype.createTable = function () {
   }
 };
 
-DijkstraVisualization.prototype.createRelaxationPanel = function () {
-  var width = DijkstraVisualization.RELAX_PANEL_WIDTH;
-  var height = DijkstraVisualization.RELAX_PANEL_HEIGHT;
-  var x = DijkstraVisualization.RELAX_PANEL_X;
-  var y = DijkstraVisualization.RELAX_PANEL_Y;
-
-  this.relaxPanelID = this.nextIndex++;
-  this.cmd(
-    "CreateRectangle",
-    this.relaxPanelID,
-    "",
-    width,
-    height,
-    x,
-    y,
-    "center",
-    "top"
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxPanelID,
-    DijkstraVisualization.RELAX_PANEL_BORDER
-  );
-  this.cmd(
-    "SetBackgroundColor",
-    this.relaxPanelID,
-    DijkstraVisualization.RELAX_PANEL_BACKGROUND
-  );
-
-  var currentY = y + 24;
-  this.relaxHeaderID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.relaxHeaderID,
-    "Relaxation Check",
-    x,
-    currentY,
-    1
-  );
-  this.cmd(
-    "SetTextStyle",
-    this.relaxHeaderID,
-    DijkstraVisualization.RELAX_HEADER_FONT
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxHeaderID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-
-  currentY += 22;
-  var leftAlignedX = x - width / 2 + 14;
-
-  this.relaxEdgeLabelID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.relaxEdgeLabelID,
-    "",
-    leftAlignedX,
-    currentY,
-    0
-  );
-  this.cmd(
-    "SetTextStyle",
-    this.relaxEdgeLabelID,
-    DijkstraVisualization.RELAX_TEXT_FONT
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxEdgeLabelID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-
-  currentY += DijkstraVisualization.RELAX_ROW_SPACING;
-  this.relaxCandidateID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.relaxCandidateID,
-    "",
-    leftAlignedX,
-    currentY,
-    0
-  );
-  this.cmd(
-    "SetTextStyle",
-    this.relaxCandidateID,
-    DijkstraVisualization.RELAX_TEXT_FONT
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCandidateID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-
-  currentY += DijkstraVisualization.RELAX_ROW_SPACING;
-  this.relaxCurrentID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.relaxCurrentID,
-    "",
-    leftAlignedX,
-    currentY,
-    0
-  );
-  this.cmd(
-    "SetTextStyle",
-    this.relaxCurrentID,
-    DijkstraVisualization.RELAX_TEXT_FONT
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCurrentID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-
-  currentY += DijkstraVisualization.RELAX_ROW_SPACING;
-  this.relaxResultID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.relaxResultID,
-    "",
-    leftAlignedX,
-    currentY,
-    0
-  );
-  this.cmd(
-    "SetTextStyle",
-    this.relaxResultID,
-    DijkstraVisualization.RELAX_RESULT_FONT
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxResultID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-
-  this.resetRelaxationPanel("No edge selected");
-};
-
-DijkstraVisualization.prototype.resetRelaxationPanel = function (message) {
-  if (
-    this.relaxEdgeLabelID < 0 ||
-    this.relaxCandidateID < 0 ||
-    this.relaxCurrentID < 0 ||
-    this.relaxResultID < 0
-  ) {
-    return;
-  }
-
-  var label = message || "No edge selected";
-  this.cmd("SetText", this.relaxEdgeLabelID, label);
-  this.cmd("SetForegroundColor", this.relaxEdgeLabelID, DijkstraVisualization.RELAX_TEXT_COLOR);
-  this.cmd(
-    "SetText",
-    this.relaxCandidateID,
-    "New path: —"
-  );
-  this.cmd(
-    "SetText",
-    this.relaxCurrentID,
-    "Current: —"
-  );
-  this.cmd(
-    "SetText",
-    this.relaxResultID,
-    ""
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCandidateID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCurrentID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxResultID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-};
-
 DijkstraVisualization.prototype.createCodeDisplay = function () {
   this.codeID = this.addCodeToCanvasBase(
     DijkstraVisualization.CODE_LINES,
@@ -1226,245 +1011,6 @@ DijkstraVisualization.prototype.finalizePathsDisplay = function (
   }
 };
 
-DijkstraVisualization.prototype.formatDistanceValue = function (value) {
-  return value === Infinity ? this.infinitySymbol : value;
-};
-
-DijkstraVisualization.prototype.showRelaxationComparison = function (
-  fromIndex,
-  toIndex,
-  distU,
-  weight,
-  currentDist,
-  alternative
-) {
-  if (
-    this.relaxEdgeLabelID < 0 ||
-    this.relaxCandidateID < 0 ||
-    this.relaxCurrentID < 0 ||
-    this.relaxResultID < 0
-  ) {
-    return;
-  }
-
-  var fromLabel = this.vertexData[fromIndex].label;
-  var toLabel = this.vertexData[toIndex].label;
-  var distUText = this.formatDistanceValue(distU);
-  var alternativeText = this.formatDistanceValue(alternative);
-  var currentText = this.formatDistanceValue(currentDist);
-
-  this.cmd(
-    "SetText",
-    this.relaxEdgeLabelID,
-    fromLabel + " → " + toLabel
-  );
-  this.cmd(
-    "SetText",
-    this.relaxCandidateID,
-    "New via " +
-      fromLabel +
-      ": " +
-      distUText +
-      " + " +
-      weight +
-      " = " +
-      alternativeText
-  );
-  this.cmd(
-    "SetText",
-    this.relaxCurrentID,
-    "Current " + toLabel + ": " + currentText
-  );
-  this.cmd(
-    "SetText",
-    this.relaxResultID,
-    ""
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCandidateID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCurrentID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxResultID,
-    DijkstraVisualization.RELAX_TEXT_COLOR
-  );
-};
-
-DijkstraVisualization.prototype.showRelaxationOutcome = function (
-  fromIndex,
-  toIndex,
-  alternative,
-  currentDist
-) {
-  if (
-    this.relaxCandidateID < 0 ||
-    this.relaxCurrentID < 0 ||
-    this.relaxResultID < 0
-  ) {
-    return;
-  }
-
-  var improves = alternative < currentDist;
-  var equalDistances = !improves && alternative === currentDist;
-  var candidateColor = DijkstraVisualization.RELAX_TEXT_COLOR;
-  var currentColor = DijkstraVisualization.RELAX_TEXT_COLOR;
-  var resultColor = DijkstraVisualization.RELAX_TEXT_COLOR;
-  var resultText = "";
-  var toLabel = this.vertexData[toIndex].label;
-
-  if (improves) {
-    candidateColor = DijkstraVisualization.RELAX_IMPROVE_COLOR;
-    resultColor = DijkstraVisualization.RELAX_IMPROVE_COLOR;
-    resultText =
-      "Update " +
-      toLabel +
-      " to " +
-      this.formatDistanceValue(alternative);
-  } else if (equalDistances) {
-    candidateColor = DijkstraVisualization.RELAX_EQUAL_COLOR;
-    currentColor = DijkstraVisualization.RELAX_EQUAL_COLOR;
-    resultColor = DijkstraVisualization.RELAX_EQUAL_COLOR;
-    resultText = "Equal distances — keep current";
-  } else {
-    currentColor = DijkstraVisualization.RELAX_KEEP_COLOR;
-    resultColor = DijkstraVisualization.RELAX_KEEP_COLOR;
-    resultText =
-      "Keep " +
-      toLabel +
-      " at " +
-      this.formatDistanceValue(currentDist);
-  }
-
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCandidateID,
-    candidateColor
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxCurrentID,
-    currentColor
-  );
-  this.cmd(
-    "SetForegroundColor",
-    this.relaxResultID,
-    resultColor
-  );
-  this.cmd("SetText", this.relaxResultID, resultText);
-};
-
-DijkstraVisualization.prototype.ensureTreeTrackingArray = function () {
-  if (
-    !this.vertexData ||
-    !this.vertexData.length
-  ) {
-    this.treeParentForVertex = [];
-    return;
-  }
-
-  if (
-    !this.treeParentForVertex ||
-    this.treeParentForVertex.length !== this.vertexData.length
-  ) {
-    this.treeParentForVertex = new Array(this.vertexData.length);
-    for (var i = 0; i < this.treeParentForVertex.length; i++) {
-      this.treeParentForVertex[i] = -1;
-    }
-  }
-};
-
-DijkstraVisualization.prototype.setEdgeToDefault = function (from, to) {
-  var key = this.edgeKey(from, to);
-  if (!this.edgeMap.hasOwnProperty(key)) {
-    return;
-  }
-  this.cmd(
-    "SetEdgeColor",
-    this.vertexIDs[from],
-    this.vertexIDs[to],
-    DijkstraVisualization.EDGE_COLOR
-  );
-  this.cmd(
-    "SetEdgeThickness",
-    this.vertexIDs[from],
-    this.vertexIDs[to],
-    DijkstraVisualization.EDGE_THICKNESS
-  );
-  this.cmd(
-    "SetEdgeHighlight",
-    this.vertexIDs[from],
-    this.vertexIDs[to],
-    0
-  );
-};
-
-DijkstraVisualization.prototype.setEdgeToTreeColor = function (from, to) {
-  var key = this.edgeKey(from, to);
-  if (!this.edgeMap.hasOwnProperty(key)) {
-    return;
-  }
-  this.cmd(
-    "SetEdgeColor",
-    this.vertexIDs[from],
-    this.vertexIDs[to],
-    DijkstraVisualization.EDGE_TREE_COLOR
-  );
-  this.cmd(
-    "SetEdgeThickness",
-    this.vertexIDs[from],
-    this.vertexIDs[to],
-    DijkstraVisualization.EDGE_TREE_THICKNESS
-  );
-  this.cmd(
-    "SetEdgeHighlight",
-    this.vertexIDs[from],
-    this.vertexIDs[to],
-    0
-  );
-};
-
-DijkstraVisualization.prototype.applyTreeHighlight = function (
-  child,
-  parentIndex
-) {
-  this.ensureTreeTrackingArray();
-  if (!this.treeParentForVertex || child >= this.treeParentForVertex.length) {
-    return;
-  }
-
-  var previousParent = this.treeParentForVertex[child];
-  if (previousParent !== -1 && previousParent !== parentIndex) {
-    this.setEdgeToDefault(previousParent, child);
-  }
-
-  if (parentIndex === -1) {
-    this.treeParentForVertex[child] = -1;
-    return;
-  }
-
-  this.setEdgeToTreeColor(parentIndex, child);
-  this.treeParentForVertex[child] = parentIndex;
-};
-
-DijkstraVisualization.prototype.applyAllTreeHighlights = function (parent) {
-  if (!parent) {
-    return;
-  }
-
-  this.ensureTreeTrackingArray();
-
-  for (var i = 0; i < parent.length; i++) {
-    this.applyTreeHighlight(i, parent[i]);
-  }
-};
-
 DijkstraVisualization.prototype.edgeKey = function (from, to) {
   return from + "->" + to;
 };
@@ -1593,7 +1139,6 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.resetTableState();
   this.resetGraphState();
   this.initializePathsPanel(startIndex);
-  this.resetRelaxationPanel("No edge selected");
 
   var startLabel = this.vertexData[startIndex].label;
   this.updateStatus("Running Dijkstra from vertex " + startLabel + ".");
@@ -1693,14 +1238,6 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
       this.highlightCodeLine(15);
       var alternative = dist[u] + weight;
-      this.showRelaxationComparison(
-        u,
-        v,
-        dist[u],
-        weight,
-        dist[v],
-        alternative
-      );
       this.updateStatus(
         "Checking edge " +
           fromLabel +
@@ -1710,9 +1247,6 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
           weight +
           "."
       );
-      this.cmd("Step");
-
-      this.showRelaxationOutcome(u, v, alternative, dist[v]);
       this.cmd("Step");
 
       if (alternative < dist[v]) {
@@ -1755,7 +1289,6 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
       this.highlightCodeLine(19);
       this.highlightEdge(u, v, false);
-      this.applyTreeHighlight(v, parent[v]);
       this.cmd("Step");
     }
 
@@ -1768,8 +1301,6 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
     this.cmd("Step");
   }
 
-  this.resetRelaxationPanel("All edges processed");
-
   this.highlightCodeLine(21);
   this.updateStatus("Dijkstra computation complete.");
   this.cmd("Step");
@@ -1779,8 +1310,6 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.highlightCodeLine(-1);
 
   this.finalizePathsDisplay(startIndex, parent, dist);
-  this.applyAllTreeHighlights(parent);
-  this.cmd("Step");
 
   return this.commands;
 };
@@ -1801,11 +1330,6 @@ DijkstraVisualization.prototype.resetTableState = function () {
 };
 
 DijkstraVisualization.prototype.resetGraphState = function () {
-  this.ensureTreeTrackingArray();
-  for (var t = 0; t < this.treeParentForVertex.length; t++) {
-    this.treeParentForVertex[t] = -1;
-  }
-
   for (var i = 0; i < this.vertexIDs.length; i++) {
     this.cmd(
       "SetBackgroundColor",
@@ -1827,12 +1351,6 @@ DijkstraVisualization.prototype.resetGraphState = function () {
         this.vertexIDs[edge.from],
         this.vertexIDs[edge.to],
         DijkstraVisualization.EDGE_COLOR
-      );
-      this.cmd(
-        "SetEdgeThickness",
-        this.vertexIDs[edge.from],
-        this.vertexIDs[edge.to],
-        DijkstraVisualization.EDGE_THICKNESS
       );
       this.cmd(
         "SetEdgeHighlight",
