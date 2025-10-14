@@ -59,7 +59,7 @@ DijkstraVisualization.PATH_TITLE_FONT = "bold 18";
 DijkstraVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
 DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
-DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 420;
+DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 480;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
 DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 
