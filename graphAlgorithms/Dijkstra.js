@@ -1120,6 +1120,25 @@ DijkstraVisualization.prototype.findVertexIndex = function (label) {
   return -1;
 };
 
+DijkstraVisualization.prototype.formatDistance = function (value) {
+  if (value === Infinity) {
+    return this.infinitySymbol;
+  }
+
+  if (typeof value === "number") {
+    if (!isFinite(value)) {
+      return this.infinitySymbol;
+    }
+    return value.toString();
+  }
+
+  if (value === undefined || value === null) {
+    return this.infinitySymbol;
+  }
+
+  return String(value);
+};
+
 DijkstraVisualization.prototype.startCallback = function () {
   var value = this.getStartFieldValue();
   var index = this.findVertexIndex(value);
@@ -1208,7 +1227,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
       "Processing vertex " +
         this.vertexData[u].label +
         " with current distance " +
-        (dist[u] === Infinity ? this.infinitySymbol : dist[u]) +
+        this.formatDistance(dist[u]) +
         "."
     );
     visited[u] = true;
@@ -1238,6 +1257,9 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
       this.highlightCodeLine(15);
       var alternative = dist[u] + weight;
+      var formattedFromDistance = this.formatDistance(dist[u]);
+      var formattedAlternative = this.formatDistance(alternative);
+      var formattedCurrent = this.formatDistance(dist[v]);
       this.updateStatus(
         "Checking edge " +
           fromLabel +
@@ -1245,6 +1267,12 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
           toLabel +
           " with weight " +
           weight +
+          ". Current path cost: " +
+          formattedFromDistance +
+          " + " +
+          weight +
+          " = " +
+          formattedAlternative +
           "."
       );
       this.cmd("Step");
@@ -1258,10 +1286,14 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
           "Updated distance of " +
             toLabel +
             " to " +
-            alternative +
+            formattedAlternative +
             " via " +
             fromLabel +
-            "."
+            " (" +
+            formattedFromDistance +
+            " + " +
+            weight +
+            ")."
         );
         this.cmd("Step");
         this.updateDistanceCell(v, alternative, false);
@@ -1281,8 +1313,10 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
           "Keeping current distance of " +
             toLabel +
             " (" +
-            (dist[v] === Infinity ? this.infinitySymbol : dist[v]) +
-            ") because it is shorter."
+            formattedCurrent +
+            ") because the alternative path costs " +
+            formattedAlternative +
+            "."
         );
         this.cmd("Step");
       }
