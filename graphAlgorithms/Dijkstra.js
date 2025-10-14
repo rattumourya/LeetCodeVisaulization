@@ -70,6 +70,7 @@ DijkstraVisualization.INFO_PASSIVE_COLOR = "#5f6c80";
 DijkstraVisualization.INFO_BACKDROP_COLOR = "#f6f7fb";
 DijkstraVisualization.INFO_BACKGROUND_DEFAULT = "#f6f7fb";
 DijkstraVisualization.INFO_HIGHLIGHT_COLOR = "#fff4b8";
+DijkstraVisualization.INFO_HIGHLIGHT_TEXT_COLOR = "#d84315";
 DijkstraVisualization.INFO_HIGHLIGHT_WIDTH = 620;
 DijkstraVisualization.INFO_HIGHLIGHT_HEIGHT = 44;
 DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X =
@@ -580,7 +581,11 @@ DijkstraVisualization.prototype.createTitle = function () {
     1
   );
   this.cmd("SetTextStyle", this.infoOverlayID, DijkstraVisualization.INFO_FONT);
-  this.cmd("SetForegroundColor", this.infoOverlayID, DijkstraVisualization.INFO_COLOR);
+  this.cmd(
+    "SetForegroundColor",
+    this.infoOverlayID,
+    DijkstraVisualization.INFO_HIGHLIGHT_TEXT_COLOR
+  );
   this.cmd(
     "SetBackgroundColor",
     this.infoOverlayID,
@@ -666,8 +671,14 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
   }
 
   if (overlayExists) {
-    this.cmd("SetAlpha", this.infoOverlayID, 1);
+    this.cmd("SetAlpha", this.infoOverlayID, 0);
     this.cmd("SetText", this.infoOverlayID, "");
+    this.cmd(
+      "SetPosition",
+      this.infoOverlayID,
+      DijkstraVisualization.CANVAS_WIDTH / 2,
+      DijkstraVisualization.INFO_Y
+    );
   }
 
   var cursorStartX =
@@ -702,28 +713,60 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     compactLength = 1;
   }
 
-  var revealedChars = 0;
-  var rendered = "";
+  var processedChars = 0;
   var leftEdge = DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X;
   var fullWidth = DijkstraVisualization.INFO_HIGHLIGHT_WIDTH;
 
   for (var t = 0; t < tokens.length; t++) {
-    rendered += tokens[t];
-    if (overlayExists) {
-      this.cmd("SetText", this.infoOverlayID, rendered);
-    }
-
-    var trimmed = tokens[t].replace(/\s+/g, "");
+    var token = tokens[t];
+    var trimmed = token.replace(/\s+/g, "");
     if (trimmed.length === 0) {
       continue;
     }
 
-    revealedChars += trimmed.length;
-    if (revealedChars > compactLength) {
-      revealedChars = compactLength;
+    var prefixRatio = processedChars / compactLength;
+    if (prefixRatio < 0) {
+      prefixRatio = 0;
+    } else if (prefixRatio > 1) {
+      prefixRatio = 1;
     }
 
-    var ratio = revealedChars / compactLength;
+    var wordRatio = trimmed.length / compactLength;
+    if (wordRatio < 0) {
+      wordRatio = 0;
+    } else if (wordRatio > 1) {
+      wordRatio = 1;
+    }
+
+    var remainingWidth = fullWidth - fullWidth * prefixRatio;
+    if (remainingWidth < DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH) {
+      remainingWidth = DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH;
+    }
+    var wordWidth = Math.max(
+      DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH,
+      fullWidth * wordRatio
+    );
+    if (wordWidth > remainingWidth) {
+      wordWidth = remainingWidth;
+    }
+
+    if (overlayExists) {
+      this.cmd("SetAlpha", this.infoOverlayID, 1);
+      this.cmd("SetText", this.infoOverlayID, trimmed);
+      this.cmd(
+        "SetPosition",
+        this.infoOverlayID,
+        leftEdge + fullWidth * prefixRatio + wordWidth / 2,
+        DijkstraVisualization.INFO_Y
+      );
+    }
+
+    processedChars += trimmed.length;
+    if (processedChars > compactLength) {
+      processedChars = compactLength;
+    }
+
+    var ratio = processedChars / compactLength;
     if (ratio < 0) {
       ratio = 0;
     } else if (ratio > 1) {
@@ -775,10 +818,6 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     }
   }
 
-  if (overlayExists) {
-    this.cmd("SetText", this.infoOverlayID, text);
-  }
-
   if (backdropExists) {
     this.cmd("SetAlpha", this.infoBackdropID, 0);
   }
@@ -792,6 +831,12 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
   if (overlayExists) {
     this.cmd("SetAlpha", this.infoOverlayID, 0);
     this.cmd("SetText", this.infoOverlayID, "");
+    this.cmd(
+      "SetPosition",
+      this.infoOverlayID,
+      DijkstraVisualization.CANVAS_WIDTH / 2,
+      DijkstraVisualization.INFO_Y
+    );
   }
 
   for (
