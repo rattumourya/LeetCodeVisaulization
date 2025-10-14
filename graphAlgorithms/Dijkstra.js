@@ -59,9 +59,7 @@ DijkstraVisualization.PATH_TITLE_FONT = "bold 18";
 DijkstraVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
 DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
-DijkstraVisualization.PATH_LEFT_COLOR = "#7ec8e3";
-DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 460;
-DijkstraVisualization.PATH_VALUE_START_X = DijkstraVisualization.PATH_START_X + 80;
+DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 380;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
 DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 
@@ -997,40 +995,22 @@ DijkstraVisualization.prototype.ensurePathLabel = function (vertexIndex) {
     DijkstraVisualization.PATH_START_Y +
     row * DijkstraVisualization.PATH_LINE_HEIGHT;
 
-  var leftID = this.nextIndex++;
+  var labelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
-    leftID,
+    labelID,
     "",
     DijkstraVisualization.PATH_START_X,
     y,
     0
   );
-  this.cmd("SetTextStyle", leftID, DijkstraVisualization.PATH_FONT);
-  this.cmd("SetForegroundColor", leftID, DijkstraVisualization.PATH_LEFT_COLOR);
+  this.cmd("SetTextStyle", labelID, DijkstraVisualization.PATH_FONT);
+  this.cmd("SetForegroundColor", labelID, DijkstraVisualization.PATH_TEXT_COLOR);
 
-  var rightID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    rightID,
-    "",
-    DijkstraVisualization.PATH_VALUE_START_X,
-    y,
-    0
-  );
-  this.cmd("SetTextStyle", rightID, DijkstraVisualization.PATH_FONT);
-  this.cmd("SetForegroundColor", rightID, DijkstraVisualization.PATH_TEXT_COLOR);
-
-  var labelPair = {
-    left: leftID,
-    right: rightID,
-  };
-
-  this.pathLabelsByVertex[vertexIndex] = labelPair;
+  this.pathLabelsByVertex[vertexIndex] = labelID;
   this.pathOrder.push(vertexIndex);
-  this.pathLabelIDs.push(leftID);
-  this.pathLabelIDs.push(rightID);
-  return labelPair;
+  this.pathLabelIDs.push(labelID);
+  return labelID;
 };
 
 DijkstraVisualization.prototype.composePathLine = function (
@@ -1039,22 +1019,15 @@ DijkstraVisualization.prototype.composePathLine = function (
   startIndex,
   dist
 ) {
-  var vertexLabel = this.vertexData[vertexIndex].label;
-  var parentIndex = parent[vertexIndex];
-  var parentLabel = parentIndex === -1
-    ? "∅"
-    : this.vertexData[parentIndex].label;
   var pathText = this.buildPathString(vertexIndex, parent, startIndex);
   var hasPath = pathText && pathText.length > 0;
   var distance = dist && dist[vertexIndex] !== undefined && dist[vertexIndex] !== Infinity
     ? dist[vertexIndex]
     : null;
 
-  var leftPart = vertexLabel + " → " + parentLabel;
   var segments = [];
 
   if (hasPath) {
-    leftPart += ":";
     segments.push(pathText);
   }
 
@@ -1062,12 +1035,7 @@ DijkstraVisualization.prototype.composePathLine = function (
     segments.push("[" + distance + "]");
   }
 
-  var rightPart = segments.join(" ");
-
-  return {
-    left: leftPart,
-    right: rightPart,
-  };
+  return segments.join(" ");
 };
 
 DijkstraVisualization.prototype.updateAnimatedPath = function (
@@ -1082,10 +1050,9 @@ DijkstraVisualization.prototype.updateAnimatedPath = function (
   }
 
   var existed = this.pathLabelsByVertex.hasOwnProperty(vertexIndex);
-  var labelPair = this.ensurePathLabel(vertexIndex);
+  var labelID = this.ensurePathLabel(vertexIndex);
   var text = this.composePathLine(vertexIndex, parent, startIndex, dist);
-  this.cmd("SetText", labelPair.left, text.left);
-  this.cmd("SetText", labelPair.right, text.right);
+  this.cmd("SetText", labelID, text);
   if (!skipStep || !existed) {
     this.cmd("Step");
   }
