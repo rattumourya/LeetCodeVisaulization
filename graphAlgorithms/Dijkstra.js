@@ -68,21 +68,71 @@ DijkstraVisualization.INFO_FONT = "bold 20";
 DijkstraVisualization.INFO_COLOR = "#0d1b2a";
 DijkstraVisualization.INFO_PASSIVE_COLOR = "#5f6c80";
 DijkstraVisualization.INFO_BACKGROUND_DEFAULT = "#f6f7fb";
-DijkstraVisualization.INFO_HIGHLIGHT_WIDTH = 620;
 DijkstraVisualization.INFO_HIGHLIGHT_HEIGHT = 44;
-DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X =
-  DijkstraVisualization.CANVAS_WIDTH / 2 -
-  DijkstraVisualization.INFO_HIGHLIGHT_WIDTH / 2;
 DijkstraVisualization.INFO_PROGRESS_HEIGHT = 6;
-DijkstraVisualization.INFO_PROGRESS_COLOR = "#3949ab";
+DijkstraVisualization.INFO_PROGRESS_MIN_WIDTH = 180;
+DijkstraVisualization.INFO_PROGRESS_MAX_WIDTH = 660;
+DijkstraVisualization.INFO_PROGRESS_TEXT_PADDING = 36;
+DijkstraVisualization.INFO_PROGRESS_COLOR = "#9bd5ff";
+DijkstraVisualization.INFO_PROGRESS_REMAINING_COLOR =
+  DijkstraVisualization.INFO_BACKGROUND_DEFAULT;
 DijkstraVisualization.INFO_PROGRESS_Y =
   DijkstraVisualization.INFO_Y +
   DijkstraVisualization.INFO_HIGHLIGHT_HEIGHT / 2 +
   6;
-DijkstraVisualization.INFO_PROGRESS_STEPS = 24;
+DijkstraVisualization.INFO_PROGRESS_STEPS = 36;
 DijkstraVisualization.INFO_PROGRESS_END_HOLD_STEPS = 2;
+DijkstraVisualization.INFO_PROGRESS_MIN_REMAINING_WIDTH = 1;
+DijkstraVisualization.INFO_FONT_CANVAS =
+  DijkstraVisualization.INFO_FONT + "px Arial";
 DijkstraVisualization.DEFAULT_INFO_TEXT =
   "Click 'Run Dijkstra' to watch the animation. Use 'New Graph' for variety.";
+
+DijkstraVisualization.measureInfoTextWidth = (function () {
+  var canvas = null;
+  var context = null;
+  return function (text) {
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      if (canvas.getContext) {
+        context = canvas.getContext("2d");
+      }
+    }
+    if (!context) {
+      return (text ? text.length : 0) * 12;
+    }
+    context.font = DijkstraVisualization.INFO_FONT_CANVAS;
+    return context.measureText(text || "").width;
+  };
+})();
+
+DijkstraVisualization.prototype.computeInfoProgressMetrics = function (text) {
+  var measuredWidth = DijkstraVisualization.measureInfoTextWidth(text);
+  if (!isFinite(measuredWidth) || measuredWidth <= 0) {
+    measuredWidth = 0;
+  }
+  measuredWidth += DijkstraVisualization.INFO_PROGRESS_TEXT_PADDING;
+  var minWidth = DijkstraVisualization.INFO_PROGRESS_MIN_WIDTH;
+  var maxWidth = DijkstraVisualization.INFO_PROGRESS_MAX_WIDTH;
+  if (!isFinite(minWidth) || minWidth < 0) {
+    minWidth = 0;
+  }
+  if (!isFinite(maxWidth) || maxWidth <= 0) {
+    maxWidth = DijkstraVisualization.CANVAS_WIDTH - 40;
+  }
+  if (measuredWidth < minWidth) {
+    measuredWidth = minWidth;
+  } else if (measuredWidth > maxWidth) {
+    measuredWidth = maxWidth;
+  }
+
+  var left = DijkstraVisualization.CANVAS_WIDTH / 2 - measuredWidth / 2;
+  return {
+    width: measuredWidth,
+    left: left,
+    y: DijkstraVisualization.INFO_PROGRESS_Y,
+  };
+};
 
 DijkstraVisualization.BIDIRECTIONAL_CURVE_INNER = 0.18;
 DijkstraVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
@@ -233,7 +283,8 @@ DijkstraVisualization.prototype.init = function (am, w, h) {
   this.statusID = -1;
   this.titleID = -1;
   this.infoLabelID = -1;
-  this.infoProgressID = -1;
+  this.infoProgressTrackID = -1;
+  this.infoProgressCoverID = -1;
 
   this.graphMode = DijkstraVisualization.GRAPH_MODE_DEFAULT;
 
@@ -297,7 +348,8 @@ DijkstraVisualization.prototype.reset = function () {
   this.pathsTitleID = -1;
   this.currentCodeLine = -1;
   this.infoLabelID = -1;
-  this.infoProgressID = -1;
+  this.infoProgressTrackID = -1;
+  this.infoProgressCoverID = -1;
   this.statusID = -1;
 
   if (
@@ -475,30 +527,59 @@ DijkstraVisualization.prototype.createTitle = function () {
   );
   this.cmd("SetLayer", this.infoLabelID, 4);
 
-  this.infoProgressID = this.nextIndex++;
+  var initialProgressMetrics = this.computeInfoProgressMetrics(
+    DijkstraVisualization.DEFAULT_INFO_TEXT
+  );
+
+  this.infoProgressTrackID = this.nextIndex++;
   this.cmd(
     "CreateRectangle",
-    this.infoProgressID,
+    this.infoProgressTrackID,
     "",
-    DijkstraVisualization.INFO_HIGHLIGHT_WIDTH,
+    initialProgressMetrics.width,
     DijkstraVisualization.INFO_PROGRESS_HEIGHT,
-    DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X,
-    DijkstraVisualization.INFO_PROGRESS_Y,
+    initialProgressMetrics.left,
+    initialProgressMetrics.y,
     "left",
     "center"
   );
   this.cmd(
     "SetForegroundColor",
-    this.infoProgressID,
+    this.infoProgressTrackID,
     DijkstraVisualization.INFO_PROGRESS_COLOR
   );
   this.cmd(
     "SetBackgroundColor",
-    this.infoProgressID,
+    this.infoProgressTrackID,
     DijkstraVisualization.INFO_PROGRESS_COLOR
   );
-  this.cmd("SetLayer", this.infoProgressID, 2);
-  this.cmd("SetAlpha", this.infoProgressID, 0);
+  this.cmd("SetLayer", this.infoProgressTrackID, 2);
+  this.cmd("SetAlpha", this.infoProgressTrackID, 0);
+
+  this.infoProgressCoverID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.infoProgressCoverID,
+    "",
+    initialProgressMetrics.width,
+    DijkstraVisualization.INFO_PROGRESS_HEIGHT,
+    initialProgressMetrics.left,
+    initialProgressMetrics.y,
+    "left",
+    "center"
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.infoProgressCoverID,
+    DijkstraVisualization.INFO_PROGRESS_REMAINING_COLOR
+  );
+  this.cmd(
+    "SetBackgroundColor",
+    this.infoProgressCoverID,
+    DijkstraVisualization.INFO_PROGRESS_REMAINING_COLOR
+  );
+  this.cmd("SetLayer", this.infoProgressCoverID, 3);
+  this.cmd("SetAlpha", this.infoProgressCoverID, 0);
 
   this.updateStatus(DijkstraVisualization.DEFAULT_INFO_TEXT, false);
 };
@@ -529,38 +610,55 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     DijkstraVisualization.INFO_BACKGROUND_DEFAULT
   );
 
-  if (this.infoProgressID < 0) {
+  if (
+    this.infoProgressTrackID < 0 ||
+    this.infoProgressCoverID < 0
+  ) {
     return;
   }
 
-  var left = DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X;
-  var y = DijkstraVisualization.INFO_PROGRESS_Y;
-  var fullWidth = DijkstraVisualization.INFO_HIGHLIGHT_WIDTH;
+  var metrics = this.computeInfoProgressMetrics(text);
+  var left = metrics.left;
+  var y = metrics.y;
+  var fullWidth = metrics.width;
 
-  this.cmd(
-    "SetPosition",
-    this.infoProgressID,
-    left,
-    y
-  );
-  this.cmd("SetWidth", this.infoProgressID, fullWidth);
+  this.cmd("SetWidth", this.infoProgressTrackID, fullWidth);
+  this.cmd("SetPosition", this.infoProgressTrackID, left, y);
   this.cmd(
     "SetHeight",
-    this.infoProgressID,
+    this.infoProgressTrackID,
+    DijkstraVisualization.INFO_PROGRESS_HEIGHT
+  );
+  this.cmd(
+    "SetWidth",
+    this.infoProgressCoverID,
+    fullWidth
+  );
+  this.cmd("SetPosition", this.infoProgressCoverID, left, y);
+  this.cmd(
+    "SetHeight",
+    this.infoProgressCoverID,
     DijkstraVisualization.INFO_PROGRESS_HEIGHT
   );
 
   if (!animate) {
-    this.cmd("SetAlpha", this.infoProgressID, 0);
+    this.cmd("SetAlpha", this.infoProgressTrackID, 0);
+    this.cmd("SetAlpha", this.infoProgressCoverID, 0);
     return;
   }
 
-  this.cmd("SetAlpha", this.infoProgressID, 1);
+  this.cmd("SetAlpha", this.infoProgressTrackID, 1);
+  this.cmd("SetAlpha", this.infoProgressCoverID, 1);
   this.cmd("Step");
 
   var steps = DijkstraVisualization.INFO_PROGRESS_STEPS;
   if (!steps || steps < 1) {
     steps = 1;
+  }
+
+  var minRemaining = DijkstraVisualization.INFO_PROGRESS_MIN_REMAINING_WIDTH;
+  if (!isFinite(minRemaining) || minRemaining < 0) {
+    minRemaining = 0;
   }
 
   for (var s = 0; s < steps; s++) {
@@ -574,20 +672,26 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
       remainingWidth = 0;
     }
 
+    if (remainingWidth > 0 && remainingWidth < minRemaining) {
+      remainingWidth = minRemaining;
+    }
+
     var newLeft = left + (fullWidth - remainingWidth);
-    this.cmd("SetWidth", this.infoProgressID, remainingWidth);
-    this.cmd("SetPosition", this.infoProgressID, newLeft, y);
+    this.cmd("SetWidth", this.infoProgressCoverID, remainingWidth);
+    this.cmd("SetPosition", this.infoProgressCoverID, newLeft, y);
     this.cmd("Step");
   }
 
-  this.cmd("SetAlpha", this.infoProgressID, 0);
-  this.cmd("SetWidth", this.infoProgressID, fullWidth);
-  this.cmd("SetPosition", this.infoProgressID, left, y);
+  this.cmd("SetAlpha", this.infoProgressCoverID, 0);
+  this.cmd("SetWidth", this.infoProgressCoverID, fullWidth);
+  this.cmd("SetPosition", this.infoProgressCoverID, left, y);
 
   var holdSteps = DijkstraVisualization.INFO_PROGRESS_END_HOLD_STEPS;
   for (var h = 0; h < holdSteps; h++) {
     this.cmd("Step");
   }
+
+  this.cmd("SetAlpha", this.infoProgressTrackID, 0);
 };
 
 DijkstraVisualization.prototype.createGraph = function () {
