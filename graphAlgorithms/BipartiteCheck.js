@@ -8,11 +8,11 @@ BipartiteCheck.prototype = new Algorithm();
 BipartiteCheck.prototype.constructor = BipartiteCheck;
 BipartiteCheck.superclass = Algorithm.prototype;
 
-BipartiteCheck.CANVAS_WIDTH = 900;
-BipartiteCheck.CANVAS_HEIGHT = 1600;
+BipartiteCheck.CANVAS_WIDTH = 720;
+BipartiteCheck.CANVAS_HEIGHT = 1280;
 
-BipartiteCheck.ROW1_HEIGHT = 240;
-BipartiteCheck.ROW2_HEIGHT = 760;
+BipartiteCheck.ROW1_HEIGHT = 192;
+BipartiteCheck.ROW2_HEIGHT = 608;
 BipartiteCheck.ROW3_HEIGHT =
   BipartiteCheck.CANVAS_HEIGHT - BipartiteCheck.ROW1_HEIGHT - BipartiteCheck.ROW2_HEIGHT;
 
@@ -25,8 +25,8 @@ BipartiteCheck.TITLE_Y = BipartiteCheck.ROW1_CENTER_Y - 40;
 BipartiteCheck.START_INFO_Y = BipartiteCheck.ROW1_CENTER_Y + 36;
 BipartiteCheck.STATUS_INFO_Y = BipartiteCheck.START_INFO_Y + 40;
 
-BipartiteCheck.GRAPH_AREA_CENTER_X = 320;
-BipartiteCheck.GRAPH_NODE_RADIUS = 22;
+BipartiteCheck.GRAPH_AREA_CENTER_X = 256;
+BipartiteCheck.GRAPH_NODE_RADIUS = 18;
 BipartiteCheck.GRAPH_NODE_COLOR = "#e3f2fd";
 BipartiteCheck.GRAPH_NODE_BORDER = "#0b3954";
 BipartiteCheck.GRAPH_NODE_TEXT = "#003049";
@@ -42,12 +42,12 @@ BipartiteCheck.EDGE_THICKNESS = 3;
 BipartiteCheck.EDGE_ACTIVE_THICKNESS = 2;
 BipartiteCheck.EDGE_TREE_THICKNESS = 6;
 
-BipartiteCheck.ARRAY_BASE_X = 700;
-BipartiteCheck.ARRAY_COLUMN_SPACING = 90;
-BipartiteCheck.ARRAY_TOP_Y = BipartiteCheck.ROW2_START_Y + 90;
-BipartiteCheck.ARRAY_CELL_HEIGHT = 52;
-BipartiteCheck.ARRAY_CELL_WIDTH = 60;
-BipartiteCheck.ARRAY_CELL_INNER_HEIGHT = 42;
+BipartiteCheck.ARRAY_BASE_X = 560;
+BipartiteCheck.ARRAY_COLUMN_SPACING = 72;
+BipartiteCheck.ARRAY_TOP_Y = BipartiteCheck.ROW2_START_Y + 72;
+BipartiteCheck.ARRAY_CELL_HEIGHT = 42;
+BipartiteCheck.ARRAY_CELL_WIDTH = 48;
+BipartiteCheck.ARRAY_CELL_INNER_HEIGHT = 34;
 BipartiteCheck.ARRAY_HEADER_HEIGHT = BipartiteCheck.ARRAY_CELL_INNER_HEIGHT;
 BipartiteCheck.ARRAY_RECT_COLOR = "#f1f1f6";
 BipartiteCheck.ARRAY_RECT_BORDER = "#2b2d42";
@@ -57,30 +57,30 @@ BipartiteCheck.ARRAY_RECT_HIGHLIGHT_THICKNESS = 3;
 BipartiteCheck.ARRAY_TEXT_COLOR = "#2b2d42";
 BipartiteCheck.ARRAY_COLOR_FILL_A = "#d8eefe";
 BipartiteCheck.ARRAY_COLOR_FILL_B = "#ffe5f1";
-BipartiteCheck.ARRAY_HEADER_GAP = 20;
-BipartiteCheck.BOTTOM_SECTION_GAP = 56;
-BipartiteCheck.CODE_TOP_PADDING = 12;
+BipartiteCheck.ARRAY_HEADER_GAP = 16;
+BipartiteCheck.BOTTOM_SECTION_GAP = 45;
+BipartiteCheck.CODE_TOP_PADDING = 10;
 
-BipartiteCheck.CODE_START_X = 120;
-BipartiteCheck.CODE_LINE_HEIGHT = 32;
+BipartiteCheck.CODE_START_X = 96;
+BipartiteCheck.CODE_LINE_HEIGHT = 26;
 BipartiteCheck.CODE_STANDARD_COLOR = "#1d3557";
 BipartiteCheck.CODE_HIGHLIGHT_COLOR = "#e63946";
-BipartiteCheck.CODE_FONT = "bold 22";
+BipartiteCheck.CODE_FONT = "bold 18";
 
-BipartiteCheck.RECURSION_AREA_CENTER_X = 640;
-BipartiteCheck.RECURSION_HEADER_HEIGHT = 44;
-BipartiteCheck.RECURSION_LABEL_MARGIN = 14;
-BipartiteCheck.RECURSION_AREA_BOTTOM_MARGIN = 30;
-BipartiteCheck.RECURSION_FRAME_WIDTH = 320;
-BipartiteCheck.RECURSION_FRAME_HEIGHT = 34;
-BipartiteCheck.RECURSION_FRAME_MIN_HEIGHT = 22;
-BipartiteCheck.RECURSION_FRAME_SPACING = 10;
-BipartiteCheck.RECURSION_FRAME_MIN_SPACING = 6;
+BipartiteCheck.RECURSION_AREA_CENTER_X = 512;
+BipartiteCheck.RECURSION_HEADER_HEIGHT = 35;
+BipartiteCheck.RECURSION_LABEL_MARGIN = 11;
+BipartiteCheck.RECURSION_AREA_BOTTOM_MARGIN = 24;
+BipartiteCheck.RECURSION_FRAME_WIDTH = 256;
+BipartiteCheck.RECURSION_FRAME_HEIGHT = 27;
+BipartiteCheck.RECURSION_FRAME_MIN_HEIGHT = 18;
+BipartiteCheck.RECURSION_FRAME_SPACING = 8;
+BipartiteCheck.RECURSION_FRAME_MIN_SPACING = 5;
 BipartiteCheck.RECURSION_RECT_COLOR = "#f8f9fa";
 BipartiteCheck.RECURSION_RECT_BORDER = "#1d3557";
 BipartiteCheck.RECURSION_RECT_ACTIVE_BORDER = "#e63946";
 BipartiteCheck.RECURSION_TEXT_COLOR = "#1d3557";
-BipartiteCheck.RECURSION_FONT = "bold 18";
+BipartiteCheck.RECURSION_FONT = "bold 14";
 
 BipartiteCheck.TITLE_COLOR = "#1d3557";
 BipartiteCheck.START_INFO_COLOR = "#264653";
@@ -670,7 +670,7 @@ BipartiteCheck.prototype.createRecursionArea = function () {
     this.recursionHeaderID,
     BipartiteCheck.CODE_STANDARD_COLOR
   );
-  this.cmd("SetTextStyle", this.recursionHeaderID, "bold 22");
+  this.cmd("SetTextStyle", this.recursionHeaderID, "bold 18");
 
   this.recursionFrameIDs = [];
   this.activeRecursionIndex = -1;
@@ -1077,10 +1077,10 @@ BipartiteCheck.prototype.markEdgeAsConflict = function (u, v) {
 
 BipartiteCheck.prototype.computeTemplateLayout = function (vertexCount) {
   var layout = [];
-  var baseX = 160;
-  var stepX = 130;
-  var baseY = BipartiteCheck.ROW2_START_Y + 120;
-  var rowSpacing = 150;
+  var baseX = 128;
+  var stepX = 104;
+  var baseY = BipartiteCheck.ROW2_START_Y + 96;
+  var rowSpacing = 120;
   var rowPattern = [4, 3, 4, 3, 4];
 
   for (var row = 0, index = 0; row < rowPattern.length; row++) {
