@@ -31,17 +31,53 @@ DijkstraVisualization.TABLE_HEADER_Y = 540;
 DijkstraVisualization.TABLE_ROW_HEIGHT = 40;
 DijkstraVisualization.TABLE_FIRST_ROW_Y =
   DijkstraVisualization.TABLE_HEADER_Y + 50;
-DijkstraVisualization.TABLE_COLUMNS = [
-  { label: "Vertex", x: 120, width: 90 },
-  { label: "Known", x: 280, width: 100 },
-  { label: "Distance", x: 440, width: 140 },
-  { label: "Parent", x: 600, width: 110 },
+DijkstraVisualization.TABLE_LEFT_X = 70;
+DijkstraVisualization.TABLE_COLUMN_WIDTH = 80;
+DijkstraVisualization.TABLE_COLUMN_GAP = 6;
+DijkstraVisualization.TABLE_COLUMN_LABELS = [
+  "Vertex",
+  "Known",
+  "Distance",
+  "Parent",
 ];
+DijkstraVisualization.TABLE_COLUMNS = (function () {
+  var columns = [];
+  var baseCenter =
+    DijkstraVisualization.TABLE_LEFT_X +
+    DijkstraVisualization.TABLE_COLUMN_WIDTH / 2;
+  var step =
+    DijkstraVisualization.TABLE_COLUMN_WIDTH +
+    DijkstraVisualization.TABLE_COLUMN_GAP;
+  for (var i = 0; i < DijkstraVisualization.TABLE_COLUMN_LABELS.length; i++) {
+    columns.push({
+      label: DijkstraVisualization.TABLE_COLUMN_LABELS[i],
+      width: DijkstraVisualization.TABLE_COLUMN_WIDTH,
+      x: baseCenter + i * step,
+    });
+  }
+  return columns;
+})();
 DijkstraVisualization.TABLE_HEADER_FONT = "bold 20";
 DijkstraVisualization.TABLE_CELL_FONT = "bold 18";
 DijkstraVisualization.TABLE_HEADER_COLOR = "#1a237e";
 DijkstraVisualization.TABLE_TEXT_COLOR = "#1f2933";
 DijkstraVisualization.TABLE_HIGHLIGHT_COLOR = "#ffe0b2";
+DijkstraVisualization.TABLE_BORDER_COLOR = "#1a237e";
+DijkstraVisualization.TABLE_BORDER_THICKNESS = 2;
+
+DijkstraVisualization.PQ_HEADER_X = 560;
+DijkstraVisualization.PQ_HEADER_Y = DijkstraVisualization.TABLE_HEADER_Y;
+DijkstraVisualization.PQ_FIRST_ROW_Y = DijkstraVisualization.TABLE_FIRST_ROW_Y;
+DijkstraVisualization.PQ_ROW_HEIGHT = DijkstraVisualization.TABLE_ROW_HEIGHT;
+DijkstraVisualization.PQ_ITEM_WIDTH = 220;
+DijkstraVisualization.PQ_ITEM_HEIGHT =
+  DijkstraVisualization.PQ_ROW_HEIGHT - 6;
+DijkstraVisualization.PQ_FONT = DijkstraVisualization.TABLE_CELL_FONT;
+DijkstraVisualization.PQ_HEADER_COLOR = DijkstraVisualization.TABLE_HEADER_COLOR;
+DijkstraVisualization.PQ_TEXT_COLOR = DijkstraVisualization.TABLE_TEXT_COLOR;
+DijkstraVisualization.PQ_HIGHLIGHT_COLOR = "#bbdefb";
+DijkstraVisualization.PQ_EMPTY_FONT = "bold 16";
+DijkstraVisualization.PQ_EMPTY_TEXT = "Queue is empty";
 
 DijkstraVisualization.CODE_TITLE_Y = 840;
 DijkstraVisualization.CODE_START_Y = 860;
@@ -284,6 +320,9 @@ DijkstraVisualization.prototype.init = function (am, w, h) {
   this.infoLabelID = -1;
   this.infoProgressTrackID = -1;
   this.infoProgressCoverID = -1;
+  this.priorityQueueHeaderID = -1;
+  this.priorityQueueEmptyLabelID = -1;
+  this.priorityQueueItemIDs = [];
 
   this.graphMode = DijkstraVisualization.GRAPH_MODE_DEFAULT;
 
@@ -350,6 +389,9 @@ DijkstraVisualization.prototype.reset = function () {
   this.infoProgressTrackID = -1;
   this.infoProgressCoverID = -1;
   this.statusID = -1;
+  this.priorityQueueHeaderID = -1;
+  this.priorityQueueEmptyLabelID = -1;
+  this.priorityQueueItemIDs = [];
 
   if (
     typeof animationManager !== "undefined" &&
@@ -373,6 +415,7 @@ DijkstraVisualization.prototype.setup = function () {
   this.createTitle();
   this.createGraph();
   this.createTable();
+  this.createPriorityQueueDisplay();
   this.createCodeDisplay();
   this.highlightCodeLine(-1);
 
@@ -789,7 +832,13 @@ DijkstraVisualization.prototype.createTable = function () {
       rowY
     );
     this.cmd("SetTextStyle", vertexCell, DijkstraVisualization.TABLE_CELL_FONT);
-    this.cmd("SetForegroundColor", vertexCell, DijkstraVisualization.TABLE_TEXT_COLOR);
+    this.cmd("SetForegroundColor", vertexCell, DijkstraVisualization.TABLE_BORDER_COLOR);
+    this.cmd(
+      "SetRectangleLineThickness",
+      vertexCell,
+      DijkstraVisualization.TABLE_BORDER_THICKNESS
+    );
+    this.cmd("SetTextColor", vertexCell, DijkstraVisualization.TABLE_TEXT_COLOR);
     this.cmd("SetBackgroundColor", vertexCell, "#ffffff");
     this.vertexCellIDs[i] = vertexCell;
 
@@ -804,7 +853,13 @@ DijkstraVisualization.prototype.createTable = function () {
       rowY
     );
     this.cmd("SetTextStyle", knownCell, DijkstraVisualization.TABLE_CELL_FONT);
-    this.cmd("SetForegroundColor", knownCell, DijkstraVisualization.TABLE_TEXT_COLOR);
+    this.cmd("SetForegroundColor", knownCell, DijkstraVisualization.TABLE_BORDER_COLOR);
+    this.cmd(
+      "SetRectangleLineThickness",
+      knownCell,
+      DijkstraVisualization.TABLE_BORDER_THICKNESS
+    );
+    this.cmd("SetTextColor", knownCell, DijkstraVisualization.TABLE_TEXT_COLOR);
     this.cmd("SetBackgroundColor", knownCell, "#ffffff");
     this.knownCellIDs[i] = knownCell;
 
@@ -823,7 +878,17 @@ DijkstraVisualization.prototype.createTable = function () {
       distanceCell,
       DijkstraVisualization.TABLE_CELL_FONT
     );
-    this.cmd("SetForegroundColor", distanceCell, DijkstraVisualization.TABLE_TEXT_COLOR);
+    this.cmd(
+      "SetForegroundColor",
+      distanceCell,
+      DijkstraVisualization.TABLE_BORDER_COLOR
+    );
+    this.cmd(
+      "SetRectangleLineThickness",
+      distanceCell,
+      DijkstraVisualization.TABLE_BORDER_THICKNESS
+    );
+    this.cmd("SetTextColor", distanceCell, DijkstraVisualization.TABLE_TEXT_COLOR);
     this.cmd("SetBackgroundColor", distanceCell, "#ffffff");
     this.distanceCellIDs[i] = distanceCell;
 
@@ -838,10 +903,167 @@ DijkstraVisualization.prototype.createTable = function () {
       rowY
     );
     this.cmd("SetTextStyle", parentCell, DijkstraVisualization.TABLE_CELL_FONT);
-    this.cmd("SetForegroundColor", parentCell, DijkstraVisualization.TABLE_TEXT_COLOR);
+    this.cmd("SetForegroundColor", parentCell, DijkstraVisualization.TABLE_BORDER_COLOR);
+    this.cmd(
+      "SetRectangleLineThickness",
+      parentCell,
+      DijkstraVisualization.TABLE_BORDER_THICKNESS
+    );
+    this.cmd("SetTextColor", parentCell, DijkstraVisualization.TABLE_TEXT_COLOR);
     this.cmd("SetBackgroundColor", parentCell, "#ffffff");
     this.parentCellIDs[i] = parentCell;
   }
+};
+
+DijkstraVisualization.prototype.createPriorityQueueDisplay = function () {
+  this.priorityQueueHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.priorityQueueHeaderID,
+    "Priority Queue",
+    DijkstraVisualization.PQ_HEADER_X,
+    DijkstraVisualization.PQ_HEADER_Y,
+    1
+  );
+  this.cmd(
+    "SetTextStyle",
+    this.priorityQueueHeaderID,
+    DijkstraVisualization.TABLE_HEADER_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.priorityQueueHeaderID,
+    DijkstraVisualization.PQ_HEADER_COLOR
+  );
+
+  this.priorityQueueEmptyLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.priorityQueueEmptyLabelID,
+    DijkstraVisualization.PQ_EMPTY_TEXT,
+    DijkstraVisualization.PQ_HEADER_X,
+    DijkstraVisualization.PQ_FIRST_ROW_Y,
+    1
+  );
+  this.cmd(
+    "SetTextStyle",
+    this.priorityQueueEmptyLabelID,
+    DijkstraVisualization.PQ_EMPTY_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.priorityQueueEmptyLabelID,
+    DijkstraVisualization.INFO_PASSIVE_COLOR
+  );
+
+  this.priorityQueueItemIDs = [];
+};
+
+DijkstraVisualization.prototype.resetPriorityQueueDisplay = function () {
+  this.clearPriorityQueueItems();
+  if (this.priorityQueueEmptyLabelID !== -1) {
+    this.cmd(
+      "SetText",
+      this.priorityQueueEmptyLabelID,
+      DijkstraVisualization.PQ_EMPTY_TEXT
+    );
+  }
+};
+
+DijkstraVisualization.prototype.clearPriorityQueueItems = function () {
+  if (!this.priorityQueueItemIDs) {
+    this.priorityQueueItemIDs = [];
+    return;
+  }
+  for (var i = 0; i < this.priorityQueueItemIDs.length; i++) {
+    this.cmd("Delete", this.priorityQueueItemIDs[i]);
+  }
+  this.priorityQueueItemIDs = [];
+};
+
+DijkstraVisualization.prototype.renderPriorityQueueItems = function (
+  queue,
+  highlightVertex
+) {
+  this.clearPriorityQueueItems();
+
+  if (!queue || queue.length === 0) {
+    if (this.priorityQueueEmptyLabelID !== -1) {
+      this.cmd(
+        "SetText",
+        this.priorityQueueEmptyLabelID,
+        DijkstraVisualization.PQ_EMPTY_TEXT
+      );
+    }
+    return;
+  }
+
+  if (this.priorityQueueEmptyLabelID !== -1) {
+    this.cmd("SetText", this.priorityQueueEmptyLabelID, "");
+  }
+
+  var sorted = queue.slice(0);
+  sorted.sort(function (a, b) {
+    return a.distance - b.distance;
+  });
+
+  var highlightIndex = typeof highlightVertex === "number" ? highlightVertex : -1;
+
+  for (var i = 0; i < sorted.length; i++) {
+    var item = sorted[i];
+    var label =
+      this.vertexData[item.vertex].label +
+      " (" +
+      this.formatDistance(item.distance) +
+      ")";
+    var rectID = this.nextIndex++;
+    var rowY =
+      DijkstraVisualization.PQ_FIRST_ROW_Y +
+      i * DijkstraVisualization.PQ_ROW_HEIGHT;
+    this.cmd(
+      "CreateRectangle",
+      rectID,
+      label,
+      DijkstraVisualization.PQ_ITEM_WIDTH,
+      DijkstraVisualization.PQ_ITEM_HEIGHT,
+      DijkstraVisualization.PQ_HEADER_X,
+      rowY
+    );
+    this.cmd("SetTextStyle", rectID, DijkstraVisualization.PQ_FONT);
+    this.cmd(
+      "SetForegroundColor",
+      rectID,
+      DijkstraVisualization.PQ_TEXT_COLOR
+    );
+    this.cmd(
+      "SetBackgroundColor",
+      rectID,
+      item.vertex === highlightIndex
+        ? DijkstraVisualization.PQ_HIGHLIGHT_COLOR
+        : "#ffffff"
+    );
+    this.priorityQueueItemIDs.push(rectID);
+  }
+};
+
+DijkstraVisualization.prototype.peekPriorityQueue = function (queue) {
+  if (!queue || queue.length === 0) {
+    return null;
+  }
+
+  var best = queue[0];
+  for (var i = 1; i < queue.length; i++) {
+    if (queue[i].distance < best.distance) {
+      best = queue[i];
+    } else if (queue[i].distance === best.distance) {
+      var currentLabel = this.vertexData[queue[i].vertex].label;
+      var bestLabel = this.vertexData[best.vertex].label;
+      if (currentLabel < bestLabel) {
+        best = queue[i];
+      }
+    }
+  }
+  return best;
 };
 
 DijkstraVisualization.prototype.createCodeDisplay = function () {
@@ -1120,6 +1342,25 @@ DijkstraVisualization.prototype.findVertexIndex = function (label) {
   return -1;
 };
 
+DijkstraVisualization.prototype.formatDistance = function (value) {
+  if (value === Infinity) {
+    return this.infinitySymbol;
+  }
+
+  if (typeof value === "number") {
+    if (!isFinite(value)) {
+      return this.infinitySymbol;
+    }
+    return value.toString();
+  }
+
+  if (value === undefined || value === null) {
+    return this.infinitySymbol;
+  }
+
+  return String(value);
+};
+
 DijkstraVisualization.prototype.startCallback = function () {
   var value = this.getStartFieldValue();
   var index = this.findVertexIndex(value);
@@ -1139,6 +1380,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.resetTableState();
   this.resetGraphState();
   this.initializePathsPanel(startIndex);
+  this.resetPriorityQueueDisplay();
 
   var startLabel = this.vertexData[startIndex].label;
   this.updateStatus("Running Dijkstra from vertex " + startLabel + ".");
@@ -1180,11 +1422,21 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.highlightCodeLine(8);
   this.cmd("Step");
   pq.push({ vertex: startIndex, distance: 0 });
+  this.renderPriorityQueueItems(pq, startIndex);
 
   this.highlightCodeLine(9);
   this.cmd("Step");
+  this.renderPriorityQueueItems(pq);
 
   while (pq.length > 0) {
+    var nextEntry = this.peekPriorityQueue(pq);
+    this.highlightCodeLine(10);
+    this.renderPriorityQueueItems(
+      pq,
+      nextEntry ? nextEntry.vertex : -1
+    );
+    this.cmd("Step");
+
     pq.sort(function (a, b) {
       return a.distance - b.distance;
     });
@@ -1192,13 +1444,13 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
     var current = pq.shift();
     var u = current.vertex;
 
-    this.highlightCodeLine(10);
-    this.cmd("Step");
+    this.renderPriorityQueueItems(pq);
 
     this.highlightCodeLine(11);
     this.cmd("Step");
 
     if (visited[u]) {
+      this.renderPriorityQueueItems(pq);
       this.cmd("Step");
       continue;
     }
@@ -1208,7 +1460,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
       "Processing vertex " +
         this.vertexData[u].label +
         " with current distance " +
-        (dist[u] === Infinity ? this.infinitySymbol : dist[u]) +
+        this.formatDistance(dist[u]) +
         "."
     );
     visited[u] = true;
@@ -1238,6 +1490,9 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
       this.highlightCodeLine(15);
       var alternative = dist[u] + weight;
+      var formattedFromDistance = this.formatDistance(dist[u]);
+      var formattedAlternative = this.formatDistance(alternative);
+      var formattedCurrent = this.formatDistance(dist[v]);
       this.updateStatus(
         "Checking edge " +
           fromLabel +
@@ -1245,6 +1500,12 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
           toLabel +
           " with weight " +
           weight +
+          ". Current path cost: " +
+          formattedFromDistance +
+          " + " +
+          weight +
+          " = " +
+          formattedAlternative +
           "."
       );
       this.cmd("Step");
@@ -1258,10 +1519,14 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
           "Updated distance of " +
             toLabel +
             " to " +
-            alternative +
+            formattedAlternative +
             " via " +
             fromLabel +
-            "."
+            " (" +
+            formattedFromDistance +
+            " + " +
+            weight +
+            ")."
         );
         this.cmd("Step");
         this.updateDistanceCell(v, alternative, false);
@@ -1275,14 +1540,18 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
 
         this.highlightCodeLine(18);
         pq.push({ vertex: v, distance: alternative });
+        this.renderPriorityQueueItems(pq, v);
         this.cmd("Step");
+        this.renderPriorityQueueItems(pq);
       } else {
         this.updateStatus(
           "Keeping current distance of " +
             toLabel +
             " (" +
-            (dist[v] === Infinity ? this.infinitySymbol : dist[v]) +
-            ") because it is shorter."
+            formattedCurrent +
+            ") because the alternative path costs " +
+            formattedAlternative +
+            "."
         );
         this.cmd("Step");
       }
@@ -1304,6 +1573,7 @@ DijkstraVisualization.prototype.runDijkstra = function (startIndex) {
   this.highlightCodeLine(21);
   this.updateStatus("Dijkstra computation complete.");
   this.cmd("Step");
+  this.renderPriorityQueueItems(pq);
   this.highlightCodeLine(22);
   this.cmd("Step");
 
