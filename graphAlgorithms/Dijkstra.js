@@ -681,9 +681,7 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
     );
   }
 
-  var cursorStartX =
-    DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X +
-    DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH;
+  var cursorStartX = DijkstraVisualization.INFO_HIGHLIGHT_LEFT_X;
   if (cursorExists) {
     this.cmd(
       "SetPosition",
@@ -700,17 +698,14 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
 
   this.cmd("Step");
 
-  var tokens = text.match(/[^\s]+|\s+/g);
+  var tokens = text.match(/\S+|\s+/g);
   if (!tokens) {
     tokens = [text];
   }
 
-  var compactLength = text.replace(/\s+/g, "").length;
-  if (compactLength === 0) {
-    compactLength = text.length;
-  }
-  if (compactLength === 0) {
-    compactLength = 1;
+  var totalLength = text.length;
+  if (totalLength === 0) {
+    totalLength = 1;
   }
 
   var processedChars = 0;
@@ -719,19 +714,55 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
 
   for (var t = 0; t < tokens.length; t++) {
     var token = tokens[t];
-    var trimmed = token.replace(/\s+/g, "");
-    if (trimmed.length === 0) {
+    if (/^\s+$/.test(token)) {
+      processedChars += token.length;
+      if (processedChars > totalLength) {
+        processedChars = totalLength;
+      }
+
+      var spacerRatio = processedChars / totalLength;
+      if (spacerRatio < 0) {
+        spacerRatio = 0;
+      } else if (spacerRatio > 1) {
+        spacerRatio = 1;
+      }
+
+      var spacerX = leftEdge + fullWidth * spacerRatio;
+      if (spacerX > leftEdge + fullWidth) {
+        spacerX = leftEdge + fullWidth;
+      }
+
+      if (cursorExists) {
+        this.cmd(
+          "SetPosition",
+          this.infoCursorID,
+          spacerX,
+          DijkstraVisualization.INFO_Y
+        );
+      }
+
+      if (highlightExists) {
+        this.cmd("SetAlpha", this.infoHighlightID, 0);
+        this.cmd("SetWidth", this.infoHighlightID, 0);
+      }
+      if (overlayExists) {
+        this.cmd("SetAlpha", this.infoOverlayID, 0);
+        this.cmd("SetText", this.infoOverlayID, "");
+      }
+
       continue;
     }
 
-    var prefixRatio = processedChars / compactLength;
+    var trimmed = token;
+
+    var prefixRatio = processedChars / totalLength;
     if (prefixRatio < 0) {
       prefixRatio = 0;
     } else if (prefixRatio > 1) {
       prefixRatio = 1;
     }
 
-    var wordRatio = trimmed.length / compactLength;
+    var wordRatio = trimmed.length / totalLength;
     if (wordRatio < 0) {
       wordRatio = 0;
     } else if (wordRatio > 1) {
@@ -750,45 +781,54 @@ DijkstraVisualization.prototype.updateStatus = function (message, animate) {
       wordWidth = remainingWidth;
     }
 
+    var wordLeft = leftEdge + fullWidth * prefixRatio;
+    var wordCenter = wordLeft + wordWidth / 2;
+    if (wordCenter < leftEdge + wordWidth / 2) {
+      wordCenter = leftEdge + wordWidth / 2;
+    } else if (wordCenter > leftEdge + fullWidth) {
+      wordCenter = leftEdge + fullWidth;
+    }
+
+    if (highlightExists) {
+      this.cmd("SetAlpha", this.infoHighlightID, 1);
+      this.cmd(
+        "SetPosition",
+        this.infoHighlightID,
+        wordLeft,
+        DijkstraVisualization.INFO_Y
+      );
+      this.cmd("SetWidth", this.infoHighlightID, wordWidth);
+    }
+
     if (overlayExists) {
       this.cmd("SetAlpha", this.infoOverlayID, 1);
       this.cmd("SetText", this.infoOverlayID, trimmed);
       this.cmd(
         "SetPosition",
         this.infoOverlayID,
-        leftEdge + fullWidth * prefixRatio + wordWidth / 2,
+        wordCenter,
         DijkstraVisualization.INFO_Y
       );
     }
 
     processedChars += trimmed.length;
-    if (processedChars > compactLength) {
-      processedChars = compactLength;
+    if (processedChars > totalLength) {
+      processedChars = totalLength;
     }
 
-    var ratio = processedChars / compactLength;
+    var ratio = processedChars / totalLength;
     if (ratio < 0) {
       ratio = 0;
     } else if (ratio > 1) {
       ratio = 1;
     }
 
-    var highlightWidth = Math.max(
-      DijkstraVisualization.INFO_MIN_HIGHLIGHT_WIDTH,
-      fullWidth * ratio
-    );
-    if (highlightWidth > fullWidth) {
-      highlightWidth = fullWidth;
-    }
-    if (highlightExists) {
-      this.cmd("SetWidth", this.infoHighlightID, highlightWidth);
+    var caretX = leftEdge + fullWidth * ratio;
+    if (caretX > leftEdge + fullWidth) {
+      caretX = leftEdge + fullWidth;
     }
 
     if (cursorExists) {
-      var caretX = leftEdge + highlightWidth;
-      if (caretX > leftEdge + fullWidth) {
-        caretX = leftEdge + fullWidth;
-      }
       this.cmd(
         "SetPosition",
         this.infoCursorID,
