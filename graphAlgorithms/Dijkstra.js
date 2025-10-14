@@ -74,14 +74,13 @@ DijkstraVisualization.INFO_PROGRESS_MIN_WIDTH = 180;
 DijkstraVisualization.INFO_PROGRESS_MAX_WIDTH = 660;
 DijkstraVisualization.INFO_PROGRESS_TEXT_PADDING = 36;
 DijkstraVisualization.INFO_PROGRESS_COLOR = "#9bd5ff";
-DijkstraVisualization.INFO_PROGRESS_REMAINING_COLOR =
-  DijkstraVisualization.INFO_BACKGROUND_DEFAULT;
+DijkstraVisualization.INFO_PROGRESS_BASE_COLOR = "#cbd2d9";
 DijkstraVisualization.INFO_PROGRESS_Y =
   DijkstraVisualization.INFO_Y +
   DijkstraVisualization.INFO_HIGHLIGHT_HEIGHT / 2 +
   6;
-DijkstraVisualization.INFO_PROGRESS_STEPS = 36;
-DijkstraVisualization.INFO_PROGRESS_END_HOLD_STEPS = 2;
+DijkstraVisualization.INFO_PROGRESS_STEPS = 12;
+DijkstraVisualization.INFO_PROGRESS_END_HOLD_STEPS = 0;
 DijkstraVisualization.INFO_PROGRESS_MIN_REMAINING_WIDTH = 1;
 DijkstraVisualization.INFO_FONT_CANVAS =
   DijkstraVisualization.INFO_FONT + "px Arial";
@@ -546,12 +545,12 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.cmd(
     "SetForegroundColor",
     this.infoProgressTrackID,
-    DijkstraVisualization.INFO_PROGRESS_COLOR
+    DijkstraVisualization.INFO_PROGRESS_BASE_COLOR
   );
   this.cmd(
     "SetBackgroundColor",
     this.infoProgressTrackID,
-    DijkstraVisualization.INFO_PROGRESS_COLOR
+    DijkstraVisualization.INFO_PROGRESS_BASE_COLOR
   );
   this.cmd("SetLayer", this.infoProgressTrackID, 2);
   this.cmd("SetAlpha", this.infoProgressTrackID, 0);
@@ -571,12 +570,12 @@ DijkstraVisualization.prototype.createTitle = function () {
   this.cmd(
     "SetForegroundColor",
     this.infoProgressCoverID,
-    DijkstraVisualization.INFO_PROGRESS_REMAINING_COLOR
+    DijkstraVisualization.INFO_PROGRESS_COLOR
   );
   this.cmd(
     "SetBackgroundColor",
     this.infoProgressCoverID,
-    DijkstraVisualization.INFO_PROGRESS_REMAINING_COLOR
+    DijkstraVisualization.INFO_PROGRESS_COLOR
   );
   this.cmd("SetLayer", this.infoProgressCoverID, 3);
   this.cmd("SetAlpha", this.infoProgressCoverID, 0);
