@@ -60,9 +60,8 @@ DijkstraVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 DijkstraVisualization.PATH_TITLE_COLOR = "#0b3d91";
 DijkstraVisualization.PATH_TEXT_COLOR = "#102a43";
 DijkstraVisualization.PATH_LEFT_COLOR = "#7ec8e3";
-DijkstraVisualization.PATH_COLON_SEPARATOR = ":\u2009";
 DijkstraVisualization.PATH_START_X = DijkstraVisualization.CODE_LEFT_X + 460;
-DijkstraVisualization.PATH_VALUE_START_X = DijkstraVisualization.PATH_START_X + 100;
+DijkstraVisualization.PATH_VALUE_START_X = DijkstraVisualization.PATH_START_X + 80;
 DijkstraVisualization.PATH_START_Y = DijkstraVisualization.CODE_START_Y;
 DijkstraVisualization.PATH_LINE_HEIGHT = 30;
 
@@ -989,13 +988,18 @@ DijkstraVisualization.prototype.composePathLine = function (
     : null;
 
   var leftPart = vertexLabel + " → " + parentLabel;
-  var rightPart = "";
+  var segments = [];
+
   if (hasPath) {
-    rightPart += DijkstraVisualization.PATH_COLON_SEPARATOR + pathText;
+    leftPart += ":";
+    segments.push(pathText);
   }
+
   if (distance !== null) {
-    rightPart += " [" + distance + "]";
+    segments.push("[" + distance + "]");
   }
+
+  var rightPart = segments.join(" ");
 
   return {
     left: leftPart,
