@@ -103,7 +103,7 @@ BellmanFordVisualization.INFO_BOX_HEIGHT = 86;
 BellmanFordVisualization.INFO_BOX_X =
   BellmanFordVisualization.CANVAS_WIDTH / 2;
 BellmanFordVisualization.INFO_BOX_Y = BellmanFordVisualization.TITLE_Y + 62;
-BellmanFordVisualization.INFO_ITERATION_FONT = "bold 18";
+BellmanFordVisualization.INFO_ITERATION_FONT = "bold 21";
 BellmanFordVisualization.INFO_ITERATION_COLOR = "#1a237e";
 BellmanFordVisualization.INFO_SIDE_MARGIN = 36;
 BellmanFordVisualization.INFO_ITERATION_CHAR_WIDTH = 9;
@@ -238,7 +238,8 @@ BellmanFordVisualization.prototype.init = function (am, w, h) {
   this.pathLabelsByVertex = {};
   this.pathOrder = [];
   this.pathLabelPositions = {};
-  this.parentHighlightCircleID = -1;
+  this.parentHighlightCircleIDs = [];
+  this.activeParentHighlightIndex = -1;
 
   this.infinitySymbol = "\u221E";
 
@@ -296,7 +297,8 @@ BellmanFordVisualization.prototype.reset = function () {
   this.pathLabelsByVertex = {};
   this.pathOrder = [];
   this.pathLabelPositions = {};
-  this.parentHighlightCircleID = -1;
+  this.parentHighlightCircleIDs = [];
+  this.activeParentHighlightIndex = -1;
 
   if (
     typeof animationManager !== "undefined" &&
@@ -359,7 +361,7 @@ BellmanFordVisualization.prototype.createInfoPanel = function () {
     "Iterations: 0",
     boxX,
     boxY,
-    0
+    1
   );
   this.cmd(
     "SetTextStyle",
@@ -563,27 +565,44 @@ BellmanFordVisualization.prototype.getVertexPosition = function (index) {
 };
 
 BellmanFordVisualization.prototype.showParentHighlight = function (index) {
-  if (this.parentHighlightCircleID < 0) {
+  if (
+    !this.parentHighlightCircleIDs ||
+    index < 0 ||
+    index >= this.parentHighlightCircleIDs.length
+  ) {
     return;
   }
-  var position = this.getVertexPosition(index);
-  if (!position) {
-    return;
+
+  if (this.activeParentHighlightIndex !== index) {
+    this.hideParentHighlight();
+    this.activeParentHighlightIndex = index;
   }
-  this.cmd(
-    "Move",
-    this.parentHighlightCircleID,
-    Math.round(position.x),
-    Math.round(position.y)
-  );
-  this.cmd("SetAlpha", this.parentHighlightCircleID, 1);
+
+  var highlightID = this.parentHighlightCircleIDs[index];
+  if (highlightID >= 0) {
+    this.cmd("SetAlpha", highlightID, 1);
+  }
 };
 
 BellmanFordVisualization.prototype.hideParentHighlight = function () {
-  if (this.parentHighlightCircleID < 0) {
+  if (
+    !this.parentHighlightCircleIDs ||
+    this.parentHighlightCircleIDs.length === 0
+  ) {
     return;
   }
-  this.cmd("SetAlpha", this.parentHighlightCircleID, 0);
+
+  if (
+    this.activeParentHighlightIndex >= 0 &&
+    this.activeParentHighlightIndex < this.parentHighlightCircleIDs.length
+  ) {
+    var activeID = this.parentHighlightCircleIDs[this.activeParentHighlightIndex];
+    if (activeID >= 0) {
+      this.cmd("SetAlpha", activeID, 0);
+    }
+  }
+
+  this.activeParentHighlightIndex = -1;
 };
 
 BellmanFordVisualization.prototype.showRelaxationOnNode = function (
@@ -635,6 +654,10 @@ BellmanFordVisualization.prototype.showRelaxationOnNode = function (
 BellmanFordVisualization.prototype.createGraph = function () {
   this.vertexIDs = new Array(BellmanFordVisualization.VERTEX_DATA.length);
   this.weightLabelIDs = new Array(BellmanFordVisualization.VERTEX_DATA.length);
+  this.parentHighlightCircleIDs = new Array(
+    BellmanFordVisualization.VERTEX_DATA.length
+  );
+  this.activeParentHighlightIndex = -1;
 
   for (var i = 0; i < BellmanFordVisualization.VERTEX_DATA.length; i++) {
     var vertex = BellmanFordVisualization.VERTEX_DATA[i];
@@ -671,20 +694,18 @@ BellmanFordVisualization.prototype.createGraph = function () {
       this.infinitySymbol,
       BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR
     );
-  }
 
-  if (BellmanFordVisualization.VERTEX_DATA.length > 0) {
-    var anchor = BellmanFordVisualization.VERTEX_DATA[0];
-    this.parentHighlightCircleID = this.nextIndex++;
+    var highlightID = this.nextIndex++;
+    this.parentHighlightCircleIDs[i] = highlightID;
     this.cmd(
       "CreateHighlightCircle",
-      this.parentHighlightCircleID,
+      highlightID,
       BellmanFordVisualization.PARENT_HIGHLIGHT_COLOR,
-      anchor.x,
-      anchor.y,
+      vertex.x,
+      vertex.y,
       BellmanFordVisualization.NODE_RADIUS
     );
-    this.cmd("SetAlpha", this.parentHighlightCircleID, 0);
+    this.cmd("SetAlpha", highlightID, 0);
   }
 
   for (var from = 0; from < BellmanFordVisualization.GRAPH_EDGES.length; from++) {
@@ -1020,7 +1041,11 @@ BellmanFordVisualization.prototype.composePathLine = function (
     segments.push("[" + distance + "]");
   }
 
-  return segments.join(" ");
+  return {
+    text: segments.join(" "),
+    path: pathText,
+    distance: distance,
+  };
 };
 
 BellmanFordVisualization.prototype.getPathAnimationStartPosition = function (
@@ -1048,47 +1073,80 @@ BellmanFordVisualization.prototype.getPathAnimationStartPosition = function (
 BellmanFordVisualization.prototype.animatePathReveal = function (
   vertexIndex,
   pathIndices,
-  text
+  pathText,
+  distanceValue
 ) {
   var labelID = this.ensurePathLabel(vertexIndex);
   var target = this.pathLabelPositions[vertexIndex];
 
-  if (!text) {
-    this.cmd("SetText", labelID, "");
-    this.cmd("Step");
-    return;
+  var segments = [];
+  if (pathText && pathText.length > 0) {
+    segments.push(pathText);
   }
+  if (
+    distanceValue !== null &&
+    distanceValue !== undefined &&
+    distanceValue !== ""
+  ) {
+    segments.push("[" + distanceValue + "]");
+  }
+  var finalText = segments.join(" ");
 
   if (!target) {
-    this.cmd("SetText", labelID, text);
+    this.cmd("SetText", labelID, finalText);
     this.cmd("Step");
     return;
   }
 
-  var tempID = this.nextIndex++;
-  var startPos = this.getPathAnimationStartPosition(pathIndices);
-  this.cmd("CreateLabel", tempID, text, startPos.x, startPos.y, 0);
-  this.cmd(
-    "SetTextStyle",
-    tempID,
-    BellmanFordVisualization.PATH_FONT
-  );
-  this.cmd(
-    "SetForegroundColor",
-    tempID,
-    BellmanFordVisualization.PATH_TEXT_COLOR
-  );
-  this.cmd("Step");
-  this.cmd(
-    "Move",
-    tempID,
-    Math.round(target.x),
-    Math.round(target.y)
-  );
-  this.cmd("Step");
-  this.cmd("SetText", labelID, text);
-  this.cmd("Step");
-  this.cmd("Delete", tempID);
+  var accumulated = "";
+  this.cmd("SetText", labelID, accumulated);
+
+  if (!pathIndices || pathIndices.length === 0) {
+    this.cmd("SetText", labelID, finalText);
+    this.cmd("Step");
+    return;
+  }
+
+  for (var i = 0; i < pathIndices.length; i++) {
+    var vertex = pathIndices[i];
+    var label = BellmanFordVisualization.VERTEX_DATA[vertex].label;
+    var segment = accumulated.length > 0 ? " → " + label : label;
+    var startPos = this.getVertexPosition(vertex);
+    if (!startPos) {
+      startPos = this.getPathAnimationStartPosition(pathIndices);
+    }
+
+    var tempID = this.nextIndex++;
+    this.cmd("CreateLabel", tempID, segment, startPos.x, startPos.y, 0);
+    this.cmd(
+      "SetTextStyle",
+      tempID,
+      BellmanFordVisualization.PATH_FONT
+    );
+    this.cmd(
+      "SetForegroundColor",
+      tempID,
+      BellmanFordVisualization.PATH_TEXT_COLOR
+    );
+    this.cmd("Step");
+    this.cmd(
+      "Move",
+      tempID,
+      Math.round(target.x),
+      Math.round(target.y)
+    );
+    this.cmd("Step");
+
+    accumulated += segment;
+    this.cmd("SetText", labelID, accumulated);
+    this.cmd("Step");
+    this.cmd("Delete", tempID);
+  }
+
+  if (finalText !== accumulated) {
+    this.cmd("SetText", labelID, finalText);
+    this.cmd("Step");
+  }
 };
 
 BellmanFordVisualization.prototype.highlightFinalPath = function (
@@ -1124,7 +1182,7 @@ BellmanFordVisualization.prototype.highlightFinalPath = function (
         "SetEdgeHighlight",
         this.vertexIDs[from],
         this.vertexIDs[to],
-        active ? 1 : 0
+        0
       );
       this.cmd(
         "SetEdgeColor",
@@ -1155,10 +1213,11 @@ BellmanFordVisualization.prototype.displayShortestPaths = function (
       continue;
     }
 
-    var text = this.composePathLine(i, parent, startIndex, dist);
+    var line = this.composePathLine(i, parent, startIndex, dist);
 
     this.highlightFinalPath(pathIndices, true);
-    this.animatePathReveal(i, pathIndices, text);
+    this.animatePathReveal(i, pathIndices, line.path, line.distance);
+    this.cmd("SetText", this.ensurePathLabel(i), line.text);
     this.highlightFinalPath(pathIndices, false);
     this.cmd("Step");
   }
@@ -1686,30 +1745,6 @@ BellmanFordVisualization.prototype.resetGraphState = function () {
   }
 
   this.hideParentHighlight();
-};
-
-BellmanFordVisualization.prototype.finalizeVertexColors = function (
-  dist,
-  startIndex
-) {
-  for (var i = 0; i < dist.length; i++) {
-    if (dist[i] === Infinity) {
-      continue;
-    }
-    this.highlightVertex(
-      i,
-      BellmanFordVisualization.NODE_VISITED_COLOR,
-      true
-    );
-  }
-
-  if (dist[startIndex] === Infinity) {
-    this.highlightVertex(
-      startIndex,
-      BellmanFordVisualization.NODE_VISITED_COLOR,
-      true
-    );
-  }
 };
 
 BellmanFordVisualization.prototype.finalizeVertexColors = function (
