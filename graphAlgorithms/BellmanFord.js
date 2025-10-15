@@ -1160,10 +1160,11 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
     );
     this.cmd("Step");
 
+    this.cmd("Delete", tempID);
+    this.cmd("Step");
+
     accumulated = nextAccumulated;
     this.cmd("SetText", labelID, accumulated);
-    this.cmd("Step");
-    this.cmd("Delete", tempID);
     this.cmd("Step");
   }
 
