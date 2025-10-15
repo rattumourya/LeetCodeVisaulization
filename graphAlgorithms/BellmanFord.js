@@ -24,13 +24,14 @@ BellmanFordVisualization.NODE_VISITED_COLOR = "#c5e1a5";
 BellmanFordVisualization.NODE_VISITED_TEXT_COLOR = "#1b4332";
 
 BellmanFordVisualization.WEIGHT_LABEL_FONT =
-  "bold 16px 'Courier New', monospace";
-BellmanFordVisualization.WEIGHT_LABEL_COLOR = "#0d1b2a";
+  "bold 20px 'Courier New', monospace";
+BellmanFordVisualization.WEIGHT_LABEL_COLOR = "#1d4ed8";
 BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR = "#6b7280";
-BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR = "#c62828";
+BellmanFordVisualization.WEIGHT_LABEL_POSITIVE_COLOR = "#2e7d32";
+BellmanFordVisualization.WEIGHT_LABEL_NEGATIVE_COLOR = "#c62828";
 BellmanFordVisualization.WEIGHT_LABEL_MARGIN = 2;
-BellmanFordVisualization.WEIGHT_LABEL_CHAR_WIDTH = 9;
-BellmanFordVisualization.WEIGHT_LABEL_HEIGHT = 18;
+BellmanFordVisualization.WEIGHT_LABEL_CHAR_WIDTH = 11;
+BellmanFordVisualization.WEIGHT_LABEL_HEIGHT = 24;
 
 BellmanFordVisualization.EDGE_COLOR = "#424874";
 BellmanFordVisualization.EDGE_HIGHLIGHT_COLOR = "#ff7043";
@@ -657,9 +658,8 @@ BellmanFordVisualization.prototype.showRelaxationOnNode = function (
 
   if (typeof resultDist === "number") {
     displayText = this.formatDistance(resultDist);
-    color = BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR;
-  } else if (canRelax && distFrom !== Infinity) {
-    var comparator = "<";
+  } else if (distFrom !== Infinity) {
+    var comparator = canRelax ? "<" : "\u2265";
     displayText =
       this.formatDistance(distFrom) +
       " + " +
@@ -668,7 +668,9 @@ BellmanFordVisualization.prototype.showRelaxationOnNode = function (
       comparator +
       " " +
       this.formatDistance(priorDistTo);
-    color = BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR;
+    color = canRelax
+      ? BellmanFordVisualization.WEIGHT_LABEL_POSITIVE_COLOR
+      : BellmanFordVisualization.WEIGHT_LABEL_NEGATIVE_COLOR;
   } else {
     displayText = this.formatDistance(priorDistTo);
     color =
@@ -1095,7 +1097,7 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
   this.updateWeightLabel(
     startIndex,
     this.formatDistance(0),
-    BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR
+    BellmanFordVisualization.WEIGHT_LABEL_POSITIVE_COLOR
   );
   this.cmd("Step");
   this.updateDistanceCell(startIndex, 0, false);
@@ -1104,25 +1106,6 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
     this.formatDistance(0),
     BellmanFordVisualization.WEIGHT_LABEL_COLOR
   );
-
-  this.updateStatus(
-    "Source ready",
-    "dist[" + startLabel + "] = 0 while all other vertices remain at " +
-      this.infinitySymbol +
-      "."
-  );
-  this.highlightVertex(
-    startIndex,
-    BellmanFordVisualization.NODE_ACTIVE_COLOR,
-    false
-  );
-  this.cmd("Step");
-  this.highlightVertex(
-    startIndex,
-    BellmanFordVisualization.NODE_VISITED_COLOR,
-    true
-  );
-  this.cmd("Step");
 
   this.updateStatus(
     "Source ready",
@@ -1253,6 +1236,14 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
         this.highlightCodeLine(12);
         updated = true;
         this.cmd("Step");
+      } else {
+        this.updateWeightLabel(
+          v,
+          this.formatDistance(previousDist),
+          previousDist === Infinity
+            ? BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR
+            : BellmanFordVisualization.WEIGHT_LABEL_COLOR
+        );
       }
 
       this.highlightCodeLine(13);
@@ -1352,6 +1343,14 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
       this.highlightEdge(from, to, false);
       break;
     }
+
+    this.updateWeightLabel(
+      to,
+      this.formatDistance(priorDistTo),
+      priorDistTo === Infinity
+        ? BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR
+        : BellmanFordVisualization.WEIGHT_LABEL_COLOR
+    );
 
     this.highlightCodeLine(20);
     this.highlightEdge(from, to, false);
