@@ -34,6 +34,16 @@ BellmanFordVisualization.WEIGHT_LABEL_MARGIN = 2;
 BellmanFordVisualization.WEIGHT_LABEL_CHAR_WIDTH = 13;
 BellmanFordVisualization.WEIGHT_LABEL_HEIGHT = 28;
 
+BellmanFordVisualization.WEIGHT_LABEL_FONT =
+  "bold 22px 'Courier New', monospace";
+BellmanFordVisualization.WEIGHT_LABEL_COLOR = "#1d4ed8";
+BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR = "#2563eb";
+BellmanFordVisualization.WEIGHT_LABEL_POSITIVE_COLOR = "#2e7d32";
+BellmanFordVisualization.WEIGHT_LABEL_NEGATIVE_COLOR = "#c62828";
+BellmanFordVisualization.WEIGHT_LABEL_MARGIN = 2;
+BellmanFordVisualization.WEIGHT_LABEL_CHAR_WIDTH = 13;
+BellmanFordVisualization.WEIGHT_LABEL_HEIGHT = 28;
+
 BellmanFordVisualization.EDGE_COLOR = "#424874";
 BellmanFordVisualization.EDGE_HIGHLIGHT_COLOR = "#ff7043";
 BellmanFordVisualization.EDGE_THICKNESS = 3;
