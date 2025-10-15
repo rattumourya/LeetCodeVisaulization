@@ -239,6 +239,7 @@ BellmanFordVisualization.prototype.init = function (am, w, h) {
   this.pathLabelsByVertex = {};
   this.pathOrder = [];
   this.pathLabelPositions = {};
+  this.pathRowMetadata = {};
   this.parentHighlightCircleIDs = [];
   this.activeParentHighlightIndex = -1;
 
@@ -298,6 +299,7 @@ BellmanFordVisualization.prototype.reset = function () {
   this.pathLabelsByVertex = {};
   this.pathOrder = [];
   this.pathLabelPositions = {};
+  this.pathRowMetadata = {};
   this.parentHighlightCircleIDs = [];
   this.activeParentHighlightIndex = -1;
 
@@ -901,6 +903,34 @@ BellmanFordVisualization.prototype.createPathsPanel = function () {
 };
 
 BellmanFordVisualization.prototype.clearPathsDisplay = function () {
+  if (this.pathRowMetadata) {
+    for (var key in this.pathRowMetadata) {
+      if (!this.pathRowMetadata.hasOwnProperty(key)) {
+        continue;
+      }
+      var meta = this.pathRowMetadata[key];
+      if (meta) {
+        if (meta.vertexLabelIDs) {
+          for (var v = 0; v < meta.vertexLabelIDs.length; v++) {
+            if (meta.vertexLabelIDs[v] >= 0) {
+              this.cmd("Delete", meta.vertexLabelIDs[v]);
+            }
+          }
+        }
+        if (meta.arrowLabelIDs) {
+          for (var a = 0; a < meta.arrowLabelIDs.length; a++) {
+            if (meta.arrowLabelIDs[a] >= 0) {
+              this.cmd("Delete", meta.arrowLabelIDs[a]);
+            }
+          }
+        }
+        if (meta.distanceLabelID !== undefined && meta.distanceLabelID >= 0) {
+          this.cmd("Delete", meta.distanceLabelID);
+        }
+      }
+    }
+  }
+
   if (this.pathLabelIDs) {
     for (var i = 0; i < this.pathLabelIDs.length; i++) {
       if (this.pathLabelIDs[i] >= 0) {
@@ -912,6 +942,8 @@ BellmanFordVisualization.prototype.clearPathsDisplay = function () {
   this.pathLabelIDs = [];
   this.pathLabelsByVertex = {};
   this.pathOrder = [];
+  
+  this.pathRowMetadata = {};
 
   if (this.pathsTitleID >= 0) {
     this.cmd("SetText", this.pathsTitleID, "Shortest Paths");
@@ -1016,6 +1048,13 @@ BellmanFordVisualization.prototype.ensurePathLabel = function (vertexIndex) {
     x: BellmanFordVisualization.PATH_START_X,
     y: y,
   };
+  this.pathRowMetadata[vertexIndex] = {
+    vertexLabelIDs: [],
+    arrowLabelIDs: [],
+    distanceLabelID: -1,
+    distanceText: "",
+    layout: null,
+  };
   return labelID;
 };
 
@@ -1079,6 +1118,85 @@ BellmanFordVisualization.prototype.getPathAnimationStartPosition = function (
   };
 };
 
+BellmanFordVisualization.prototype.computePathLayout = function (
+  pathIndices,
+  target,
+  distanceValue
+) {
+  var layoutTarget = target || {
+    x: BellmanFordVisualization.CANVAS_WIDTH / 2,
+    y: BellmanFordVisualization.TABLE_FIRST_ROW_Y,
+  };
+
+  if (!pathIndices || pathIndices.length === 0) {
+    return {
+      vertexCenters: [],
+      arrowCenters: [],
+      distanceCenter: null,
+      distanceText: "",
+      totalWidth: 0,
+    };
+  }
+
+  var labels = [];
+  var vertexWidths = [];
+  for (var i = 0; i < pathIndices.length; i++) {
+    var label = BellmanFordVisualization.VERTEX_DATA[pathIndices[i]].label;
+    labels.push(label);
+    vertexWidths.push(this.measurePathTextWidth(label));
+  }
+
+  var pathString = labels.join(" → ");
+  var pathWidth = this.measurePathTextWidth(pathString);
+  var arrowWidth = this.measurePathTextWidth(" → ");
+
+  var hasDistance =
+    distanceValue !== null &&
+    distanceValue !== undefined &&
+    distanceValue !== "";
+  var distanceText = hasDistance ? "[" + distanceValue + "]" : "";
+  var distanceSpacingWidth = hasDistance
+    ? this.measurePathTextWidth(" ")
+    : 0;
+  var distanceValueWidth = hasDistance
+    ? this.measurePathTextWidth(distanceText)
+    : 0;
+
+  var totalWidth = pathWidth + distanceSpacingWidth + distanceValueWidth;
+  var left = layoutTarget.x - totalWidth / 2;
+  var cursor = left;
+
+  var vertexCenters = [];
+  var arrowCenters = [];
+
+  for (var j = 0; j < labels.length; j++) {
+    var width = vertexWidths[j];
+    var center = cursor + width / 2;
+    vertexCenters.push(center);
+    cursor += width;
+
+    if (j < labels.length - 1) {
+      var arrowCenter = cursor + arrowWidth / 2;
+      arrowCenters.push(arrowCenter);
+      cursor += arrowWidth;
+    }
+  }
+
+  var distanceCenter = null;
+  if (hasDistance) {
+    cursor += distanceSpacingWidth;
+    distanceCenter = cursor + distanceValueWidth / 2;
+  }
+
+  return {
+    vertexCenters: vertexCenters,
+    arrowCenters: arrowCenters,
+    distanceCenter: distanceCenter,
+    distanceText: distanceText,
+    totalWidth: totalWidth,
+  };
+};
+
 BellmanFordVisualization.prototype.animatePathReveal = function (
   vertexIndex,
   pathIndices,
@@ -1088,30 +1206,65 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
   var labelID = this.ensurePathLabel(vertexIndex);
   var target = this.pathLabelPositions[vertexIndex];
 
-  var segments = [];
-  if (pathText && pathText.length > 0) {
-    segments.push(pathText);
-  }
-  if (
-    distanceValue !== null &&
-    distanceValue !== undefined &&
-    distanceValue !== ""
-  ) {
-    segments.push("[" + distanceValue + "]");
-  }
-  var finalText = segments.join(" ");
-
   if (!target) {
-    this.cmd("SetText", labelID, finalText);
+    if (pathText && pathText.length > 0) {
+      this.cmd("SetText", labelID, pathText);
+    }
+    if (
+      distanceValue !== null &&
+      distanceValue !== undefined &&
+      distanceValue !== ""
+    ) {
+      this.cmd(
+        "SetText",
+        labelID,
+        (pathText && pathText.length > 0 ? pathText + " " : "") +
+          "[" + distanceValue + "]"
+      );
+    }
     this.cmd("Step");
     return;
   }
 
-  var accumulated = "";
-  this.cmd("SetText", labelID, accumulated);
+  this.cmd("SetText", labelID, "");
+
+  var metadata = this.pathRowMetadata[vertexIndex] || {
+    vertexLabelIDs: [],
+    arrowLabelIDs: [],
+    distanceLabelID: -1,
+    distanceText: "",
+    layout: null,
+  };
+
+  if (metadata.vertexLabelIDs && metadata.vertexLabelIDs.length > 0) {
+    for (var existingV = 0; existingV < metadata.vertexLabelIDs.length; existingV++) {
+      if (metadata.vertexLabelIDs[existingV] >= 0) {
+        this.cmd("Delete", metadata.vertexLabelIDs[existingV]);
+      }
+    }
+  }
+  metadata.vertexLabelIDs = [];
+
+  if (metadata.arrowLabelIDs && metadata.arrowLabelIDs.length > 0) {
+    for (var existingA = 0; existingA < metadata.arrowLabelIDs.length; existingA++) {
+      if (metadata.arrowLabelIDs[existingA] >= 0) {
+        this.cmd("Delete", metadata.arrowLabelIDs[existingA]);
+      }
+    }
+  }
+  metadata.arrowLabelIDs = [];
+
+  if (metadata.distanceLabelID !== undefined && metadata.distanceLabelID >= 0) {
+    this.cmd("Delete", metadata.distanceLabelID);
+  }
+  metadata.distanceLabelID = -1;
+
+  var layout = this.computePathLayout(pathIndices, target, distanceValue);
+  metadata.layout = layout;
+  metadata.distanceText = layout.distanceText;
 
   if (!pathIndices || pathIndices.length === 0) {
-    this.cmd("SetText", labelID, finalText);
+    this.pathRowMetadata[vertexIndex] = metadata;
     this.cmd("Step");
     return;
   }
@@ -1119,22 +1272,32 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
   for (var i = 0; i < pathIndices.length; i++) {
     var vertex = pathIndices[i];
     var label = BellmanFordVisualization.VERTEX_DATA[vertex].label;
-    var hasPrior = accumulated.length > 0;
-    var prefixText = hasPrior ? accumulated + " → " : "";
-    var nextAccumulated = hasPrior
-      ? accumulated + " → " + label
-      : label;
-    var finalWidth = this.measurePathTextWidth(nextAccumulated);
-    var leftX = target.x - finalWidth / 2;
-    var prefixWidth = this.measurePathTextWidth(prefixText);
-    var labelWidth = this.measurePathTextWidth(label);
     var startPos = this.getVertexPosition(vertex);
     if (!startPos) {
       startPos = this.getPathAnimationStartPosition(pathIndices);
     }
 
-    if (hasPrior) {
-      this.cmd("SetText", labelID, prefixText);
+    if (i > 0) {
+      var arrowID = this.nextIndex++;
+      this.cmd(
+        "CreateLabel",
+        arrowID,
+        "→",
+        Math.round(layout.arrowCenters[i - 1]),
+        Math.round(target.y),
+        0
+      );
+      this.cmd(
+        "SetTextStyle",
+        arrowID,
+        BellmanFordVisualization.PATH_FONT
+      );
+      this.cmd(
+        "SetForegroundColor",
+        arrowID,
+        BellmanFordVisualization.PATH_TEXT_COLOR
+      );
+      metadata.arrowLabelIDs.push(arrowID);
       this.cmd("Step");
     }
 
@@ -1151,27 +1314,43 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
       BellmanFordVisualization.PATH_TEXT_COLOR
     );
     this.cmd("Step");
-    var destinationX = leftX + prefixWidth + labelWidth / 2;
+
     this.cmd(
       "Move",
       tempID,
-      Math.round(destinationX),
+      Math.round(layout.vertexCenters[i]),
       Math.round(target.y)
     );
     this.cmd("Step");
 
-    this.cmd("Delete", tempID);
-    this.cmd("Step");
+    metadata.vertexLabelIDs.push(tempID);
+  }
 
-    accumulated = nextAccumulated;
-    this.cmd("SetText", labelID, accumulated);
+  if (layout.distanceText) {
+    var distanceID = this.nextIndex++;
+    this.cmd(
+      "CreateLabel",
+      distanceID,
+      layout.distanceText,
+      Math.round(layout.distanceCenter),
+      Math.round(target.y),
+      0
+    );
+    this.cmd(
+      "SetTextStyle",
+      distanceID,
+      BellmanFordVisualization.PATH_FONT
+    );
+    this.cmd(
+      "SetForegroundColor",
+      distanceID,
+      BellmanFordVisualization.PATH_TEXT_COLOR
+    );
+    metadata.distanceLabelID = distanceID;
     this.cmd("Step");
   }
 
-  if (finalText !== accumulated) {
-    this.cmd("SetText", labelID, finalText);
-    this.cmd("Step");
-  }
+  this.pathRowMetadata[vertexIndex] = metadata;
 };
 
 BellmanFordVisualization.prototype.highlightFinalPath = function (
@@ -1242,7 +1421,6 @@ BellmanFordVisualization.prototype.displayShortestPaths = function (
 
     this.highlightFinalPath(pathIndices, true);
     this.animatePathReveal(i, pathIndices, line.path, line.distance);
-    this.cmd("SetText", this.ensurePathLabel(i), line.text);
     this.highlightFinalPath(pathIndices, false);
     this.cmd("Step");
   }
