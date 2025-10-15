@@ -1712,6 +1712,30 @@ BellmanFordVisualization.prototype.finalizeVertexColors = function (
   }
 };
 
+BellmanFordVisualization.prototype.finalizeVertexColors = function (
+  dist,
+  startIndex
+) {
+  for (var i = 0; i < dist.length; i++) {
+    if (dist[i] === Infinity) {
+      continue;
+    }
+    this.highlightVertex(
+      i,
+      BellmanFordVisualization.NODE_VISITED_COLOR,
+      true
+    );
+  }
+
+  if (dist[startIndex] === Infinity) {
+    this.highlightVertex(
+      startIndex,
+      BellmanFordVisualization.NODE_VISITED_COLOR,
+      true
+    );
+  }
+};
+
 BellmanFordVisualization.prototype.updateDistanceCell = function (
   index,
   value,
