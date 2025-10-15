@@ -128,16 +128,19 @@ BellmanFordVisualization.PATH_PANEL_WIDTH = Math.max(
   BellmanFordVisualization.PATH_PANEL_RIGHT -
     BellmanFordVisualization.PATH_PANEL_LEFT
 );
+BellmanFordVisualization.PATH_CONTENT_LEFT =
+  BellmanFordVisualization.PATH_PANEL_LEFT + 12;
 BellmanFordVisualization.PATH_TITLE_X =
   BellmanFordVisualization.PATH_PANEL_LEFT +
   BellmanFordVisualization.PATH_PANEL_WIDTH / 2;
 BellmanFordVisualization.PATH_TITLE_Y =
-  BellmanFordVisualization.TABLE_HEADER_Y - 36;
+  BellmanFordVisualization.TABLE_HEADER_Y;
 BellmanFordVisualization.PATH_START_X =
-  BellmanFordVisualization.PATH_TITLE_X;
+  BellmanFordVisualization.PATH_CONTENT_LEFT;
 BellmanFordVisualization.PATH_START_Y =
   BellmanFordVisualization.TABLE_FIRST_ROW_Y;
-BellmanFordVisualization.PATH_LINE_HEIGHT = 32;
+BellmanFordVisualization.PATH_LINE_HEIGHT =
+  BellmanFordVisualization.TABLE_ROW_HEIGHT;
 BellmanFordVisualization.PATH_HIGHLIGHT_NODE_COLOR = "#a5d6a7";
 BellmanFordVisualization.PATH_HIGHLIGHT_NODE_TEXT_COLOR = "#1b4332";
 BellmanFordVisualization.PATH_HIGHLIGHT_EDGE_COLOR = "#2e7d32";
@@ -1124,7 +1127,7 @@ BellmanFordVisualization.prototype.computePathLayout = function (
   distanceValue
 ) {
   var layoutTarget = target || {
-    x: BellmanFordVisualization.CANVAS_WIDTH / 2,
+    x: BellmanFordVisualization.PATH_CONTENT_LEFT,
     y: BellmanFordVisualization.TABLE_FIRST_ROW_Y,
   };
 
@@ -1163,7 +1166,7 @@ BellmanFordVisualization.prototype.computePathLayout = function (
     : 0;
 
   var totalWidth = pathWidth + distanceSpacingWidth + distanceValueWidth;
-  var left = layoutTarget.x - totalWidth / 2;
+  var left = layoutTarget.x;
   var cursor = left;
 
   var vertexCenters = [];
