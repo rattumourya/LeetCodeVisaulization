@@ -23,12 +23,14 @@ BellmanFordVisualization.NODE_ACTIVE_COLOR = "#ffe082";
 BellmanFordVisualization.NODE_VISITED_COLOR = "#c5e1a5";
 BellmanFordVisualization.NODE_VISITED_TEXT_COLOR = "#1b4332";
 
-BellmanFordVisualization.RELAX_LABEL_FONT =
-  "bold 15px 'Courier New', monospace";
-BellmanFordVisualization.RELAX_LABEL_COLOR = "#0d1b2a";
-BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR = "#6b7280";
-BellmanFordVisualization.RELAX_LABEL_IMPROVE_COLOR = "#c62828";
-BellmanFordVisualization.RELAX_LABEL_OFFSET = 56;
+BellmanFordVisualization.WEIGHT_LABEL_FONT =
+  "bold 16px 'Courier New', monospace";
+BellmanFordVisualization.WEIGHT_LABEL_COLOR = "#0d1b2a";
+BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR = "#6b7280";
+BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR = "#c62828";
+BellmanFordVisualization.WEIGHT_LABEL_MARGIN = 2;
+BellmanFordVisualization.WEIGHT_LABEL_CHAR_WIDTH = 9;
+BellmanFordVisualization.WEIGHT_LABEL_HEIGHT = 18;
 
 BellmanFordVisualization.EDGE_COLOR = "#424874";
 BellmanFordVisualization.EDGE_HIGHLIGHT_COLOR = "#ff7043";
@@ -74,6 +76,15 @@ BellmanFordVisualization.INFO_DETAIL_COLOR = "#374151";
 BellmanFordVisualization.INFO_MUTED_COLOR = "#5f6c80";
 BellmanFordVisualization.INFO_ITERATION_FONT = "bold 18";
 BellmanFordVisualization.INFO_ITERATION_COLOR = "#1a237e";
+BellmanFordVisualization.INFO_SIDE_MARGIN = 36;
+BellmanFordVisualization.INFO_MAIN_CHAR_WIDTH = 11;
+BellmanFordVisualization.INFO_DETAIL_CHAR_WIDTH = 9;
+BellmanFordVisualization.INFO_ITERATION_CHAR_WIDTH = 9;
+BellmanFordVisualization.INFO_TOP_LINE_Y =
+  BellmanFordVisualization.INFO_BOX_Y -
+  BellmanFordVisualization.INFO_BOX_HEIGHT / 2 +
+  22;
+BellmanFordVisualization.INFO_SECOND_LINE_OFFSET = 30;
 
 BellmanFordVisualization.PATH_TITLE_FONT = "bold 18";
 BellmanFordVisualization.PATH_FONT = "bold 14px 'Courier New', monospace";
@@ -89,11 +100,11 @@ BellmanFordVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
 BellmanFordVisualization.TITLE_FONT = "bold 34";
 
 BellmanFordVisualization.VERTEX_DATA = [
-  { label: "S", x: 150, y: 420, calloutY: 360 },
-  { label: "T", x: 340, y: 240, calloutY: 182 },
-  { label: "X", x: 560, y: 320, calloutY: 262 },
-  { label: "Y", x: 240, y: 520, calloutY: 460 },
-  { label: "Z", x: 520, y: 500, calloutY: 440 },
+  { label: "S", x: 150, y: 420, weightAnchor: "left" },
+  { label: "T", x: 340, y: 240, weightAnchor: "top" },
+  { label: "X", x: 560, y: 320, weightAnchor: "right" },
+  { label: "Y", x: 240, y: 520, weightAnchor: "bottom" },
+  { label: "Z", x: 520, y: 500, weightAnchor: "bottom" },
 ];
 
 BellmanFordVisualization.GRAPH_EDGES = [
@@ -229,7 +240,10 @@ BellmanFordVisualization.prototype.reset = function () {
   this.infoMainTextID = -1;
   this.infoDetailTextID = -1;
   this.iterationLabelID = -1;
-  this.relaxationLabelIDs = [];
+  this.weightLabelIDs = [];
+  this.currentIterationText = "";
+  this.currentHeadlineText = "";
+  this.currentDetailText = "";
 
   if (
     typeof animationManager !== "undefined" &&
@@ -304,16 +318,13 @@ BellmanFordVisualization.prototype.createInfoPanel = function () {
   );
   this.cmd("SetLineThickness", this.infoBoxID, 2);
 
-  var leftEdge = boxX - boxWidth / 2;
-  var iterationX = leftEdge + 110;
-
   this.iterationLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.iterationLabelID,
     "Iterations: 0",
-    iterationX,
-    boxY - 16,
+    boxX,
+    boxY,
     0
   );
   this.cmd(
@@ -333,7 +344,7 @@ BellmanFordVisualization.prototype.createInfoPanel = function () {
     this.infoMainTextID,
     "Bellman-Ford explores edges step-by-step.",
     boxX,
-    boxY - 4,
+    boxY,
     0
   );
   this.cmd(
@@ -353,7 +364,7 @@ BellmanFordVisualization.prototype.createInfoPanel = function () {
     this.infoDetailTextID,
     "Choose a start vertex and press 'Run Bellman-Ford'.",
     boxX,
-    boxY + 26,
+    boxY,
     0
   );
   this.cmd(
@@ -366,6 +377,71 @@ BellmanFordVisualization.prototype.createInfoPanel = function () {
     this.infoDetailTextID,
     BellmanFordVisualization.INFO_MUTED_COLOR
   );
+  this.currentIterationText = "Iterations: 0";
+  this.currentHeadlineText = "Bellman-Ford explores edges step-by-step.";
+  this.currentDetailText = "Choose a start vertex and press 'Run Bellman-Ford'.";
+
+  this.positionInfoTexts();
+};
+
+BellmanFordVisualization.prototype.estimateInfoTextWidth = function (
+  text,
+  charWidth
+) {
+  if (!text || text.length === 0) {
+    return 0;
+  }
+  return text.length * charWidth;
+};
+
+BellmanFordVisualization.prototype.positionInfoTexts = function () {
+  if (
+    this.iterationLabelID < 0 ||
+    this.infoMainTextID < 0 ||
+    this.infoDetailTextID < 0
+  ) {
+    return;
+  }
+
+  var boxX = BellmanFordVisualization.INFO_BOX_X;
+  var boxWidth = BellmanFordVisualization.INFO_BOX_WIDTH;
+  var leftEdge = boxX - boxWidth / 2;
+  var rightEdge = boxX + boxWidth / 2;
+  var margin = BellmanFordVisualization.INFO_SIDE_MARGIN;
+
+  var iterationX = leftEdge + margin;
+  var iterationY = BellmanFordVisualization.INFO_TOP_LINE_Y;
+  this.cmd("SetPosition", this.iterationLabelID, iterationX, iterationY);
+  var iterationWidth = this.estimateInfoTextWidth(
+    this.currentIterationText,
+    BellmanFordVisualization.INFO_ITERATION_CHAR_WIDTH
+  );
+
+  var minRightStart = iterationX + iterationWidth + margin;
+
+  var mainWidth = this.estimateInfoTextWidth(
+    this.currentHeadlineText,
+    BellmanFordVisualization.INFO_MAIN_CHAR_WIDTH
+  );
+  var mainX = rightEdge - margin - mainWidth;
+  if (mainX < minRightStart) {
+    mainX = minRightStart;
+  }
+  var mainY = BellmanFordVisualization.INFO_TOP_LINE_Y;
+  this.cmd("SetPosition", this.infoMainTextID, mainX, mainY);
+
+  var detailWidth = this.estimateInfoTextWidth(
+    this.currentDetailText,
+    BellmanFordVisualization.INFO_DETAIL_CHAR_WIDTH
+  );
+  var detailX = rightEdge - margin - detailWidth;
+  if (detailX < minRightStart) {
+    detailX = minRightStart;
+  }
+  var detailY =
+    BellmanFordVisualization.INFO_TOP_LINE_Y +
+    BellmanFordVisualization.INFO_SECOND_LINE_OFFSET;
+  this.cmd("SetPosition", this.infoDetailTextID, detailX, detailY);
 };
 
 BellmanFordVisualization.prototype.updateStatus = function (
@@ -374,7 +450,8 @@ BellmanFordVisualization.prototype.updateStatus = function (
   muted
 ) {
   if (this.infoMainTextID >= 0) {
-    this.cmd("SetText", this.infoMainTextID, headline || "");
+    this.currentHeadlineText = headline || "";
+    this.cmd("SetText", this.infoMainTextID, this.currentHeadlineText);
     this.cmd(
       "SetForegroundColor",
       this.infoMainTextID,
@@ -386,7 +463,8 @@ BellmanFordVisualization.prototype.updateStatus = function (
 
   if (this.infoDetailTextID >= 0) {
     var detailText = detail || "";
-    this.cmd("SetText", this.infoDetailTextID, detailText);
+    this.currentDetailText = detailText;
+    this.cmd("SetText", this.infoDetailTextID, this.currentDetailText);
     this.cmd(
       "SetForegroundColor",
       this.infoDetailTextID,
@@ -395,6 +473,8 @@ BellmanFordVisualization.prototype.updateStatus = function (
         : BellmanFordVisualization.INFO_DETAIL_COLOR
     );
   }
+
+  this.positionInfoTexts();
 };
 
 BellmanFordVisualization.prototype.updateIterationDisplay = function (
@@ -417,7 +497,9 @@ BellmanFordVisualization.prototype.updateIterationDisplay = function (
     iterationText = "Iterations: " + (current || 0);
   }
 
-  this.cmd("SetText", this.iterationLabelID, iterationText);
+  this.currentIterationText = iterationText;
+  this.cmd("SetText", this.iterationLabelID, this.currentIterationText);
+  this.positionInfoTexts();
 };
 
 BellmanFordVisualization.prototype.formatDistance = function (value) {
@@ -482,55 +564,75 @@ BellmanFordVisualization.prototype.describeRelaxation = function (
   );
 };
 
-BellmanFordVisualization.prototype.buildRelaxationExpression = function (
-  fromIndex,
-  toIndex,
-  weight,
-  distFrom,
-  priorDistTo,
-  canRelax,
-  resultDist
+BellmanFordVisualization.prototype.getWeightLabelMetrics = function (text) {
+  var content = typeof text === "string" ? text : this.formatDistance(text);
+  var length = content ? content.length : 0;
+  if (length <= 0) {
+    length = 1;
+  }
+  return {
+    width: length * BellmanFordVisualization.WEIGHT_LABEL_CHAR_WIDTH,
+    height: BellmanFordVisualization.WEIGHT_LABEL_HEIGHT,
+  };
+};
+
+BellmanFordVisualization.prototype.getWeightLabelPosition = function (
+  index,
+  text
 ) {
-  var toLabel = BellmanFordVisualization.VERTEX_DATA[toIndex].label;
-  var fromLabel = BellmanFordVisualization.VERTEX_DATA[fromIndex].label;
+  var metrics = this.getWeightLabelMetrics(text);
+  var vertex = BellmanFordVisualization.VERTEX_DATA[index];
+  var anchor = vertex.weightAnchor || "top";
+  var radius = BellmanFordVisualization.NODE_RADIUS;
+  var margin = BellmanFordVisualization.WEIGHT_LABEL_MARGIN;
+  var x = vertex.x;
+  var y = vertex.y;
 
-  if (typeof resultDist === "number") {
-    return (
-      "dist[" +
-      toLabel +
-      "] = " +
-      this.formatDistance(resultDist) +
-      " via " +
-      fromLabel
-    );
+  switch (anchor) {
+    case "left":
+      x = vertex.x - radius - margin - metrics.width / 2;
+      break;
+    case "right":
+      x = vertex.x + radius + margin + metrics.width / 2;
+      break;
+    case "bottom":
+      y = vertex.y + radius + margin + metrics.height / 2;
+      break;
+    case "top":
+    default:
+      y = vertex.y - radius - margin - metrics.height / 2;
+      break;
   }
 
-  if (distFrom === Infinity) {
-    return (
-      this.infinitySymbol +
-      " + " +
-      weight +
-      " = " +
-      this.infinitySymbol +
-      " (no path)"
-    );
+  return { x: x, y: y };
+};
+
+BellmanFordVisualization.prototype.updateWeightLabel = function (
+  index,
+  text,
+  color
+) {
+  if (
+    !this.weightLabelIDs ||
+    index < 0 ||
+    index >= this.weightLabelIDs.length
+  ) {
+    return;
   }
 
-  var candidate = distFrom + weight;
-  var comparator = canRelax ? "<" : "\u2265";
-  return (
-    this.formatDistance(distFrom) +
-    " + " +
-    weight +
-    " = " +
-    this.formatDistance(candidate) +
-    " " +
-    comparator +
-    " dist[" +
-    toLabel +
-    "]=" +
-    this.formatDistance(priorDistTo)
-  );
+  var labelID = this.weightLabelIDs[index];
+  if (labelID === undefined || labelID < 0) {
+    return;
+  }
+
+  var displayText = typeof text === "string" ? text : this.formatDistance(text);
+  this.cmd("SetText", labelID, displayText);
+  if (color) {
+    this.cmd("SetForegroundColor", labelID, color);
+  }
+
+  var pos = this.getWeightLabelPosition(index, displayText);
+  this.cmd("SetPosition", labelID, pos.x, pos.y);
 };
 
 BellmanFordVisualization.prototype.showRelaxationOnNode = function (
@@ -543,44 +645,44 @@ BellmanFordVisualization.prototype.showRelaxationOnNode = function (
   resultDist
 ) {
   if (
-    !this.relaxationLabelIDs ||
+    !this.weightLabelIDs ||
     toIndex < 0 ||
-    toIndex >= this.relaxationLabelIDs.length
+    toIndex >= this.weightLabelIDs.length
   ) {
     return;
   }
 
-  var labelID = this.relaxationLabelIDs[toIndex];
-  if (labelID === undefined || labelID < 0) {
-    return;
-  }
+  var displayText;
+  var color = BellmanFordVisualization.WEIGHT_LABEL_COLOR;
 
-  var text = this.buildRelaxationExpression(
-    fromIndex,
-    toIndex,
-    weight,
-    distFrom,
-    priorDistTo,
-    canRelax,
-    resultDist
-  );
-  this.cmd("SetText", labelID, text);
-
-  var color = BellmanFordVisualization.RELAX_LABEL_COLOR;
   if (typeof resultDist === "number") {
-    color = BellmanFordVisualization.RELAX_LABEL_IMPROVE_COLOR;
-  } else if (distFrom === Infinity) {
-    color = BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR;
-  } else if (canRelax) {
-    color = BellmanFordVisualization.RELAX_LABEL_IMPROVE_COLOR;
+    displayText = this.formatDistance(resultDist);
+    color = BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR;
+  } else if (canRelax && distFrom !== Infinity) {
+    var comparator = "<";
+    displayText =
+      this.formatDistance(distFrom) +
+      " + " +
+      weight +
+      " " +
+      comparator +
+      " " +
+      this.formatDistance(priorDistTo);
+    color = BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR;
+  } else {
+    displayText = this.formatDistance(priorDistTo);
+    color =
+      priorDistTo === Infinity
+        ? BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR
+        : BellmanFordVisualization.WEIGHT_LABEL_COLOR;
   }
 
-  this.cmd("SetForegroundColor", labelID, color);
+  this.updateWeightLabel(toIndex, displayText, color);
 };
 
 BellmanFordVisualization.prototype.createGraph = function () {
   this.vertexIDs = new Array(BellmanFordVisualization.VERTEX_DATA.length);
-  this.relaxationLabelIDs = new Array(BellmanFordVisualization.VERTEX_DATA.length);
+  this.weightLabelIDs = new Array(BellmanFordVisualization.VERTEX_DATA.length);
 
   for (var i = 0; i < BellmanFordVisualization.VERTEX_DATA.length; i++) {
     var vertex = BellmanFordVisualization.VERTEX_DATA[i];
@@ -599,22 +701,23 @@ BellmanFordVisualization.prototype.createGraph = function () {
     this.cmd("SetTextColor", id, BellmanFordVisualization.NODE_TEXT_COLOR);
     this.cmd("SetHighlight", id, 0);
 
-    var calloutY =
-      typeof vertex.calloutY === "number"
-        ? vertex.calloutY
-        : vertex.y - BellmanFordVisualization.RELAX_LABEL_OFFSET;
-    var labelID = this.nextIndex++;
-    this.relaxationLabelIDs[i] = labelID;
-    this.cmd("CreateLabel", labelID, "", vertex.x, calloutY, 0);
+    var weightLabelID = this.nextIndex++;
+    this.weightLabelIDs[i] = weightLabelID;
+    this.cmd("CreateLabel", weightLabelID, this.infinitySymbol, vertex.x, vertex.y, 1);
     this.cmd(
       "SetTextStyle",
-      labelID,
-      BellmanFordVisualization.RELAX_LABEL_FONT
+      weightLabelID,
+      BellmanFordVisualization.WEIGHT_LABEL_FONT
     );
     this.cmd(
       "SetForegroundColor",
-      labelID,
-      BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR
+      weightLabelID,
+      BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR
+    );
+    this.updateWeightLabel(
+      i,
+      this.infinitySymbol,
+      BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR
     );
   }
 
@@ -989,8 +1092,37 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
   this.cmd("Step");
   dist[startIndex] = 0;
   this.updateDistanceCell(startIndex, 0, true);
+  this.updateWeightLabel(
+    startIndex,
+    this.formatDistance(0),
+    BellmanFordVisualization.WEIGHT_LABEL_HIGHLIGHT_COLOR
+  );
   this.cmd("Step");
   this.updateDistanceCell(startIndex, 0, false);
+  this.updateWeightLabel(
+    startIndex,
+    this.formatDistance(0),
+    BellmanFordVisualization.WEIGHT_LABEL_COLOR
+  );
+
+  this.updateStatus(
+    "Source ready",
+    "dist[" + startLabel + "] = 0 while all other vertices remain at " +
+      this.infinitySymbol +
+      "."
+  );
+  this.highlightVertex(
+    startIndex,
+    BellmanFordVisualization.NODE_ACTIVE_COLOR,
+    false
+  );
+  this.cmd("Step");
+  this.highlightVertex(
+    startIndex,
+    BellmanFordVisualization.NODE_VISITED_COLOR,
+    true
+  );
+  this.cmd("Step");
 
   this.updateStatus(
     "Source ready",
@@ -1097,6 +1229,11 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
           BellmanFordVisualization.NODE_VISITED_COLOR,
           true
         );
+        this.updateWeightLabel(
+          v,
+          this.formatDistance(dist[v]),
+          BellmanFordVisualization.WEIGHT_LABEL_COLOR
+        );
 
         this.highlightCodeLine(11);
         parent[v] = u;
@@ -1200,20 +1337,6 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
     );
     this.cmd("Step");
 
-    this.updateStatus(
-      "Cycle test on " + fromLabel + " → " + toLabel,
-      this.describeRelaxation(
-        fromLabel,
-        toLabel,
-        dist[from],
-        weightCheck,
-        dist[to],
-        detectsCycle
-      ),
-      !detectsCycle
-    );
-    this.cmd("Step");
-
     if (detectsCycle) {
       this.highlightCodeLine(19);
       negativeCycle = true;
@@ -1291,14 +1414,13 @@ BellmanFordVisualization.prototype.resetGraphState = function () {
     );
   }
 
-  if (this.relaxationLabelIDs) {
-    for (var r = 0; r < this.relaxationLabelIDs.length; r++) {
-      if (this.relaxationLabelIDs[r] >= 0) {
-        this.cmd("SetText", this.relaxationLabelIDs[r], "");
-        this.cmd(
-          "SetForegroundColor",
-          this.relaxationLabelIDs[r],
-          BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR
+  if (this.weightLabelIDs) {
+    for (var r = 0; r < this.weightLabelIDs.length; r++) {
+      if (this.weightLabelIDs[r] >= 0) {
+        this.updateWeightLabel(
+          r,
+          this.infinitySymbol,
+          BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR
         );
       }
     }
