@@ -1200,6 +1200,20 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
     );
     this.cmd("Step");
 
+    this.updateStatus(
+      "Cycle test on " + fromLabel + " → " + toLabel,
+      this.describeRelaxation(
+        fromLabel,
+        toLabel,
+        dist[from],
+        weightCheck,
+        dist[to],
+        detectsCycle
+      ),
+      !detectsCycle
+    );
+    this.cmd("Step");
+
     if (detectsCycle) {
       this.highlightCodeLine(19);
       negativeCycle = true;
