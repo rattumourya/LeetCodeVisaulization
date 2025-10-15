@@ -15,13 +15,20 @@ BellmanFordVisualization.TITLE_Y = 60;
 // The prior layout included a status label along the bottom of the canvas.
 // The revised design removes that status strip, so we no longer track
 // coordinates for it.
-BellmanFordVisualization.NODE_RADIUS = 32;
+BellmanFordVisualization.NODE_RADIUS = 28;
 BellmanFordVisualization.NODE_COLOR = "#f6f7fb";
 BellmanFordVisualization.NODE_BORDER_COLOR = "#283593";
 BellmanFordVisualization.NODE_TEXT_COLOR = "#0d1b2a";
 BellmanFordVisualization.NODE_ACTIVE_COLOR = "#ffe082";
 BellmanFordVisualization.NODE_VISITED_COLOR = "#c5e1a5";
 BellmanFordVisualization.NODE_VISITED_TEXT_COLOR = "#1b4332";
+
+BellmanFordVisualization.RELAX_LABEL_FONT =
+  "bold 15px 'Courier New', monospace";
+BellmanFordVisualization.RELAX_LABEL_COLOR = "#0d1b2a";
+BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR = "#6b7280";
+BellmanFordVisualization.RELAX_LABEL_IMPROVE_COLOR = "#c62828";
+BellmanFordVisualization.RELAX_LABEL_OFFSET = 56;
 
 BellmanFordVisualization.EDGE_COLOR = "#424874";
 BellmanFordVisualization.EDGE_HIGHLIGHT_COLOR = "#ff7043";
@@ -82,11 +89,11 @@ BellmanFordVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
 BellmanFordVisualization.TITLE_FONT = "bold 34";
 
 BellmanFordVisualization.VERTEX_DATA = [
-  { label: "S", x: 160, y: 360 },
-  { label: "T", x: 360, y: 160 },
-  { label: "X", x: 580, y: 260 },
-  { label: "Y", x: 260, y: 540 },
-  { label: "Z", x: 560, y: 520 },
+  { label: "S", x: 150, y: 420, calloutY: 360 },
+  { label: "T", x: 340, y: 240, calloutY: 182 },
+  { label: "X", x: 560, y: 320, calloutY: 262 },
+  { label: "Y", x: 240, y: 520, calloutY: 460 },
+  { label: "Z", x: 520, y: 500, calloutY: 440 },
 ];
 
 BellmanFordVisualization.GRAPH_EDGES = [
@@ -222,6 +229,7 @@ BellmanFordVisualization.prototype.reset = function () {
   this.infoMainTextID = -1;
   this.infoDetailTextID = -1;
   this.iterationLabelID = -1;
+  this.relaxationLabelIDs = [];
 
   if (
     typeof animationManager !== "undefined" &&
@@ -474,8 +482,105 @@ BellmanFordVisualization.prototype.describeRelaxation = function (
   );
 };
 
+BellmanFordVisualization.prototype.buildRelaxationExpression = function (
+  fromIndex,
+  toIndex,
+  weight,
+  distFrom,
+  priorDistTo,
+  canRelax,
+  resultDist
+) {
+  var toLabel = BellmanFordVisualization.VERTEX_DATA[toIndex].label;
+  var fromLabel = BellmanFordVisualization.VERTEX_DATA[fromIndex].label;
+
+  if (typeof resultDist === "number") {
+    return (
+      "dist[" +
+      toLabel +
+      "] = " +
+      this.formatDistance(resultDist) +
+      " via " +
+      fromLabel
+    );
+  }
+
+  if (distFrom === Infinity) {
+    return (
+      this.infinitySymbol +
+      " + " +
+      weight +
+      " = " +
+      this.infinitySymbol +
+      " (no path)"
+    );
+  }
+
+  var candidate = distFrom + weight;
+  var comparator = canRelax ? "<" : "\u2265";
+  return (
+    this.formatDistance(distFrom) +
+    " + " +
+    weight +
+    " = " +
+    this.formatDistance(candidate) +
+    " " +
+    comparator +
+    " dist[" +
+    toLabel +
+    "]=" +
+    this.formatDistance(priorDistTo)
+  );
+};
+
+BellmanFordVisualization.prototype.showRelaxationOnNode = function (
+  fromIndex,
+  toIndex,
+  weight,
+  distFrom,
+  priorDistTo,
+  canRelax,
+  resultDist
+) {
+  if (
+    !this.relaxationLabelIDs ||
+    toIndex < 0 ||
+    toIndex >= this.relaxationLabelIDs.length
+  ) {
+    return;
+  }
+
+  var labelID = this.relaxationLabelIDs[toIndex];
+  if (labelID === undefined || labelID < 0) {
+    return;
+  }
+
+  var text = this.buildRelaxationExpression(
+    fromIndex,
+    toIndex,
+    weight,
+    distFrom,
+    priorDistTo,
+    canRelax,
+    resultDist
+  );
+  this.cmd("SetText", labelID, text);
+
+  var color = BellmanFordVisualization.RELAX_LABEL_COLOR;
+  if (typeof resultDist === "number") {
+    color = BellmanFordVisualization.RELAX_LABEL_IMPROVE_COLOR;
+  } else if (distFrom === Infinity) {
+    color = BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR;
+  } else if (canRelax) {
+    color = BellmanFordVisualization.RELAX_LABEL_IMPROVE_COLOR;
+  }
+
+  this.cmd("SetForegroundColor", labelID, color);
+};
+
 BellmanFordVisualization.prototype.createGraph = function () {
   this.vertexIDs = new Array(BellmanFordVisualization.VERTEX_DATA.length);
+  this.relaxationLabelIDs = new Array(BellmanFordVisualization.VERTEX_DATA.length);
 
   for (var i = 0; i < BellmanFordVisualization.VERTEX_DATA.length; i++) {
     var vertex = BellmanFordVisualization.VERTEX_DATA[i];
@@ -493,6 +598,24 @@ BellmanFordVisualization.prototype.createGraph = function () {
     this.cmd("SetForegroundColor", id, BellmanFordVisualization.NODE_BORDER_COLOR);
     this.cmd("SetTextColor", id, BellmanFordVisualization.NODE_TEXT_COLOR);
     this.cmd("SetHighlight", id, 0);
+
+    var calloutY =
+      typeof vertex.calloutY === "number"
+        ? vertex.calloutY
+        : vertex.y - BellmanFordVisualization.RELAX_LABEL_OFFSET;
+    var labelID = this.nextIndex++;
+    this.relaxationLabelIDs[i] = labelID;
+    this.cmd("CreateLabel", labelID, "", vertex.x, calloutY, 0);
+    this.cmd(
+      "SetTextStyle",
+      labelID,
+      BellmanFordVisualization.RELAX_LABEL_FONT
+    );
+    this.cmd(
+      "SetForegroundColor",
+      labelID,
+      BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR
+    );
   }
 
   for (var from = 0; from < BellmanFordVisualization.GRAPH_EDGES.length; from++) {
@@ -916,8 +1039,17 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
       this.cmd("Step");
 
       this.highlightCodeLine(9);
+      var previousDist = dist[v];
       var canRelax =
-        dist[u] !== Infinity && dist[u] + weight < dist[v];
+        dist[u] !== Infinity && dist[u] + weight < previousDist;
+      this.showRelaxationOnNode(
+        u,
+        v,
+        weight,
+        dist[u],
+        previousDist,
+        canRelax
+      );
       this.updateStatus(
         "Consider edge " +
           fromLabel +
@@ -931,7 +1063,7 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
           toLabel,
           dist[u],
           weight,
-          dist[v],
+          previousDist,
           canRelax
         ),
         !canRelax
@@ -941,6 +1073,15 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
       if (canRelax) {
         this.highlightCodeLine(10);
         dist[v] = dist[u] + weight;
+        this.showRelaxationOnNode(
+          u,
+          v,
+          weight,
+          dist[u],
+          previousDist,
+          canRelax,
+          dist[v]
+        );
         this.updateDistanceCell(v, dist[v], true);
         this.cmd("Step");
         this.updateDistanceCell(v, dist[v], false);
@@ -1033,8 +1174,31 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
     this.highlightEdge(from, to, true);
     this.cmd("Step");
 
+    var priorDistTo = dist[to];
     var detectsCycle =
-      dist[from] !== Infinity && dist[from] + weightCheck < dist[to];
+      dist[from] !== Infinity && dist[from] + weightCheck < priorDistTo;
+    this.showRelaxationOnNode(
+      from,
+      to,
+      weightCheck,
+      dist[from],
+      priorDistTo,
+      detectsCycle
+    );
+
+    this.updateStatus(
+      "Cycle test on " + fromLabel + " → " + toLabel,
+      this.describeRelaxation(
+        fromLabel,
+        toLabel,
+        dist[from],
+        weightCheck,
+        priorDistTo,
+        detectsCycle
+      ),
+      !detectsCycle
+    );
+    this.cmd("Step");
 
     this.updateStatus(
       "Cycle test on " + fromLabel + " → " + toLabel,
@@ -1125,6 +1289,19 @@ BellmanFordVisualization.prototype.resetGraphState = function () {
       this.vertexIDs[i],
       BellmanFordVisualization.NODE_TEXT_COLOR
     );
+  }
+
+  if (this.relaxationLabelIDs) {
+    for (var r = 0; r < this.relaxationLabelIDs.length; r++) {
+      if (this.relaxationLabelIDs[r] >= 0) {
+        this.cmd("SetText", this.relaxationLabelIDs[r], "");
+        this.cmd(
+          "SetForegroundColor",
+          this.relaxationLabelIDs[r],
+          BellmanFordVisualization.RELAX_LABEL_MUTED_COLOR
+        );
+      }
+    }
   }
 
   for (var key in this.edgeMap) {
