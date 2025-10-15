@@ -114,6 +114,7 @@ BellmanFordVisualization.PATH_TITLE_FONT = "bold 18";
 BellmanFordVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 BellmanFordVisualization.PATH_TITLE_COLOR = "#0b3d91";
 BellmanFordVisualization.PATH_TEXT_COLOR = "#102a43";
+BellmanFordVisualization.PATH_CHARACTER_WIDTH = 12;
 BellmanFordVisualization.PATH_PANEL_MARGIN_LEFT = 32;
 BellmanFordVisualization.PATH_PANEL_MARGIN_RIGHT = 32;
 BellmanFordVisualization.PATH_PANEL_LEFT =
@@ -1048,6 +1049,14 @@ BellmanFordVisualization.prototype.composePathLine = function (
   };
 };
 
+BellmanFordVisualization.prototype.measurePathTextWidth = function (text) {
+  if (!text) {
+    return 0;
+  }
+
+  return text.length * BellmanFordVisualization.PATH_CHARACTER_WIDTH;
+};
+
 BellmanFordVisualization.prototype.getPathAnimationStartPosition = function (
   pathIndices
 ) {
@@ -1111,14 +1120,21 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
     var vertex = pathIndices[i];
     var label = BellmanFordVisualization.VERTEX_DATA[vertex].label;
     var hasPrior = accumulated.length > 0;
+    var prefixText = hasPrior ? accumulated + " → " : "";
+    var nextAccumulated = hasPrior
+      ? accumulated + " → " + label
+      : label;
+    var finalWidth = this.measurePathTextWidth(nextAccumulated);
+    var leftX = target.x - finalWidth / 2;
+    var prefixWidth = this.measurePathTextWidth(prefixText);
+    var labelWidth = this.measurePathTextWidth(label);
     var startPos = this.getVertexPosition(vertex);
     if (!startPos) {
       startPos = this.getPathAnimationStartPosition(pathIndices);
     }
 
     if (hasPrior) {
-      var arrowPrefix = accumulated + " → ";
-      this.cmd("SetText", labelID, arrowPrefix);
+      this.cmd("SetText", labelID, prefixText);
       this.cmd("Step");
     }
 
@@ -1135,12 +1151,16 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
       BellmanFordVisualization.PATH_TEXT_COLOR
     );
     this.cmd("Step");
-    this.cmd("Move", tempID, Math.round(target.x), Math.round(target.y));
+    var destinationX = leftX + prefixWidth + labelWidth / 2;
+    this.cmd(
+      "Move",
+      tempID,
+      Math.round(destinationX),
+      Math.round(target.y)
+    );
     this.cmd("Step");
 
-    accumulated = hasPrior
-      ? accumulated + " → " + label
-      : label;
+    accumulated = nextAccumulated;
     this.cmd("SetText", labelID, accumulated);
     this.cmd("Step");
     this.cmd("Delete", tempID);
