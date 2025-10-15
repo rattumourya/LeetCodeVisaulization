@@ -1110,14 +1110,20 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
   for (var i = 0; i < pathIndices.length; i++) {
     var vertex = pathIndices[i];
     var label = BellmanFordVisualization.VERTEX_DATA[vertex].label;
-    var segment = accumulated.length > 0 ? " → " + label : label;
+    var hasPrior = accumulated.length > 0;
     var startPos = this.getVertexPosition(vertex);
     if (!startPos) {
       startPos = this.getPathAnimationStartPosition(pathIndices);
     }
 
+    if (hasPrior) {
+      var arrowPrefix = accumulated + " → ";
+      this.cmd("SetText", labelID, arrowPrefix);
+      this.cmd("Step");
+    }
+
     var tempID = this.nextIndex++;
-    this.cmd("CreateLabel", tempID, segment, startPos.x, startPos.y, 0);
+    this.cmd("CreateLabel", tempID, label, startPos.x, startPos.y, 0);
     this.cmd(
       "SetTextStyle",
       tempID,
@@ -1129,18 +1135,16 @@ BellmanFordVisualization.prototype.animatePathReveal = function (
       BellmanFordVisualization.PATH_TEXT_COLOR
     );
     this.cmd("Step");
-    this.cmd(
-      "Move",
-      tempID,
-      Math.round(target.x),
-      Math.round(target.y)
-    );
+    this.cmd("Move", tempID, Math.round(target.x), Math.round(target.y));
     this.cmd("Step");
 
-    accumulated += segment;
+    accumulated = hasPrior
+      ? accumulated + " → " + label
+      : label;
     this.cmd("SetText", labelID, accumulated);
     this.cmd("Step");
     this.cmd("Delete", tempID);
+    this.cmd("Step");
   }
 
   if (finalText !== accumulated) {
