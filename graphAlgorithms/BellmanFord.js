@@ -20,8 +20,19 @@ BellmanFordVisualization.NODE_COLOR = "#f6f7fb";
 BellmanFordVisualization.NODE_BORDER_COLOR = "#283593";
 BellmanFordVisualization.NODE_TEXT_COLOR = "#0d1b2a";
 BellmanFordVisualization.NODE_ACTIVE_COLOR = "#ffe082";
-BellmanFordVisualization.NODE_VISITED_COLOR = "#c5e1a5";
-BellmanFordVisualization.NODE_VISITED_TEXT_COLOR = "#1b4332";
+BellmanFordVisualization.NODE_VISITED_COLOR = BellmanFordVisualization.NODE_COLOR;
+BellmanFordVisualization.NODE_VISITED_TEXT_COLOR =
+  BellmanFordVisualization.NODE_TEXT_COLOR;
+
+BellmanFordVisualization.WEIGHT_LABEL_FONT =
+  "bold 22px 'Courier New', monospace";
+BellmanFordVisualization.WEIGHT_LABEL_COLOR = "#1d4ed8";
+BellmanFordVisualization.WEIGHT_LABEL_MUTED_COLOR = "#2563eb";
+BellmanFordVisualization.WEIGHT_LABEL_POSITIVE_COLOR = "#2e7d32";
+BellmanFordVisualization.WEIGHT_LABEL_NEGATIVE_COLOR = "#c62828";
+BellmanFordVisualization.WEIGHT_LABEL_MARGIN = 2;
+BellmanFordVisualization.WEIGHT_LABEL_CHAR_WIDTH = 13;
+BellmanFordVisualization.WEIGHT_LABEL_HEIGHT = 28;
 
 BellmanFordVisualization.WEIGHT_LABEL_FONT =
   "bold 22px 'Courier New', monospace";
@@ -43,7 +54,7 @@ BellmanFordVisualization.TABLE_FIRST_ROW_Y =
   BellmanFordVisualization.TABLE_HEADER_Y + 50;
 BellmanFordVisualization.TABLE_TOTAL_WIDTH =
   BellmanFordVisualization.CANVAS_WIDTH / 2;
-BellmanFordVisualization.TABLE_LEFT_X = 24;
+BellmanFordVisualization.TABLE_LEFT_X = 54;
 BellmanFordVisualization.TABLE_RIGHT_X =
   BellmanFordVisualization.TABLE_LEFT_X +
   BellmanFordVisualization.TABLE_TOTAL_WIDTH;
@@ -83,8 +94,8 @@ BellmanFordVisualization.TABLE_BORDER_COLOR = "#1a237e";
 BellmanFordVisualization.TABLE_BORDER_THICKNESS = 2;
 
 BellmanFordVisualization.CODE_TITLE_Y = 900;
-BellmanFordVisualization.CODE_START_Y = 920;
-BellmanFordVisualization.CODE_LINE_HEIGHT = 14;
+BellmanFordVisualization.CODE_START_Y = 860;
+BellmanFordVisualization.CODE_LINE_HEIGHT = 18;
 BellmanFordVisualization.CODE_LEFT_X =
   BellmanFordVisualization.TABLE_COLUMNS[0].x -
   BellmanFordVisualization.TABLE_COLUMNS[0].width / 2 +
@@ -108,77 +119,35 @@ BellmanFordVisualization.INFO_TOP_LINE_Y =
   BellmanFordVisualization.INFO_BOX_Y;
 
 BellmanFordVisualization.PATH_TITLE_FONT = "bold 18";
-BellmanFordVisualization.PATH_FONT = "bold 14px 'Courier New', monospace";
+BellmanFordVisualization.PATH_FONT = "bold 16px 'Courier New', monospace";
 BellmanFordVisualization.PATH_TITLE_COLOR = "#0b3d91";
 BellmanFordVisualization.PATH_TEXT_COLOR = "#102a43";
-BellmanFordVisualization.PATH_TABLE_MARGIN_LEFT = 32;
-BellmanFordVisualization.PATH_TABLE_MARGIN_RIGHT = 32;
-BellmanFordVisualization.PATH_TABLE_LEFT_EDGE =
+BellmanFordVisualization.PATH_PANEL_MARGIN_LEFT = 32;
+BellmanFordVisualization.PATH_PANEL_MARGIN_RIGHT = 32;
+BellmanFordVisualization.PATH_PANEL_LEFT =
   BellmanFordVisualization.TABLE_RIGHT_X +
-  BellmanFordVisualization.PATH_TABLE_MARGIN_LEFT;
-BellmanFordVisualization.PATH_TABLE_AVAILABLE_WIDTH =
+  BellmanFordVisualization.PATH_PANEL_MARGIN_LEFT;
+BellmanFordVisualization.PATH_PANEL_RIGHT =
   BellmanFordVisualization.CANVAS_WIDTH -
-  BellmanFordVisualization.PATH_TABLE_LEFT_EDGE -
-  BellmanFordVisualization.PATH_TABLE_MARGIN_RIGHT;
-BellmanFordVisualization.PATH_TABLE_COLUMN_LABELS = [
-  "Vertex",
-  "Path",
-  "Distance",
-];
-BellmanFordVisualization.PATH_TABLE_TOTAL_WIDTH = 0;
-BellmanFordVisualization.PATH_TABLE_COLUMNS = (function () {
-  var available = Math.max(
-    BellmanFordVisualization.PATH_TABLE_AVAILABLE_WIDTH,
-    210
-  );
-  var first = Math.max(60, Math.floor(available * 0.25));
-  var third = Math.max(60, Math.floor(available * 0.24));
-  var second = available - first - third;
-  if (second < 90) {
-    var deficit = 90 - second;
-    second = 90;
-    if (first - deficit / 2 >= 55 && third - deficit / 2 >= 55) {
-      first -= Math.floor(deficit / 2);
-      third -= deficit - Math.floor(deficit / 2);
-    } else if (first > third) {
-      first = Math.max(55, first - deficit);
-    } else {
-      third = Math.max(55, third - deficit);
-    }
-  }
-  var left = BellmanFordVisualization.PATH_TABLE_LEFT_EDGE;
-  var labels = BellmanFordVisualization.PATH_TABLE_COLUMN_LABELS;
-  var widths = [first, second, third];
-  var columns = [];
-  for (var i = 0; i < labels.length; i++) {
-    var width = widths[i];
-    columns.push({
-      label: labels[i],
-      width: width,
-      x: left + width / 2,
-    });
-    left += width;
-  }
-  BellmanFordVisualization.PATH_TABLE_TOTAL_WIDTH =
-    left - BellmanFordVisualization.PATH_TABLE_LEFT_EDGE;
-  return columns;
-})();
+  BellmanFordVisualization.PATH_PANEL_MARGIN_RIGHT;
+BellmanFordVisualization.PATH_PANEL_WIDTH = Math.max(
+  0,
+  BellmanFordVisualization.PATH_PANEL_RIGHT -
+    BellmanFordVisualization.PATH_PANEL_LEFT
+);
 BellmanFordVisualization.PATH_TITLE_X =
-  BellmanFordVisualization.PATH_TABLE_LEFT_EDGE +
-  BellmanFordVisualization.PATH_TABLE_TOTAL_WIDTH / 2;
+  BellmanFordVisualization.PATH_PANEL_LEFT +
+  BellmanFordVisualization.PATH_PANEL_WIDTH / 2;
 BellmanFordVisualization.PATH_TITLE_Y =
   BellmanFordVisualization.TABLE_HEADER_Y - 36;
-BellmanFordVisualization.PATH_TABLE_HEADER_Y =
-  BellmanFordVisualization.TABLE_HEADER_Y;
-BellmanFordVisualization.PATH_TABLE_ROW_HEIGHT =
-  BellmanFordVisualization.TABLE_ROW_HEIGHT;
-BellmanFordVisualization.PATH_TABLE_FIRST_ROW_Y =
+BellmanFordVisualization.PATH_START_X =
+  BellmanFordVisualization.PATH_TITLE_X;
+BellmanFordVisualization.PATH_START_Y =
   BellmanFordVisualization.TABLE_FIRST_ROW_Y;
-BellmanFordVisualization.PATH_TABLE_HEADER_FONT = "bold 18";
-BellmanFordVisualization.PATH_TABLE_CELL_FONT = "bold 16";
-BellmanFordVisualization.PATH_TABLE_BORDER_COLOR = "#0b3d91";
-BellmanFordVisualization.PATH_TABLE_BORDER_THICKNESS = 2;
-BellmanFordVisualization.PATH_TABLE_HIGHLIGHT_COLOR = "#d1f2eb";
+BellmanFordVisualization.PATH_LINE_HEIGHT = 32;
+BellmanFordVisualization.PATH_HIGHLIGHT_NODE_COLOR = "#a5d6a7";
+BellmanFordVisualization.PATH_HIGHLIGHT_NODE_TEXT_COLOR = "#1b4332";
+BellmanFordVisualization.PATH_HIGHLIGHT_EDGE_COLOR = "#2e7d32";
 
 BellmanFordVisualization.BIDIRECTIONAL_CURVE_INNER = 0.18;
 BellmanFordVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
@@ -186,11 +155,11 @@ BellmanFordVisualization.BIDIRECTIONAL_CURVE_OUTER = 0.28;
 BellmanFordVisualization.TITLE_FONT = "bold 34";
 
 BellmanFordVisualization.VERTEX_DATA = [
-  { label: "S", x: 150, y: 420, weightAnchor: "left" },
-  { label: "T", x: 340, y: 240, weightAnchor: "top" },
-  { label: "X", x: 560, y: 320, weightAnchor: "right" },
-  { label: "Y", x: 240, y: 520, weightAnchor: "bottom" },
-  { label: "Z", x: 520, y: 500, weightAnchor: "bottom" },
+  { label: "S", x: 180, y: 420, weightAnchor: "left" },
+  { label: "T", x: 370, y: 240, weightAnchor: "top" },
+  { label: "X", x: 590, y: 320, weightAnchor: "right" },
+  { label: "Y", x: 270, y: 520, weightAnchor: "bottom" },
+  { label: "Z", x: 550, y: 500, weightAnchor: "bottom" },
 ];
 
 BellmanFordVisualization.GRAPH_EDGES = [
@@ -273,9 +242,9 @@ BellmanFordVisualization.prototype.init = function (am, w, h) {
   this.infoMainTextID = -1;
   this.infoDetailTextID = -1;
   this.iterationLabelID = -1;
-  this.pathVertexCellIDs = [];
-  this.pathRouteCellIDs = [];
-  this.pathDistanceCellIDs = [];
+  this.pathLabelIDs = [];
+  this.pathLabelsByVertex = {};
+  this.pathOrder = [];
 
   this.infinitySymbol = "\u221E";
 
@@ -329,9 +298,9 @@ BellmanFordVisualization.prototype.reset = function () {
   this.iterationLabelID = -1;
   this.weightLabelIDs = [];
   this.currentIterationText = "";
-  this.pathVertexCellIDs = [];
-  this.pathRouteCellIDs = [];
-  this.pathDistanceCellIDs = [];
+  this.pathLabelIDs = [];
+  this.pathLabelsByVertex = {};
+  this.pathOrder = [];
 
   if (
     typeof animationManager !== "undefined" &&
@@ -841,8 +810,6 @@ BellmanFordVisualization.prototype.createCodeDisplay = function () {
 };
 
 BellmanFordVisualization.prototype.createPathsPanel = function () {
-  var columns = BellmanFordVisualization.PATH_TABLE_COLUMNS;
-
   this.pathsTitleID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
@@ -863,171 +830,24 @@ BellmanFordVisualization.prototype.createPathsPanel = function () {
     BellmanFordVisualization.PATH_TITLE_COLOR
   );
 
-  for (var c = 0; c < columns.length; c++) {
-    var headerID = this.nextIndex++;
-    this.cmd(
-      "CreateLabel",
-      headerID,
-      columns[c].label,
-      columns[c].x,
-      BellmanFordVisualization.PATH_TABLE_HEADER_Y,
-      1
-    );
-    this.cmd(
-      "SetTextStyle",
-      headerID,
-      BellmanFordVisualization.PATH_TABLE_HEADER_FONT
-    );
-    this.cmd(
-      "SetForegroundColor",
-      headerID,
-      BellmanFordVisualization.PATH_TITLE_COLOR
-    );
-  }
-
-  var vertexCount = BellmanFordVisualization.VERTEX_DATA.length;
-  this.pathVertexCellIDs = new Array(vertexCount);
-  this.pathRouteCellIDs = new Array(vertexCount);
-  this.pathDistanceCellIDs = new Array(vertexCount);
-
-  for (var i = 0; i < vertexCount; i++) {
-    var rowY =
-      BellmanFordVisualization.PATH_TABLE_FIRST_ROW_Y +
-      i * BellmanFordVisualization.PATH_TABLE_ROW_HEIGHT;
-
-    var vertexCell = this.nextIndex++;
-    this.cmd(
-      "CreateRectangle",
-      vertexCell,
-      BellmanFordVisualization.VERTEX_DATA[i].label,
-      columns[0].width,
-      BellmanFordVisualization.PATH_TABLE_ROW_HEIGHT - 6,
-      columns[0].x,
-      rowY
-    );
-    this.cmd(
-      "SetTextStyle",
-      vertexCell,
-      BellmanFordVisualization.PATH_TABLE_CELL_FONT
-    );
-    this.cmd(
-      "SetForegroundColor",
-      vertexCell,
-      BellmanFordVisualization.PATH_TABLE_BORDER_COLOR
-    );
-    this.cmd(
-      "SetRectangleLineThickness",
-      vertexCell,
-      BellmanFordVisualization.PATH_TABLE_BORDER_THICKNESS
-    );
-    this.cmd(
-      "SetTextColor",
-      vertexCell,
-      BellmanFordVisualization.PATH_TEXT_COLOR
-    );
-    this.cmd("SetBackgroundColor", vertexCell, "#ffffff");
-    this.pathVertexCellIDs[i] = vertexCell;
-
-    var pathCell = this.nextIndex++;
-    this.cmd(
-      "CreateRectangle",
-      pathCell,
-      "",
-      columns[1].width,
-      BellmanFordVisualization.PATH_TABLE_ROW_HEIGHT - 6,
-      columns[1].x,
-      rowY
-    );
-    this.cmd(
-      "SetTextStyle",
-      pathCell,
-      BellmanFordVisualization.PATH_TABLE_CELL_FONT
-    );
-    this.cmd(
-      "SetForegroundColor",
-      pathCell,
-      BellmanFordVisualization.PATH_TABLE_BORDER_COLOR
-    );
-    this.cmd(
-      "SetRectangleLineThickness",
-      pathCell,
-      BellmanFordVisualization.PATH_TABLE_BORDER_THICKNESS
-    );
-    this.cmd(
-      "SetTextColor",
-      pathCell,
-      BellmanFordVisualization.PATH_TEXT_COLOR
-    );
-    this.cmd("SetBackgroundColor", pathCell, "#ffffff");
-    this.pathRouteCellIDs[i] = pathCell;
-
-    var distanceCell = this.nextIndex++;
-    this.cmd(
-      "CreateRectangle",
-      distanceCell,
-      "",
-      columns[2].width,
-      BellmanFordVisualization.PATH_TABLE_ROW_HEIGHT - 6,
-      columns[2].x,
-      rowY
-    );
-    this.cmd(
-      "SetTextStyle",
-      distanceCell,
-      BellmanFordVisualization.PATH_TABLE_CELL_FONT
-    );
-    this.cmd(
-      "SetForegroundColor",
-      distanceCell,
-      BellmanFordVisualization.PATH_TABLE_BORDER_COLOR
-    );
-    this.cmd(
-      "SetRectangleLineThickness",
-      distanceCell,
-      BellmanFordVisualization.PATH_TABLE_BORDER_THICKNESS
-    );
-    this.cmd(
-      "SetTextColor",
-      distanceCell,
-      BellmanFordVisualization.PATH_TEXT_COLOR
-    );
-    this.cmd("SetBackgroundColor", distanceCell, "#ffffff");
-    this.pathDistanceCellIDs[i] = distanceCell;
-  }
-
   this.clearPathsDisplay();
 };
 
 BellmanFordVisualization.prototype.clearPathsDisplay = function () {
+  if (this.pathLabelIDs) {
+    for (var i = 0; i < this.pathLabelIDs.length; i++) {
+      if (this.pathLabelIDs[i] >= 0) {
+        this.cmd("Delete", this.pathLabelIDs[i]);
+      }
+    }
+  }
+
+  this.pathLabelIDs = [];
+  this.pathLabelsByVertex = {};
+  this.pathOrder = [];
+
   if (this.pathsTitleID >= 0) {
     this.cmd("SetText", this.pathsTitleID, "Shortest Paths");
-  }
-
-  var i;
-  if (this.pathVertexCellIDs) {
-    for (i = 0; i < this.pathVertexCellIDs.length; i++) {
-      if (this.pathVertexCellIDs[i] >= 0) {
-        this.cmd("SetBackgroundColor", this.pathVertexCellIDs[i], "#ffffff");
-      }
-    }
-  }
-
-  if (this.pathRouteCellIDs) {
-    for (i = 0; i < this.pathRouteCellIDs.length; i++) {
-      if (this.pathRouteCellIDs[i] >= 0) {
-        this.cmd("SetText", this.pathRouteCellIDs[i], "");
-        this.cmd("SetBackgroundColor", this.pathRouteCellIDs[i], "#ffffff");
-      }
-    }
-  }
-
-  if (this.pathDistanceCellIDs) {
-    for (i = 0; i < this.pathDistanceCellIDs.length; i++) {
-      if (this.pathDistanceCellIDs[i] >= 0) {
-        this.cmd("SetText", this.pathDistanceCellIDs[i], "");
-        this.cmd("SetBackgroundColor", this.pathDistanceCellIDs[i], "#ffffff");
-      }
-    }
   }
 };
 
@@ -1078,81 +898,8 @@ BellmanFordVisualization.prototype.buildPathIndices = function (
   return indices;
 };
 
-BellmanFordVisualization.prototype.setPathRowHighlight = function (
-  index,
-  active
-) {
-  if (
-    !this.pathVertexCellIDs ||
-    index < 0 ||
-    index >= this.pathVertexCellIDs.length
-  ) {
-    return;
-  }
-
-  var color = active
-    ? BellmanFordVisualization.PATH_TABLE_HIGHLIGHT_COLOR
-    : "#ffffff";
-  var cells = [
-    this.pathVertexCellIDs[index],
-    this.pathRouteCellIDs ? this.pathRouteCellIDs[index] : -1,
-    this.pathDistanceCellIDs ? this.pathDistanceCellIDs[index] : -1,
-  ];
-
-  for (var i = 0; i < cells.length; i++) {
-    if (cells[i] !== undefined && cells[i] >= 0) {
-      this.cmd("SetBackgroundColor", cells[i], color);
-    }
-  }
-};
-
-BellmanFordVisualization.prototype.flashPath = function (
-  pathIndices,
-  dist
-) {
-  if (!pathIndices || pathIndices.length === 0) {
-    return;
-  }
-
-  var edges = [];
-  for (var i = 0; i < pathIndices.length; i++) {
-    this.highlightVertex(
-      pathIndices[i],
-      BellmanFordVisualization.NODE_ACTIVE_COLOR,
-      false
-    );
-  }
-
-  for (var j = 0; j < pathIndices.length - 1; j++) {
-    var from = pathIndices[j];
-    var to = pathIndices[j + 1];
-    if (this.graphHasEdge(from, to)) {
-      this.highlightEdge(from, to, true);
-      edges.push({ from: from, to: to });
-    }
-  }
-
-  this.cmd("Step");
-
-  for (j = 0; j < edges.length; j++) {
-    this.highlightEdge(edges[j].from, edges[j].to, false);
-  }
-
-  for (i = 0; i < pathIndices.length; i++) {
-    if (!dist || dist[pathIndices[i]] !== Infinity) {
-      this.highlightVertex(
-        pathIndices[i],
-        BellmanFordVisualization.NODE_VISITED_COLOR,
-        true
-      );
-    }
-  }
-};
-
-BellmanFordVisualization.prototype.displayShortestPaths = function (
-  startIndex,
-  parent,
-  dist
+BellmanFordVisualization.prototype.initializePathsPanel = function (
+  startIndex
 ) {
   this.clearPathsDisplay();
 
@@ -1163,31 +910,141 @@ BellmanFordVisualization.prototype.displayShortestPaths = function (
       "Paths from " + BellmanFordVisualization.VERTEX_DATA[startIndex].label
     );
   }
+};
+
+BellmanFordVisualization.prototype.ensurePathLabel = function (vertexIndex) {
+  if (this.pathLabelsByVertex.hasOwnProperty(vertexIndex)) {
+    return this.pathLabelsByVertex[vertexIndex];
+  }
+
+  var row = this.pathOrder.length;
+  var y =
+    BellmanFordVisualization.PATH_START_Y +
+    row * BellmanFordVisualization.PATH_LINE_HEIGHT;
+
+  var labelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    labelID,
+    "",
+    BellmanFordVisualization.PATH_START_X,
+    y,
+    0
+  );
+  this.cmd(
+    "SetTextStyle",
+    labelID,
+    BellmanFordVisualization.PATH_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    labelID,
+    BellmanFordVisualization.PATH_TEXT_COLOR
+  );
+
+  this.pathLabelsByVertex[vertexIndex] = labelID;
+  this.pathOrder.push(vertexIndex);
+  this.pathLabelIDs.push(labelID);
+  return labelID;
+};
+
+BellmanFordVisualization.prototype.composePathLine = function (
+  vertexIndex,
+  parent,
+  startIndex,
+  dist
+) {
+  var pathText = this.buildPathString(vertexIndex, parent, startIndex);
+  var hasPath = pathText && pathText.length > 0;
+  var distance =
+    dist &&
+    dist[vertexIndex] !== undefined &&
+    dist[vertexIndex] !== Infinity
+      ? this.formatDistance(dist[vertexIndex])
+      : null;
+
+  var segments = [];
+  if (hasPath) {
+    segments.push(pathText);
+  }
+  if (distance !== null) {
+    segments.push("[" + distance + "]");
+  }
+
+  return segments.join(" ");
+};
+
+BellmanFordVisualization.prototype.highlightFinalPath = function (
+  pathIndices,
+  active
+) {
+  if (!pathIndices || pathIndices.length === 0) {
+    return;
+  }
+
+  var nodeColor = active
+    ? BellmanFordVisualization.PATH_HIGHLIGHT_NODE_COLOR
+    : BellmanFordVisualization.NODE_COLOR;
+  var textColor = active
+    ? BellmanFordVisualization.PATH_HIGHLIGHT_NODE_TEXT_COLOR
+    : BellmanFordVisualization.NODE_TEXT_COLOR;
+
+  for (var i = 0; i < pathIndices.length; i++) {
+    var vertex = pathIndices[i];
+    this.cmd(
+      "SetBackgroundColor",
+      this.vertexIDs[vertex],
+      nodeColor
+    );
+    this.cmd("SetTextColor", this.vertexIDs[vertex], textColor);
+  }
+
+  for (var j = 0; j < pathIndices.length - 1; j++) {
+    var from = pathIndices[j];
+    var to = pathIndices[j + 1];
+    if (this.graphHasEdge(from, to)) {
+      this.cmd(
+        "SetEdgeHighlight",
+        this.vertexIDs[from],
+        this.vertexIDs[to],
+        active ? 1 : 0
+      );
+      this.cmd(
+        "SetEdgeColor",
+        this.vertexIDs[from],
+        this.vertexIDs[to],
+        active
+          ? BellmanFordVisualization.PATH_HIGHLIGHT_EDGE_COLOR
+          : BellmanFordVisualization.EDGE_COLOR
+      );
+    }
+  }
+};
+
+BellmanFordVisualization.prototype.displayShortestPaths = function (
+  startIndex,
+  parent,
+  dist
+) {
+  this.initializePathsPanel(startIndex);
 
   for (var i = 0; i < dist.length; i++) {
     if (dist[i] === Infinity) {
       continue;
     }
 
-    var pathText = this.buildPathString(i, parent, startIndex);
     var pathIndices = this.buildPathIndices(i, parent, startIndex);
-    if (!pathText || pathText.length === 0 || pathIndices.length === 0) {
+    if (!pathIndices || pathIndices.length === 0) {
       continue;
     }
 
-    var distanceText = this.formatDistance(dist[i]);
+    var labelID = this.ensurePathLabel(i);
+    var text = this.composePathLine(i, parent, startIndex, dist);
 
-    this.setPathRowHighlight(i, true);
-    if (this.pathRouteCellIDs && this.pathRouteCellIDs[i] >= 0) {
-      this.cmd("SetText", this.pathRouteCellIDs[i], pathText);
-    }
-    if (this.pathDistanceCellIDs && this.pathDistanceCellIDs[i] >= 0) {
-      this.cmd("SetText", this.pathDistanceCellIDs[i], distanceText);
-    }
-
+    this.highlightFinalPath(pathIndices, true);
+    this.cmd("SetText", labelID, text);
     this.cmd("Step");
-    this.flashPath(pathIndices, dist);
-    this.setPathRowHighlight(i, false);
+    this.highlightFinalPath(pathIndices, false);
     this.cmd("Step");
   }
 };
