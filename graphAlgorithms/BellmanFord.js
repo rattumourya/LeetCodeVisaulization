@@ -1124,6 +1124,25 @@ BellmanFordVisualization.prototype.runBellmanFord = function (startIndex) {
   );
   this.cmd("Step");
 
+  this.updateStatus(
+    "Source ready",
+    "dist[" + startLabel + "] = 0 while all other vertices remain at " +
+      this.infinitySymbol +
+      "."
+  );
+  this.highlightVertex(
+    startIndex,
+    BellmanFordVisualization.NODE_ACTIVE_COLOR,
+    false
+  );
+  this.cmd("Step");
+  this.highlightVertex(
+    startIndex,
+    BellmanFordVisualization.NODE_VISITED_COLOR,
+    true
+  );
+  this.cmd("Step");
+
   for (var iteration = 1; iteration <= vertexCount - 1; iteration++) {
     this.updateIterationDisplay(iteration, vertexCount - 1);
     this.updateStatus(
