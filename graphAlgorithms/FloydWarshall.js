@@ -34,7 +34,7 @@ FloydWarshallVisualization.EDGE_THICKNESS = 3;
 FloydWarshallVisualization.EDGE_WEIGHT_COLOR = "#1d4ed8";
 
 FloydWarshallVisualization.MATRIX_TOP_Y = 560;
-FloydWarshallVisualization.MATRIX_LEFT_X = 80;
+FloydWarshallVisualization.MATRIX_LEFT_X = 120;
 FloydWarshallVisualization.MATRIX_CELL_WIDTH = 90;
 FloydWarshallVisualization.MATRIX_CELL_HEIGHT = 50;
 FloydWarshallVisualization.MATRIX_ROW_GAP = 6;
@@ -44,20 +44,33 @@ FloydWarshallVisualization.MATRIX_CELL_FONT = "bold 18";
 FloydWarshallVisualization.MATRIX_HEADER_COLOR = "#1a237e";
 FloydWarshallVisualization.MATRIX_CELL_BORDER_COLOR = "#1a237e";
 FloydWarshallVisualization.MATRIX_CELL_TEXT_COLOR = "#102a43";
-FloydWarshallVisualization.MATRIX_CELL_BACKGROUND = "#e8ebf8";
+FloydWarshallVisualization.MATRIX_CELL_BACKGROUND = "#ffebcd";
 FloydWarshallVisualization.MATRIX_CELL_HIGHLIGHT = "#ffecb3";
 FloydWarshallVisualization.MATRIX_CELL_UPDATE = "#c8e6c9";
 FloydWarshallVisualization.MATRIX_HEADER_HIGHLIGHT = "#d81b60";
+FloydWarshallVisualization.MATRIX_BORDER_THICKNESS = 2;
 
 FloydWarshallVisualization.MARKER_FONT = "bold 20";
 FloydWarshallVisualization.MARKER_COLOR = "#d81b60";
-FloydWarshallVisualization.MARKER_I_X_OFFSET = 36;
-FloydWarshallVisualization.MARKER_K_Y_OFFSET = 42;
-FloydWarshallVisualization.MARKER_J_Y_OFFSET = 28;
+FloydWarshallVisualization.MARKER_LAYER = 0;
+FloydWarshallVisualization.MARKER_TRACK_PADDING = 12;
+FloydWarshallVisualization.MARKER_TRACK_THICKNESS = 18;
+FloydWarshallVisualization.MARKER_I_TRACK_WIDTH = 24;
+FloydWarshallVisualization.MARKER_I_TRACK_GAP = 6;
+FloydWarshallVisualization.MARKER_TRACK_COLOR = "#fde2ff";
+FloydWarshallVisualization.MARKER_TRACK_BORDER_COLOR = "#f8bbd0";
+FloydWarshallVisualization.MARKER_TRACK_ALPHA = 0.35;
+FloydWarshallVisualization.MARKER_TRACK_LAYER = 0;
+FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP = 10;
 
 FloydWarshallVisualization.RANDOM_EDGE_PROBABILITY = 0.4;
 FloydWarshallVisualization.RANDOM_WEIGHT_MIN = 1;
 FloydWarshallVisualization.RANDOM_WEIGHT_MAX = 9;
+
+FloydWarshallVisualization.SINGLE_EDGE_CURVE = 0.24;
+FloydWarshallVisualization.BIDIRECTIONAL_EDGE_CURVE = 0.56;
+FloydWarshallVisualization.PARALLEL_EDGE_GAP = 0.12;
+FloydWarshallVisualization.LOOP_EDGE_CURVE = 0.52;
 
 FloydWarshallVisualization.CODE_START_Y = 860;
 FloydWarshallVisualization.CODE_LEFT_X =
@@ -174,6 +187,7 @@ FloydWarshallVisualization.prototype.reset = function () {
   this.nextIndex = 0;
   this.vertexIDs = [];
   this.edgeMap = {};
+  this.edgeCurves = {};
   this.matrixCellIDs = [];
   this.rowHeaderIDs = [];
   this.columnHeaderIDs = [];
@@ -189,6 +203,7 @@ FloydWarshallVisualization.prototype.reset = function () {
   this.iMarkerID = -1;
   this.jMarkerID = -1;
   this.kMarkerID = -1;
+  this.markerTrackIDs = { k: -1, j: -1, i: -1 };
   this.iMarkerX = 0;
   this.jMarkerY = 0;
   this.kMarkerY = 0;
@@ -400,8 +415,10 @@ FloydWarshallVisualization.prototype.createGraph = function () {
   }
 
   this.edgeMap = {};
+  var vertexCount = vertexData.length;
   var edgesData = this.graphEdges ||
     FloydWarshallVisualization.DEFAULT_GRAPH_EDGES;
+  this.edgeCurves = this.computeEdgeCurves(edgesData, vertexCount);
   for (var from = 0; from < edgesData.length; from++) {
     var edges = edgesData[from];
     if (!edges) {
@@ -409,13 +426,23 @@ FloydWarshallVisualization.prototype.createGraph = function () {
     }
     for (var j = 0; j < edges.length; j++) {
       var edge = edges[j];
-      this.edgeMap[from + "-" + edge.to] = { from: from, to: edge.to };
+      var curveKey = from + "-" + edge.to;
+      var curve =
+        Object.prototype.hasOwnProperty.call(this.edgeCurves, curveKey)
+          ? this.edgeCurves[curveKey]
+          : 0;
+      this.edgeMap[curveKey] = {
+        from: from,
+        to: edge.to,
+        weight: edge.weight,
+        curve: curve,
+      };
       this.cmd(
         "Connect",
         this.vertexIDs[from],
         this.vertexIDs[edge.to],
         FloydWarshallVisualization.EDGE_COLOR,
-        0,
+        curve,
         1,
         String(edge.weight)
       );
@@ -433,6 +460,140 @@ FloydWarshallVisualization.prototype.createGraph = function () {
       );
     }
   }
+};
+
+FloydWarshallVisualization.prototype.computeEdgeCurves = function (
+  edgesData,
+  vertexCount
+) {
+  var curves = {};
+  if (!edgesData || vertexCount <= 0) {
+    return curves;
+  }
+
+  var pairBuckets = {};
+
+  for (var from = 0; from < vertexCount; from++) {
+    var edges = edgesData[from];
+    if (!edges) {
+      continue;
+    }
+    for (var j = 0; j < edges.length; j++) {
+      var edge = edges[j];
+      if (!edge || edge.to < 0 || edge.to >= vertexCount) {
+        continue;
+      }
+      var pairKey;
+      if (edge.to === from) {
+        pairKey = from + "-" + edge.to + "-loop";
+      } else {
+        var min = Math.min(from, edge.to);
+        var max = Math.max(from, edge.to);
+        pairKey = min + "-" + max;
+      }
+      if (!pairBuckets[pairKey]) {
+        pairBuckets[pairKey] = [];
+      }
+      pairBuckets[pairKey].push({ from: from, to: edge.to });
+    }
+  }
+
+  var parallelGap = FloydWarshallVisualization.PARALLEL_EDGE_GAP;
+  var singleMagnitude = FloydWarshallVisualization.SINGLE_EDGE_CURVE;
+  var bidirectionalMagnitude =
+    FloydWarshallVisualization.BIDIRECTIONAL_EDGE_CURVE;
+  var loopMagnitude = FloydWarshallVisualization.LOOP_EDGE_CURVE;
+
+  var assignCurves = function (list, baseMagnitude, directionSign) {
+    if (!list || list.length === 0) {
+      return;
+    }
+    list.sort(function (a, b) {
+      if (a.from === b.from) {
+        return a.to - b.to;
+      }
+      return a.from - b.from;
+    });
+    for (var idx = 0; idx < list.length; idx++) {
+      var entry = list[idx];
+      var curveValue = directionSign * (baseMagnitude + idx * parallelGap);
+      curves[entry.from + "-" + entry.to] = curveValue;
+    }
+  };
+
+  for (var key in pairBuckets) {
+    if (!Object.prototype.hasOwnProperty.call(pairBuckets, key)) {
+      continue;
+    }
+    var group = pairBuckets[key];
+    if (!group || group.length === 0) {
+      continue;
+    }
+
+    var forward = [];
+    var backward = [];
+    var loops = [];
+
+    for (var index = 0; index < group.length; index++) {
+      var entry = group[index];
+      if (!entry) {
+        continue;
+      }
+      if (entry.from === entry.to) {
+        loops.push(entry);
+      } else if (entry.from < entry.to) {
+        forward.push(entry);
+      } else {
+        backward.push(entry);
+      }
+    }
+
+    if (loops.length > 0) {
+      assignCurves(loops, loopMagnitude, 1);
+      continue;
+    }
+
+    if (forward.length > 0 && backward.length > 0) {
+      assignCurves(forward, bidirectionalMagnitude, 1);
+      assignCurves(backward, bidirectionalMagnitude, -1);
+    } else {
+      var singleList = forward.length > 0 ? forward : backward;
+      var sign = forward.length > 0 ? 1 : -1;
+      assignCurves(singleList, singleMagnitude, sign);
+    }
+  }
+
+  return curves;
+};
+
+FloydWarshallVisualization.prototype.createMarkerTrack = function (
+  x,
+  y,
+  width,
+  height
+) {
+  if (width <= 0 || height <= 0) {
+    return -1;
+  }
+  var trackID = this.nextIndex++;
+  this.cmd("CreateRectangle", trackID, "", width, height, x, y);
+  this.cmd(
+    "SetForegroundColor",
+    trackID,
+    FloydWarshallVisualization.MARKER_TRACK_BORDER_COLOR
+  );
+  this.cmd(
+    "SetBackgroundColor",
+    trackID,
+    FloydWarshallVisualization.MARKER_TRACK_COLOR
+  );
+  this.cmd(
+    "SetLayer",
+    trackID,
+    FloydWarshallVisualization.MARKER_TRACK_LAYER
+  );
+  this.cmd("SetAlpha", trackID, FloydWarshallVisualization.MARKER_TRACK_ALPHA);
+  return trackID;
 };
 
 FloydWarshallVisualization.prototype.createMatrix = function () {
@@ -453,11 +614,56 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
   var left = FloydWarshallVisualization.MATRIX_LEFT_X;
   var columnSpacing = colWidth + columnGap;
   var rowSpacing = rowHeight + rowGap;
-  var rowHeaderX = left - columnSpacing / 2;
+  var matrixWidth = columnSpacing * n;
+  var matrixHeight = rowSpacing * n;
+  var matrixCenterX = left + matrixWidth / 2;
+  var matrixCenterY = top + matrixHeight / 2;
+  var rowHeaderX =
+    left - columnSpacing / 2 - FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP;
 
-  this.iMarkerX = rowHeaderX - FloydWarshallVisualization.MARKER_I_X_OFFSET;
-  this.kMarkerY = top - FloydWarshallVisualization.MARKER_K_Y_OFFSET;
-  this.jMarkerY = top + FloydWarshallVisualization.MARKER_J_Y_OFFSET;
+  var horizontalTrackThickness = FloydWarshallVisualization.MARKER_TRACK_THICKNESS;
+  var horizontalPadding = FloydWarshallVisualization.MARKER_TRACK_PADDING;
+  var verticalTrackWidth = FloydWarshallVisualization.MARKER_I_TRACK_WIDTH;
+  var verticalTrackGap = FloydWarshallVisualization.MARKER_I_TRACK_GAP;
+  var hasMatrix = n > 0;
+  var kTrackY = hasMatrix
+    ? top - horizontalPadding - horizontalTrackThickness / 2
+    : top;
+  var jTrackY = hasMatrix
+    ? top + horizontalPadding + horizontalTrackThickness / 2
+    : top;
+  var iTrackX = hasMatrix
+    ? rowHeaderX - verticalTrackGap - verticalTrackWidth / 2
+    : rowHeaderX;
+
+  if (hasMatrix) {
+    this.markerTrackIDs.k = this.createMarkerTrack(
+      matrixCenterX,
+      kTrackY,
+      matrixWidth,
+      horizontalTrackThickness
+    );
+    this.markerTrackIDs.j = this.createMarkerTrack(
+      matrixCenterX,
+      jTrackY,
+      matrixWidth,
+      horizontalTrackThickness
+    );
+    this.markerTrackIDs.i = this.createMarkerTrack(
+      iTrackX,
+      matrixCenterY,
+      verticalTrackWidth,
+      matrixHeight
+    );
+  } else {
+    this.markerTrackIDs = { k: -1, j: -1, i: -1 };
+  }
+
+  this.iMarkerX = iTrackX;
+  this.kMarkerY = kTrackY;
+  this.jMarkerY = jTrackY;
+
+  var borderThickness = FloydWarshallVisualization.MATRIX_BORDER_THICKNESS;
 
   for (var c = 0; c < n; c++) {
     var headerID = this.nextIndex++;
@@ -532,6 +738,11 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
         "SetForegroundColor",
         cellID,
         FloydWarshallVisualization.MATRIX_CELL_BORDER_COLOR
+      );
+      this.cmd(
+        "SetRectangleLineThickness",
+        cellID,
+        borderThickness
       );
       this.cmd(
         "SetBackgroundColor",
