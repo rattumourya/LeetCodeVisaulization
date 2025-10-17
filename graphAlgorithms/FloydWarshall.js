@@ -49,6 +49,16 @@ FloydWarshallVisualization.MATRIX_CELL_HIGHLIGHT = "#ffecb3";
 FloydWarshallVisualization.MATRIX_CELL_UPDATE = "#c8e6c9";
 FloydWarshallVisualization.MATRIX_HEADER_HIGHLIGHT = "#d81b60";
 
+FloydWarshallVisualization.MARKER_FONT = "bold 20";
+FloydWarshallVisualization.MARKER_COLOR = "#d81b60";
+FloydWarshallVisualization.MARKER_I_X_OFFSET = 36;
+FloydWarshallVisualization.MARKER_K_Y_OFFSET = 42;
+FloydWarshallVisualization.MARKER_J_Y_OFFSET = 28;
+
+FloydWarshallVisualization.RANDOM_EDGE_PROBABILITY = 0.4;
+FloydWarshallVisualization.RANDOM_WEIGHT_MIN = 1;
+FloydWarshallVisualization.RANDOM_WEIGHT_MAX = 9;
+
 FloydWarshallVisualization.CODE_START_Y = 860;
 FloydWarshallVisualization.CODE_LEFT_X =
   FloydWarshallVisualization.MATRIX_LEFT_X;
@@ -61,14 +71,14 @@ FloydWarshallVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
 
 FloydWarshallVisualization.INFINITY_SYMBOL = "\u221E";
 
-FloydWarshallVisualization.VERTEX_DATA = [
+FloydWarshallVisualization.DEFAULT_VERTEX_DATA = [
   { label: "A", x: 160, y: 360 },
   { label: "B", x: 360, y: 240 },
   { label: "C", x: 560, y: 360 },
   { label: "D", x: 360, y: 500 },
 ];
 
-FloydWarshallVisualization.GRAPH_EDGES = [
+FloydWarshallVisualization.DEFAULT_GRAPH_EDGES = [
   [
     { to: 1, weight: 3 },
     { to: 2, weight: 8 },
@@ -115,6 +125,13 @@ FloydWarshallVisualization.prototype.init = function (am, w, h) {
   this.controls = [];
   this.addControls();
 
+  this.vertexData = this.cloneVertexData(
+    FloydWarshallVisualization.DEFAULT_VERTEX_DATA
+  );
+  this.graphEdges = this.cloneGraphEdges(
+    FloydWarshallVisualization.DEFAULT_GRAPH_EDGES
+  );
+
   this.infinitySymbol = FloydWarshallVisualization.INFINITY_SYMBOL;
 
   this.implementAction(this.reset.bind(this), 0);
@@ -127,10 +144,13 @@ FloydWarshallVisualization.prototype.addControls = function () {
   );
   this.runButton.onclick = this.runCallback.bind(this);
 
+  this.newGraphButton = addControlToAlgorithmBar("Button", "New Graph");
+  this.newGraphButton.onclick = this.newGraphCallback.bind(this);
+
   this.resetButton = addControlToAlgorithmBar("Button", "Reset Layout");
   this.resetButton.onclick = this.resetCallback.bind(this);
 
-  this.controls.push(this.runButton, this.resetButton);
+  this.controls.push(this.runButton, this.newGraphButton, this.resetButton);
 };
 
 FloydWarshallVisualization.prototype.resetCallback = function () {
@@ -141,6 +161,15 @@ FloydWarshallVisualization.prototype.runCallback = function () {
   this.implementAction(this.runAlgorithm.bind(this), 0);
 };
 
+FloydWarshallVisualization.prototype.newGraphCallback = function () {
+  this.implementAction(this.newGraph.bind(this), 0);
+};
+
+FloydWarshallVisualization.prototype.newGraph = function () {
+  this.generateRandomGraphData();
+  return this.reset();
+};
+
 FloydWarshallVisualization.prototype.reset = function () {
   this.nextIndex = 0;
   this.vertexIDs = [];
@@ -148,6 +177,8 @@ FloydWarshallVisualization.prototype.reset = function () {
   this.matrixCellIDs = [];
   this.rowHeaderIDs = [];
   this.columnHeaderIDs = [];
+  this.rowHeaderPositions = [];
+  this.columnHeaderPositions = [];
   this.codeID = [];
   this.currentCodeLine = -1;
   this.infoPrimaryID = -1;
@@ -155,6 +186,12 @@ FloydWarshallVisualization.prototype.reset = function () {
   this.calculationID = -1;
   this.distances = [];
   this.initialDistances = [];
+  this.iMarkerID = -1;
+  this.jMarkerID = -1;
+  this.kMarkerID = -1;
+  this.iMarkerX = 0;
+  this.jMarkerY = 0;
+  this.kMarkerY = 0;
 
   if (
     typeof animationManager !== "undefined" &&
@@ -164,6 +201,108 @@ FloydWarshallVisualization.prototype.reset = function () {
   }
 
   return this.setup();
+};
+
+FloydWarshallVisualization.prototype.generateRandomGraphData = function () {
+  this.vertexData = this.cloneVertexData(
+    FloydWarshallVisualization.DEFAULT_VERTEX_DATA
+  );
+
+  var vertexCount = this.vertexData.length;
+  var edges = new Array(vertexCount);
+  for (var i = 0; i < vertexCount; i++) {
+    edges[i] = [];
+  }
+
+  if (vertexCount > 1) {
+    for (var from = 0; from < vertexCount; from++) {
+      var ensureIndex = Math.floor(Math.random() * (vertexCount - 1));
+      if (ensureIndex >= from) {
+        ensureIndex += 1;
+      }
+      this.addDirectedEdge(edges, from, ensureIndex, this.randomWeight());
+    }
+  }
+
+  for (var u = 0; u < vertexCount; u++) {
+    for (var v = 0; v < vertexCount; v++) {
+      if (u === v) {
+        continue;
+      }
+      if (this.edgeExists(edges, u, v)) {
+        continue;
+      }
+      if (Math.random() < FloydWarshallVisualization.RANDOM_EDGE_PROBABILITY) {
+        this.addDirectedEdge(edges, u, v, this.randomWeight());
+      }
+    }
+    edges[u].sort(function (a, b) {
+      return a.to - b.to;
+    });
+  }
+
+  this.graphEdges = edges;
+};
+
+FloydWarshallVisualization.prototype.randomWeight = function () {
+  var min = FloydWarshallVisualization.RANDOM_WEIGHT_MIN;
+  var max = FloydWarshallVisualization.RANDOM_WEIGHT_MAX;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+FloydWarshallVisualization.prototype.addDirectedEdge = function (
+  edges,
+  from,
+  to,
+  weight
+) {
+  if (!edges[from]) {
+    edges[from] = [];
+  }
+  for (var i = 0; i < edges[from].length; i++) {
+    if (edges[from][i].to === to) {
+      edges[from][i].weight = weight;
+      return;
+    }
+  }
+  edges[from].push({ to: to, weight: weight });
+};
+
+FloydWarshallVisualization.prototype.edgeExists = function (
+  edges,
+  from,
+  to
+) {
+  if (!edges[from]) {
+    return false;
+  }
+  for (var i = 0; i < edges[from].length; i++) {
+    if (edges[from][i].to === to) {
+      return true;
+    }
+  }
+  return false;
+};
+
+FloydWarshallVisualization.prototype.cloneVertexData = function (data) {
+  var clone = new Array(data.length);
+  for (var i = 0; i < data.length; i++) {
+    var vertex = data[i];
+    clone[i] = { label: vertex.label, x: vertex.x, y: vertex.y };
+  }
+  return clone;
+};
+
+FloydWarshallVisualization.prototype.cloneGraphEdges = function (edges) {
+  var clone = new Array(edges.length);
+  for (var i = 0; i < edges.length; i++) {
+    clone[i] = [];
+    for (var j = 0; j < edges[i].length; j++) {
+      var edge = edges[i][j];
+      clone[i].push({ to: edge.to, weight: edge.weight });
+    }
+  }
+  return clone;
 };
 
 FloydWarshallVisualization.prototype.setup = function () {
@@ -245,7 +384,8 @@ FloydWarshallVisualization.prototype.createInfoPanel = function () {
 };
 
 FloydWarshallVisualization.prototype.createGraph = function () {
-  var vertexData = FloydWarshallVisualization.VERTEX_DATA;
+  var vertexData = this.vertexData ||
+    FloydWarshallVisualization.DEFAULT_VERTEX_DATA;
   this.vertexIDs = new Array(vertexData.length);
 
   for (var i = 0; i < vertexData.length; i++) {
@@ -260,8 +400,13 @@ FloydWarshallVisualization.prototype.createGraph = function () {
   }
 
   this.edgeMap = {};
-  for (var from = 0; from < FloydWarshallVisualization.GRAPH_EDGES.length; from++) {
-    var edges = FloydWarshallVisualization.GRAPH_EDGES[from];
+  var edgesData = this.graphEdges ||
+    FloydWarshallVisualization.DEFAULT_GRAPH_EDGES;
+  for (var from = 0; from < edgesData.length; from++) {
+    var edges = edgesData[from];
+    if (!edges) {
+      continue;
+    }
     for (var j = 0; j < edges.length; j++) {
       var edge = edges[j];
       this.edgeMap[from + "-" + edge.to] = { from: from, to: edge.to };
@@ -291,10 +436,14 @@ FloydWarshallVisualization.prototype.createGraph = function () {
 };
 
 FloydWarshallVisualization.prototype.createMatrix = function () {
-  var n = FloydWarshallVisualization.VERTEX_DATA.length;
+  var vertexData = this.vertexData ||
+    FloydWarshallVisualization.DEFAULT_VERTEX_DATA;
+  var n = vertexData.length;
   this.matrixCellIDs = new Array(n);
   this.rowHeaderIDs = new Array(n);
   this.columnHeaderIDs = new Array(n);
+  this.rowHeaderPositions = new Array(n);
+  this.columnHeaderPositions = new Array(n);
 
   var rowHeight = FloydWarshallVisualization.MATRIX_CELL_HEIGHT;
   var colWidth = FloydWarshallVisualization.MATRIX_CELL_WIDTH;
@@ -302,18 +451,23 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
   var rowGap = FloydWarshallVisualization.MATRIX_ROW_GAP;
   var top = FloydWarshallVisualization.MATRIX_TOP_Y;
   var left = FloydWarshallVisualization.MATRIX_LEFT_X;
+  var columnSpacing = colWidth + columnGap;
+  var rowSpacing = rowHeight + rowGap;
+  var rowHeaderX = left - columnSpacing / 2;
+
+  this.iMarkerX = rowHeaderX - FloydWarshallVisualization.MARKER_I_X_OFFSET;
+  this.kMarkerY = top - FloydWarshallVisualization.MARKER_K_Y_OFFSET;
+  this.jMarkerY = top + FloydWarshallVisualization.MARKER_J_Y_OFFSET;
 
   for (var c = 0; c < n; c++) {
     var headerID = this.nextIndex++;
     this.columnHeaderIDs[c] = headerID;
-    var x =
-      left +
-      (c + 1) * (colWidth + columnGap) -
-      (colWidth + columnGap) / 2;
+    var x = left + (c + 1) * columnSpacing - columnSpacing / 2;
+    this.columnHeaderPositions[c] = x;
     this.cmd(
       "CreateLabel",
       headerID,
-      FloydWarshallVisualization.VERTEX_DATA[c].label,
+      vertexData[c].label,
       x,
       top,
       1
@@ -331,15 +485,16 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
   }
 
   for (var r = 0; r < n; r++) {
-    var rowY = top + (r + 1) * (rowHeight + rowGap);
+    var rowY = top + (r + 1) * rowSpacing;
 
     var rowHeaderID = this.nextIndex++;
     this.rowHeaderIDs[r] = rowHeaderID;
+    this.rowHeaderPositions[r] = { x: rowHeaderX, y: rowY };
     this.cmd(
       "CreateLabel",
       rowHeaderID,
-      FloydWarshallVisualization.VERTEX_DATA[r].label,
-      left,
+      vertexData[r].label,
+      rowHeaderX,
       rowY,
       1
     );
@@ -356,10 +511,7 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
 
     this.matrixCellIDs[r] = new Array(n);
     for (var c = 0; c < n; c++) {
-      var cellX =
-        left +
-        (c + 1) * (colWidth + columnGap) -
-        (colWidth + columnGap) / 2;
+      var cellX = left + (c + 1) * columnSpacing - columnSpacing / 2;
       var cellID = this.nextIndex++;
       this.matrixCellIDs[r][c] = cellID;
       this.cmd(
@@ -393,6 +545,20 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
       );
     }
   }
+
+  var initialColumnX =
+    this.columnHeaderPositions.length > 0
+      ? this.columnHeaderPositions[0]
+      : left;
+  var initialRowY =
+    this.rowHeaderPositions.length > 0
+      ? this.rowHeaderPositions[0].y
+      : top + rowSpacing;
+
+  this.kMarkerID = this.createIndexMarker("k", initialColumnX, this.kMarkerY);
+  this.jMarkerID = this.createIndexMarker("j", initialColumnX, this.jMarkerY);
+  this.iMarkerID = this.createIndexMarker("i", this.iMarkerX, initialRowY);
+  this.hideIndexMarkers();
 
   this.initialDistances = this.buildInitialDistances();
   this.distances = this.cloneMatrix(this.initialDistances);
@@ -430,6 +596,100 @@ FloydWarshallVisualization.prototype.createCodeDisplay = function () {
   }
 };
 
+FloydWarshallVisualization.prototype.createIndexMarker = function (
+  label,
+  x,
+  y
+) {
+  var id = this.nextIndex++;
+  this.cmd("CreateLabel", id, label, x, y, 1);
+  this.cmd(
+    "SetTextStyle",
+    id,
+    FloydWarshallVisualization.MARKER_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    id,
+    FloydWarshallVisualization.MARKER_COLOR
+  );
+  this.cmd("SetAlpha", id, 0);
+  return id;
+};
+
+FloydWarshallVisualization.prototype.setMarkerVisible = function (
+  markerID,
+  visible
+) {
+  if (markerID < 0) {
+    return;
+  }
+  this.cmd("SetAlpha", markerID, visible ? 1 : 0);
+};
+
+FloydWarshallVisualization.prototype.hideIndexMarkers = function () {
+  this.setMarkerVisible(this.kMarkerID, false);
+  this.setMarkerVisible(this.iMarkerID, false);
+  this.setMarkerVisible(this.jMarkerID, false);
+};
+
+FloydWarshallVisualization.prototype.moveMarkerToColumn = function (
+  markerID,
+  columnIndex,
+  y
+) {
+  if (
+    markerID < 0 ||
+    !this.columnHeaderPositions ||
+    columnIndex < 0 ||
+    columnIndex >= this.columnHeaderPositions.length
+  ) {
+    return;
+  }
+  var x = this.columnHeaderPositions[columnIndex];
+  this.cmd("Move", markerID, x, y);
+};
+
+FloydWarshallVisualization.prototype.moveMarkerToRow = function (
+  markerID,
+  rowIndex
+) {
+  if (
+    markerID < 0 ||
+    !this.rowHeaderPositions ||
+    rowIndex < 0 ||
+    rowIndex >= this.rowHeaderPositions.length
+  ) {
+    return;
+  }
+  var pos = this.rowHeaderPositions[rowIndex];
+  this.cmd("Move", markerID, this.iMarkerX, pos.y);
+};
+
+FloydWarshallVisualization.prototype.moveKMarker = function (k) {
+  if (this.kMarkerID < 0) {
+    return;
+  }
+  this.setMarkerVisible(this.kMarkerID, true);
+  this.moveMarkerToColumn(this.kMarkerID, k, this.kMarkerY);
+};
+
+FloydWarshallVisualization.prototype.moveIMarker = function (i) {
+  if (this.iMarkerID < 0) {
+    return;
+  }
+  this.setMarkerVisible(this.iMarkerID, true);
+  this.moveMarkerToRow(this.iMarkerID, i);
+};
+
+FloydWarshallVisualization.prototype.moveJMarker = function (j) {
+  if (this.jMarkerID < 0) {
+    return;
+  }
+  this.setMarkerVisible(this.jMarkerID, true);
+  this.moveMarkerToColumn(this.jMarkerID, j, this.jMarkerY);
+};
+
 FloydWarshallVisualization.prototype.highlightCodeLine = function (line) {
   if (this.currentCodeLine !== -1 && this.codeID[this.currentCodeLine]) {
     for (var j = 0; j < this.codeID[this.currentCodeLine].length; j++) {
@@ -465,7 +725,11 @@ FloydWarshallVisualization.prototype.highlightCodeLine = function (line) {
 };
 
 FloydWarshallVisualization.prototype.buildInitialDistances = function () {
-  var n = FloydWarshallVisualization.VERTEX_DATA.length;
+  var vertexData = this.vertexData ||
+    FloydWarshallVisualization.DEFAULT_VERTEX_DATA;
+  var edges = this.graphEdges ||
+    FloydWarshallVisualization.DEFAULT_GRAPH_EDGES;
+  var n = vertexData.length;
   var distances = new Array(n);
 
   for (var i = 0; i < n; i++) {
@@ -479,11 +743,16 @@ FloydWarshallVisualization.prototype.buildInitialDistances = function () {
     }
   }
 
-  for (var from = 0; from < FloydWarshallVisualization.GRAPH_EDGES.length; from++) {
-    var edges = FloydWarshallVisualization.GRAPH_EDGES[from];
-    for (var e = 0; e < edges.length; e++) {
-      var edge = edges[e];
-      distances[from][edge.to] = edge.weight;
+  for (var from = 0; from < edges.length; from++) {
+    var outgoing = edges[from];
+    if (!outgoing) {
+      continue;
+    }
+    for (var e = 0; e < outgoing.length; e++) {
+      var edge = outgoing[e];
+      if (edge.to >= 0 && edge.to < n) {
+        distances[from][edge.to] = edge.weight;
+      }
     }
   }
 
@@ -617,6 +886,8 @@ FloydWarshallVisualization.prototype.clearMatrixHighlights = function () {
   for (var v = 0; v < this.vertexIDs.length; v++) {
     this.setVertexActive(v, false);
   }
+
+  this.hideIndexMarkers();
 };
 
 FloydWarshallVisualization.prototype.computeCandidate = function (
@@ -630,7 +901,9 @@ FloydWarshallVisualization.prototype.computeCandidate = function (
 };
 
 FloydWarshallVisualization.prototype.runAlgorithm = function () {
-  var n = FloydWarshallVisualization.VERTEX_DATA.length;
+  var vertexData = this.vertexData ||
+    FloydWarshallVisualization.DEFAULT_VERTEX_DATA;
+  var n = vertexData.length;
   this.commands = [];
 
   this.distances = this.cloneMatrix(this.initialDistances);
@@ -647,7 +920,7 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
 
   for (var k = 0; k < n; k++) {
     this.highlightCodeLine(1);
-    var intermediateLabel = FloydWarshallVisualization.VERTEX_DATA[k].label;
+    var intermediateLabel = vertexData[k].label;
     this.setInfoTexts(
       "Considering intermediate vertex " + intermediateLabel +
         " (" +
@@ -660,18 +933,22 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
     this.setVertexActive(k, true);
     this.setHeaderHighlight(this.rowHeaderIDs, k, true);
     this.setHeaderHighlight(this.columnHeaderIDs, k, true);
+    this.moveKMarker(k);
     this.cmd("Step");
 
     for (var i = 0; i < n; i++) {
       this.highlightCodeLine(2);
       this.setVertexActive(i, true);
       this.setHeaderHighlight(this.rowHeaderIDs, i, true);
+      this.moveIMarker(i);
+      this.setMarkerVisible(this.jMarkerID, false);
       this.cmd("Step");
 
       for (var j = 0; j < n; j++) {
         this.highlightCodeLine(3);
         this.setVertexActive(j, true);
         this.setHeaderHighlight(this.columnHeaderIDs, j, true);
+        this.moveJMarker(j);
         this.highlightMatrixCell(
           i,
           j,
@@ -685,9 +962,9 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
 
         var detail =
           "dist[" +
-          FloydWarshallVisualization.VERTEX_DATA[i].label +
+          vertexData[i].label +
           "][" +
-          FloydWarshallVisualization.VERTEX_DATA[j].label +
+          vertexData[j].label +
           "] = min(" +
           this.formatDistance(current) +
           ", " +
@@ -720,9 +997,9 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
           this.setInfoTexts(
             "Updated through " + intermediateLabel +
               ": dist[" +
-              FloydWarshallVisualization.VERTEX_DATA[i].label +
+              vertexData[i].label +
               "][" +
-              FloydWarshallVisualization.VERTEX_DATA[j].label +
+              vertexData[j].label +
               "] = " +
               this.formatDistance(candidate),
             detail
@@ -748,11 +1025,14 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
 
       this.setVertexActive(i, i === k);
       this.setHeaderHighlight(this.rowHeaderIDs, i, i === k);
+      this.setMarkerVisible(this.jMarkerID, false);
     }
 
     this.setVertexActive(k, false);
     this.setHeaderHighlight(this.rowHeaderIDs, k, false);
     this.setHeaderHighlight(this.columnHeaderIDs, k, false);
+    this.setMarkerVisible(this.iMarkerID, false);
+    this.setMarkerVisible(this.kMarkerID, false);
   }
 
   this.highlightCodeLine(9);
