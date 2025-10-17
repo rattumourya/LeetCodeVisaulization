@@ -30,7 +30,9 @@ FloydWarshallVisualization.NODE_TEXT_COLOR = "#0d1b2a";
 FloydWarshallVisualization.NODE_ACTIVE_COLOR = "#ffe082";
 
 FloydWarshallVisualization.EDGE_COLOR = "#424874";
+FloydWarshallVisualization.EDGE_ACTIVE_COLOR = "#ff7043";
 FloydWarshallVisualization.EDGE_THICKNESS = 3;
+FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS = 4;
 FloydWarshallVisualization.EDGE_WEIGHT_COLOR = "#1d4ed8";
 
 FloydWarshallVisualization.MATRIX_TOP_Y = 560;
@@ -51,19 +53,27 @@ FloydWarshallVisualization.MATRIX_HEADER_HIGHLIGHT = "#d81b60";
 FloydWarshallVisualization.MATRIX_BORDER_THICKNESS = 2;
 
 FloydWarshallVisualization.MARKER_FONT = "bold 20";
-FloydWarshallVisualization.MARKER_COLOR = "#d81b60";
-FloydWarshallVisualization.MARKER_LAYER = 0;
-FloydWarshallVisualization.MARKER_TRACK_PADDING = 12;
-FloydWarshallVisualization.MARKER_TRACK_THICKNESS = 18;
-FloydWarshallVisualization.MARKER_I_TRACK_WIDTH = 24;
-FloydWarshallVisualization.MARKER_I_TRACK_GAP = 6;
-FloydWarshallVisualization.MARKER_TRACK_COLOR = "#fde2ff";
-FloydWarshallVisualization.MARKER_TRACK_BORDER_COLOR = "#f8bbd0";
-FloydWarshallVisualization.MARKER_TRACK_ALPHA = 0.35;
-FloydWarshallVisualization.MARKER_TRACK_LAYER = 0;
+FloydWarshallVisualization.MARKER_COLOR_I = "#0d47a1";
+FloydWarshallVisualization.MARKER_COLOR_J = "#0d47a1";
+FloydWarshallVisualization.MARKER_COLOR_K = "#4a148c";
+FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP = 32;
+FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_BOTTOM = 28;
 FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP = 10;
+FloydWarshallVisualization.I_TRACK_OFFSET = 34;
 
-FloydWarshallVisualization.RANDOM_EDGE_PROBABILITY = 0.4;
+FloydWarshallVisualization.VERTEX_COUNT = 5;
+
+FloydWarshallVisualization.TEMPLATE_ALLOWED = [
+  [false, true, true, false, true],
+  [false, false, true, true, true],
+  [false, false, false, true, true],
+  [true, false, false, false, true],
+  [true, true, false, false, false],
+];
+
+FloydWarshallVisualization.TEMPLATE_BASE_EDGE_PERCENT = 0.45;
+FloydWarshallVisualization.TEMPLATE_EXTRA_EDGE_PERCENT = 0.35;
+
 FloydWarshallVisualization.RANDOM_WEIGHT_MIN = 1;
 FloydWarshallVisualization.RANDOM_WEIGHT_MAX = 9;
 
@@ -88,14 +98,15 @@ FloydWarshallVisualization.DEFAULT_VERTEX_DATA = [
   { label: "A", x: 160, y: 360 },
   { label: "B", x: 360, y: 240 },
   { label: "C", x: 560, y: 360 },
-  { label: "D", x: 360, y: 500 },
+  { label: "D", x: 460, y: 540 },
+  { label: "E", x: 260, y: 540 },
 ];
 
 FloydWarshallVisualization.DEFAULT_GRAPH_EDGES = [
   [
     { to: 1, weight: 3 },
-    { to: 2, weight: 8 },
-    { to: 3, weight: 7 },
+    { to: 2, weight: 7 },
+    { to: 4, weight: 4 },
   ],
   [
     { to: 2, weight: 2 },
@@ -103,9 +114,14 @@ FloydWarshallVisualization.DEFAULT_GRAPH_EDGES = [
   ],
   [
     { to: 3, weight: 1 },
+    { to: 4, weight: 6 },
   ],
   [
-    { to: 0, weight: 4 },
+    { to: 0, weight: 8 },
+  ],
+  [
+    { to: 0, weight: 5 },
+    { to: 1, weight: 4 },
   ],
 ];
 
@@ -203,10 +219,10 @@ FloydWarshallVisualization.prototype.reset = function () {
   this.iMarkerID = -1;
   this.jMarkerID = -1;
   this.kMarkerID = -1;
-  this.markerTrackIDs = { k: -1, j: -1, i: -1 };
   this.iMarkerX = 0;
   this.jMarkerY = 0;
   this.kMarkerY = 0;
+  this.activeEdgeHighlights = {};
 
   if (
     typeof animationManager !== "undefined" &&
@@ -219,44 +235,249 @@ FloydWarshallVisualization.prototype.reset = function () {
 };
 
 FloydWarshallVisualization.prototype.generateRandomGraphData = function () {
-  this.vertexData = this.cloneVertexData(
+  var vertexCount = FloydWarshallVisualization.VERTEX_COUNT;
+  var templateVertices = this.cloneVertexData(
     FloydWarshallVisualization.DEFAULT_VERTEX_DATA
   );
+  if (templateVertices.length > vertexCount) {
+    templateVertices.length = vertexCount;
+  }
+  this.vertexData = templateVertices;
 
-  var vertexCount = this.vertexData.length;
-  var edges = new Array(vertexCount);
+  var allowed = FloydWarshallVisualization.TEMPLATE_ALLOWED;
+
+  var shuffle = function (array) {
+    for (var idx = array.length - 1; idx > 0; idx--) {
+      var swap = Math.floor(Math.random() * (idx + 1));
+      var temp = array[idx];
+      array[idx] = array[swap];
+      array[swap] = temp;
+    }
+  };
+
+  var isDirectionAllowed = function (from, to) {
+    return !!(allowed[from] && allowed[from][to]);
+  };
+
+  var isPairAllowed = function (a, b) {
+    return isDirectionAllowed(a, b) || isDirectionAllowed(b, a);
+  };
+
+  var pairKey = function (a, b) {
+    return a < b ? a + "-" + b : b + "-" + a;
+  };
+
+  var baseEdges = [];
+  var usedPairs = {};
+
+  var tryAddBaseEdge = function (a, b) {
+    if (a === b || !isPairAllowed(a, b)) {
+      return false;
+    }
+    var key = pairKey(a, b);
+    if (usedPairs[key]) {
+      return false;
+    }
+    var min = Math.min(a, b);
+    var max = Math.max(a, b);
+    baseEdges.push({ u: min, v: max });
+    usedPairs[key] = true;
+    return true;
+  };
+
+  for (var vertex = 1; vertex < vertexCount; vertex++) {
+    var neighbors = [];
+    for (var candidate = 0; candidate < vertexCount; candidate++) {
+      if (candidate === vertex || !isPairAllowed(vertex, candidate)) {
+        continue;
+      }
+      neighbors.push(candidate);
+    }
+    if (neighbors.length === 0) {
+      continue;
+    }
+    shuffle(neighbors);
+    for (var n = 0; n < neighbors.length; n++) {
+      if (tryAddBaseEdge(vertex, neighbors[n])) {
+        break;
+      }
+    }
+  }
+
+  var baseEdgePercent = FloydWarshallVisualization.TEMPLATE_BASE_EDGE_PERCENT;
   for (var i = 0; i < vertexCount; i++) {
-    edges[i] = [];
-  }
-
-  if (vertexCount > 1) {
-    for (var from = 0; from < vertexCount; from++) {
-      var ensureIndex = Math.floor(Math.random() * (vertexCount - 1));
-      if (ensureIndex >= from) {
-        ensureIndex += 1;
+    for (var j = i + 1; j < vertexCount; j++) {
+      if (!isPairAllowed(i, j) || usedPairs[pairKey(i, j)]) {
+        continue;
       }
-      this.addDirectedEdge(edges, from, ensureIndex, this.randomWeight());
+      if (Math.random() <= baseEdgePercent) {
+        tryAddBaseEdge(i, j);
+      }
     }
   }
 
-  for (var u = 0; u < vertexCount; u++) {
-    for (var v = 0; v < vertexCount; v++) {
-      if (u === v) {
-        continue;
+  var directedEdges = [];
+  var directedMap = {};
+  var incidentEdges = new Array(vertexCount);
+  var outDegree = new Array(vertexCount);
+  for (var init = 0; init < vertexCount; init++) {
+    incidentEdges[init] = [];
+    outDegree[init] = 0;
+  }
+
+  var baseRecords = new Array(baseEdges.length);
+  for (var b = 0; b < baseEdges.length; b++) {
+    var edge = baseEdges[b];
+    var forwardAllowed = isDirectionAllowed(edge.u, edge.v);
+    var backwardAllowed = isDirectionAllowed(edge.v, edge.u);
+    if (!forwardAllowed && !backwardAllowed) {
+      continue;
+    }
+    var from = edge.u;
+    var to = edge.v;
+    if (forwardAllowed && backwardAllowed) {
+      if (Math.random() < 0.5) {
+        from = edge.u;
+        to = edge.v;
+      } else {
+        from = edge.v;
+        to = edge.u;
       }
-      if (this.edgeExists(edges, u, v)) {
-        continue;
-      }
-      if (Math.random() < FloydWarshallVisualization.RANDOM_EDGE_PROBABILITY) {
-        this.addDirectedEdge(edges, u, v, this.randomWeight());
+    } else if (forwardAllowed) {
+      from = edge.u;
+      to = edge.v;
+    } else {
+      from = edge.v;
+      to = edge.u;
+    }
+
+    var record = {
+      from: from,
+      to: to,
+      min: Math.min(edge.u, edge.v),
+      max: Math.max(edge.u, edge.v),
+    };
+    directedEdges.push(record);
+    baseRecords[b] = record;
+    directedMap[from + "->" + to] = true;
+    outDegree[from]++;
+    incidentEdges[edge.u].push(b);
+    incidentEdges[edge.v].push(b);
+  }
+
+  for (var ensureVertex = 0; ensureVertex < vertexCount; ensureVertex++) {
+    if (outDegree[ensureVertex] === 0 && incidentEdges[ensureVertex].length > 0) {
+      var candidates = incidentEdges[ensureVertex].slice();
+      shuffle(candidates);
+      for (
+        var opt = 0;
+        opt < candidates.length && outDegree[ensureVertex] === 0;
+        opt++
+      ) {
+        var idx = candidates[opt];
+        var record = baseRecords[idx];
+        if (!record) {
+          continue;
+        }
+        var other = record.min === ensureVertex ? record.max : record.min;
+        if (!isDirectionAllowed(ensureVertex, other)) {
+          continue;
+        }
+        var newKey = ensureVertex + "->" + other;
+        if (directedMap[newKey]) {
+          continue;
+        }
+        var oldKey = record.from + "->" + record.to;
+        delete directedMap[oldKey];
+        outDegree[record.from]--;
+        record.from = ensureVertex;
+        record.to = other;
+        directedMap[newKey] = true;
+        outDegree[ensureVertex]++;
       }
     }
-    edges[u].sort(function (a, b) {
+  }
+
+  for (var ensure = 0; ensure < vertexCount; ensure++) {
+    if (outDegree[ensure] === 0 && allowed[ensure]) {
+      var extraNeighbors = [];
+      for (var target = 0; target < vertexCount; target++) {
+        if (target === ensure || !isDirectionAllowed(ensure, target)) {
+          continue;
+        }
+        extraNeighbors.push(target);
+      }
+      shuffle(extraNeighbors);
+      for (var en = 0; en < extraNeighbors.length; en++) {
+        var neighbor = extraNeighbors[en];
+        var ensureKey = ensure + "->" + neighbor;
+        if (directedMap[ensureKey]) {
+          continue;
+        }
+        directedEdges.push({
+          from: ensure,
+          to: neighbor,
+          min: Math.min(ensure, neighbor),
+          max: Math.max(ensure, neighbor),
+        });
+        directedMap[ensureKey] = true;
+        outDegree[ensure]++;
+        break;
+      }
+    }
+  }
+
+  var extraPercent = FloydWarshallVisualization.TEMPLATE_EXTRA_EDGE_PERCENT;
+  for (var fromVertex = 0; fromVertex < vertexCount; fromVertex++) {
+    if (!allowed[fromVertex]) {
+      continue;
+    }
+    for (var toVertex = 0; toVertex < vertexCount; toVertex++) {
+      if (
+        fromVertex === toVertex ||
+        !isDirectionAllowed(fromVertex, toVertex)
+      ) {
+        continue;
+      }
+      var dirKey = fromVertex + "->" + toVertex;
+      if (directedMap[dirKey]) {
+        continue;
+      }
+      if (Math.random() <= extraPercent) {
+        directedEdges.push({
+          from: fromVertex,
+          to: toVertex,
+          min: Math.min(fromVertex, toVertex),
+          max: Math.max(fromVertex, toVertex),
+        });
+        directedMap[dirKey] = true;
+        outDegree[fromVertex]++;
+      }
+    }
+  }
+
+  var adjacency = new Array(vertexCount);
+  for (var a = 0; a < vertexCount; a++) {
+    adjacency[a] = [];
+  }
+
+  for (var d = 0; d < directedEdges.length; d++) {
+    var entry = directedEdges[d];
+    this.addDirectedEdge(
+      adjacency,
+      entry.from,
+      entry.to,
+      this.randomWeight()
+    );
+  }
+
+  for (var list = 0; list < adjacency.length; list++) {
+    adjacency[list].sort(function (a, b) {
       return a.to - b.to;
     });
   }
 
-  this.graphEdges = edges;
+  this.graphEdges = adjacency;
 };
 
 FloydWarshallVisualization.prototype.randomWeight = function () {
@@ -398,6 +619,10 @@ FloydWarshallVisualization.prototype.createInfoPanel = function () {
   );
 };
 
+FloydWarshallVisualization.prototype.edgeKey = function (from, to) {
+  return from + "-" + to;
+};
+
 FloydWarshallVisualization.prototype.createGraph = function () {
   var vertexData = this.vertexData ||
     FloydWarshallVisualization.DEFAULT_VERTEX_DATA;
@@ -426,7 +651,7 @@ FloydWarshallVisualization.prototype.createGraph = function () {
     }
     for (var j = 0; j < edges.length; j++) {
       var edge = edges[j];
-      var curveKey = from + "-" + edge.to;
+      var curveKey = this.edgeKey(from, edge.to);
       var curve =
         Object.prototype.hasOwnProperty.call(this.edgeCurves, curveKey)
           ? this.edgeCurves[curveKey]
@@ -460,6 +685,71 @@ FloydWarshallVisualization.prototype.createGraph = function () {
       );
     }
   }
+};
+
+FloydWarshallVisualization.prototype.setEdgeHighlight = function (
+  from,
+  to,
+  active
+) {
+  if (
+    !this.vertexIDs ||
+    from < 0 ||
+    to < 0 ||
+    from >= this.vertexIDs.length ||
+    to >= this.vertexIDs.length
+  ) {
+    return;
+  }
+  var key = this.edgeKey(from, to);
+  var edgeInfo = this.edgeMap[key];
+  if (!edgeInfo) {
+    return;
+  }
+  var fromID = this.vertexIDs[from];
+  var toID = this.vertexIDs[to];
+  if (typeof fromID === "undefined" || typeof toID === "undefined") {
+    return;
+  }
+  var color = active
+    ? FloydWarshallVisualization.EDGE_ACTIVE_COLOR
+    : FloydWarshallVisualization.EDGE_COLOR;
+  var thickness = active
+    ? FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS
+    : FloydWarshallVisualization.EDGE_THICKNESS;
+  this.cmd("SetEdgeColor", fromID, toID, color);
+  this.cmd("SetEdgeThickness", fromID, toID, thickness);
+  if (!this.activeEdgeHighlights) {
+    this.activeEdgeHighlights = {};
+  }
+  if (active) {
+    this.activeEdgeHighlights[key] = true;
+  } else {
+    delete this.activeEdgeHighlights[key];
+  }
+};
+
+FloydWarshallVisualization.prototype.clearEdgeHighlights = function () {
+  if (!this.activeEdgeHighlights) {
+    this.activeEdgeHighlights = {};
+    return;
+  }
+  for (var key in this.activeEdgeHighlights) {
+    if (!Object.prototype.hasOwnProperty.call(this.activeEdgeHighlights, key)) {
+      continue;
+    }
+    var parts = key.split("-");
+    if (parts.length !== 2) {
+      continue;
+    }
+    var from = parseInt(parts[0], 10);
+    var to = parseInt(parts[1], 10);
+    if (isNaN(from) || isNaN(to)) {
+      continue;
+    }
+    this.setEdgeHighlight(from, to, false);
+  }
+  this.activeEdgeHighlights = {};
 };
 
 FloydWarshallVisualization.prototype.computeEdgeCurves = function (
@@ -566,36 +856,6 @@ FloydWarshallVisualization.prototype.computeEdgeCurves = function (
   return curves;
 };
 
-FloydWarshallVisualization.prototype.createMarkerTrack = function (
-  x,
-  y,
-  width,
-  height
-) {
-  if (width <= 0 || height <= 0) {
-    return -1;
-  }
-  var trackID = this.nextIndex++;
-  this.cmd("CreateRectangle", trackID, "", width, height, x, y);
-  this.cmd(
-    "SetForegroundColor",
-    trackID,
-    FloydWarshallVisualization.MARKER_TRACK_BORDER_COLOR
-  );
-  this.cmd(
-    "SetBackgroundColor",
-    trackID,
-    FloydWarshallVisualization.MARKER_TRACK_COLOR
-  );
-  this.cmd(
-    "SetLayer",
-    trackID,
-    FloydWarshallVisualization.MARKER_TRACK_LAYER
-  );
-  this.cmd("SetAlpha", trackID, FloydWarshallVisualization.MARKER_TRACK_ALPHA);
-  return trackID;
-};
-
 FloydWarshallVisualization.prototype.createMatrix = function () {
   var vertexData = this.vertexData ||
     FloydWarshallVisualization.DEFAULT_VERTEX_DATA;
@@ -621,43 +881,16 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
   var rowHeaderX =
     left - columnSpacing / 2 - FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP;
 
-  var horizontalTrackThickness = FloydWarshallVisualization.MARKER_TRACK_THICKNESS;
-  var horizontalPadding = FloydWarshallVisualization.MARKER_TRACK_PADDING;
-  var verticalTrackWidth = FloydWarshallVisualization.MARKER_I_TRACK_WIDTH;
-  var verticalTrackGap = FloydWarshallVisualization.MARKER_I_TRACK_GAP;
   var hasMatrix = n > 0;
   var kTrackY = hasMatrix
-    ? top - horizontalPadding - horizontalTrackThickness / 2
+    ? top - FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP
     : top;
   var jTrackY = hasMatrix
-    ? top + horizontalPadding + horizontalTrackThickness / 2
+    ? top + FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_BOTTOM
     : top;
   var iTrackX = hasMatrix
-    ? rowHeaderX - verticalTrackGap - verticalTrackWidth / 2
+    ? rowHeaderX + FloydWarshallVisualization.I_TRACK_OFFSET
     : rowHeaderX;
-
-  if (hasMatrix) {
-    this.markerTrackIDs.k = this.createMarkerTrack(
-      matrixCenterX,
-      kTrackY,
-      matrixWidth,
-      horizontalTrackThickness
-    );
-    this.markerTrackIDs.j = this.createMarkerTrack(
-      matrixCenterX,
-      jTrackY,
-      matrixWidth,
-      horizontalTrackThickness
-    );
-    this.markerTrackIDs.i = this.createMarkerTrack(
-      iTrackX,
-      matrixCenterY,
-      verticalTrackWidth,
-      matrixHeight
-    );
-  } else {
-    this.markerTrackIDs = { k: -1, j: -1, i: -1 };
-  }
 
   this.iMarkerX = iTrackX;
   this.kMarkerY = kTrackY;
@@ -766,9 +999,24 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
       ? this.rowHeaderPositions[0].y
       : top + rowSpacing;
 
-  this.kMarkerID = this.createIndexMarker("k", initialColumnX, this.kMarkerY);
-  this.jMarkerID = this.createIndexMarker("j", initialColumnX, this.jMarkerY);
-  this.iMarkerID = this.createIndexMarker("i", this.iMarkerX, initialRowY);
+  this.kMarkerID = this.createIndexMarker(
+    "k",
+    initialColumnX,
+    this.kMarkerY,
+    FloydWarshallVisualization.MARKER_COLOR_K
+  );
+  this.jMarkerID = this.createIndexMarker(
+    "j",
+    initialColumnX,
+    this.jMarkerY,
+    FloydWarshallVisualization.MARKER_COLOR_J
+  );
+  this.iMarkerID = this.createIndexMarker(
+    "i",
+    this.iMarkerX,
+    initialRowY,
+    FloydWarshallVisualization.MARKER_COLOR_I
+  );
   this.hideIndexMarkers();
 
   this.initialDistances = this.buildInitialDistances();
@@ -810,7 +1058,8 @@ FloydWarshallVisualization.prototype.createCodeDisplay = function () {
 FloydWarshallVisualization.prototype.createIndexMarker = function (
   label,
   x,
-  y
+  y,
+  color
 ) {
   var id = this.nextIndex++;
   this.cmd("CreateLabel", id, label, x, y, 1);
@@ -822,7 +1071,7 @@ FloydWarshallVisualization.prototype.createIndexMarker = function (
   this.cmd(
     "SetForegroundColor",
     id,
-    FloydWarshallVisualization.MARKER_COLOR
+    color || FloydWarshallVisualization.MARKER_COLOR_I
   );
   this.cmd("SetAlpha", id, 0);
   return id;
@@ -1099,6 +1348,7 @@ FloydWarshallVisualization.prototype.clearMatrixHighlights = function () {
   }
 
   this.hideIndexMarkers();
+  this.clearEdgeHighlights();
 };
 
 FloydWarshallVisualization.prototype.computeCandidate = function (
@@ -1153,6 +1403,7 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
       this.setHeaderHighlight(this.rowHeaderIDs, i, true);
       this.moveIMarker(i);
       this.setMarkerVisible(this.jMarkerID, false);
+      this.clearEdgeHighlights();
       this.cmd("Step");
 
       for (var j = 0; j < n; j++) {
@@ -1165,6 +1416,8 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
           j,
           FloydWarshallVisualization.MATRIX_CELL_HIGHLIGHT
         );
+        this.clearEdgeHighlights();
+        this.setEdgeHighlight(i, j, true);
 
         var distIK = this.distances[i][k];
         var distKJ = this.distances[k][j];
@@ -1225,6 +1478,7 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
         }
         this.cmd("Step");
 
+        this.clearEdgeHighlights();
         this.highlightMatrixCell(
           i,
           j,
