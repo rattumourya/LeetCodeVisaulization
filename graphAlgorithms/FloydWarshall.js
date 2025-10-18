@@ -35,7 +35,7 @@ FloydWarshallVisualization.EDGE_THICKNESS = 3;
 FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS = 4;
 FloydWarshallVisualization.EDGE_WEIGHT_COLOR = "#1d4ed8";
 
-FloydWarshallVisualization.MATRIX_TOP_Y = 560;
+FloydWarshallVisualization.MATRIX_TOP_Y = 620;
 FloydWarshallVisualization.MATRIX_LEFT_X = 120;
 FloydWarshallVisualization.MATRIX_CELL_WIDTH = 90;
 FloydWarshallVisualization.MATRIX_CELL_HEIGHT = 50;
@@ -57,9 +57,9 @@ FloydWarshallVisualization.MARKER_COLOR_I = "#0d47a1";
 FloydWarshallVisualization.MARKER_COLOR_J = "#0d47a1";
 FloydWarshallVisualization.MARKER_COLOR_K = "#4a148c";
 FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP = 32;
-FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_BOTTOM = 28;
-FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP = 10;
-FloydWarshallVisualization.I_TRACK_OFFSET = 34;
+FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET = 70;
+FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP = 16;
+FloydWarshallVisualization.I_TRACK_OFFSET = 44;
 
 FloydWarshallVisualization.VERTEX_COUNT = 5;
 
@@ -77,12 +77,12 @@ FloydWarshallVisualization.TEMPLATE_EXTRA_EDGE_PERCENT = 0.35;
 FloydWarshallVisualization.RANDOM_WEIGHT_MIN = 1;
 FloydWarshallVisualization.RANDOM_WEIGHT_MAX = 9;
 
-FloydWarshallVisualization.SINGLE_EDGE_CURVE = 0.24;
+FloydWarshallVisualization.SINGLE_EDGE_CURVE = 0;
 FloydWarshallVisualization.BIDIRECTIONAL_EDGE_CURVE = 0.56;
 FloydWarshallVisualization.PARALLEL_EDGE_GAP = 0.12;
 FloydWarshallVisualization.LOOP_EDGE_CURVE = 0.52;
 
-FloydWarshallVisualization.CODE_START_Y = 860;
+FloydWarshallVisualization.CODE_START_Y = 1040;
 FloydWarshallVisualization.CODE_LEFT_X =
   FloydWarshallVisualization.MATRIX_LEFT_X;
 FloydWarshallVisualization.CODE_LINE_HEIGHT = 18;
@@ -91,6 +91,7 @@ FloydWarshallVisualization.CODE_HIGHLIGHT_FONT =
   "bold 17px 'Courier New', monospace";
 FloydWarshallVisualization.CODE_STANDARD_COLOR = "#102a43";
 FloydWarshallVisualization.CODE_HIGHLIGHT_COLOR = "#d81b60";
+FloydWarshallVisualization.CODE_MATRIX_GAP = 120;
 
 FloydWarshallVisualization.INFINITY_SYMBOL = "\u221E";
 
@@ -209,6 +210,7 @@ FloydWarshallVisualization.prototype.reset = function () {
   this.columnHeaderIDs = [];
   this.rowHeaderPositions = [];
   this.columnHeaderPositions = [];
+  this.matrixBottomY = 0;
   this.codeID = [];
   this.currentCodeLine = -1;
   this.infoPrimaryID = -1;
@@ -886,7 +888,7 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
     ? top - FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP
     : top;
   var jTrackY = hasMatrix
-    ? top + FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_BOTTOM
+    ? top + FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET
     : top;
   var iTrackX = hasMatrix
     ? rowHeaderX + FloydWarshallVisualization.I_TRACK_OFFSET
@@ -990,6 +992,10 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
     }
   }
 
+  this.matrixBottomY = hasMatrix
+    ? top + n * rowSpacing + rowHeight / 2
+    : top;
+
   var initialColumnX =
     this.columnHeaderPositions.length > 0
       ? this.columnHeaderPositions[0]
@@ -1034,10 +1040,21 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
 };
 
 FloydWarshallVisualization.prototype.createCodeDisplay = function () {
+  var startY = FloydWarshallVisualization.CODE_START_Y;
+  if (
+    typeof this.matrixBottomY === "number" &&
+    !isNaN(this.matrixBottomY)
+  ) {
+    startY = Math.max(
+      FloydWarshallVisualization.CODE_START_Y,
+      this.matrixBottomY + FloydWarshallVisualization.CODE_MATRIX_GAP
+    );
+  }
+
   this.codeID = this.addCodeToCanvasBase(
     FloydWarshallVisualization.CODE_LINES,
     FloydWarshallVisualization.CODE_LEFT_X,
-    FloydWarshallVisualization.CODE_START_Y,
+    startY,
     FloydWarshallVisualization.CODE_LINE_HEIGHT,
     FloydWarshallVisualization.CODE_STANDARD_COLOR,
     0,
