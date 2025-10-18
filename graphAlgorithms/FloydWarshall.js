@@ -1471,11 +1471,20 @@ FloydWarshallVisualization.prototype.highlightCandidatePaths = function (
     );
   }
 
-  var directEdges = this.getPathEdges(i, j);
-  this.highlightEdgeList(
-    directEdges,
-    FloydWarshallVisualization.EDGE_DIRECT_PATH_COLOR
-  );
+  if (this.edgeMap && i !== j) {
+    var directKey = this.edgeKey(i, j);
+    if (Object.prototype.hasOwnProperty.call(this.edgeMap, directKey)) {
+      this.highlightEdgeList(
+        [
+          {
+            from: i,
+            to: j,
+          },
+        ],
+        FloydWarshallVisualization.EDGE_DIRECT_PATH_COLOR
+      );
+    }
+  }
 };
 
 FloydWarshallVisualization.prototype.highlightShortestPath = function (
