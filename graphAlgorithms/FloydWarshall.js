@@ -893,7 +893,7 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
   var jTrackY = hasMatrix ? top - jTrackGap : top;
   var kTrackY = hasMatrix ? top - kTrackGap : top;
   var iTrackX = hasMatrix
-    ? rowHeaderX + FloydWarshallVisualization.I_TRACK_OFFSET
+    ? rowHeaderX - FloydWarshallVisualization.I_TRACK_OFFSET
     : rowHeaderX;
 
   this.iMarkerX = iTrackX;
