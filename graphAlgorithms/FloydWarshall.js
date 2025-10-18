@@ -56,10 +56,14 @@ FloydWarshallVisualization.MARKER_FONT = "bold 20";
 FloydWarshallVisualization.MARKER_COLOR_I = "#0d47a1";
 FloydWarshallVisualization.MARKER_COLOR_J = "#0d47a1";
 FloydWarshallVisualization.MARKER_COLOR_K = "#4a148c";
-FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP = 96;
-FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET = 44;
+FloydWarshallVisualization.MARKER_TRACK_GAP = 44;
+FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET =
+  FloydWarshallVisualization.MARKER_TRACK_GAP;
+FloydWarshallVisualization.MARKER_K_VERTICAL_OFFSET =
+  FloydWarshallVisualization.MARKER_TRACK_GAP * 2;
 FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP = 16;
-FloydWarshallVisualization.I_TRACK_OFFSET = 44;
+FloydWarshallVisualization.I_TRACK_OFFSET =
+  FloydWarshallVisualization.MARKER_TRACK_GAP;
 
 FloydWarshallVisualization.VERTEX_COUNT = 5;
 
@@ -884,12 +888,10 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
     left - columnSpacing / 2 - FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP;
 
   var hasMatrix = n > 0;
-  var kTrackY = hasMatrix
-    ? top - FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP
-    : top;
-  var jTrackY = hasMatrix
-    ? top - FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET
-    : top;
+  var jTrackGap = FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET;
+  var kTrackGap = FloydWarshallVisualization.MARKER_K_VERTICAL_OFFSET;
+  var jTrackY = hasMatrix ? top - jTrackGap : top;
+  var kTrackY = hasMatrix ? top - kTrackGap : top;
   var iTrackX = hasMatrix
     ? rowHeaderX + FloydWarshallVisualization.I_TRACK_OFFSET
     : rowHeaderX;
