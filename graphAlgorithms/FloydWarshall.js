@@ -34,6 +34,9 @@ FloydWarshallVisualization.EDGE_ACTIVE_COLOR = "#ff7043";
 FloydWarshallVisualization.EDGE_THICKNESS = 3;
 FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS = 4;
 FloydWarshallVisualization.EDGE_WEIGHT_COLOR = "#1d4ed8";
+FloydWarshallVisualization.EDGE_DIRECT_PATH_COLOR = "#0d1b2a";
+FloydWarshallVisualization.EDGE_K_PATH_COLOR = "#4a148c";
+FloydWarshallVisualization.EDGE_SHORTEST_PATH_COLOR = "#2e7d32";
 
 FloydWarshallVisualization.MATRIX_TOP_Y = 660;
 FloydWarshallVisualization.MATRIX_LEFT_X = 120;
@@ -229,6 +232,8 @@ FloydWarshallVisualization.prototype.reset = function () {
   this.jMarkerY = 0;
   this.kMarkerY = 0;
   this.activeEdgeHighlights = {};
+  this.nextMatrix = [];
+  this.initialNextMatrix = [];
 
   if (
     typeof animationManager !== "undefined" &&
@@ -696,7 +701,9 @@ FloydWarshallVisualization.prototype.createGraph = function () {
 FloydWarshallVisualization.prototype.setEdgeHighlight = function (
   from,
   to,
-  active
+  active,
+  colorOverride,
+  thicknessOverride
 ) {
   if (
     !this.vertexIDs ||
@@ -718,10 +725,10 @@ FloydWarshallVisualization.prototype.setEdgeHighlight = function (
     return;
   }
   var color = active
-    ? FloydWarshallVisualization.EDGE_ACTIVE_COLOR
+    ? colorOverride || FloydWarshallVisualization.EDGE_ACTIVE_COLOR
     : FloydWarshallVisualization.EDGE_COLOR;
   var thickness = active
-    ? FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS
+    ? thicknessOverride || FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS
     : FloydWarshallVisualization.EDGE_THICKNESS;
   this.cmd("SetEdgeColor", fromID, toID, color);
   this.cmd("SetEdgeThickness", fromID, toID, thickness);
@@ -1029,6 +1036,8 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
 
   this.initialDistances = this.buildInitialDistances();
   this.distances = this.cloneMatrix(this.initialDistances);
+  this.initialNextMatrix = this.buildInitialNextMatrix();
+  this.nextMatrix = this.cloneMatrix(this.initialNextMatrix);
 
   for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
@@ -1238,10 +1247,44 @@ FloydWarshallVisualization.prototype.buildInitialDistances = function () {
   return distances;
 };
 
+FloydWarshallVisualization.prototype.buildInitialNextMatrix = function () {
+  var vertexData = this.vertexData ||
+    FloydWarshallVisualization.DEFAULT_VERTEX_DATA;
+  var edges = this.graphEdges ||
+    FloydWarshallVisualization.DEFAULT_GRAPH_EDGES;
+  var n = vertexData.length;
+  var next = new Array(n);
+
+  for (var i = 0; i < n; i++) {
+    next[i] = new Array(n);
+    for (var j = 0; j < n; j++) {
+      next[i][j] = i === j ? j : null;
+    }
+  }
+
+  for (var from = 0; from < edges.length; from++) {
+    var outgoing = edges[from];
+    if (!outgoing) {
+      continue;
+    }
+    for (var e = 0; e < outgoing.length; e++) {
+      var edge = outgoing[e];
+      if (edge.to >= 0 && edge.to < n) {
+        next[from][edge.to] = edge.to;
+      }
+    }
+  }
+
+  return next;
+};
+
 FloydWarshallVisualization.prototype.cloneMatrix = function (matrix) {
+  if (!matrix || typeof matrix.length === "undefined") {
+    return [];
+  }
   var clone = new Array(matrix.length);
   for (var i = 0; i < matrix.length; i++) {
-    clone[i] = matrix[i].slice();
+    clone[i] = matrix[i] ? matrix[i].slice() : [];
   }
   return clone;
 };
@@ -1286,6 +1329,163 @@ FloydWarshallVisualization.prototype.setVertexActive = function (
     active
       ? FloydWarshallVisualization.NODE_ACTIVE_COLOR
       : FloydWarshallVisualization.NODE_COLOR
+  );
+};
+
+FloydWarshallVisualization.prototype.updateNextMatrix = function (
+  i,
+  j,
+  k
+) {
+  if (!this.nextMatrix || !this.nextMatrix[i]) {
+    return;
+  }
+  var nextIK =
+    this.nextMatrix[i] && typeof this.nextMatrix[i][k] !== "undefined"
+      ? this.nextMatrix[i][k]
+      : null;
+  var nextKJ =
+    this.nextMatrix[k] && typeof this.nextMatrix[k][j] !== "undefined"
+      ? this.nextMatrix[k][j]
+      : null;
+  if (nextIK === null || nextKJ === null) {
+    return;
+  }
+  this.nextMatrix[i][j] = nextIK;
+};
+
+FloydWarshallVisualization.prototype.getPathEdges = function (
+  start,
+  end
+) {
+  var edges = [];
+  if (
+    !this.nextMatrix ||
+    typeof start !== "number" ||
+    typeof end !== "number" ||
+    start < 0 ||
+    end < 0 ||
+    start >= this.nextMatrix.length ||
+    end >= this.nextMatrix.length ||
+    start === end
+  ) {
+    return edges;
+  }
+
+  if (!this.nextMatrix[start]) {
+    return edges;
+  }
+
+  var steps = 0;
+  var maxSteps = this.nextMatrix.length * this.nextMatrix.length;
+  var current = start;
+
+  while (current !== end && steps < maxSteps) {
+    if (!this.nextMatrix[current]) {
+      return [];
+    }
+    var nextVertex = this.nextMatrix[current][end];
+    if (nextVertex === null || typeof nextVertex === "undefined") {
+      return [];
+    }
+    edges.push({ from: current, to: nextVertex });
+    if (nextVertex === end) {
+      break;
+    }
+    if (nextVertex === current) {
+      return [];
+    }
+    current = nextVertex;
+    steps++;
+  }
+
+  if (current !== end) {
+    return [];
+  }
+
+  return edges;
+};
+
+FloydWarshallVisualization.prototype.highlightEdgeList = function (
+  edgeList,
+  color
+) {
+  if (!edgeList || edgeList.length === 0) {
+    return;
+  }
+  var seen = {};
+  for (var idx = 0; idx < edgeList.length; idx++) {
+    var edge = edgeList[idx];
+    if (!edge) {
+      continue;
+    }
+    var from = edge.from;
+    var to = edge.to;
+    if (typeof from !== "number" || typeof to !== "number") {
+      continue;
+    }
+    var key = from + "-" + to;
+    if (seen[key]) {
+      continue;
+    }
+    seen[key] = true;
+    this.setEdgeHighlight(
+      from,
+      to,
+      true,
+      color,
+      FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS
+    );
+  }
+};
+
+FloydWarshallVisualization.prototype.highlightCandidatePaths = function (
+  i,
+  k,
+  j,
+  distIK,
+  distKJ
+) {
+  if (
+    typeof distIK === "undefined" ||
+    distIK === null
+  ) {
+    distIK = this.distances && this.distances[i]
+      ? this.distances[i][k]
+      : Infinity;
+  }
+  if (
+    typeof distKJ === "undefined" ||
+    distKJ === null
+  ) {
+    distKJ = this.distances && this.distances[k]
+      ? this.distances[k][j]
+      : Infinity;
+  }
+
+  if (distIK !== Infinity && distKJ !== Infinity) {
+    var viaEdges = this.getPathEdges(i, k).concat(this.getPathEdges(k, j));
+    this.highlightEdgeList(
+      viaEdges,
+      FloydWarshallVisualization.EDGE_K_PATH_COLOR
+    );
+  }
+
+  var directEdges = this.getPathEdges(i, j);
+  this.highlightEdgeList(
+    directEdges,
+    FloydWarshallVisualization.EDGE_DIRECT_PATH_COLOR
+  );
+};
+
+FloydWarshallVisualization.prototype.highlightShortestPath = function (
+  i,
+  j
+) {
+  var shortestEdges = this.getPathEdges(i, j);
+  this.highlightEdgeList(
+    shortestEdges,
+    FloydWarshallVisualization.EDGE_SHORTEST_PATH_COLOR
   );
 };
 
@@ -1387,6 +1587,7 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
   this.commands = [];
 
   this.distances = this.cloneMatrix(this.initialDistances);
+  this.nextMatrix = this.cloneMatrix(this.initialNextMatrix);
   for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
       this.setMatrixCellValue(i, j, this.distances[i][j]);
@@ -1436,12 +1637,12 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
           FloydWarshallVisualization.MATRIX_CELL_HIGHLIGHT
         );
         this.clearEdgeHighlights();
-        this.setEdgeHighlight(i, j, true);
-
         var distIK = this.distances[i][k];
         var distKJ = this.distances[k][j];
         var current = this.distances[i][j];
         var candidate = this.computeCandidate(distIK, distKJ);
+
+        this.highlightCandidatePaths(i, k, j, distIK, distKJ);
 
         var detail =
           "dist[" +
@@ -1477,6 +1678,9 @@ FloydWarshallVisualization.prototype.runAlgorithm = function () {
           );
           this.distances[i][j] = candidate;
           this.setMatrixCellValue(i, j, candidate);
+          this.updateNextMatrix(i, j, k);
+          this.clearEdgeHighlights();
+          this.highlightShortestPath(i, j);
           this.setInfoTexts(
             "Updated through " + intermediateLabel +
               ": dist[" +
