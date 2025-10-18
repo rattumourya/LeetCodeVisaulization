@@ -35,7 +35,7 @@ FloydWarshallVisualization.EDGE_THICKNESS = 3;
 FloydWarshallVisualization.EDGE_HIGHLIGHT_THICKNESS = 4;
 FloydWarshallVisualization.EDGE_WEIGHT_COLOR = "#1d4ed8";
 
-FloydWarshallVisualization.MATRIX_TOP_Y = 620;
+FloydWarshallVisualization.MATRIX_TOP_Y = 660;
 FloydWarshallVisualization.MATRIX_LEFT_X = 120;
 FloydWarshallVisualization.MATRIX_CELL_WIDTH = 90;
 FloydWarshallVisualization.MATRIX_CELL_HEIGHT = 50;
@@ -56,8 +56,8 @@ FloydWarshallVisualization.MARKER_FONT = "bold 20";
 FloydWarshallVisualization.MARKER_COLOR_I = "#0d47a1";
 FloydWarshallVisualization.MARKER_COLOR_J = "#0d47a1";
 FloydWarshallVisualization.MARKER_COLOR_K = "#4a148c";
-FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP = 32;
-FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET = 70;
+FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP = 96;
+FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET = 44;
 FloydWarshallVisualization.ROW_HEADER_EXTRA_GAP = 16;
 FloydWarshallVisualization.I_TRACK_OFFSET = 44;
 
@@ -888,7 +888,7 @@ FloydWarshallVisualization.prototype.createMatrix = function () {
     ? top - FloydWarshallVisualization.MARKER_VERTICAL_OFFSET_TOP
     : top;
   var jTrackY = hasMatrix
-    ? top + FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET
+    ? top - FloydWarshallVisualization.MARKER_J_VERTICAL_OFFSET
     : top;
   var iTrackX = hasMatrix
     ? rowHeaderX + FloydWarshallVisualization.I_TRACK_OFFSET
