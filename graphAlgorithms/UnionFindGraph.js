@@ -110,31 +110,88 @@ UnionFindGraph.CODE_LINES = [
   ["}"],
 ];
 
-UnionFindGraph.TEMPLATE_ALLOWED = [
-  [false, true, true, false, true, false, false, true, false, false],
-  [true, false, true, false, true, true, false, false, false, false],
-  [true, true, false, true, false, true, true, false, false, false],
-  [false, false, true, false, false, false, true, false, false, false],
-  [true, true, false, false, false, true, false, true, true, false],
-  [false, true, true, false, true, false, true, false, true, true],
-  [false, false, true, true, false, true, false, false, false, true],
-  [true, false, false, false, true, false, false, false, true, false],
-  [false, false, false, false, true, true, false, true, false, true],
-  [false, false, false, false, false, true, true, false, true, false],
+UnionFindGraph.CLUSTER_GROUPS = [
+  [0, 1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9],
 ];
 
-UnionFindGraph.EDGE_CURVES = [
-  [0, 0, -0.4, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0.4, 0, 0, 0, 0, -0.35, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0.35, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-];
+UnionFindGraph.CLUSTER_LAYOUTS = (function () {
+  var firstClusterY = UnionFindGraph.ROW2_START_Y + 110;
+  var clusterGapY = 220;
+  return [
+    {
+      vertices: UnionFindGraph.CLUSTER_GROUPS[0],
+      positions: [
+        { x: 180, y: firstClusterY },
+        { x: 320, y: firstClusterY - 70 },
+        { x: 460, y: firstClusterY },
+        { x: 320, y: firstClusterY + 70 },
+      ],
+    },
+    {
+      vertices: UnionFindGraph.CLUSTER_GROUPS[1],
+      positions: [
+        { x: 200, y: firstClusterY + clusterGapY },
+        { x: 320, y: firstClusterY + clusterGapY + 120 },
+        { x: 440, y: firstClusterY + clusterGapY },
+      ],
+    },
+    {
+      vertices: UnionFindGraph.CLUSTER_GROUPS[2],
+      positions: [
+        { x: 200, y: firstClusterY + 2 * clusterGapY },
+        { x: 320, y: firstClusterY + 2 * clusterGapY + 120 },
+        { x: 440, y: firstClusterY + 2 * clusterGapY },
+      ],
+    },
+  ];
+})();
+
+UnionFindGraph.TEMPLATE_ALLOWED = (function () {
+  var size = 10;
+  var matrix = [];
+  for (var i = 0; i < size; i++) {
+    matrix[i] = [];
+    for (var j = 0; j < size; j++) {
+      matrix[i][j] = false;
+    }
+  }
+  for (var g = 0; g < UnionFindGraph.CLUSTER_GROUPS.length; g++) {
+    var group = UnionFindGraph.CLUSTER_GROUPS[g];
+    for (var a = 0; a < group.length; a++) {
+      for (var b = 0; b < group.length; b++) {
+        if (group[a] !== group[b]) {
+          matrix[group[a]][group[b]] = true;
+        }
+      }
+    }
+  }
+  return matrix;
+})();
+
+UnionFindGraph.EDGE_CURVES = (function () {
+  var size = 10;
+  var matrix = [];
+  for (var i = 0; i < size; i++) {
+    matrix[i] = [];
+    for (var j = 0; j < size; j++) {
+      matrix[i][j] = 0;
+    }
+  }
+
+  var setCurve = function (a, b, value) {
+    matrix[a][b] = value;
+    matrix[b][a] = -value;
+  };
+
+  setCurve(0, 2, -0.25);
+  setCurve(1, 3, 0.25);
+  setCurve(4, 6, -0.18);
+  setCurve(7, 9, -0.18);
+
+  return matrix;
+})();
 
 UnionFindGraph.prototype.init = function (am, w, h) {
   UnionFindGraph.superclass.init.call(this, am, w, h);
@@ -259,6 +316,15 @@ UnionFindGraph.prototype.generateRandomGraph = function (vertexCount) {
   };
 
   var isAllowedPair = function (u, v) {
+    if (
+      u === v ||
+      u < 0 ||
+      v < 0 ||
+      u >= vertexCount ||
+      v >= vertexCount
+    ) {
+      return false;
+    }
     return (
       allowed[u] &&
       allowed[v] &&
@@ -295,6 +361,26 @@ UnionFindGraph.prototype.generateRandomGraph = function (vertexCount) {
     self.adjacencyList[v].push(u);
     return true;
   };
+
+  var clusters = UnionFindGraph.CLUSTER_GROUPS || [];
+  for (var c = 0; c < clusters.length; c++) {
+    var group = clusters[c];
+    var active = [];
+    for (var g = 0; g < group.length; g++) {
+      if (group[g] < vertexCount) {
+        active.push(group[g]);
+      }
+    }
+    if (active.length === 0) {
+      continue;
+    }
+    for (var link = 1; link < active.length; link++) {
+      addEdge(active[link - 1], active[link]);
+    }
+    if (active.length > 2) {
+      addEdge(active[0], active[active.length - 1]);
+    }
+  }
 
   for (var v = 1; v < vertexCount; v++) {
     var options = [];
@@ -369,22 +455,37 @@ UnionFindGraph.prototype.generateRandomGraph = function (vertexCount) {
 };
 
 UnionFindGraph.prototype.computeTemplateLayout = function (vertexCount) {
-  var layout = [];
-  var baseX = 200;
-  var stepX = 130;
-  var baseY = UnionFindGraph.ROW2_START_Y + 120;
-  var rowSpacing = 150;
-  var rowPattern = [4, 3, 4, 3, 4];
+  var layout = new Array(vertexCount);
+  var templates = UnionFindGraph.CLUSTER_LAYOUTS || [];
 
-  for (var row = 0, index = 0; row < rowPattern.length; row++) {
-    var count = rowPattern[row];
-    var startX = count === 4 ? baseX : baseX + stepX / 2;
-    var y = baseY + row * rowSpacing;
-    for (var col = 0; col < count && index < vertexCount; col++, index++) {
-      layout.push({ x: startX + col * stepX, y: y });
+  for (var t = 0; t < templates.length; t++) {
+    var template = templates[t];
+    var vertices = template.vertices || [];
+    var positions = template.positions || [];
+    for (var i = 0; i < vertices.length && i < positions.length; i++) {
+      var index = vertices[i];
+      if (index < vertexCount && !layout[index]) {
+        layout[index] = { x: positions[i].x, y: positions[i].y };
+      }
     }
-    if (layout.length >= vertexCount) {
-      break;
+  }
+
+  var fallbackBaseX = 180;
+  var fallbackStepX = 120;
+  var fallbackBaseY = UnionFindGraph.ROW2_START_Y + 120;
+  var fallbackRowSpacing = 110;
+  var fallbackColumns = 4;
+  var fallbackIndex = 0;
+
+  for (var v = 0; v < vertexCount; v++) {
+    if (!layout[v]) {
+      var row = Math.floor(fallbackIndex / fallbackColumns);
+      var col = fallbackIndex % fallbackColumns;
+      layout[v] = {
+        x: fallbackBaseX + col * fallbackStepX,
+        y: fallbackBaseY + row * fallbackRowSpacing,
+      };
+      fallbackIndex++;
     }
   }
 
