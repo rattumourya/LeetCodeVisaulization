@@ -1221,3 +1221,10 @@ UnionFindGraph.prototype.setEdgeState = function (from, to, status, color) {
   this.updateEdgeBaseColor(from, to);
 };
 
+var currentAlg;
+
+function init() {
+  var animManag = initCanvas();
+  currentAlg = new UnionFindGraph(animManag, canvas.width, canvas.height);
+}
+
