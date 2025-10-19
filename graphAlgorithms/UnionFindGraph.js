@@ -722,11 +722,10 @@ UnionFindGraph.prototype.highlightRankCell = function (index, active) {
 };
 
 UnionFindGraph.prototype.runUnionFind = function () {
+  this.commands = [];
   if (!this.edgePairs || this.edgePairs.length === 0) {
     return this.commands;
   }
-
-  this.commands = [];
   this.resetUnionFindState();
   var processed = 0;
   var total = this.edgePairs.length;
@@ -831,6 +830,18 @@ UnionFindGraph.prototype.runUnionFind = function () {
   this.cmd("Step");
 
   return this.commands;
+};
+
+UnionFindGraph.prototype.disableUI = function () {
+  for (var i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = true;
+  }
+};
+
+UnionFindGraph.prototype.enableUI = function () {
+  for (var i = 0; i < this.controls.length; i++) {
+    this.controls[i].disabled = false;
+  }
 };
 
 UnionFindGraph.prototype.animateFind = function (vertex) {
@@ -1220,4 +1231,11 @@ UnionFindGraph.prototype.setEdgeState = function (from, to, status, color) {
   this.edgeStates[key].color = color || null;
   this.updateEdgeBaseColor(from, to);
 };
+
+var currentAlg;
+
+function init() {
+  var animManag = initCanvas();
+  currentAlg = new UnionFindGraph(animManag, canvas.width, canvas.height);
+}
 
