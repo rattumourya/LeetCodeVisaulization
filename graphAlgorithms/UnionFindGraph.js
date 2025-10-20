@@ -9,18 +9,21 @@ UnionFindGraph.superclass = Algorithm.prototype;
 UnionFindGraph.CANVAS_WIDTH = 900;
 UnionFindGraph.CANVAS_HEIGHT = 1600;
 
-UnionFindGraph.TITLE_Y = 110;
-UnionFindGraph.STATUS_Y = 190;
-UnionFindGraph.DETAIL_Y = 230;
-UnionFindGraph.GRAPH_LABEL_Y = 360;
-UnionFindGraph.FOREST_LABEL_Y = 720;
+UnionFindGraph.TITLE_Y = 80;
+UnionFindGraph.INFO_LABEL_Y = 150;
+UnionFindGraph.STATUS_Y = 205;
+UnionFindGraph.DETAIL_Y = 255;
+UnionFindGraph.GRAPH_LABEL_Y = 420;
+UnionFindGraph.FOREST_LABEL_Y = 760;
 UnionFindGraph.GRAPH_LABEL_X = UnionFindGraph.CANVAS_WIDTH / 2;
 UnionFindGraph.FOREST_LABEL_X = UnionFindGraph.CANVAS_WIDTH / 2;
-UnionFindGraph.GRAPH_CENTER_Y = 480;
-UnionFindGraph.FOREST_TOP_Y = 780;
+UnionFindGraph.GRAPH_CENTER_Y = 540;
+UnionFindGraph.FOREST_TOP_Y = 830;
 UnionFindGraph.FOREST_LEVEL_HEIGHT = 110;
-UnionFindGraph.FOREST_VIEW_WIDTH = 420;
-UnionFindGraph.FOREST_HORIZONTAL_SPACING = 90;
+UnionFindGraph.FOREST_VIEW_WIDTH = 560;
+UnionFindGraph.FOREST_HORIZONTAL_SPACING = 95;
+UnionFindGraph.GRAPH_HORIZONTAL_SPACING = 90;
+UnionFindGraph.GRAPH_COMPONENT_GAP_SLOTS = 2;
 
 UnionFindGraph.GRAPH_EDGE_THICKNESS = 4;
 UnionFindGraph.GRAPH_EDGE_COLOR = "#334155";
@@ -47,11 +50,11 @@ UnionFindGraph.COMPONENT_PALETTE = {
 
 UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7, 6];
 
-UnionFindGraph.CODE_SECTION_TOP = 1220;
+UnionFindGraph.CODE_SECTION_TOP = 1270;
 UnionFindGraph.CODE_LINE_HEIGHT = 36;
-UnionFindGraph.CODE_UNION_X = UnionFindGraph.CANVAS_WIDTH / 2 - 160;
-UnionFindGraph.CODE_FIND_X = UnionFindGraph.CANVAS_WIDTH / 2 + 160;
-UnionFindGraph.CODE_HEADER_Y = 1180;
+UnionFindGraph.CODE_UNION_X = UnionFindGraph.CANVAS_WIDTH / 2 - 150;
+UnionFindGraph.CODE_FIND_X = UnionFindGraph.CANVAS_WIDTH / 2 + 150;
+UnionFindGraph.CODE_HEADER_Y = 1210;
 UnionFindGraph.CODE_FONT = "bold 22";
 UnionFindGraph.CODE_HEADER_FONT = "bold 24";
 UnionFindGraph.CODE_STANDARD_COLOR = "#1e3a8a";
@@ -81,17 +84,18 @@ UnionFindGraph.FOREST_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
 
 UnionFindGraph.VERTEX_POSITIONS = (function () {
   var centerX = UnionFindGraph.GRAPH_CENTER_X;
-  var centerY = UnionFindGraph.GRAPH_CENTER_Y;
+  var baseY = UnionFindGraph.GRAPH_CENTER_Y;
+
   return {
-    4: { x: centerX - 260, y: centerY },
-    1: { x: centerX - 180, y: centerY },
-    5: { x: centerX - 100, y: centerY },
-    8: { x: centerX - 20, y: centerY },
-    0: { x: centerX + 80, y: centerY },
-    2: { x: centerX + 160, y: centerY },
-    3: { x: centerX + 240, y: centerY },
-    7: { x: centerX + 320, y: centerY },
-    6: { x: centerX + 400, y: centerY },
+    1: { x: centerX - 260, y: baseY - 60 },
+    5: { x: centerX - 180, y: baseY - 60 },
+    4: { x: centerX - 260, y: baseY + 20 },
+    8: { x: centerX - 180, y: baseY + 20 },
+    0: { x: centerX + 10, y: baseY - 70 },
+    2: { x: centerX - 70, y: baseY + 30 },
+    3: { x: centerX + 10, y: baseY + 30 },
+    7: { x: centerX + 90, y: baseY + 30 },
+    6: { x: centerX + 260, y: baseY - 20 },
   };
 })();
 
@@ -224,9 +228,7 @@ UnionFindGraph.prototype.setup = function () {
   this.updateComponentColors();
 
   this.setStatus("Click \"Run Demo\" to explore the union-find process.");
-  this.setDetail(
-    "The graph spans the top, the parent pointers grow dynamically just below it, and the pseudocode at the bottom drives every animation step."
-  );
+  this.setDetail("Graph above parent pointers. Code below.");
   this.cmd("Step");
 
   return this.commands;
@@ -237,13 +239,25 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.titleID,
-    "Union-Find: Graph and Parent Pointers",
+    "Union Find Algorithm",
     UnionFindGraph.CANVAS_WIDTH / 2,
     UnionFindGraph.TITLE_Y,
     0
   );
   this.cmd("SetTextStyle", this.titleID, "bold 32");
   this.cmd("SetForegroundColor", this.titleID, UnionFindGraph.TITLE_COLOR);
+
+  this.infoLabelID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.infoLabelID,
+    "Info panel",
+    UnionFindGraph.CANVAS_WIDTH / 2,
+    UnionFindGraph.INFO_LABEL_Y,
+    0
+  );
+  this.cmd("SetTextStyle", this.infoLabelID, "bold 24");
+  this.cmd("SetForegroundColor", this.infoLabelID, UnionFindGraph.LABEL_COLOR);
 
   this.statusID = this.nextIndex++;
   this.cmd(
@@ -273,7 +287,7 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.graphLabelID,
-    "Graph view (top)",
+    "Graph view",
     UnionFindGraph.GRAPH_LABEL_X,
     UnionFindGraph.GRAPH_LABEL_Y,
     0
@@ -285,7 +299,7 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.forestLabelID,
-    "Parent pointer view (middle)",
+    "Parent pointer view",
     UnionFindGraph.FOREST_LABEL_X,
     UnionFindGraph.FOREST_LABEL_Y,
     0
@@ -505,7 +519,7 @@ UnionFindGraph.prototype.createCodeDisplay = function () {
   this.cmd(
     "CreateLabel",
     this.codeHeaderID,
-    "Union-Find pseudocode",
+    "Code paradigm",
     UnionFindGraph.CANVAS_WIDTH / 2,
     UnionFindGraph.CODE_HEADER_Y,
     1
@@ -632,7 +646,7 @@ UnionFindGraph.prototype.runDemo = function () {
 
   this.setStatus("All unions processed.");
   this.setDetail(
-    "The right-hand parent pointer view now mirrors the graph components that remain disconnected."
+    "The parent pointer view below the graph now mirrors the components that remain disconnected."
   );
   this.cmd("Step");
 
@@ -756,7 +770,7 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     message =
       "Root " +
       rootA +
-      " has higher rank, so it stays on top and " +
+      " has higher rank, so it remains the parent and " +
       rootB +
       " becomes its child.";
   } else if (rankB > rankA) {
@@ -765,7 +779,7 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     message =
       "Root " +
       rootB +
-      " has higher rank, so it stays on top and " +
+      " has higher rank, so it remains the parent and " +
       rootA +
       " becomes its child.";
   } else {
@@ -782,6 +796,9 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
       parent +
       " as the parent and increase its rank.";
   }
+
+  message +=
+    " The parent pointer view directly beneath the graph updates to show this relationship.";
 
   this.setCodeHighlight("union", 5);
   this.parent[child] = parent;
