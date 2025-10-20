@@ -13,9 +13,9 @@ UnionFindGraph.TITLE_Y = 110;
 UnionFindGraph.STATUS_Y = 190;
 UnionFindGraph.DETAIL_Y = 230;
 UnionFindGraph.GRAPH_LABEL_Y = 320;
-UnionFindGraph.GRAPH_LABEL_X = 220;
-UnionFindGraph.FOREST_LABEL_Y = 320;
-UnionFindGraph.FOREST_LABEL_X = 680;
+UnionFindGraph.GRAPH_LABEL_X = UnionFindGraph.CANVAS_WIDTH / 2;
+UnionFindGraph.FOREST_LABEL_Y = 840;
+UnionFindGraph.FOREST_LABEL_X = UnionFindGraph.CANVAS_WIDTH / 2;
 
 UnionFindGraph.GRAPH_EDGE_THICKNESS = 4;
 UnionFindGraph.GRAPH_EDGE_COLOR = "#334155";
@@ -42,28 +42,57 @@ UnionFindGraph.COMPONENT_PALETTE = {
 
 UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7, 6];
 
+UnionFindGraph.CODE_SECTION_TOP = 1220;
+UnionFindGraph.CODE_LINE_HEIGHT = 36;
+UnionFindGraph.CODE_UNION_X = 230;
+UnionFindGraph.CODE_FIND_X = 610;
+UnionFindGraph.CODE_HEADER_Y = 1180;
+UnionFindGraph.CODE_FONT = "bold 22";
+UnionFindGraph.CODE_HEADER_FONT = "bold 24";
+UnionFindGraph.CODE_STANDARD_COLOR = "#1e3a8a";
+UnionFindGraph.CODE_HIGHLIGHT_COLOR = "#ef4444";
+UnionFindGraph.CODE_HEADER_COLOR = "#0f172a";
+UnionFindGraph.CODE_INDENT = "\u00a0\u00a0\u00a0\u00a0";
+
+UnionFindGraph.UNION_CODE_LINES = [
+  ["function union(a, b):"],
+  [UnionFindGraph.CODE_INDENT + "rootA = find(a)"],
+  [UnionFindGraph.CODE_INDENT + "rootB = find(b)"],
+  [UnionFindGraph.CODE_INDENT + "if rootA == rootB: return"],
+  [UnionFindGraph.CODE_INDENT + "if rank[rootA] < rank[rootB]: swap"],
+  [UnionFindGraph.CODE_INDENT + "parent[rootB] = rootA"],
+  [UnionFindGraph.CODE_INDENT + "if ranks equal: rank[rootA]++"],
+];
+
+UnionFindGraph.FIND_CODE_LINES = [
+  ["function find(x):"],
+  [UnionFindGraph.CODE_INDENT + "while parent[x] != x:"],
+  [UnionFindGraph.CODE_INDENT + "x = parent[x]"],
+  [UnionFindGraph.CODE_INDENT + "return x"],
+];
+
 UnionFindGraph.VERTEX_POSITIONS = {
-  1: { x: 160, y: 400 },
-  5: { x: 280, y: 400 },
-  4: { x: 100, y: 520 },
-  8: { x: 220, y: 520 },
-  0: { x: 340, y: 520 },
-  2: { x: 160, y: 640 },
-  3: { x: 280, y: 640 },
-  7: { x: 100, y: 760 },
-  6: { x: 220, y: 760 },
+  1: { x: 250, y: 420 },
+  5: { x: 350, y: 420 },
+  4: { x: 200, y: 520 },
+  8: { x: 320, y: 520 },
+  0: { x: 640, y: 420 },
+  2: { x: 560, y: 520 },
+  3: { x: 640, y: 520 },
+  7: { x: 720, y: 520 },
+  6: { x: 760, y: 620 },
 };
 
 UnionFindGraph.FOREST_POSITIONS = {
-  1: { x: 580, y: 400 },
-  4: { x: 520, y: 540 },
-  5: { x: 580, y: 540 },
-  8: { x: 640, y: 540 },
-  0: { x: 780, y: 400 },
-  2: { x: 720, y: 540 },
-  3: { x: 780, y: 540 },
-  7: { x: 840, y: 540 },
-  6: { x: 840, y: 680 },
+  1: { x: 300, y: 900 },
+  4: { x: 220, y: 1020 },
+  5: { x: 300, y: 1020 },
+  8: { x: 380, y: 1020 },
+  0: { x: 620, y: 900 },
+  2: { x: 540, y: 1020 },
+  3: { x: 620, y: 1020 },
+  7: { x: 700, y: 1020 },
+  6: { x: 780, y: 900 },
 };
 
 UnionFindGraph.GRAPH_EDGES = [
@@ -123,6 +152,11 @@ UnionFindGraph.prototype.init = function (am, w, h) {
   this.rank = {};
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.isAnimating = false;
+  this.unionCodeIDs = [];
+  this.findCodeIDs = [];
+  this.codeHeaderID = null;
+  this.unionHeaderID = null;
+  this.findHeaderID = null;
 
   this.implementAction(this.reset.bind(this), 0);
 };
@@ -158,6 +192,11 @@ UnionFindGraph.prototype.reset = function () {
   this.parentPointers = {};
   this.parent = {};
   this.rank = {};
+  this.unionCodeIDs = [];
+  this.findCodeIDs = [];
+  this.codeHeaderID = null;
+  this.unionHeaderID = null;
+  this.findHeaderID = null;
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.currentComponentGroups = null;
   this.isAnimating = false;
@@ -179,13 +218,14 @@ UnionFindGraph.prototype.setup = function () {
   this.createGraphNodes();
   this.createForestNodes();
   this.createGraphEdges();
+  this.createCodeDisplay();
 
   this.resetUnionFindState();
   this.updateComponentColors();
 
   this.setStatus("Click \"Run Demo\" to explore the union-find process.");
   this.setDetail(
-    "Graph view (left) shows the edges, while the parent pointer view (right) starts with every vertex as its own parent."
+    "Graph view (top) shows the edges, the parent pointer view (middle) begins with every vertex as its own parent, and the bottom pseudocode tracks each step."
   );
   this.cmd("Step");
 
@@ -233,7 +273,7 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.graphLabelID,
-    "Graph view (left)",
+    "Graph view (top)",
     UnionFindGraph.GRAPH_LABEL_X,
     UnionFindGraph.GRAPH_LABEL_Y,
     0
@@ -245,7 +285,7 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.forestLabelID,
-    "Parent pointer view (right)",
+    "Parent pointer view (middle)",
     UnionFindGraph.FOREST_LABEL_X,
     UnionFindGraph.FOREST_LABEL_Y,
     0
@@ -317,6 +357,81 @@ UnionFindGraph.prototype.createGraphEdges = function () {
   }
 };
 
+UnionFindGraph.prototype.createCodeDisplay = function () {
+  this.codeHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.codeHeaderID,
+    "Union-Find pseudocode",
+    UnionFindGraph.CANVAS_WIDTH / 2,
+    UnionFindGraph.CODE_HEADER_Y,
+    1
+  );
+  this.cmd("SetTextStyle", this.codeHeaderID, UnionFindGraph.CODE_HEADER_FONT);
+  this.cmd("SetForegroundColor", this.codeHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
+
+  this.unionHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.unionHeaderID,
+    "union operation",
+    UnionFindGraph.CODE_UNION_X,
+    UnionFindGraph.CODE_SECTION_TOP - 30,
+    0
+  );
+  this.cmd("SetTextStyle", this.unionHeaderID, "bold 20");
+  this.cmd("SetForegroundColor", this.unionHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
+
+  this.findHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.findHeaderID,
+    "find operation",
+    UnionFindGraph.CODE_FIND_X,
+    UnionFindGraph.CODE_SECTION_TOP - 30,
+    0
+  );
+  this.cmd("SetTextStyle", this.findHeaderID, "bold 20");
+  this.cmd("SetForegroundColor", this.findHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
+
+  var unionIDs = this.addCodeToCanvasBase(
+    UnionFindGraph.UNION_CODE_LINES,
+    UnionFindGraph.CODE_UNION_X,
+    UnionFindGraph.CODE_SECTION_TOP,
+    UnionFindGraph.CODE_LINE_HEIGHT,
+    UnionFindGraph.CODE_STANDARD_COLOR,
+    0,
+    0
+  );
+
+  this.unionCodeIDs = [];
+  for (var i = 0; i < unionIDs.length; i++) {
+    var labelID = unionIDs[i][0];
+    this.unionCodeIDs.push(labelID);
+    this.cmd("SetTextStyle", labelID, UnionFindGraph.CODE_FONT);
+  }
+
+  var findIDs = this.addCodeToCanvasBase(
+    UnionFindGraph.FIND_CODE_LINES,
+    UnionFindGraph.CODE_FIND_X,
+    UnionFindGraph.CODE_SECTION_TOP,
+    UnionFindGraph.CODE_LINE_HEIGHT,
+    UnionFindGraph.CODE_STANDARD_COLOR,
+    0,
+    0
+  );
+
+  this.findCodeIDs = [];
+  for (var j = 0; j < findIDs.length; j++) {
+    var findLabelID = findIDs[j][0];
+    this.findCodeIDs.push(findLabelID);
+    this.cmd("SetTextStyle", findLabelID, UnionFindGraph.CODE_FONT);
+  }
+
+  this.setCodeHighlight("union", -1);
+  this.setCodeHighlight("find", -1);
+};
+
 UnionFindGraph.prototype.edgeKey = function (a, b) {
   var min = Math.min(a, b);
   var max = Math.max(a, b);
@@ -343,6 +458,7 @@ UnionFindGraph.prototype.resetUnionFindState = function () {
   this.parentPointers = {};
   this.parent = {};
   this.rank = {};
+  this.clearCodeHighlights();
 
   for (var i = 0; i < this.vertices.length; i++) {
     var vertex = this.vertices[i];
@@ -383,29 +499,41 @@ UnionFindGraph.prototype.processUnionStep = function (step) {
   var b = step.b;
   this.setStatus("union(" + a + ", " + b + ")");
   this.setDetail(step.message || "");
+  this.setCodeHighlight("union", 0);
   this.highlightGraphEdge(a, b, true);
   this.highlightGraphNodes([a, b], true);
   this.cmd("Step");
 
+  this.setCodeHighlight("union", 1);
   this.setDetail("Run find(" + a + ") to locate its root.");
   var rootA = this.animateFind(a);
   this.setDetail("Root of " + a + " is " + rootA + ".");
   this.cmd("Step");
 
+  this.setCodeHighlight("union", 2);
   this.setDetail("Run find(" + b + ") to locate its root.");
   var rootB = this.animateFind(b);
   this.setDetail("Root of " + b + " is " + rootB + ".");
   this.cmd("Step");
 
+  this.setCodeHighlight("union", 3);
   if (rootA === rootB) {
     this.setDetail(
       "Both vertices already share root " + rootA + ", so we skip the union."
     );
     this.cmd("Step");
+    this.setCodeHighlight("union", -1);
   } else {
+    this.setDetail(
+      "Roots differ (" + rootA + " vs " + rootB + "), so compare their ranks."
+    );
+    this.cmd("Step");
+    this.setCodeHighlight("union", 4);
+    this.cmd("Step");
     var info = this.unionRoots(rootA, rootB);
     this.setDetail(info.message);
     this.cmd("Step");
+    this.setCodeHighlight("union", -1);
   }
 
   this.updateComponentColors();
@@ -417,13 +545,25 @@ UnionFindGraph.prototype.processUnionStep = function (step) {
 UnionFindGraph.prototype.animateFind = function (start) {
   var path = [];
   var current = start;
+  this.setCodeHighlight("find", 0);
+  this.cmd("Step");
+
   while (typeof current === "number") {
+    this.setCodeHighlight("find", 1);
+    this.cmd("Step");
+
     path.push(current);
     if (this.parent[current] === current) {
       break;
     }
+
+    this.setCodeHighlight("find", 2);
+    this.cmd("Step");
     current = this.parent[current];
   }
+
+  this.setCodeHighlight("find", 3);
+  this.cmd("Step");
 
   for (var i = 0; i < path.length; i++) {
     var node = path[i];
@@ -448,6 +588,8 @@ UnionFindGraph.prototype.animateFind = function (start) {
     }
   }
 
+  this.setCodeHighlight("find", -1);
+
   return root;
 };
 
@@ -457,6 +599,7 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   var parent = rootA;
   var child = rootB;
   var message = "";
+  var increaseRank = false;
 
   if (rankA > rankB) {
     message =
@@ -482,13 +625,14 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
       parent = rootB;
       child = rootA;
     }
-    this.rank[parent]++;
+    increaseRank = true;
     message =
       "Ranks match, so we choose root " +
       parent +
       " as the parent and increase its rank.";
   }
 
+  this.setCodeHighlight("union", 5);
   this.parent[child] = parent;
   this.parentPointers[child] = parent;
 
@@ -513,10 +657,20 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     this.highlightForestEdge(parent, child, true);
     this.highlightForestNode(parent, true);
     this.highlightForestNode(child, true);
-    this.cmd("Step");
+  }
+
+  this.cmd("Step");
+
+  if (typeof parentID === "number" && typeof childID === "number") {
     this.highlightForestEdge(parent, child, false);
     this.highlightForestNode(parent, false);
     this.highlightForestNode(child, false);
+  }
+
+  if (increaseRank) {
+    this.setCodeHighlight("union", 6);
+    this.rank[parent]++;
+    this.cmd("Step");
   }
 
   return { parent: parent, child: child, message: message };
@@ -644,6 +798,28 @@ UnionFindGraph.prototype.updateComponentColors = function () {
       );
     }
   }
+};
+
+UnionFindGraph.prototype.setCodeHighlight = function (section, index) {
+  var targets = section === "union" ? this.unionCodeIDs : this.findCodeIDs;
+  if (!targets) {
+    return;
+  }
+  for (var i = 0; i < targets.length; i++) {
+    var id = targets[i];
+    if (typeof id !== "number") {
+      continue;
+    }
+    var color = i === index
+      ? UnionFindGraph.CODE_HIGHLIGHT_COLOR
+      : UnionFindGraph.CODE_STANDARD_COLOR;
+    this.cmd("SetForegroundColor", id, color);
+  }
+};
+
+UnionFindGraph.prototype.clearCodeHighlights = function () {
+  this.setCodeHighlight("union", -1);
+  this.setCodeHighlight("find", -1);
 };
 
 UnionFindGraph.prototype.setStatus = function (text) {
