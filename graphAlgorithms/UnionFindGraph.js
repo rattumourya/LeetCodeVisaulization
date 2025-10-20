@@ -12,8 +12,10 @@ UnionFindGraph.CANVAS_HEIGHT = 1600;
 UnionFindGraph.TITLE_Y = 110;
 UnionFindGraph.STATUS_Y = 190;
 UnionFindGraph.DETAIL_Y = 230;
-UnionFindGraph.GRAPH_LABEL_Y = 300;
-UnionFindGraph.FOREST_LABEL_Y = 960;
+UnionFindGraph.GRAPH_LABEL_Y = 320;
+UnionFindGraph.GRAPH_LABEL_X = 220;
+UnionFindGraph.FOREST_LABEL_Y = 320;
+UnionFindGraph.FOREST_LABEL_X = 680;
 
 UnionFindGraph.GRAPH_EDGE_THICKNESS = 4;
 UnionFindGraph.GRAPH_EDGE_COLOR = "#334155";
@@ -41,27 +43,27 @@ UnionFindGraph.COMPONENT_PALETTE = {
 UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7, 6];
 
 UnionFindGraph.VERTEX_POSITIONS = {
-  1: { x: 220, y: 360 },
-  5: { x: 340, y: 360 },
-  4: { x: 220, y: 480 },
-  8: { x: 340, y: 480 },
-  0: { x: 600, y: 460 },
-  2: { x: 520, y: 320 },
-  3: { x: 680, y: 360 },
-  7: { x: 600, y: 260 },
-  6: { x: 780, y: 420 },
+  1: { x: 160, y: 400 },
+  5: { x: 280, y: 400 },
+  4: { x: 100, y: 520 },
+  8: { x: 220, y: 520 },
+  0: { x: 340, y: 520 },
+  2: { x: 160, y: 640 },
+  3: { x: 280, y: 640 },
+  7: { x: 100, y: 760 },
+  6: { x: 220, y: 760 },
 };
 
 UnionFindGraph.FOREST_POSITIONS = {
-  1: { x: 240, y: 1080 },
-  4: { x: 160, y: 1260 },
-  5: { x: 240, y: 1260 },
-  8: { x: 320, y: 1260 },
-  0: { x: 600, y: 1080 },
-  2: { x: 520, y: 1260 },
-  3: { x: 600, y: 1260 },
-  7: { x: 680, y: 1260 },
-  6: { x: 800, y: 1140 },
+  1: { x: 580, y: 400 },
+  4: { x: 520, y: 540 },
+  5: { x: 580, y: 540 },
+  8: { x: 640, y: 540 },
+  0: { x: 780, y: 400 },
+  2: { x: 720, y: 540 },
+  3: { x: 780, y: 540 },
+  7: { x: 840, y: 540 },
+  6: { x: 840, y: 680 },
 };
 
 UnionFindGraph.GRAPH_EDGES = [
@@ -183,7 +185,7 @@ UnionFindGraph.prototype.setup = function () {
 
   this.setStatus("Click \"Run Demo\" to explore the union-find process.");
   this.setDetail(
-    "Two unconnected graphs stay disjoint while we unite edges inside each cluster."
+    "Graph view (left) shows the edges, while the parent pointer view (right) starts with every vertex as its own parent."
   );
   this.cmd("Step");
 
@@ -195,7 +197,7 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.titleID,
-    "Union-Find with Two Separated Graphs",
+    "Union-Find: Graph and Parent Pointers",
     UnionFindGraph.CANVAS_WIDTH / 2,
     UnionFindGraph.TITLE_Y,
     0
@@ -231,8 +233,8 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.graphLabelID,
-    "Graph view",
-    UnionFindGraph.CANVAS_WIDTH / 2,
+    "Graph view (left)",
+    UnionFindGraph.GRAPH_LABEL_X,
     UnionFindGraph.GRAPH_LABEL_Y,
     0
   );
@@ -243,8 +245,8 @@ UnionFindGraph.prototype.createTitleAndLabels = function () {
   this.cmd(
     "CreateLabel",
     this.forestLabelID,
-    "Disjoint-set forest (parent pointers)",
-    UnionFindGraph.CANVAS_WIDTH / 2,
+    "Parent pointer view (right)",
+    UnionFindGraph.FOREST_LABEL_X,
     UnionFindGraph.FOREST_LABEL_Y,
     0
   );
@@ -369,7 +371,7 @@ UnionFindGraph.prototype.runDemo = function () {
 
   this.setStatus("All unions processed.");
   this.setDetail(
-    "The two components remain separate, matching the disconnected graphs."
+    "The parent pointer view now mirrors the two graph components that remain disconnected."
   );
   this.cmd("Step");
 
