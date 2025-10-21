@@ -35,6 +35,8 @@ UnionFindGraph.FOREST_EDGE_CURVE = -0.2;
 
 UnionFindGraph.POINTER_HIGHLIGHT_COLOR = "#facc15";
 UnionFindGraph.POINTER_HIGHLIGHT_RADIUS = 22;
+UnionFindGraph.UNION_PATH_HIGHLIGHT_RADIUS = 20;
+UnionFindGraph.UNION_PATH_EXTRA_THICKNESS = 2;
 
 UnionFindGraph.NEUTRAL_FILL = "#bfdbfe";
 UnionFindGraph.STATUS_COLOR = "#0f172a";
@@ -47,6 +49,21 @@ UnionFindGraph.COMPONENT_PALETTE = {
 };
 
 UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7, 6];
+
+UnionFindGraph.UNION_COMPONENT_PATHS = {
+  1: [
+    { from: 1, to: 5 },
+    { from: 5, to: 8 },
+    { from: 8, to: 4 },
+    { from: 4, to: 1 },
+  ],
+  0: [
+    { from: 0, to: 2 },
+    { from: 0, to: 3 },
+    { from: 0, to: 7 },
+    { from: 0, to: 2 },
+  ],
+};
 
 UnionFindGraph.CODE_SECTION_TOP = 1270;
 UnionFindGraph.CODE_LINE_HEIGHT = 36;
@@ -865,6 +882,8 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
 
   message +=
     " Watch the child arrow travel upward to its parent as the pointer view below the graph rearranges.";
+  message +=
+    " On the graph, follow the highlighted loop that traces the component just like the reference animation.";
 
   this.setCodeHighlight("union", 5);
   var previousParent = this.parentPointers[child];
@@ -910,6 +929,8 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     this.highlightForestNode(child, true);
   }
 
+  this.animateUnionCycle(parent);
+
   this.applyForestLayout();
 
   this.cmd("Step");
@@ -927,6 +948,75 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   }
 
   return { parent: parent, child: child, message: message };
+};
+
+UnionFindGraph.prototype.animateUnionCycle = function (root) {
+  var segments = UnionFindGraph.UNION_COMPONENT_PATHS[root];
+  if (!segments || !segments.length) {
+    return;
+  }
+
+  var startSegment = segments[0];
+  var startPos = UnionFindGraph.VERTEX_POSITIONS[startSegment.from];
+  if (!startPos) {
+    return;
+  }
+
+  var highlightID = this.nextIndex++;
+  this.cmd(
+    "CreateHighlightCircle",
+    highlightID,
+    UnionFindGraph.GRAPH_EDGE_HIGHLIGHT_COLOR,
+    startPos.x,
+    startPos.y,
+    UnionFindGraph.UNION_PATH_HIGHLIGHT_RADIUS
+  );
+  this.cmd("Step");
+
+  for (var i = 0; i < segments.length; i++) {
+    var segment = segments[i];
+    var from = segment.from;
+    var to = segment.to;
+    var fromID = this.graphNodeIDs[from];
+    var toID = this.graphNodeIDs[to];
+    var fromPos = UnionFindGraph.VERTEX_POSITIONS[from];
+    var toPos = UnionFindGraph.VERTEX_POSITIONS[to];
+    if (
+      typeof fromID !== "number" ||
+      typeof toID !== "number" ||
+      !fromPos ||
+      !toPos
+    ) {
+      continue;
+    }
+
+    this.cmd("Move", highlightID, fromPos.x, fromPos.y);
+    this.cmd("Step");
+
+    this.cmd("SetEdgeColor", fromID, toID, UnionFindGraph.GRAPH_EDGE_HIGHLIGHT_COLOR);
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      UnionFindGraph.GRAPH_EDGE_THICKNESS + UnionFindGraph.UNION_PATH_EXTRA_THICKNESS
+    );
+    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+
+    this.cmd("Move", highlightID, toPos.x, toPos.y);
+    this.cmd("Step");
+
+    this.cmd("SetEdgeHighlight", fromID, toID, 0);
+    this.cmd("SetEdgeColor", fromID, toID, UnionFindGraph.GRAPH_EDGE_COLOR);
+    this.cmd(
+      "SetEdgeThickness",
+      fromID,
+      toID,
+      UnionFindGraph.GRAPH_EDGE_THICKNESS
+    );
+  }
+
+  this.cmd("Delete", highlightID);
+  this.cmd("Step");
 };
 
 UnionFindGraph.prototype.animatePointerAssignment = function (child, parent) {
