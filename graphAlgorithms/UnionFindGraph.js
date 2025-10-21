@@ -782,6 +782,10 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   this.parent[child] = parent;
   this.parentPointers[child] = parent;
 
+  // Refresh the forest layout before revealing nodes so they appear
+  // directly beneath their graph counterparts without overlapping.
+  this.applyForestLayout();
+
   this.ensureForestNodeVisible(
     parent,
     "Drop vertex " +
