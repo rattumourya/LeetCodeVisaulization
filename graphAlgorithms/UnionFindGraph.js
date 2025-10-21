@@ -176,6 +176,7 @@ UnionFindGraph.prototype.init = function (am, w, h) {
   this.findCodeIDs = [];
   this.unionHeaderID = null;
   this.findHeaderID = null;
+  this.currentDetailText = "";
 
   this.implementAction(this.reset.bind(this), 0);
 };
@@ -359,11 +360,17 @@ UnionFindGraph.prototype.hideAllForestNodes = function () {
   }
 };
 
-UnionFindGraph.prototype.revealForestNode = function (vertex) {
-  if (!this.forestNodeIDs || typeof vertex !== "number") {
+UnionFindGraph.prototype.ensureForestNodeVisible = function (
+  vertex,
+  dropMessage
+) {
+  if (!this.forestNodeIDs) {
     return false;
   }
-  if (this.forestRevealed && this.forestRevealed[vertex]) {
+  if (!this.forestRevealed) {
+    this.forestRevealed = {};
+  }
+  if (this.forestRevealed[vertex]) {
     return false;
   }
   var id = this.forestNodeIDs[vertex];
@@ -382,44 +389,18 @@ UnionFindGraph.prototype.revealForestNode = function (vertex) {
     pos = { x: fallback.x, y: fallback.y };
     this.forestPositions[vertex] = pos;
   }
+  var previousDetail = this.currentDetailText || "";
+  if (typeof dropMessage === "string" && dropMessage.length > 0) {
+    this.setDetail(dropMessage);
+  }
   this.cmd("SetAlpha", id, 1);
   this.cmd("Move", id, pos.x, pos.y);
-  if (!this.forestRevealed) {
-    this.forestRevealed = {};
-  }
+  this.cmd("Step");
   this.forestRevealed[vertex] = true;
+  if (typeof dropMessage === "string" && dropMessage.length > 0) {
+    this.setDetail(previousDetail);
+  }
   return true;
-};
-
-UnionFindGraph.prototype.revealForestNodesSequentially = function (
-  vertices,
-  restoreDetail
-) {
-  if (!vertices) {
-    return;
-  }
-  var unique = {};
-  var revealedAny = false;
-  for (var i = 0; i < vertices.length; i++) {
-    var vertex = vertices[i];
-    if (typeof vertex !== "number" || unique[vertex]) {
-      continue;
-    }
-    unique[vertex] = true;
-    var shown = this.revealForestNode(vertex);
-    if (shown) {
-      revealedAny = true;
-      this.setDetail(
-        "Move vertex " +
-          vertex +
-          " below the graph to build the parent-pointer view."
-      );
-      this.cmd("Step");
-    }
-  }
-  if (revealedAny && typeof restoreDetail === "string") {
-    this.setDetail(restoreDetail);
-  }
 };
 
 UnionFindGraph.prototype.computeForestLayoutPositions = function () {
@@ -738,8 +719,6 @@ UnionFindGraph.prototype.processUnionStep = function (step) {
   this.highlightGraphNodes([a, b], true);
   this.cmd("Step");
 
-  this.revealForestNodesSequentially([a, b], step.message || "");
-
   this.setCodeHighlight("union", 1);
   this.setDetail("Run find(" + a + ") to locate its root.");
   var rootA = this.animateFind(a);
@@ -889,6 +868,19 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   var previousParent = this.parentPointers[child];
   this.parent[child] = parent;
   this.parentPointers[child] = parent;
+
+  this.ensureForestNodeVisible(
+    parent,
+    "Drop vertex " +
+      parent +
+      " beneath the graph so we can show it in the parent-pointer view."
+  );
+  this.ensureForestNodeVisible(
+    child,
+    "Move vertex " +
+      child +
+      " below the graph and connect it to its new parent."
+  );
 
   var parentID = this.forestNodeIDs[parent];
   var childID = this.forestNodeIDs[child];
@@ -1208,6 +1200,7 @@ UnionFindGraph.prototype.setStatus = function (text) {
 };
 
 UnionFindGraph.prototype.setDetail = function (text) {
+  this.currentDetailText = text || "";
   if (typeof this.detailID === "number") {
     this.cmd("SetText", this.detailID, text || "");
   }
