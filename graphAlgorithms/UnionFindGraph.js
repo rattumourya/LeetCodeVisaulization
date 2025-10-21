@@ -404,7 +404,9 @@ UnionFindGraph.prototype.ensureForestNodeVisible = function (
 };
 
 UnionFindGraph.prototype.computeForestLayoutPositions = function () {
+  var layout = {};
   var parentMap = {};
+
   for (var i = 0; i < this.vertices.length; i++) {
     var vertex = this.vertices[i];
     if (this.parent && typeof this.parent[vertex] === "number") {
@@ -414,120 +416,31 @@ UnionFindGraph.prototype.computeForestLayoutPositions = function () {
     }
   }
 
-  var childrenMap = {};
   for (var j = 0; j < this.vertices.length; j++) {
     var v = this.vertices[j];
-    childrenMap[v] = [];
-  }
+    var graphPos = UnionFindGraph.VERTEX_POSITIONS[v];
+    var x = UnionFindGraph.FOREST_CENTER_X;
+    if (graphPos && typeof graphPos.x === "number") {
+      x = graphPos.x;
+    }
 
-  for (var childKey in parentMap) {
-    if (!parentMap.hasOwnProperty(childKey)) {
-      continue;
+    var depth = 0;
+    var current = v;
+    var safety = 0;
+    while (
+      parentMap.hasOwnProperty(current) &&
+      parentMap[current] !== current &&
+      safety < 20
+    ) {
+      current = parentMap[current];
+      depth++;
+      safety++;
     }
-    var child = parseInt(childKey, 10);
-    var parent = parentMap[child];
-    if (parent !== child && childrenMap[parent]) {
-      childrenMap[parent].push(child);
-    }
-  }
 
-  for (var key in childrenMap) {
-    if (childrenMap.hasOwnProperty(key)) {
-      childrenMap[key].sort(function (a, b) {
-        return a - b;
-      });
-    }
-  }
-
-  var roots = [];
-  for (var r = 0; r < this.vertices.length; r++) {
-    var node = this.vertices[r];
-    if (parentMap[node] === node) {
-      roots.push(node);
-    }
-  }
-  roots.sort(function (a, b) {
-    return a - b;
-  });
-
-  var widths = {};
-  function computeWidth(target) {
-    if (widths[target]) {
-      return widths[target];
-    }
-    var kids = childrenMap[target] || [];
-    if (!kids.length) {
-      widths[target] = 1;
-      return 1;
-    }
-    var sum = 0;
-    for (var idx = 0; idx < kids.length; idx++) {
-      sum += computeWidth(kids[idx]);
-    }
-    widths[target] = Math.max(1, sum);
-    return widths[target];
-  }
-
-  var totalUnits = 0;
-  for (var rootIndex = 0; rootIndex < roots.length; rootIndex++) {
-    totalUnits += computeWidth(roots[rootIndex]);
-  }
-  if (totalUnits === 0) {
-    totalUnits = this.vertices.length || 1;
-  }
-
-  var spacing = UnionFindGraph.FOREST_HORIZONTAL_SPACING;
-  var maxWidth = UnionFindGraph.FOREST_VIEW_WIDTH;
-  if (totalUnits > 0) {
-    var constrained = maxWidth / totalUnits;
-    if (constrained < spacing) {
-      spacing = constrained;
-    }
-  }
-
-  var layout = {};
-  var currentUnits = 0;
-  function assignPosition(target, centerX, depth) {
-    var y =
-      UnionFindGraph.FOREST_TOP_Y + depth * UnionFindGraph.FOREST_LEVEL_HEIGHT;
-    layout[target] = { x: centerX, y: y };
-    var kids = childrenMap[target] || [];
-    if (!kids.length) {
-      return;
-    }
-    var totalChildUnits = 0;
-    for (var k = 0; k < kids.length; k++) {
-      totalChildUnits += widths[kids[k]] || 1;
-    }
-    var consumed = 0;
-    for (var c = 0; c < kids.length; c++) {
-      var childNode = kids[c];
-      var childWidth = widths[childNode] || 1;
-      var offset =
-        (consumed + childWidth / 2 - totalChildUnits / 2) * spacing;
-      assignPosition(childNode, centerX + offset, depth + 1);
-      consumed += childWidth;
-    }
-  }
-
-  for (var rootIdx = 0; rootIdx < roots.length; rootIdx++) {
-    var rootNode = roots[rootIdx];
-    var rootWidth = widths[rootNode] || 1;
-    var offset =
-      currentUnits + rootWidth / 2 - totalUnits / 2;
-    var centerX = UnionFindGraph.FOREST_CENTER_X + offset * spacing;
-    assignPosition(rootNode, centerX, 0);
-    currentUnits += rootWidth;
-  }
-
-  for (var check = 0; check < this.vertices.length; check++) {
-    var vertexCheck = this.vertices[check];
-    if (!layout[vertexCheck]) {
-      layout[vertexCheck] = {
-        x: UnionFindGraph.FOREST_CENTER_X,
-        y: UnionFindGraph.FOREST_TOP_Y + UnionFindGraph.FOREST_LEVEL_HEIGHT,
-      };
-    }
+    layout[v] = {
+      x: x,
+      y: UnionFindGraph.FOREST_TOP_Y + depth * UnionFindGraph.FOREST_LEVEL_HEIGHT,
+    };
   }
 
   return layout;
