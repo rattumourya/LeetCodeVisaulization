@@ -17,6 +17,7 @@ UnionFindGraph.FOREST_TOP_Y = 820;
 UnionFindGraph.FOREST_LEVEL_HEIGHT = 110;
 UnionFindGraph.FOREST_VIEW_WIDTH = 560;
 UnionFindGraph.FOREST_HORIZONTAL_SPACING = 95;
+UnionFindGraph.FOREST_SIBLING_OFFSET = 45;
 UnionFindGraph.GRAPH_HORIZONTAL_SPACING = 90;
 UnionFindGraph.GRAPH_COMPONENT_GAP_SLOTS = 2;
 
@@ -406,6 +407,8 @@ UnionFindGraph.prototype.ensureForestNodeVisible = function (
 UnionFindGraph.prototype.computeForestLayoutPositions = function () {
   var layout = {};
   var parentMap = {};
+  var depthBuckets = {};
+  var nodeMeta = {};
 
   for (var i = 0; i < this.vertices.length; i++) {
     var vertex = this.vertices[i];
@@ -436,11 +439,58 @@ UnionFindGraph.prototype.computeForestLayoutPositions = function () {
       depth++;
       safety++;
     }
-
-    layout[v] = {
-      x: x,
-      y: UnionFindGraph.FOREST_TOP_Y + depth * UnionFindGraph.FOREST_LEVEL_HEIGHT,
+    nodeMeta[v] = {
+      vertex: v,
+      baseX: x,
+      depth: depth,
+      y: UnionFindGraph.FOREST_TOP_Y +
+        depth * UnionFindGraph.FOREST_LEVEL_HEIGHT,
     };
+    if (!depthBuckets[depth]) {
+      depthBuckets[depth] = [];
+    }
+    depthBuckets[depth].push(nodeMeta[v]);
+  }
+
+  var offset = UnionFindGraph.FOREST_SIBLING_OFFSET;
+  for (var level in depthBuckets) {
+    if (!depthBuckets.hasOwnProperty(level)) {
+      continue;
+    }
+    var nodes = depthBuckets[level];
+    nodes.sort(function (a, b) {
+      if (a.baseX === b.baseX) {
+        return a.vertex - b.vertex;
+      }
+      return a.baseX - b.baseX;
+    });
+
+    var idx = 0;
+    while (idx < nodes.length) {
+      var start = idx;
+      var base = nodes[idx].baseX;
+      while (idx < nodes.length && nodes[idx].baseX === base) {
+        idx++;
+      }
+      var count = idx - start;
+      if (count === 1) {
+        nodes[start].x = base;
+        continue;
+      }
+      var mid = (count - 1) / 2;
+      for (var k = 0; k < count; k++) {
+        var node = nodes[start + k];
+        node.x = base + (k - mid) * offset;
+      }
+    }
+
+    for (var n = 0; n < nodes.length; n++) {
+      var meta = nodes[n];
+      if (typeof meta.x !== "number") {
+        meta.x = meta.baseX;
+      }
+      layout[meta.vertex] = { x: meta.x, y: meta.y };
+    }
   }
 
   return layout;
