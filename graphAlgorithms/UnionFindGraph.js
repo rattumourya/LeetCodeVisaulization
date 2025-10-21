@@ -31,7 +31,7 @@ UnionFindGraph.GRAPH_HIGHLIGHT_FILL = "#f97316";
 
 UnionFindGraph.FOREST_EDGE_COLOR = "#1f2937";
 UnionFindGraph.FOREST_EDGE_THICKNESS = 3;
-UnionFindGraph.FOREST_EDGE_CURVE = -0.2;
+UnionFindGraph.FOREST_EDGE_CURVE = 0;
 
 UnionFindGraph.POINTER_HIGHLIGHT_COLOR = "#facc15";
 UnionFindGraph.POINTER_HIGHLIGHT_RADIUS = 22;
@@ -321,7 +321,7 @@ UnionFindGraph.prototype.createForestNodes = function () {
     if (!pos) {
       continue;
     }
-    var start = UnionFindGraph.VERTEX_POSITIONS[vertex] || pos;
+    var start = pos;
     var id = this.nextIndex++;
     this.forestNodeIDs[vertex] = id;
     this.forestRevealed[vertex] = false;
@@ -347,14 +347,14 @@ UnionFindGraph.prototype.hideAllForestNodes = function () {
     if (typeof id !== "number") {
       continue;
     }
-    var start = UnionFindGraph.VERTEX_POSITIONS[vertex];
-    if (!start) {
-      start = {
-        x: UnionFindGraph.GRAPH_CENTER_X,
-        y: UnionFindGraph.GRAPH_CENTER_Y,
+    var finalPos = this.forestPositions[vertex];
+    if (!finalPos) {
+      finalPos = {
+        x: UnionFindGraph.FOREST_CENTER_X,
+        y: UnionFindGraph.FOREST_TOP_Y,
       };
     }
-    this.cmd("Move", id, start.x, start.y);
+    this.cmd("Move", id, finalPos.x, finalPos.y);
     this.cmd("SetAlpha", id, 0);
     this.cmd("SetHighlight", id, 0);
   }
