@@ -68,14 +68,21 @@ UnionFindGraph.UNION_COMPONENT_PATHS = {
 
 UnionFindGraph.CODE_SECTION_TOP = 1270;
 UnionFindGraph.CODE_LINE_HEIGHT = 36;
-UnionFindGraph.CODE_UNION_X = UnionFindGraph.CANVAS_WIDTH / 2 - 150;
-UnionFindGraph.CODE_FIND_X = UnionFindGraph.CANVAS_WIDTH / 2 + 150;
+UnionFindGraph.CODE_SECTION_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
+UnionFindGraph.CODE_COLUMN_SPACING = 220;
+UnionFindGraph.CODE_UNION_X =
+  UnionFindGraph.CODE_SECTION_CENTER_X - UnionFindGraph.CODE_COLUMN_SPACING;
+UnionFindGraph.CODE_JAVA_X = UnionFindGraph.CODE_SECTION_CENTER_X;
+UnionFindGraph.CODE_FIND_X =
+  UnionFindGraph.CODE_SECTION_CENTER_X + UnionFindGraph.CODE_COLUMN_SPACING;
 UnionFindGraph.CODE_FONT = "bold 22";
 UnionFindGraph.CODE_HEADER_FONT = "bold 24";
 UnionFindGraph.CODE_STANDARD_COLOR = "#1e3a8a";
 UnionFindGraph.CODE_HIGHLIGHT_COLOR = "#ef4444";
 UnionFindGraph.CODE_HEADER_COLOR = "#0f172a";
 UnionFindGraph.CODE_INDENT = "\u00a0\u00a0\u00a0\u00a0";
+UnionFindGraph.CODE_INDENT_DOUBLE =
+  UnionFindGraph.CODE_INDENT + UnionFindGraph.CODE_INDENT;
 
 UnionFindGraph.UNION_CODE_LINES = [
   ["function union(a, b):"],
@@ -92,6 +99,57 @@ UnionFindGraph.FIND_CODE_LINES = [
   [UnionFindGraph.CODE_INDENT + "while parent[x] != x:"],
   [UnionFindGraph.CODE_INDENT + "x = parent[x]"],
   [UnionFindGraph.CODE_INDENT + "return x"],
+];
+
+UnionFindGraph.JAVA_CODE_LINES = [
+  ["class UnionFind {"],
+  [
+    UnionFindGraph.CODE_INDENT + "int find(int x) {",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + "while (parent[x] != x) {",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT + "x = parent[x];",
+  ],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "}"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "return x;"],
+  [UnionFindGraph.CODE_INDENT + "}"],
+  [" "],
+  [UnionFindGraph.CODE_INDENT + "void union(int a, int b) {"],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + "int rootA = find(a);",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + "int rootB = find(b);",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + "if (rootA == rootB) return;",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + "if (rank[rootA] < rank[rootB]) {",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT +
+      "int tmp = rootA;",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT +
+      "rootA = rootB;",
+  ],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT +
+      "rootB = tmp;",
+  ],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "}"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "parent[rootB] = rootA;"],
+  [
+    UnionFindGraph.CODE_INDENT_DOUBLE + "if (rank[rootA] == rank[rootB]) {",
+  ],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT + "rank[rootA]++;"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "}"],
+  [UnionFindGraph.CODE_INDENT + "}"],
+  ["}"],
 ];
 
 UnionFindGraph.GRAPH_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
@@ -177,6 +235,8 @@ UnionFindGraph.prototype.init = function (am, w, h) {
   this.findCodeIDs = [];
   this.unionHeaderID = null;
   this.findHeaderID = null;
+  this.javaHeaderID = null;
+  this.javaCodeIDs = [];
   this.currentDetailText = "";
 
   this.implementAction(this.reset.bind(this), 0);
@@ -557,7 +617,7 @@ UnionFindGraph.prototype.createCodeDisplay = function () {
     UnionFindGraph.CODE_SECTION_TOP - 30,
     0
   );
-  this.cmd("SetTextStyle", this.unionHeaderID, "bold 20");
+  this.cmd("SetTextStyle", this.unionHeaderID, UnionFindGraph.CODE_HEADER_FONT);
   this.cmd("SetForegroundColor", this.unionHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
 
   this.findHeaderID = this.nextIndex++;
@@ -569,8 +629,20 @@ UnionFindGraph.prototype.createCodeDisplay = function () {
     UnionFindGraph.CODE_SECTION_TOP - 30,
     0
   );
-  this.cmd("SetTextStyle", this.findHeaderID, "bold 20");
+  this.cmd("SetTextStyle", this.findHeaderID, UnionFindGraph.CODE_HEADER_FONT);
   this.cmd("SetForegroundColor", this.findHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
+
+  this.javaHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.javaHeaderID,
+    "Java union-find",
+    UnionFindGraph.CODE_JAVA_X,
+    UnionFindGraph.CODE_SECTION_TOP - 30,
+    0
+  );
+  this.cmd("SetTextStyle", this.javaHeaderID, UnionFindGraph.CODE_HEADER_FONT);
+  this.cmd("SetForegroundColor", this.javaHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
 
   var unionIDs = this.addCodeToCanvasBase(
     UnionFindGraph.UNION_CODE_LINES,
@@ -587,6 +659,23 @@ UnionFindGraph.prototype.createCodeDisplay = function () {
     var labelID = unionIDs[i][0];
     this.unionCodeIDs.push(labelID);
     this.cmd("SetTextStyle", labelID, UnionFindGraph.CODE_FONT);
+  }
+
+  var javaIDs = this.addCodeToCanvasBase(
+    UnionFindGraph.JAVA_CODE_LINES,
+    UnionFindGraph.CODE_JAVA_X,
+    UnionFindGraph.CODE_SECTION_TOP,
+    UnionFindGraph.CODE_LINE_HEIGHT,
+    UnionFindGraph.CODE_STANDARD_COLOR,
+    0,
+    0
+  );
+
+  this.javaCodeIDs = [];
+  for (var k = 0; k < javaIDs.length; k++) {
+    var javaLabelID = javaIDs[k][0];
+    this.javaCodeIDs.push(javaLabelID);
+    this.cmd("SetTextStyle", javaLabelID, UnionFindGraph.CODE_FONT);
   }
 
   var findIDs = this.addCodeToCanvasBase(
@@ -1163,6 +1252,12 @@ UnionFindGraph.prototype.clearCodeHighlights = function () {
 UnionFindGraph.prototype.setStatus = function (text) {
   if (typeof this.statusID === "number") {
     this.cmd("SetText", this.statusID, text || "");
+    this.cmd(
+      "SetPosition",
+      this.statusID,
+      UnionFindGraph.CANVAS_WIDTH / 2,
+      UnionFindGraph.STATUS_Y
+    );
   }
 };
 
@@ -1170,6 +1265,12 @@ UnionFindGraph.prototype.setDetail = function (text) {
   this.currentDetailText = text || "";
   if (typeof this.detailID === "number") {
     this.cmd("SetText", this.detailID, text || "");
+    this.cmd(
+      "SetPosition",
+      this.detailID,
+      UnionFindGraph.CANVAS_WIDTH / 2,
+      UnionFindGraph.DETAIL_Y
+    );
   }
 };
 
