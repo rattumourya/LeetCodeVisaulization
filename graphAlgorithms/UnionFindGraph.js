@@ -51,21 +51,6 @@ UnionFindGraph.COMPONENT_PALETTE = {
 
 UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7, 6];
 
-UnionFindGraph.UNION_COMPONENT_PATHS = {
-  1: [
-    { from: 1, to: 5 },
-    { from: 5, to: 8 },
-    { from: 8, to: 4 },
-    { from: 4, to: 1 },
-  ],
-  0: [
-    { from: 0, to: 2 },
-    { from: 0, to: 3 },
-    { from: 0, to: 7 },
-    { from: 0, to: 2 },
-  ],
-};
-
 UnionFindGraph.CODE_SECTION_TOP = 1270;
 UnionFindGraph.CODE_LINE_HEIGHT = 36;
 UnionFindGraph.CODE_SECTION_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
@@ -442,6 +427,28 @@ UnionFindGraph.prototype.ensureForestNodeVisible = function (
     this.setDetail(previousDetail);
   }
   return true;
+};
+
+UnionFindGraph.prototype.getCurrentRoot = function (vertex) {
+  if (!this.parent) {
+    return vertex;
+  }
+
+  var current = vertex;
+  var stepsRemaining = this.vertices ? this.vertices.length + 5 : 15;
+
+  while (stepsRemaining-- > 0) {
+    var parent = this.parent[current];
+    if (typeof parent !== "number" || parent === current) {
+      if (typeof parent === "number") {
+        return parent;
+      }
+      break;
+    }
+    current = parent;
+  }
+
+  return current;
 };
 
 UnionFindGraph.prototype.computeForestLayoutPositions = function () {
@@ -1076,13 +1083,48 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
 };
 
 UnionFindGraph.prototype.animateUnionCycle = function (root) {
-  var segments = UnionFindGraph.UNION_COMPONENT_PATHS[root];
-  if (!segments || !segments.length) {
+  if (!this.parent || !this.vertices || !this.vertices.length) {
     return;
   }
 
-  var startSegment = segments[0];
-  var startPos = UnionFindGraph.VERTEX_POSITIONS[startSegment.from];
+  var membership = {};
+  var componentVertices = [];
+  for (var i = 0; i < this.vertices.length; i++) {
+    var vertex = this.vertices[i];
+    if (this.getCurrentRoot(vertex) === root) {
+      membership[vertex] = true;
+      componentVertices.push(vertex);
+    }
+  }
+
+  if (componentVertices.length <= 1) {
+    return;
+  }
+
+  var segments = [];
+  for (var j = 0; j < UnionFindGraph.GRAPH_EDGES.length; j++) {
+    var edge = UnionFindGraph.GRAPH_EDGES[j];
+    if (membership[edge.from] && membership[edge.to]) {
+      segments.push(edge);
+    }
+  }
+
+  if (!segments.length) {
+    return;
+  }
+
+  var startPos = null;
+  for (var k = 0; k < segments.length; k++) {
+    var startEdge = segments[k];
+    var possible = UnionFindGraph.VERTEX_POSITIONS[startEdge.from];
+    var idCheck = this.graphNodeIDs[startEdge.from];
+    var toCheck = this.graphNodeIDs[startEdge.to];
+    if (possible && typeof idCheck === "number" && typeof toCheck === "number") {
+      startPos = { x: possible.x, y: possible.y };
+      break;
+    }
+  }
+
   if (!startPos) {
     return;
   }
@@ -1098,8 +1140,8 @@ UnionFindGraph.prototype.animateUnionCycle = function (root) {
   );
   this.cmd("Step");
 
-  for (var i = 0; i < segments.length; i++) {
-    var segment = segments[i];
+  for (var n = 0; n < segments.length; n++) {
+    var segment = segments[n];
     var from = segment.from;
     var to = segment.to;
     var fromID = this.graphNodeIDs[from];
@@ -1118,7 +1160,12 @@ UnionFindGraph.prototype.animateUnionCycle = function (root) {
     this.cmd("Move", highlightID, fromPos.x, fromPos.y);
     this.cmd("Step");
 
-    this.cmd("SetEdgeColor", fromID, toID, UnionFindGraph.GRAPH_EDGE_HIGHLIGHT_COLOR);
+    this.cmd(
+      "SetEdgeColor",
+      fromID,
+      toID,
+      UnionFindGraph.GRAPH_EDGE_HIGHLIGHT_COLOR
+    );
     this.cmd(
       "SetEdgeThickness",
       fromID,
