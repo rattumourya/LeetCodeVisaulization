@@ -51,8 +51,8 @@ UnionFindGraph.COMPONENT_PALETTE = {
 
 UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7];
 
-UnionFindGraph.CODE_SECTION_TOP = 1270;
-UnionFindGraph.CODE_LINE_HEIGHT = 36;
+UnionFindGraph.CODE_SECTION_TOP = 1150;
+UnionFindGraph.CODE_LINE_HEIGHT = 32;
 UnionFindGraph.CODE_SECTION_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
 UnionFindGraph.CODE_COLUMN_OFFSET = 190;
 UnionFindGraph.CODE_UNION_X =
@@ -510,6 +510,7 @@ UnionFindGraph.prototype.createParentRankDisplay = function () {
 
   this.updateParentRankDisplay();
   this.clearArrayHighlights();
+  this.centerArrayHeaders();
 };
 
 UnionFindGraph.prototype.updateParentRankDisplay = function () {
@@ -530,6 +531,16 @@ UnionFindGraph.prototype.updateParentRankDisplay = function () {
       rankValue = this.rank[vertex];
     }
     this.setRankValue(vertex, rankValue);
+  }
+};
+
+UnionFindGraph.prototype.centerArrayHeaders = function () {
+  var headerY = UnionFindGraph.ARRAY_TOP_Y - UnionFindGraph.ARRAY_LABEL_Y_OFFSET;
+  if (typeof this.parentArrayHeaderID === "number") {
+    this.cmd("SetPosition", this.parentArrayHeaderID, UnionFindGraph.ARRAY_PARENT_X, headerY);
+  }
+  if (typeof this.rankArrayHeaderID === "number") {
+    this.cmd("SetPosition", this.rankArrayHeaderID, UnionFindGraph.ARRAY_RANK_X, headerY);
   }
 };
 
