@@ -151,6 +151,32 @@ UnionFindGraph.GRAPH_EDGES = [
   { from: 0, to: 7 },
 ];
 
+UnionFindGraph.GRAPH_ADJACENCY = (function () {
+  var adjacency = {};
+  var edges = UnionFindGraph.GRAPH_EDGES;
+
+  function ensure(vertex) {
+    if (!adjacency[vertex]) {
+      adjacency[vertex] = [];
+    }
+  }
+
+  for (var i = 0; i < edges.length; i++) {
+    var edge = edges[i];
+    ensure(edge.from);
+    ensure(edge.to);
+    adjacency[edge.from].push(edge.to);
+    adjacency[edge.to].push(edge.from);
+  }
+
+  var vertices = UnionFindGraph.VERTEX_ORDER;
+  for (var j = 0; j < vertices.length; j++) {
+    ensure(vertices[j]);
+  }
+
+  return adjacency;
+})();
+
 UnionFindGraph.UNION_STEPS = [
   {
     a: 1,
@@ -1017,16 +1043,16 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   }
 
   this.setDetail(
-    "Trace the merged component so parent[" +
+    "Trace the path on the graph that now links " +
       child +
-      "] = " +
+      " up to " +
       parent +
-      " is clear on the graph."
+      "."
   );
   this.setJavaHighlight(null);
   this.cmd("Step");
 
-  this.animateUnionCycle(parent);
+  this.animateUnionPath(parent, child);
 
   this.applyForestLayout();
 
@@ -1077,54 +1103,79 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
 
   var summary = messageParts.join(" ");
   summary +=
-    " Watch the child arrow travel upward to its parent as the graph loop highlights the merged component.";
+    " Watch the child arrow travel upward to its parent while the graph traces the connection between the merged vertices.";
 
   return { parent: parent, child: child, message: summary };
 };
 
-UnionFindGraph.prototype.animateUnionCycle = function (root) {
-  if (!this.parent || !this.vertices || !this.vertices.length) {
-    return;
+UnionFindGraph.prototype.findGraphPath = function (start, goal) {
+  if (typeof start !== "number" || typeof goal !== "number") {
+    return null;
   }
 
-  var membership = {};
-  var componentVertices = [];
-  for (var i = 0; i < this.vertices.length; i++) {
-    var vertex = this.vertices[i];
-    if (this.getCurrentRoot(vertex) === root) {
-      membership[vertex] = true;
-      componentVertices.push(vertex);
+  if (start === goal) {
+    return [start];
+  }
+
+  var adjacency = UnionFindGraph.GRAPH_ADJACENCY || {};
+  var queue = [start];
+  var visited = {};
+  var previous = {};
+  visited[start] = true;
+  var targetRoot = this.getCurrentRoot(goal);
+  var found = false;
+
+  while (queue.length && !found) {
+    var vertex = queue.shift();
+    var neighbors = adjacency[vertex] || [];
+    for (var i = 0; i < neighbors.length; i++) {
+      var neighbor = neighbors[i];
+      if (visited[neighbor]) {
+        continue;
+      }
+      if (this.getCurrentRoot(neighbor) !== targetRoot) {
+        continue;
+      }
+      visited[neighbor] = true;
+      previous[neighbor] = vertex;
+      if (neighbor === goal) {
+        found = true;
+        break;
+      }
+      queue.push(neighbor);
     }
   }
 
-  if (componentVertices.length <= 1) {
+  if (!found) {
+    return null;
+  }
+
+  var path = [goal];
+  var current = goal;
+  while (current !== start) {
+    current = previous[current];
+    if (typeof current !== "number") {
+      return null;
+    }
+    path.push(current);
+  }
+
+  path.reverse();
+  return path;
+};
+
+UnionFindGraph.prototype.animateUnionPath = function (parent, child) {
+  if (!this.vertices || !this.vertices.length) {
     return;
   }
 
-  var segments = [];
-  for (var j = 0; j < UnionFindGraph.GRAPH_EDGES.length; j++) {
-    var edge = UnionFindGraph.GRAPH_EDGES[j];
-    if (membership[edge.from] && membership[edge.to]) {
-      segments.push(edge);
-    }
-  }
-
-  if (!segments.length) {
+  var path = this.findGraphPath(child, parent);
+  if (!path || path.length < 2) {
     return;
   }
 
-  var startPos = null;
-  for (var k = 0; k < segments.length; k++) {
-    var startEdge = segments[k];
-    var possible = UnionFindGraph.VERTEX_POSITIONS[startEdge.from];
-    var idCheck = this.graphNodeIDs[startEdge.from];
-    var toCheck = this.graphNodeIDs[startEdge.to];
-    if (possible && typeof idCheck === "number" && typeof toCheck === "number") {
-      startPos = { x: possible.x, y: possible.y };
-      break;
-    }
-  }
-
+  var startVertex = path[0];
+  var startPos = UnionFindGraph.VERTEX_POSITIONS[startVertex];
   if (!startPos) {
     return;
   }
@@ -1140,14 +1191,15 @@ UnionFindGraph.prototype.animateUnionCycle = function (root) {
   );
   this.cmd("Step");
 
-  for (var n = 0; n < segments.length; n++) {
-    var segment = segments[n];
-    var from = segment.from;
-    var to = segment.to;
+  var currentVertex = startVertex;
+  for (var i = 0; i < path.length - 1; i++) {
+    var from = path[i];
+    var to = path[i + 1];
     var fromID = this.graphNodeIDs[from];
     var toID = this.graphNodeIDs[to];
     var fromPos = UnionFindGraph.VERTEX_POSITIONS[from];
     var toPos = UnionFindGraph.VERTEX_POSITIONS[to];
+
     if (
       typeof fromID !== "number" ||
       typeof toID !== "number" ||
@@ -1157,34 +1209,20 @@ UnionFindGraph.prototype.animateUnionCycle = function (root) {
       continue;
     }
 
-    this.cmd("Move", highlightID, fromPos.x, fromPos.y);
-    this.cmd("Step");
+    if (currentVertex !== from) {
+      this.cmd("Move", highlightID, fromPos.x, fromPos.y);
+      this.cmd("Step");
+      currentVertex = from;
+    }
 
-    this.cmd(
-      "SetEdgeColor",
-      fromID,
-      toID,
-      UnionFindGraph.GRAPH_EDGE_HIGHLIGHT_COLOR
-    );
-    this.cmd(
-      "SetEdgeThickness",
-      fromID,
-      toID,
-      UnionFindGraph.GRAPH_EDGE_THICKNESS + UnionFindGraph.UNION_PATH_EXTRA_THICKNESS
-    );
-    this.cmd("SetEdgeHighlight", fromID, toID, 1);
+    this.highlightGraphEdge(from, to, true);
+    this.cmd("Step");
 
     this.cmd("Move", highlightID, toPos.x, toPos.y);
     this.cmd("Step");
 
-    this.cmd("SetEdgeHighlight", fromID, toID, 0);
-    this.cmd("SetEdgeColor", fromID, toID, UnionFindGraph.GRAPH_EDGE_COLOR);
-    this.cmd(
-      "SetEdgeThickness",
-      fromID,
-      toID,
-      UnionFindGraph.GRAPH_EDGE_THICKNESS
-    );
+    this.highlightGraphEdge(from, to, false);
+    currentVertex = to;
   }
 
   this.cmd("Delete", highlightID);
