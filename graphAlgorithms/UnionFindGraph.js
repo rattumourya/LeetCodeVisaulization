@@ -7,14 +7,14 @@ UnionFindGraph.prototype.constructor = UnionFindGraph;
 UnionFindGraph.superclass = Algorithm.prototype;
 
 UnionFindGraph.CANVAS_WIDTH = 900;
-UnionFindGraph.CANVAS_HEIGHT = 1600;
+UnionFindGraph.CANVAS_HEIGHT = 1300;
 
-UnionFindGraph.TITLE_Y = 90;
-UnionFindGraph.STATUS_Y = 180;
-UnionFindGraph.DETAIL_Y = 230;
-UnionFindGraph.GRAPH_CENTER_Y = 530;
-UnionFindGraph.FOREST_TOP_Y = 820;
-UnionFindGraph.FOREST_LEVEL_HEIGHT = 110;
+UnionFindGraph.TITLE_Y = 80;
+UnionFindGraph.STATUS_Y = 150;
+UnionFindGraph.DETAIL_Y = 205;
+UnionFindGraph.GRAPH_CENTER_Y = 470;
+UnionFindGraph.FOREST_TOP_Y = 700;
+UnionFindGraph.FOREST_LEVEL_HEIGHT = 95;
 UnionFindGraph.FOREST_VIEW_WIDTH = 560;
 UnionFindGraph.FOREST_HORIZONTAL_SPACING = 95;
 UnionFindGraph.FOREST_SIBLING_OFFSET = 45;
@@ -51,8 +51,8 @@ UnionFindGraph.COMPONENT_PALETTE = {
 
 UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7];
 
-UnionFindGraph.CODE_SECTION_TOP = 1150;
-UnionFindGraph.CODE_LINE_HEIGHT = 32;
+UnionFindGraph.CODE_SECTION_TOP = 900;
+UnionFindGraph.CODE_LINE_HEIGHT = 28;
 UnionFindGraph.CODE_SECTION_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
 UnionFindGraph.CODE_COLUMN_OFFSET = 190;
 UnionFindGraph.CODE_UNION_X =
