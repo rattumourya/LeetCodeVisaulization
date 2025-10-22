@@ -963,6 +963,7 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
       typeof this.forestNodeIDs[previousParent] === "number"
     ) {
       this.cmd("Disconnect", childID, this.forestNodeIDs[previousParent]);
+      this.cmd("Step");
     }
     if (previousParent !== parent) {
       this.cmd(
@@ -974,23 +975,38 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
         1,
         ""
       );
+      this.cmd(
+        "SetEdgeThickness",
+        childID,
+        parentID,
+        UnionFindGraph.FOREST_EDGE_THICKNESS
+      );
+      this.cmd(
+        "SetEdgeColor",
+        childID,
+        parentID,
+        UnionFindGraph.FOREST_EDGE_COLOR
+      );
+      this.cmd("Step");
+    } else {
+      this.cmd(
+        "SetEdgeThickness",
+        childID,
+        parentID,
+        UnionFindGraph.FOREST_EDGE_THICKNESS
+      );
+      this.cmd(
+        "SetEdgeColor",
+        childID,
+        parentID,
+        UnionFindGraph.FOREST_EDGE_COLOR
+      );
     }
-    this.cmd(
-      "SetEdgeThickness",
-      childID,
-      parentID,
-      UnionFindGraph.FOREST_EDGE_THICKNESS
-    );
-    this.cmd(
-      "SetEdgeColor",
-      childID,
-      parentID,
-      UnionFindGraph.FOREST_EDGE_COLOR
-    );
     this.animatePointerAssignment(child, parent);
     this.highlightForestEdge(parent, child, true);
     this.highlightForestNode(parent, true);
     this.highlightForestNode(child, true);
+    this.cmd("Step");
   }
 
   this.animateUnionCycle(parent);
