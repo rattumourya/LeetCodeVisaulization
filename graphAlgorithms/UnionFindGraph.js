@@ -49,7 +49,7 @@ UnionFindGraph.COMPONENT_PALETTE = {
   0: "#86efac",
 };
 
-UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7, 6];
+UnionFindGraph.VERTEX_ORDER = [1, 4, 5, 8, 0, 2, 3, 7];
 
 UnionFindGraph.CODE_SECTION_TOP = 1270;
 UnionFindGraph.CODE_LINE_HEIGHT = 36;
@@ -68,6 +68,23 @@ UnionFindGraph.CODE_HEADER_COLOR = "#0f172a";
 UnionFindGraph.CODE_INDENT = "\u00a0\u00a0\u00a0\u00a0";
 UnionFindGraph.CODE_INDENT_DOUBLE =
   UnionFindGraph.CODE_INDENT + UnionFindGraph.CODE_INDENT;
+
+UnionFindGraph.ARRAY_TOP_Y = UnionFindGraph.GRAPH_CENTER_Y - 120;
+UnionFindGraph.ARRAY_ROW_HEIGHT = 55;
+UnionFindGraph.ARRAY_CELL_WIDTH = 80;
+UnionFindGraph.ARRAY_CELL_HEIGHT = 40;
+UnionFindGraph.ARRAY_INDEX_X = UnionFindGraph.CANVAS_WIDTH - 260;
+UnionFindGraph.ARRAY_PARENT_X = UnionFindGraph.CANVAS_WIDTH - 180;
+UnionFindGraph.ARRAY_RANK_X = UnionFindGraph.CANVAS_WIDTH - 80;
+UnionFindGraph.ARRAY_LABEL_Y_OFFSET = 46;
+UnionFindGraph.ARRAY_LABEL_FONT = "bold 24";
+UnionFindGraph.ARRAY_VALUE_FONT = "bold 20";
+UnionFindGraph.ARRAY_INDEX_FONT = "bold 20";
+UnionFindGraph.ARRAY_FILL = "#f1f5f9";
+UnionFindGraph.ARRAY_BORDER = "#1e3a8a";
+UnionFindGraph.ARRAY_TEXT_COLOR = "#0f172a";
+UnionFindGraph.ARRAY_HIGHLIGHT_FILL = "#facc15";
+UnionFindGraph.ARRAY_HIGHLIGHT_BORDER = "#b45309";
 
 UnionFindGraph.JAVA_FIND_LINES = [
   ["int find(int x) {"],
@@ -137,7 +154,6 @@ UnionFindGraph.VERTEX_POSITIONS = (function () {
     2: { x: centerX - 70, y: baseY + 30 },
     3: { x: centerX + 10, y: baseY + 30 },
     7: { x: centerX + 90, y: baseY + 30 },
-    6: { x: centerX + 260, y: baseY - 20 },
   };
 })();
 
@@ -224,6 +240,12 @@ UnionFindGraph.prototype.init = function (am, w, h) {
   this.parentPointers = {};
   this.parent = {};
   this.rank = {};
+  this.arrayOrder = [];
+  this.parentArrayCellIDs = {};
+  this.rankArrayCellIDs = {};
+  this.arrayIndexLabelIDs = {};
+  this.parentArrayHeaderID = null;
+  this.rankArrayHeaderID = null;
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.isAnimating = false;
   this.javaUnionHeaderID = null;
@@ -267,6 +289,12 @@ UnionFindGraph.prototype.reset = function () {
   this.parentPointers = {};
   this.parent = {};
   this.rank = {};
+  this.arrayOrder = [];
+  this.parentArrayCellIDs = {};
+  this.rankArrayCellIDs = {};
+  this.arrayIndexLabelIDs = {};
+  this.parentArrayHeaderID = null;
+  this.rankArrayHeaderID = null;
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.currentComponentGroups = null;
   this.isAnimating = false;
@@ -290,6 +318,7 @@ UnionFindGraph.prototype.setup = function () {
   this.createTitleAndLabels();
   this.createGraphNodes();
   this.createForestNodes();
+  this.createParentRankDisplay();
   this.createGraphEdges();
   this.createCodeDisplay();
 
@@ -384,6 +413,190 @@ UnionFindGraph.prototype.createForestNodes = function () {
     this.cmd("SetHighlight", id, 0);
     this.cmd("SetAlpha", id, 0);
     this.forestPositions[vertex] = { x: pos.x, y: pos.y };
+  }
+};
+
+UnionFindGraph.prototype.createParentRankDisplay = function () {
+  this.arrayOrder = this.vertices.slice(0).sort(function (a, b) {
+    return a - b;
+  });
+
+  this.parentArrayCellIDs = {};
+  this.rankArrayCellIDs = {};
+  this.arrayIndexLabelIDs = {};
+
+  this.parentArrayHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.parentArrayHeaderID,
+    "parent",
+    UnionFindGraph.ARRAY_PARENT_X,
+    UnionFindGraph.ARRAY_TOP_Y - UnionFindGraph.ARRAY_LABEL_Y_OFFSET,
+    0
+  );
+  this.cmd(
+    "SetTextStyle",
+    this.parentArrayHeaderID,
+    UnionFindGraph.ARRAY_LABEL_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.parentArrayHeaderID,
+    UnionFindGraph.ARRAY_TEXT_COLOR
+  );
+
+  this.rankArrayHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.rankArrayHeaderID,
+    "rank",
+    UnionFindGraph.ARRAY_RANK_X,
+    UnionFindGraph.ARRAY_TOP_Y - UnionFindGraph.ARRAY_LABEL_Y_OFFSET,
+    0
+  );
+  this.cmd(
+    "SetTextStyle",
+    this.rankArrayHeaderID,
+    UnionFindGraph.ARRAY_LABEL_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.rankArrayHeaderID,
+    UnionFindGraph.ARRAY_TEXT_COLOR
+  );
+
+  for (var i = 0; i < this.arrayOrder.length; i++) {
+    var vertex = this.arrayOrder[i];
+    var y = UnionFindGraph.ARRAY_TOP_Y + i * UnionFindGraph.ARRAY_ROW_HEIGHT;
+
+    var indexID = this.nextIndex++;
+    this.arrayIndexLabelIDs[vertex] = indexID;
+    this.cmd("CreateLabel", indexID, vertex + ":", UnionFindGraph.ARRAY_INDEX_X, y, 0);
+    this.cmd("SetTextStyle", indexID, UnionFindGraph.ARRAY_INDEX_FONT);
+    this.cmd("SetForegroundColor", indexID, UnionFindGraph.ARRAY_TEXT_COLOR);
+
+    var parentCellID = this.nextIndex++;
+    this.parentArrayCellIDs[vertex] = parentCellID;
+    this.cmd(
+      "CreateRectangle",
+      parentCellID,
+      "",
+      UnionFindGraph.ARRAY_CELL_WIDTH,
+      UnionFindGraph.ARRAY_CELL_HEIGHT,
+      UnionFindGraph.ARRAY_PARENT_X,
+      y
+    );
+    this.cmd("SetForegroundColor", parentCellID, UnionFindGraph.ARRAY_BORDER);
+    this.cmd("SetBackgroundColor", parentCellID, UnionFindGraph.ARRAY_FILL);
+    this.cmd("SetTextColor", parentCellID, UnionFindGraph.ARRAY_TEXT_COLOR);
+    this.cmd("SetTextStyle", parentCellID, UnionFindGraph.ARRAY_VALUE_FONT);
+
+    var rankCellID = this.nextIndex++;
+    this.rankArrayCellIDs[vertex] = rankCellID;
+    this.cmd(
+      "CreateRectangle",
+      rankCellID,
+      "",
+      UnionFindGraph.ARRAY_CELL_WIDTH,
+      UnionFindGraph.ARRAY_CELL_HEIGHT,
+      UnionFindGraph.ARRAY_RANK_X,
+      y
+    );
+    this.cmd("SetForegroundColor", rankCellID, UnionFindGraph.ARRAY_BORDER);
+    this.cmd("SetBackgroundColor", rankCellID, UnionFindGraph.ARRAY_FILL);
+    this.cmd("SetTextColor", rankCellID, UnionFindGraph.ARRAY_TEXT_COLOR);
+    this.cmd("SetTextStyle", rankCellID, UnionFindGraph.ARRAY_VALUE_FONT);
+  }
+
+  this.updateParentRankDisplay();
+  this.clearArrayHighlights();
+};
+
+UnionFindGraph.prototype.updateParentRankDisplay = function () {
+  if (!this.arrayOrder) {
+    return;
+  }
+
+  for (var i = 0; i < this.arrayOrder.length; i++) {
+    var vertex = this.arrayOrder[i];
+    var parentValue = vertex;
+    if (this.parent && typeof this.parent[vertex] === "number") {
+      parentValue = this.parent[vertex];
+    }
+    this.setParentValue(vertex, parentValue);
+
+    var rankValue = 0;
+    if (this.rank && typeof this.rank[vertex] === "number") {
+      rankValue = this.rank[vertex];
+    }
+    this.setRankValue(vertex, rankValue);
+  }
+};
+
+UnionFindGraph.prototype.clearArrayHighlights = function () {
+  if (!this.arrayOrder) {
+    return;
+  }
+  for (var i = 0; i < this.arrayOrder.length; i++) {
+    var vertex = this.arrayOrder[i];
+    this.highlightParentCell(vertex, false);
+    this.highlightRankCell(vertex, false);
+  }
+};
+
+UnionFindGraph.prototype.setParentValue = function (vertex, value) {
+  if (!this.parentArrayCellIDs) {
+    return;
+  }
+  var id = this.parentArrayCellIDs[vertex];
+  if (typeof id !== "number") {
+    return;
+  }
+  this.cmd("SetText", id, String(value));
+};
+
+UnionFindGraph.prototype.setRankValue = function (vertex, value) {
+  if (!this.rankArrayCellIDs) {
+    return;
+  }
+  var id = this.rankArrayCellIDs[vertex];
+  if (typeof id !== "number") {
+    return;
+  }
+  this.cmd("SetText", id, String(value));
+};
+
+UnionFindGraph.prototype.highlightParentCell = function (vertex, highlight) {
+  if (!this.parentArrayCellIDs) {
+    return;
+  }
+  var id = this.parentArrayCellIDs[vertex];
+  if (typeof id !== "number") {
+    return;
+  }
+  if (highlight) {
+    this.cmd("SetBackgroundColor", id, UnionFindGraph.ARRAY_HIGHLIGHT_FILL);
+    this.cmd("SetForegroundColor", id, UnionFindGraph.ARRAY_HIGHLIGHT_BORDER);
+  } else {
+    this.cmd("SetBackgroundColor", id, UnionFindGraph.ARRAY_FILL);
+    this.cmd("SetForegroundColor", id, UnionFindGraph.ARRAY_BORDER);
+  }
+};
+
+UnionFindGraph.prototype.highlightRankCell = function (vertex, highlight) {
+  if (!this.rankArrayCellIDs) {
+    return;
+  }
+  var id = this.rankArrayCellIDs[vertex];
+  if (typeof id !== "number") {
+    return;
+  }
+  if (highlight) {
+    this.cmd("SetBackgroundColor", id, UnionFindGraph.ARRAY_HIGHLIGHT_FILL);
+    this.cmd("SetForegroundColor", id, UnionFindGraph.ARRAY_HIGHLIGHT_BORDER);
+  } else {
+    this.cmd("SetBackgroundColor", id, UnionFindGraph.ARRAY_FILL);
+    this.cmd("SetForegroundColor", id, UnionFindGraph.ARRAY_BORDER);
   }
 };
 
@@ -746,6 +959,9 @@ UnionFindGraph.prototype.resetUnionFindState = function () {
     this.rank[vertex] = 0;
   }
 
+  this.updateParentRankDisplay();
+  this.clearArrayHighlights();
+
   this.hideAllForestNodes();
 
   this.applyForestLayout();
@@ -779,6 +995,7 @@ UnionFindGraph.prototype.processUnionStep = function (step) {
   var b = step.b;
   this.setStatus("union(" + a + ", " + b + ")");
   this.setDetail(step.message || "");
+  this.clearArrayHighlights();
   this.setJavaHighlight(8);
   this.highlightGraphEdge(a, b, true);
   this.highlightGraphNodes([a, b], true);
@@ -837,6 +1054,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
 
   while (true) {
     this.setJavaHighlight(2);
+    this.highlightParentCell(current, true);
     this.cmd("Step");
 
     path.push(current);
@@ -851,6 +1069,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
     this.cmd("Step");
 
     var parent = this.parent[current];
+    this.highlightParentCell(parent, true);
     this.highlightForestNode(parent, true);
     this.highlightGraphNodes([parent], true);
     this.highlightForestEdge(parent, current, true);
@@ -859,6 +1078,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
 
     this.highlightForestNode(current, false);
     this.highlightGraphNodes([current], false);
+    this.highlightParentCell(current, false);
     current = parent;
   }
 
@@ -880,6 +1100,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
     if (node !== root) {
       this.highlightForestNode(node, false);
       this.highlightGraphNodes([node], false);
+      this.highlightParentCell(node, false);
     }
   }
 
@@ -887,6 +1108,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
   this.cmd("Step");
 
   this.setJavaHighlight(null);
+  this.highlightParentCell(root, false);
 
   return root;
 };
@@ -897,6 +1119,11 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   var rankA = this.rank[rootA];
   var rankB = this.rank[rootB];
   var messageParts = [];
+
+  this.highlightParentCell(originalRootA, true);
+  this.highlightParentCell(originalRootB, true);
+  this.highlightRankCell(originalRootA, true);
+  this.highlightRankCell(originalRootB, true);
 
   this.setDetail(
     "Compare ranks: rank[" +
@@ -943,6 +1170,11 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     this.setJavaHighlight(15);
     this.cmd("Step");
     rootB = tmp;
+
+    this.highlightRankCell(rootA, true);
+    this.highlightRankCell(rootB, true);
+    this.highlightParentCell(rootA, true);
+    this.highlightParentCell(rootB, true);
   } else {
     messageParts.push(
       "rank[" +
@@ -969,6 +1201,8 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
 
   this.parent[child] = parent;
   this.parentPointers[child] = parent;
+  this.setParentValue(child, parent);
+  this.highlightParentCell(child, true);
 
   // Refresh the forest layout before revealing nodes so they appear
   // directly beneath their graph counterparts without overlapping.
@@ -1085,6 +1319,8 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     this.setDetail("Ranks are equal, so increment rank[" + parent + "].");
     this.setJavaHighlight(19);
     this.rank[parent]++;
+    this.setRankValue(parent, this.rank[parent]);
+    this.highlightRankCell(parent, true);
     this.cmd("Step");
     this.setJavaHighlight(20);
     this.cmd("Step");
@@ -1100,6 +1336,14 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   this.setDetail("Exit the union method.");
   this.setJavaHighlight(21);
   this.cmd("Step");
+
+  this.highlightParentCell(child, false);
+  this.highlightParentCell(parent, false);
+  this.highlightParentCell(originalRootA, false);
+  this.highlightParentCell(originalRootB, false);
+  this.highlightRankCell(originalRootA, false);
+  this.highlightRankCell(originalRootB, false);
+  this.highlightRankCell(parent, false);
 
   var summary = messageParts.join(" ");
   summary +=
