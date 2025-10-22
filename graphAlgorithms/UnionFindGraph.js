@@ -69,12 +69,7 @@ UnionFindGraph.UNION_COMPONENT_PATHS = {
 UnionFindGraph.CODE_SECTION_TOP = 1270;
 UnionFindGraph.CODE_LINE_HEIGHT = 36;
 UnionFindGraph.CODE_SECTION_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
-UnionFindGraph.CODE_COLUMN_SPACING = 220;
-UnionFindGraph.CODE_UNION_X =
-  UnionFindGraph.CODE_SECTION_CENTER_X - UnionFindGraph.CODE_COLUMN_SPACING;
 UnionFindGraph.CODE_JAVA_X = UnionFindGraph.CODE_SECTION_CENTER_X;
-UnionFindGraph.CODE_FIND_X =
-  UnionFindGraph.CODE_SECTION_CENTER_X + UnionFindGraph.CODE_COLUMN_SPACING;
 UnionFindGraph.CODE_FONT = "bold 22";
 UnionFindGraph.CODE_HEADER_FONT = "bold 24";
 UnionFindGraph.CODE_STANDARD_COLOR = "#1e3a8a";
@@ -83,23 +78,6 @@ UnionFindGraph.CODE_HEADER_COLOR = "#0f172a";
 UnionFindGraph.CODE_INDENT = "\u00a0\u00a0\u00a0\u00a0";
 UnionFindGraph.CODE_INDENT_DOUBLE =
   UnionFindGraph.CODE_INDENT + UnionFindGraph.CODE_INDENT;
-
-UnionFindGraph.UNION_CODE_LINES = [
-  ["function union(a, b):"],
-  [UnionFindGraph.CODE_INDENT + "rootA = find(a)"],
-  [UnionFindGraph.CODE_INDENT + "rootB = find(b)"],
-  [UnionFindGraph.CODE_INDENT + "if rootA == rootB: return"],
-  [UnionFindGraph.CODE_INDENT + "if rank[rootA] < rank[rootB]: swap"],
-  [UnionFindGraph.CODE_INDENT + "parent[rootB] = rootA"],
-  [UnionFindGraph.CODE_INDENT + "if ranks equal: rank[rootA]++"],
-];
-
-UnionFindGraph.FIND_CODE_LINES = [
-  ["function find(x):"],
-  [UnionFindGraph.CODE_INDENT + "while parent[x] != x:"],
-  [UnionFindGraph.CODE_INDENT + "x = parent[x]"],
-  [UnionFindGraph.CODE_INDENT + "return x"],
-];
 
 UnionFindGraph.JAVA_CODE_LINES = [
   ["class UnionFind {"],
@@ -231,10 +209,6 @@ UnionFindGraph.prototype.init = function (am, w, h) {
   this.rank = {};
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.isAnimating = false;
-  this.unionCodeIDs = [];
-  this.findCodeIDs = [];
-  this.unionHeaderID = null;
-  this.findHeaderID = null;
   this.javaHeaderID = null;
   this.javaCodeIDs = [];
   this.currentDetailText = "";
@@ -275,10 +249,6 @@ UnionFindGraph.prototype.reset = function () {
   this.parentPointers = {};
   this.parent = {};
   this.rank = {};
-  this.unionCodeIDs = [];
-  this.findCodeIDs = [];
-  this.unionHeaderID = null;
-  this.findHeaderID = null;
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.currentComponentGroups = null;
   this.isAnimating = false;
@@ -608,30 +578,6 @@ UnionFindGraph.prototype.createGraphEdges = function () {
 };
 
 UnionFindGraph.prototype.createCodeDisplay = function () {
-  this.unionHeaderID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.unionHeaderID,
-    "union operation",
-    UnionFindGraph.CODE_UNION_X,
-    UnionFindGraph.CODE_SECTION_TOP - 30,
-    0
-  );
-  this.cmd("SetTextStyle", this.unionHeaderID, UnionFindGraph.CODE_HEADER_FONT);
-  this.cmd("SetForegroundColor", this.unionHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
-
-  this.findHeaderID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.findHeaderID,
-    "find operation",
-    UnionFindGraph.CODE_FIND_X,
-    UnionFindGraph.CODE_SECTION_TOP - 30,
-    0
-  );
-  this.cmd("SetTextStyle", this.findHeaderID, UnionFindGraph.CODE_HEADER_FONT);
-  this.cmd("SetForegroundColor", this.findHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
-
   this.javaHeaderID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
@@ -644,23 +590,6 @@ UnionFindGraph.prototype.createCodeDisplay = function () {
   this.cmd("SetTextStyle", this.javaHeaderID, UnionFindGraph.CODE_HEADER_FONT);
   this.cmd("SetForegroundColor", this.javaHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
 
-  var unionIDs = this.addCodeToCanvasBase(
-    UnionFindGraph.UNION_CODE_LINES,
-    UnionFindGraph.CODE_UNION_X,
-    UnionFindGraph.CODE_SECTION_TOP,
-    UnionFindGraph.CODE_LINE_HEIGHT,
-    UnionFindGraph.CODE_STANDARD_COLOR,
-    0,
-    0
-  );
-
-  this.unionCodeIDs = [];
-  for (var i = 0; i < unionIDs.length; i++) {
-    var labelID = unionIDs[i][0];
-    this.unionCodeIDs.push(labelID);
-    this.cmd("SetTextStyle", labelID, UnionFindGraph.CODE_FONT);
-  }
-
   var javaIDs = this.addCodeToCanvasBase(
     UnionFindGraph.JAVA_CODE_LINES,
     UnionFindGraph.CODE_JAVA_X,
@@ -668,7 +597,7 @@ UnionFindGraph.prototype.createCodeDisplay = function () {
     UnionFindGraph.CODE_LINE_HEIGHT,
     UnionFindGraph.CODE_STANDARD_COLOR,
     0,
-    0
+    1
   );
 
   this.javaCodeIDs = [];
@@ -678,25 +607,7 @@ UnionFindGraph.prototype.createCodeDisplay = function () {
     this.cmd("SetTextStyle", javaLabelID, UnionFindGraph.CODE_FONT);
   }
 
-  var findIDs = this.addCodeToCanvasBase(
-    UnionFindGraph.FIND_CODE_LINES,
-    UnionFindGraph.CODE_FIND_X,
-    UnionFindGraph.CODE_SECTION_TOP,
-    UnionFindGraph.CODE_LINE_HEIGHT,
-    UnionFindGraph.CODE_STANDARD_COLOR,
-    0,
-    0
-  );
-
-  this.findCodeIDs = [];
-  for (var j = 0; j < findIDs.length; j++) {
-    var findLabelID = findIDs[j][0];
-    this.findCodeIDs.push(findLabelID);
-    this.cmd("SetTextStyle", findLabelID, UnionFindGraph.CODE_FONT);
-  }
-
-  this.setCodeHighlight("union", -1);
-  this.setCodeHighlight("find", -1);
+  this.setJavaHighlight(null);
 };
 
 UnionFindGraph.prototype.edgeKey = function (a, b) {
@@ -766,41 +677,42 @@ UnionFindGraph.prototype.processUnionStep = function (step) {
   var b = step.b;
   this.setStatus("union(" + a + ", " + b + ")");
   this.setDetail(step.message || "");
-  this.setCodeHighlight("union", 0);
+  this.setJavaHighlight(8);
   this.highlightGraphEdge(a, b, true);
   this.highlightGraphNodes([a, b], true);
   this.cmd("Step");
 
-  this.setCodeHighlight("union", 1);
+  this.setJavaHighlight(9);
   this.setDetail("Run find(" + a + ") to locate its root.");
   var rootA = this.animateFind(a);
   this.setDetail("Root of " + a + " is " + rootA + ".");
+  this.setJavaHighlight(9);
   this.cmd("Step");
 
-  this.setCodeHighlight("union", 2);
+  this.setJavaHighlight(10);
   this.setDetail("Run find(" + b + ") to locate its root.");
   var rootB = this.animateFind(b);
   this.setDetail("Root of " + b + " is " + rootB + ".");
+  this.setJavaHighlight(10);
   this.cmd("Step");
 
-  this.setCodeHighlight("union", 3);
+  this.setJavaHighlight(11);
   if (rootA === rootB) {
     this.setDetail(
       "Both vertices already share root " + rootA + ", so we skip the union."
     );
     this.cmd("Step");
-    this.setCodeHighlight("union", -1);
+    this.setJavaHighlight(null);
   } else {
     this.setDetail(
       "Roots differ (" + rootA + " vs " + rootB + "), so compare their ranks."
     );
     this.cmd("Step");
-    this.setCodeHighlight("union", 4);
+    this.setJavaHighlight([12, 13, 14, 15, 16]);
     this.cmd("Step");
     var info = this.unionRoots(rootA, rootB);
     this.setDetail(info.message);
     this.cmd("Step");
-    this.setCodeHighlight("union", -1);
   }
 
   this.highlightForestNode(rootA, false);
@@ -812,6 +724,7 @@ UnionFindGraph.prototype.processUnionStep = function (step) {
   this.highlightGraphNodes([a, b], false);
   this.highlightGraphEdge(a, b, false);
   this.cmd("Step");
+  this.setJavaHighlight(null);
 };
 
 UnionFindGraph.prototype.animateFind = function (start) {
@@ -819,11 +732,11 @@ UnionFindGraph.prototype.animateFind = function (start) {
   var path = [];
   var traversed = [];
 
-  this.setCodeHighlight("find", 0);
+  this.setJavaHighlight(1);
   this.cmd("Step");
 
   while (true) {
-    this.setCodeHighlight("find", 1);
+    this.setJavaHighlight(2);
     this.cmd("Step");
 
     path.push(current);
@@ -834,7 +747,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
       break;
     }
 
-    this.setCodeHighlight("find", 2);
+    this.setJavaHighlight(3);
     this.cmd("Step");
 
     var parent = this.parent[current];
@@ -849,7 +762,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
     current = parent;
   }
 
-  this.setCodeHighlight("find", 3);
+  this.setJavaHighlight(5);
   this.cmd("Step");
 
   var root = current;
@@ -867,7 +780,7 @@ UnionFindGraph.prototype.animateFind = function (start) {
     }
   }
 
-  this.setCodeHighlight("find", -1);
+  this.setJavaHighlight(null);
 
   return root;
 };
@@ -916,7 +829,7 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   message +=
     " On the graph, follow the highlighted loop that traces the component just like the reference animation.";
 
-  this.setCodeHighlight("union", 5);
+  this.setJavaHighlight(17);
   var previousParent = this.parentPointers[child];
   this.parent[child] = parent;
   this.parentPointers[child] = parent;
@@ -990,10 +903,12 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
   }
 
   if (increaseRank) {
-    this.setCodeHighlight("union", 6);
+    this.setJavaHighlight([18, 19, 20]);
     this.rank[parent]++;
     this.cmd("Step");
   }
+
+  this.setJavaHighlight(null);
 
   return { parent: parent, child: child, message: message };
 };
@@ -1227,17 +1142,26 @@ UnionFindGraph.prototype.updateComponentColors = function () {
   }
 };
 
-UnionFindGraph.prototype.setCodeHighlight = function (section, index) {
-  var targets = section === "union" ? this.unionCodeIDs : this.findCodeIDs;
-  if (!targets) {
+UnionFindGraph.prototype.setJavaHighlight = function (indices) {
+  if (!this.javaCodeIDs) {
     return;
   }
-  for (var i = 0; i < targets.length; i++) {
-    var id = targets[i];
+
+  var highlightMap = {};
+  if (typeof indices === "number") {
+    highlightMap[indices] = true;
+  } else if (Array.isArray(indices)) {
+    for (var i = 0; i < indices.length; i++) {
+      highlightMap[indices[i]] = true;
+    }
+  }
+
+  for (var j = 0; j < this.javaCodeIDs.length; j++) {
+    var id = this.javaCodeIDs[j];
     if (typeof id !== "number") {
       continue;
     }
-    var color = i === index
+    var color = highlightMap[j]
       ? UnionFindGraph.CODE_HIGHLIGHT_COLOR
       : UnionFindGraph.CODE_STANDARD_COLOR;
     this.cmd("SetForegroundColor", id, color);
@@ -1245,8 +1169,7 @@ UnionFindGraph.prototype.setCodeHighlight = function (section, index) {
 };
 
 UnionFindGraph.prototype.clearCodeHighlights = function () {
-  this.setCodeHighlight("union", -1);
-  this.setCodeHighlight("find", -1);
+  this.setJavaHighlight(null);
 };
 
 UnionFindGraph.prototype.setStatus = function (text) {
