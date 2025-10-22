@@ -69,7 +69,12 @@ UnionFindGraph.UNION_COMPONENT_PATHS = {
 UnionFindGraph.CODE_SECTION_TOP = 1270;
 UnionFindGraph.CODE_LINE_HEIGHT = 36;
 UnionFindGraph.CODE_SECTION_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
-UnionFindGraph.CODE_JAVA_X = UnionFindGraph.CODE_SECTION_CENTER_X;
+UnionFindGraph.CODE_COLUMN_OFFSET = 190;
+UnionFindGraph.CODE_UNION_X =
+  UnionFindGraph.CODE_SECTION_CENTER_X - UnionFindGraph.CODE_COLUMN_OFFSET;
+UnionFindGraph.CODE_FIND_X =
+  UnionFindGraph.CODE_SECTION_CENTER_X + UnionFindGraph.CODE_COLUMN_OFFSET;
+UnionFindGraph.CODE_HEADER_Y = UnionFindGraph.CODE_SECTION_TOP - 40;
 UnionFindGraph.CODE_FONT = "bold 22";
 UnionFindGraph.CODE_HEADER_FONT = "bold 24";
 UnionFindGraph.CODE_STANDARD_COLOR = "#1e3a8a";
@@ -79,56 +84,57 @@ UnionFindGraph.CODE_INDENT = "\u00a0\u00a0\u00a0\u00a0";
 UnionFindGraph.CODE_INDENT_DOUBLE =
   UnionFindGraph.CODE_INDENT + UnionFindGraph.CODE_INDENT;
 
-UnionFindGraph.JAVA_CODE_LINES = [
-  ["class UnionFind {"],
-  [
-    UnionFindGraph.CODE_INDENT + "int find(int x) {",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + "while (parent[x] != x) {",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT + "x = parent[x];",
-  ],
-  [UnionFindGraph.CODE_INDENT_DOUBLE + "}"],
-  [UnionFindGraph.CODE_INDENT_DOUBLE + "return x;"],
+UnionFindGraph.JAVA_FIND_LINES = [
+  ["int find(int x) {"],
+  [UnionFindGraph.CODE_INDENT + "while (parent[x] != x) {"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "x = parent[x];"],
   [UnionFindGraph.CODE_INDENT + "}"],
-  [" "],
-  [UnionFindGraph.CODE_INDENT + "void union(int a, int b) {"],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + "int rootA = find(a);",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + "int rootB = find(b);",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + "if (rootA == rootB) return;",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + "if (rank[rootA] < rank[rootB]) {",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT +
-      "int tmp = rootA;",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT +
-      "rootA = rootB;",
-  ],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT +
-      "rootB = tmp;",
-  ],
-  [UnionFindGraph.CODE_INDENT_DOUBLE + "}"],
-  [UnionFindGraph.CODE_INDENT_DOUBLE + "parent[rootB] = rootA;"],
-  [
-    UnionFindGraph.CODE_INDENT_DOUBLE + "if (rank[rootA] == rank[rootB]) {",
-  ],
-  [UnionFindGraph.CODE_INDENT_DOUBLE + UnionFindGraph.CODE_INDENT + "rank[rootA]++;"],
-  [UnionFindGraph.CODE_INDENT_DOUBLE + "}"],
-  [UnionFindGraph.CODE_INDENT + "}"],
-  ["}"],
+  [UnionFindGraph.CODE_INDENT + "return x;"],
+  ["}"]
 ];
+
+UnionFindGraph.JAVA_UNION_LINES = [
+  ["void union(int a, int b) {"],
+  [UnionFindGraph.CODE_INDENT + "int rootA = find(a);"],
+  [UnionFindGraph.CODE_INDENT + "int rootB = find(b);"],
+  [UnionFindGraph.CODE_INDENT + "if (rootA == rootB) return;"],
+  [UnionFindGraph.CODE_INDENT + "if (rank[rootA] < rank[rootB]) {"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "int tmp = rootA;"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "rootA = rootB;"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "rootB = tmp;"],
+  [UnionFindGraph.CODE_INDENT + "}"],
+  [UnionFindGraph.CODE_INDENT + "parent[rootB] = rootA;"],
+  [UnionFindGraph.CODE_INDENT + "if (rank[rootA] == rank[rootB]) {"],
+  [UnionFindGraph.CODE_INDENT_DOUBLE + "rank[rootA]++;"],
+  [UnionFindGraph.CODE_INDENT + "}"],
+  ["}"]
+];
+
+UnionFindGraph.JAVA_FIND_INDEX_MAP = {
+  1: 0,
+  2: 1,
+  3: 2,
+  4: 3,
+  5: 4,
+  6: 5,
+};
+
+UnionFindGraph.JAVA_UNION_INDEX_MAP = {
+  8: 0,
+  9: 1,
+  10: 2,
+  11: 3,
+  12: 4,
+  13: 5,
+  14: 6,
+  15: 7,
+  16: 8,
+  17: 9,
+  18: 10,
+  19: 11,
+  20: 12,
+  21: 13,
+};
 
 UnionFindGraph.GRAPH_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
 UnionFindGraph.FOREST_CENTER_X = UnionFindGraph.CANVAS_WIDTH / 2;
@@ -209,7 +215,8 @@ UnionFindGraph.prototype.init = function (am, w, h) {
   this.rank = {};
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.isAnimating = false;
-  this.javaHeaderID = null;
+  this.javaUnionHeaderID = null;
+  this.javaFindHeaderID = null;
   this.javaCodeIDs = [];
   this.currentDetailText = "";
 
@@ -252,6 +259,9 @@ UnionFindGraph.prototype.reset = function () {
   this.vertices = UnionFindGraph.VERTEX_ORDER.slice(0);
   this.currentComponentGroups = null;
   this.isAnimating = false;
+  this.javaUnionHeaderID = null;
+  this.javaFindHeaderID = null;
+  this.javaCodeIDs = [];
 
   if (
     typeof animationManager !== "undefined" &&
@@ -578,33 +588,92 @@ UnionFindGraph.prototype.createGraphEdges = function () {
 };
 
 UnionFindGraph.prototype.createCodeDisplay = function () {
-  this.javaHeaderID = this.nextIndex++;
+  this.javaUnionHeaderID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
-    this.javaHeaderID,
-    "Java union-find",
-    UnionFindGraph.CODE_JAVA_X,
-    UnionFindGraph.CODE_SECTION_TOP - 30,
+    this.javaUnionHeaderID,
+    "Java union",
+    UnionFindGraph.CODE_UNION_X,
+    UnionFindGraph.CODE_HEADER_Y,
     0
   );
-  this.cmd("SetTextStyle", this.javaHeaderID, UnionFindGraph.CODE_HEADER_FONT);
-  this.cmd("SetForegroundColor", this.javaHeaderID, UnionFindGraph.CODE_HEADER_COLOR);
+  this.cmd(
+    "SetTextStyle",
+    this.javaUnionHeaderID,
+    UnionFindGraph.CODE_HEADER_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.javaUnionHeaderID,
+    UnionFindGraph.CODE_HEADER_COLOR
+  );
 
-  var javaIDs = this.addCodeToCanvasBase(
-    UnionFindGraph.JAVA_CODE_LINES,
-    UnionFindGraph.CODE_JAVA_X,
+  this.javaFindHeaderID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.javaFindHeaderID,
+    "Java find",
+    UnionFindGraph.CODE_FIND_X,
+    UnionFindGraph.CODE_HEADER_Y,
+    0
+  );
+  this.cmd(
+    "SetTextStyle",
+    this.javaFindHeaderID,
+    UnionFindGraph.CODE_HEADER_FONT
+  );
+  this.cmd(
+    "SetForegroundColor",
+    this.javaFindHeaderID,
+    UnionFindGraph.CODE_HEADER_COLOR
+  );
+
+  var unionIDs = this.addCodeToCanvasBase(
+    UnionFindGraph.JAVA_UNION_LINES,
+    UnionFindGraph.CODE_UNION_X,
     UnionFindGraph.CODE_SECTION_TOP,
     UnionFindGraph.CODE_LINE_HEIGHT,
     UnionFindGraph.CODE_STANDARD_COLOR,
     0,
-    1
+    0
+  );
+
+  var findIDs = this.addCodeToCanvasBase(
+    UnionFindGraph.JAVA_FIND_LINES,
+    UnionFindGraph.CODE_FIND_X,
+    UnionFindGraph.CODE_SECTION_TOP,
+    UnionFindGraph.CODE_LINE_HEIGHT,
+    UnionFindGraph.CODE_STANDARD_COLOR,
+    0,
+    0
   );
 
   this.javaCodeIDs = [];
-  for (var k = 0; k < javaIDs.length; k++) {
-    var javaLabelID = javaIDs[k][0];
-    this.javaCodeIDs.push(javaLabelID);
-    this.cmd("SetTextStyle", javaLabelID, UnionFindGraph.CODE_FONT);
+
+  for (var unionIndex in UnionFindGraph.JAVA_UNION_INDEX_MAP) {
+    if (!UnionFindGraph.JAVA_UNION_INDEX_MAP.hasOwnProperty(unionIndex)) {
+      continue;
+    }
+    var unionRow = UnionFindGraph.JAVA_UNION_INDEX_MAP[unionIndex];
+    if (unionRow < 0 || unionRow >= unionIDs.length) {
+      continue;
+    }
+    var unionLabelID = unionIDs[unionRow][0];
+    this.javaCodeIDs[parseInt(unionIndex, 10)] = unionLabelID;
+    this.cmd("SetTextStyle", unionLabelID, UnionFindGraph.CODE_FONT);
+  }
+
+  for (var findIndex in UnionFindGraph.JAVA_FIND_INDEX_MAP) {
+    if (!UnionFindGraph.JAVA_FIND_INDEX_MAP.hasOwnProperty(findIndex)) {
+      continue;
+    }
+    var findRow = UnionFindGraph.JAVA_FIND_INDEX_MAP[findIndex];
+    if (findRow < 0 || findRow >= findIDs.length) {
+      continue;
+    }
+    var findLabelID = findIDs[findRow][0];
+    this.javaCodeIDs[parseInt(findIndex, 10)] = findLabelID;
+    this.cmd("SetTextStyle", findLabelID, UnionFindGraph.CODE_FONT);
   }
 
   this.setJavaHighlight(null);
