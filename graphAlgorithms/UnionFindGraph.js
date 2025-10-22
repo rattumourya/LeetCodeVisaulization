@@ -777,8 +777,6 @@ UnionFindGraph.prototype.processUnionStep = function (step) {
       "Roots differ (" + rootA + " vs " + rootB + "), so compare their ranks."
     );
     this.cmd("Step");
-    this.setJavaHighlight([12, 13, 14, 15, 16]);
-    this.cmd("Step");
     var info = this.unionRoots(rootA, rootB);
     this.setDetail(info.message);
     this.cmd("Step");
@@ -831,6 +829,9 @@ UnionFindGraph.prototype.animateFind = function (start) {
     current = parent;
   }
 
+  this.setJavaHighlight(4);
+  this.cmd("Step");
+
   this.setJavaHighlight(5);
   this.cmd("Step");
 
@@ -849,57 +850,90 @@ UnionFindGraph.prototype.animateFind = function (start) {
     }
   }
 
+  this.setJavaHighlight(6);
+  this.cmd("Step");
+
   this.setJavaHighlight(null);
 
   return root;
 };
 
 UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
+  var originalRootA = rootA;
+  var originalRootB = rootB;
   var rankA = this.rank[rootA];
   var rankB = this.rank[rootB];
-  var parent = rootA;
-  var child = rootB;
-  var message = "";
-  var increaseRank = false;
+  var messageParts = [];
 
-  if (rankA > rankB) {
-    message =
-      "Root " +
-      rootA +
-      " has higher rank, so it remains the parent and " +
-      rootB +
-      " becomes its child.";
-  } else if (rankB > rankA) {
-    parent = rootB;
-    child = rootA;
-    message =
-      "Root " +
-      rootB +
-      " has higher rank, so it remains the parent and " +
-      rootA +
-      " becomes its child.";
+  this.setDetail(
+    "Compare ranks: rank[" +
+      originalRootA +
+      "] = " +
+      rankA +
+      " and rank[" +
+      originalRootB +
+      "] = " +
+      rankB +
+      "."
+  );
+  this.setJavaHighlight(12);
+  this.cmd("Step");
+
+  if (rankA < rankB) {
+    messageParts.push(
+      "rank[" +
+        originalRootA +
+        "] is lower than rank[" +
+        originalRootB +
+        "], so swap the roots."
+    );
+
+    this.setDetail(
+      "rank[" +
+        originalRootA +
+        "] < rank[" +
+        originalRootB +
+        "], store rootA before swapping."
+    );
+    this.setJavaHighlight(13);
+    this.cmd("Step");
+    var tmp = rootA;
+
+    this.setDetail(
+      "Move the higher-rank root " + originalRootB + " into rootA."
+    );
+    this.setJavaHighlight(14);
+    this.cmd("Step");
+    rootA = rootB;
+
+    this.setDetail("Restore the saved value into rootB.");
+    this.setJavaHighlight(15);
+    this.cmd("Step");
+    rootB = tmp;
   } else {
-    if (rootA <= rootB) {
-      parent = rootA;
-      child = rootB;
-    } else {
-      parent = rootB;
-      child = rootA;
-    }
-    increaseRank = true;
-    message =
-      "Ranks match, so we choose root " +
-      parent +
-      " as the parent and increase its rank.";
+    messageParts.push(
+      "rank[" +
+        originalRootA +
+        "] is not less than rank[" +
+        originalRootB +
+        "], so keep " +
+        rootA +
+        " as the parent."
+    );
   }
 
-  message +=
-    " Watch the child arrow travel upward to its parent as the pointer view below the graph rearranges.";
-  message +=
-    " On the graph, follow the highlighted loop that traces the component just like the reference animation.";
+  this.setJavaHighlight(16);
+  this.cmd("Step");
 
-  this.setJavaHighlight(17);
+  var parent = rootA;
+  var child = rootB;
+  messageParts.push("parent[" + child + "] will now point to " + parent + ".");
   var previousParent = this.parentPointers[child];
+
+  this.setDetail("Set parent[" + child + "] = " + parent + ".");
+  this.setJavaHighlight(17);
+  this.cmd("Step");
+
   this.parent[child] = parent;
   this.parentPointers[child] = parent;
 
@@ -911,13 +945,13 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     parent,
     "Drop vertex " +
       parent +
-      " beneath the graph so we can show it in the parent-pointer view."
+      " beneath the graph so it can appear in the parent-pointer view."
   );
   this.ensureForestNodeVisible(
     child,
     "Move vertex " +
       child +
-      " below the graph and connect it to its new parent."
+      " below the graph and connect it to its parent."
   );
 
   var parentID = this.forestNodeIDs[parent];
@@ -971,15 +1005,48 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     this.highlightForestNode(child, false);
   }
 
-  if (increaseRank) {
-    this.setJavaHighlight([18, 19, 20]);
+  var ranksEqual = this.rank[parent] === this.rank[child];
+  var parentRankBefore = this.rank[parent];
+  this.setDetail(
+    "Check whether rank[" +
+      parent +
+      "] equals rank[" +
+      child +
+      "] before deciding on a rank update."
+  );
+  this.setJavaHighlight(18);
+  this.cmd("Step");
+
+  if (ranksEqual) {
+    messageParts.push(
+      "Ranks matched, so increase rank[" + parent + "] to " +
+        (parentRankBefore + 1) +
+        "."
+    );
+    this.setDetail("Ranks are equal, so increment rank[" + parent + "].");
+    this.setJavaHighlight(19);
     this.rank[parent]++;
+    this.cmd("Step");
+    this.setJavaHighlight(20);
+    this.cmd("Step");
+  } else {
+    messageParts.push(
+      "Ranks differed, so rank[" + parent + "] stays at " + parentRankBefore + "."
+    );
+    this.setDetail("Ranks differ, so leave the ranks unchanged.");
+    this.setJavaHighlight(20);
     this.cmd("Step");
   }
 
-  this.setJavaHighlight(null);
+  this.setDetail("Exit the union method.");
+  this.setJavaHighlight(21);
+  this.cmd("Step");
 
-  return { parent: parent, child: child, message: message };
+  var summary = messageParts.join(" ");
+  summary +=
+    " Watch the child arrow travel upward to its parent as the graph loop highlights the merged component.";
+
+  return { parent: parent, child: child, message: summary };
 };
 
 UnionFindGraph.prototype.animateUnionCycle = function (root) {
