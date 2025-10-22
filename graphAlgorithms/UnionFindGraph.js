@@ -1009,6 +1009,16 @@ UnionFindGraph.prototype.unionRoots = function (rootA, rootB) {
     this.cmd("Step");
   }
 
+  this.setDetail(
+    "Trace the merged component so parent[" +
+      child +
+      "] = " +
+      parent +
+      " is clear on the graph."
+  );
+  this.setJavaHighlight(null);
+  this.cmd("Step");
+
   this.animateUnionCycle(parent);
 
   this.applyForestLayout();
