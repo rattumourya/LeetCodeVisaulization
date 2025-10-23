@@ -24,10 +24,23 @@ KruskalMST.MST_WEIGHT_Y = 180;
 
 KruskalMST.GRAPH_TOP = KruskalMST.ROW1_HEIGHT;
 KruskalMST.GRAPH_BOTTOM = KruskalMST.ROW1_HEIGHT + KruskalMST.ROW2_HEIGHT;
-KruskalMST.GRAPH_NODE_RADIUS = 28;
+KruskalMST.GRAPH_NODE_RADIUS = 26;
 KruskalMST.GRAPH_NODE_COLOR = "#f5f5ff";
 KruskalMST.GRAPH_NODE_BORDER = "#1b3a4b";
 KruskalMST.GRAPH_NODE_TEXT = "#1b3a4b";
+
+KruskalMST.GRAPH_PANEL_CENTER_X = 210;
+KruskalMST.GRAPH_PANEL_CENTER_Y =
+  KruskalMST.GRAPH_TOP + KruskalMST.ROW2_HEIGHT / 2;
+KruskalMST.GRAPH_PANEL_WIDTH = 400;
+KruskalMST.GRAPH_PANEL_HEIGHT = KruskalMST.ROW2_HEIGHT - 40;
+
+KruskalMST.MST_PANEL_CENTER_X = 540;
+KruskalMST.MST_PANEL_CENTER_Y = KruskalMST.GRAPH_PANEL_CENTER_Y;
+KruskalMST.MST_PANEL_WIDTH = 340;
+KruskalMST.MST_PANEL_HEIGHT = KruskalMST.GRAPH_PANEL_HEIGHT;
+KruskalMST.PANEL_BG = "#fbfcff";
+KruskalMST.PANEL_BORDER = "#90a4ae";
 
 KruskalMST.EDGE_COLOR = "#4a4e69";
 KruskalMST.EDGE_CHECK_COLOR = "#ffb703";
@@ -41,6 +54,37 @@ KruskalMST.INFO_PANEL_BG = "#eef1ff";
 KruskalMST.INFO_PANEL_BORDER = "#264653";
 KruskalMST.INFO_TEXT_COLOR = "#1d3557";
 KruskalMST.TITLE_COLOR = "#14213d";
+
+KruskalMST.MST_NODE_COLOR = "#fff8e1";
+KruskalMST.MST_NODE_BORDER = "#6c4f3d";
+KruskalMST.MST_NODE_TEXT = "#6c4f3d";
+
+KruskalMST.GRAPH_LAYOUT_CONFIG = {
+  baseX: 80,
+  stepX: 100,
+  baseY: KruskalMST.GRAPH_TOP + 120,
+  rowSpacing: 140,
+};
+
+KruskalMST.MST_LAYOUT_CONFIG = {
+  baseX: 420,
+  stepX: 85,
+  baseY: KruskalMST.GRAPH_TOP + 120,
+  rowSpacing: 140,
+};
+
+KruskalMST.TEMPLATE_ALLOWED = [
+  [false, true, true, false, true, false, false, true, false, false],
+  [true, false, true, false, true, true, false, false, false, false],
+  [true, true, false, true, false, true, true, false, false, false],
+  [false, false, true, false, false, false, true, false, false, false],
+  [true, true, false, false, false, true, false, true, true, false],
+  [false, true, true, false, true, false, true, false, true, true],
+  [false, false, true, true, false, true, false, false, false, true],
+  [true, false, false, false, true, false, false, false, true, false],
+  [false, false, false, false, true, true, false, true, false, true],
+  [false, false, false, false, false, true, true, false, true, false],
+];
 
 KruskalMST.CODE_START_X = 80;
 KruskalMST.CODE_START_Y =
@@ -78,11 +122,18 @@ KruskalMST.prototype.init = function (am, w, h) {
   this.vertexLabels = [];
   this.vertexPositions = [];
   this.vertexIDs = [];
+  this.mstVertexPositions = [];
+  this.mstVertexIDs = [];
+  this.mstEdgePairs = {};
   this.edgeList = [];
   this.edgeMap = {};
   this.infoPanelRectID = -1;
   this.infoLabelID = -1;
   this.mstWeightLabelID = -1;
+  this.graphPanelRectID = -1;
+  this.graphPanelTitleID = -1;
+  this.mstPanelRectID = -1;
+  this.mstPanelTitleID = -1;
   this.codeID = [];
   this.currentCodeLine = -1;
   this.currentMSTWeight = 0;
@@ -128,8 +179,11 @@ KruskalMST.prototype.setup = function () {
   this.createBaseLayout();
   this.generateGraphData();
   this.createGraphDisplay();
+  this.createMSTDisplay();
   this.createCodeDisplay();
-  this.updateInfoPanel("Click \"Run Kruskal\" to build the MST.");
+  this.updateInfoPanel(
+    "Click \"Run Kruskal\" to build the MST. The right panel reflects MST growth."
+  );
   this.updateMSTWeightLabel(0);
 
   return this.commands;
@@ -185,80 +239,235 @@ KruskalMST.prototype.createBaseLayout = function () {
   );
   this.cmd("SetTextStyle", this.mstWeightLabelID, "bold 20");
   this.cmd("SetForegroundColor", this.mstWeightLabelID, KruskalMST.INFO_TEXT_COLOR);
+
+  this.graphPanelRectID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.graphPanelRectID,
+    "",
+    KruskalMST.GRAPH_PANEL_WIDTH,
+    KruskalMST.GRAPH_PANEL_HEIGHT,
+    KruskalMST.GRAPH_PANEL_CENTER_X,
+    KruskalMST.GRAPH_PANEL_CENTER_Y
+  );
+  this.cmd("SetForegroundColor", this.graphPanelRectID, KruskalMST.PANEL_BORDER);
+  this.cmd("SetBackgroundColor", this.graphPanelRectID, KruskalMST.PANEL_BG);
+  this.cmd("SetRectangleLineThickness", this.graphPanelRectID, 1);
+
+  this.graphPanelTitleID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.graphPanelTitleID,
+    "Random Graph",
+    KruskalMST.GRAPH_PANEL_CENTER_X,
+    KruskalMST.GRAPH_TOP + 40,
+    1
+  );
+  this.cmd("SetTextStyle", this.graphPanelTitleID, "bold 22");
+  this.cmd("SetForegroundColor", this.graphPanelTitleID, KruskalMST.INFO_TEXT_COLOR);
+
+  this.mstPanelRectID = this.nextIndex++;
+  this.cmd(
+    "CreateRectangle",
+    this.mstPanelRectID,
+    "",
+    KruskalMST.MST_PANEL_WIDTH,
+    KruskalMST.MST_PANEL_HEIGHT,
+    KruskalMST.MST_PANEL_CENTER_X,
+    KruskalMST.MST_PANEL_CENTER_Y
+  );
+  this.cmd("SetForegroundColor", this.mstPanelRectID, KruskalMST.PANEL_BORDER);
+  this.cmd("SetBackgroundColor", this.mstPanelRectID, KruskalMST.PANEL_BG);
+  this.cmd("SetRectangleLineThickness", this.mstPanelRectID, 1);
+
+  this.mstPanelTitleID = this.nextIndex++;
+  this.cmd(
+    "CreateLabel",
+    this.mstPanelTitleID,
+    "MST Construction",
+    KruskalMST.MST_PANEL_CENTER_X,
+    KruskalMST.GRAPH_TOP + 40,
+    1
+  );
+  this.cmd("SetTextStyle", this.mstPanelTitleID, "bold 22");
+  this.cmd("SetForegroundColor", this.mstPanelTitleID, KruskalMST.INFO_TEXT_COLOR);
 };
 
 KruskalMST.prototype.generateGraphData = function () {
   var nodeCount = 7;
-  this.vertexLabels = [];
-  for (var i = 0; i < nodeCount; i++) {
-    this.vertexLabels.push(String.fromCharCode(65 + i));
-  }
-
-  this.vertexPositions = this.computeRandomPositions(nodeCount);
-  this.edgeList = this.generateRandomEdges(nodeCount);
+  this.vertexLabels = this.createVertexLabels(nodeCount);
+  this.generateRandomGraph(nodeCount);
 };
 
-KruskalMST.prototype.computeRandomPositions = function (nodeCount) {
-  var columns = [120, 300, 480, 660];
-  var rowSpacing = 180;
-  var firstRowY = KruskalMST.GRAPH_TOP + 100;
-  var anchors = [];
-
-  for (var r = 0; r < 3; r++) {
-    var rowY = firstRowY + r * rowSpacing;
-    if (rowY > KruskalMST.GRAPH_BOTTOM - 80) {
-      rowY = KruskalMST.GRAPH_BOTTOM - 80;
-    }
-    for (var c = 0; c < columns.length; c++) {
-      anchors.push({ x: columns[c], y: rowY });
-    }
+KruskalMST.prototype.createVertexLabels = function (count) {
+  var labels = [];
+  var limit = Math.min(count, 26);
+  for (var i = 0; i < limit; i++) {
+    labels.push(String.fromCharCode(65 + i));
   }
-
-  this.shuffleArray(anchors);
-  return anchors.slice(0, nodeCount);
+  return labels;
 };
 
-KruskalMST.prototype.generateRandomEdges = function (nodeCount) {
-  var edges = [];
+KruskalMST.prototype.generateRandomGraph = function (vertexCount) {
+  this.vertexPositions = this.computePanelLayout(
+    vertexCount,
+    KruskalMST.GRAPH_LAYOUT_CONFIG
+  );
+  this.mstVertexPositions = this.computePanelLayout(
+    vertexCount,
+    KruskalMST.MST_LAYOUT_CONFIG
+  );
+
+  var allowed = KruskalMST.TEMPLATE_ALLOWED;
   var usedPairs = {};
+  var undirectedEdges = [];
+  var self = this;
 
-  var remaining = [];
-  for (var i = 1; i < nodeCount; i++) {
-    remaining.push(i);
-  }
+  var isPairAllowed = function (a, b) {
+    if (a === b) {
+      return false;
+    }
+    var forward = allowed[a] && allowed[a][b];
+    var backward = allowed[b] && allowed[b][a];
+    return !!(forward || backward);
+  };
+
+  var tryAddPair = function (u, v) {
+    if (!isPairAllowed(u, v)) {
+      return false;
+    }
+    var key = self.edgeKey(u, v);
+    if (usedPairs[key]) {
+      return false;
+    }
+    usedPairs[key] = true;
+    undirectedEdges.push({
+      u: Math.min(u, v),
+      v: Math.max(u, v),
+    });
+    return true;
+  };
+
   var connected = [0];
+  var remaining = [];
+  for (var index = 1; index < vertexCount; index++) {
+    remaining.push(index);
+  }
 
   while (remaining.length > 0) {
-    var fromIndex = Math.floor(Math.random() * connected.length);
-    var toIndex = Math.floor(Math.random() * remaining.length);
-    var u = connected[fromIndex];
-    var v = remaining.splice(toIndex, 1)[0];
-    connected.push(v);
-    var key = this.edgeKey(u, v);
-    usedPairs[key] = true;
-    edges.push({ u: u, v: v, weight: this.randomWeight() });
+    var candidates = [];
+    for (var c = 0; c < connected.length; c++) {
+      for (var r = 0; r < remaining.length; r++) {
+        var from = connected[c];
+        var to = remaining[r];
+        if (isPairAllowed(from, to)) {
+          candidates.push({ from: from, to: to });
+        }
+      }
+    }
+
+    if (candidates.length === 0) {
+      var fallbackTarget = remaining.pop();
+      var fallbackConnected = false;
+      for (var search = 0; search < connected.length && !fallbackConnected; search++) {
+        fallbackConnected = tryAddPair(connected[search], fallbackTarget);
+      }
+      if (!fallbackConnected) {
+        for (
+          var explore = 0;
+          explore < vertexCount && !fallbackConnected;
+          explore++
+        ) {
+          if (explore === fallbackTarget) {
+            continue;
+          }
+          fallbackConnected = tryAddPair(explore, fallbackTarget);
+        }
+      }
+      if (!fallbackConnected && connected.length > 0) {
+        var arbitrary = connected[0];
+        var manualKey = self.edgeKey(arbitrary, fallbackTarget);
+        if (!usedPairs[manualKey]) {
+          usedPairs[manualKey] = true;
+          undirectedEdges.push({
+            u: Math.min(arbitrary, fallbackTarget),
+            v: Math.max(arbitrary, fallbackTarget),
+          });
+        }
+      }
+      connected.push(fallbackTarget);
+      continue;
+    }
+
+    var choiceIndex = Math.floor(Math.random() * candidates.length);
+    var selection = candidates[choiceIndex];
+    if (tryAddPair(selection.from, selection.to)) {
+      var removalIndex = remaining.indexOf(selection.to);
+      if (removalIndex !== -1) {
+        remaining.splice(removalIndex, 1);
+      }
+      connected.push(selection.to);
+    } else {
+      var alternative = remaining.pop();
+      tryAddPair(connected[0], alternative);
+      connected.push(alternative);
+    }
   }
 
-  var extraPairs = [];
-  for (var a = 0; a < nodeCount; a++) {
-    for (var b = a + 1; b < nodeCount; b++) {
-      var pairKey = this.edgeKey(a, b);
-      if (!usedPairs[pairKey]) {
-        extraPairs.push({ u: a, v: b });
+  var baseEdgePercent = 0.45;
+  for (var i = 0; i < vertexCount; i++) {
+    for (var j = i + 1; j < vertexCount; j++) {
+      if (!isPairAllowed(i, j)) {
+        continue;
+      }
+      if (usedPairs[self.edgeKey(i, j)]) {
+        continue;
+      }
+      if (Math.random() <= baseEdgePercent) {
+        tryAddPair(i, j);
       }
     }
   }
 
-  this.shuffleArray(extraPairs);
-  var extraCount = Math.min(3 + Math.floor(Math.random() * 3), extraPairs.length);
-  for (var e = 0; e < extraCount; e++) {
-    var pair = extraPairs[e];
-    var extraKey = this.edgeKey(pair.u, pair.v);
-    usedPairs[extraKey] = true;
-    edges.push({ u: pair.u, v: pair.v, weight: this.randomWeight() });
+  if (undirectedEdges.length < vertexCount - 1) {
+    for (var attach = 1; attach < vertexCount; attach++) {
+      if (undirectedEdges.length >= vertexCount - 1) {
+        break;
+      }
+      tryAddPair(attach - 1, attach);
+    }
   }
 
-  return edges;
+  this.shuffleArray(undirectedEdges);
+
+  this.edgeList = [];
+  for (var e = 0; e < undirectedEdges.length; e++) {
+    var pair = undirectedEdges[e];
+    this.edgeList.push({
+      u: pair.u,
+      v: pair.v,
+      weight: this.randomWeight(),
+    });
+  }
+};
+
+KruskalMST.prototype.computePanelLayout = function (vertexCount, config) {
+  var layout = [];
+  var rowPattern = [4, 3, 4, 3, 4];
+
+  for (var row = 0, index = 0; row < rowPattern.length; row++) {
+    var count = rowPattern[row];
+    var startX = count === 4 ? config.baseX : config.baseX + config.stepX / 2;
+    var y = config.baseY + row * config.rowSpacing;
+    for (var col = 0; col < count && index < vertexCount; col++, index++) {
+      layout.push({ x: startX + col * config.stepX, y: y });
+    }
+    if (layout.length >= vertexCount) {
+      break;
+    }
+  }
+
+  return layout;
 };
 
 KruskalMST.prototype.createGraphDisplay = function () {
@@ -301,6 +510,29 @@ KruskalMST.prototype.createGraphDisplay = function () {
     );
     this.cmd("SetEdgeThickness", fromID, toID, KruskalMST.EDGE_THICKNESS);
     this.cmd("SetEdgeHighlight", fromID, toID, 0);
+  }
+};
+
+KruskalMST.prototype.createMSTDisplay = function () {
+  this.mstVertexIDs = new Array(this.vertexLabels.length);
+  this.mstEdgePairs = {};
+
+  for (var i = 0; i < this.vertexLabels.length; i++) {
+    var id = this.nextIndex++;
+    this.mstVertexIDs[i] = id;
+    var pos = this.mstVertexPositions[i];
+    this.cmd(
+      "CreateCircle",
+      id,
+      this.vertexLabels[i],
+      pos.x,
+      pos.y,
+      KruskalMST.GRAPH_NODE_RADIUS
+    );
+    this.cmd("SetBackgroundColor", id, KruskalMST.MST_NODE_COLOR);
+    this.cmd("SetForegroundColor", id, KruskalMST.MST_NODE_BORDER);
+    this.cmd("SetTextColor", id, KruskalMST.MST_NODE_TEXT);
+    this.cmd("SetHighlight", id, 0);
   }
 };
 
@@ -461,10 +693,14 @@ KruskalMST.prototype.kruskal = function () {
           this.vertexLabels[rootU] +
           " and " +
           this.vertexLabels[rootV] +
-          " to keep the forest acyclic."
+          " to keep the forest acyclic while updating the MST panel."
       );
+      this.addEdgeToMST(u, v, weight);
+      this.cmd("SetHighlight", this.mstVertexIDs[u], 1);
+      this.cmd("SetHighlight", this.mstVertexIDs[v], 1);
       this.cmd("Step");
-
+      this.cmd("SetHighlight", this.mstVertexIDs[u], 0);
+      this.cmd("SetHighlight", this.mstVertexIDs[v], 0);
       this.setEdgeStyle(u, v, {
         color: KruskalMST.EDGE_ACCEPT_COLOR,
         thickness: KruskalMST.EDGE_MST_THICKNESS,
@@ -511,6 +747,7 @@ KruskalMST.prototype.resetEdgeStyles = function () {
       highlight: false,
     });
   }
+  this.clearMSTEdges();
 };
 
 KruskalMST.prototype.clearNodeHighlights = function () {
@@ -534,6 +771,31 @@ KruskalMST.prototype.setEdgeStyle = function (u, v, style) {
   this.cmd("SetEdgeColor", entry.from, entry.to, color);
   this.cmd("SetEdgeThickness", entry.from, entry.to, thickness);
   this.cmd("SetEdgeHighlight", entry.from, entry.to, highlight);
+};
+
+KruskalMST.prototype.addEdgeToMST = function (u, v, weight) {
+  if (!this.mstVertexIDs.length) {
+    return;
+  }
+  var key = this.edgeKey(u, v);
+  if (this.mstEdgePairs[key]) {
+    return;
+  }
+
+  var fromID = this.mstVertexIDs[u];
+  var toID = this.mstVertexIDs[v];
+  this.cmd(
+    "Connect",
+    fromID,
+    toID,
+    KruskalMST.EDGE_ACCEPT_COLOR,
+    0,
+    0,
+    String(weight)
+  );
+  this.cmd("SetEdgeThickness", fromID, toID, KruskalMST.EDGE_MST_THICKNESS);
+  this.cmd("SetEdgeHighlight", fromID, toID, 0);
+  this.mstEdgePairs[key] = { from: fromID, to: toID };
 };
 
 KruskalMST.prototype.findSet = function (parent, node) {
@@ -580,6 +842,23 @@ KruskalMST.prototype.randomWeight = function () {
 
 KruskalMST.prototype.edgeKey = function (u, v) {
   return u < v ? u + "-" + v : v + "-" + u;
+};
+
+KruskalMST.prototype.clearMSTEdges = function () {
+  if (!this.mstEdgePairs) {
+    this.mstEdgePairs = {};
+    return;
+  }
+
+  for (var key in this.mstEdgePairs) {
+    if (!Object.prototype.hasOwnProperty.call(this.mstEdgePairs, key)) {
+      continue;
+    }
+    var entry = this.mstEdgePairs[key];
+    this.cmd("Disconnect", entry.from, entry.to);
+  }
+
+  this.mstEdgePairs = {};
 };
 
 var currentAlg;
