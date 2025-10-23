@@ -33,15 +33,13 @@ KruskalMST.GRAPH_PANEL_CENTER_Y =
 KruskalMST.GRAPH_PANEL_WIDTH = 400;
 KruskalMST.GRAPH_PANEL_HEIGHT = KruskalMST.ROW2_HEIGHT - 40;
 
-KruskalMST.MST_PANEL_CENTER_X = 560;
+KruskalMST.MST_PANEL_CENTER_X = 580;
 KruskalMST.MST_PANEL_CENTER_Y = KruskalMST.GRAPH_PANEL_CENTER_Y;
 KruskalMST.MST_PANEL_WIDTH = 340;
 KruskalMST.MST_PANEL_HEIGHT = KruskalMST.GRAPH_PANEL_HEIGHT;
 
 KruskalMST.EDGE_COLOR = "#4a4e69";
 KruskalMST.EDGE_CHECK_COLOR = "#ffb703";
-KruskalMST.EDGE_ACCEPT_COLOR = "#2a9d8f";
-KruskalMST.EDGE_REJECT_COLOR = "#e63946";
 KruskalMST.EDGE_THICKNESS = 3;
 KruskalMST.EDGE_SELECTED_THICKNESS = 5;
 KruskalMST.EDGE_MST_THICKNESS = 6;
@@ -61,7 +59,7 @@ KruskalMST.GRAPH_LAYOUT_CONFIG = {
 };
 
 KruskalMST.MST_LAYOUT_CONFIG = {
-  baseX: 430,
+  baseX: 450,
   stepX: 85,
   baseY: KruskalMST.GRAPH_TOP + 130,
   rowSpacing: 150,
@@ -679,7 +677,7 @@ KruskalMST.prototype.kruskal = function () {
       this.cmd("SetHighlight", this.mstVertexIDs[u], 0);
       this.cmd("SetHighlight", this.mstVertexIDs[v], 0);
       this.setEdgeStyle(u, v, {
-        color: KruskalMST.EDGE_ACCEPT_COLOR,
+        color: KruskalMST.EDGE_COLOR,
         thickness: KruskalMST.EDGE_MST_THICKNESS,
         highlight: false,
       });
@@ -694,7 +692,7 @@ KruskalMST.prototype.kruskal = function () {
       this.cmd("Step");
 
       this.setEdgeStyle(u, v, {
-        color: KruskalMST.EDGE_REJECT_COLOR,
+        color: KruskalMST.EDGE_COLOR,
         thickness: KruskalMST.EDGE_THICKNESS,
         highlight: false,
       });
@@ -766,7 +764,7 @@ KruskalMST.prototype.addEdgeToMST = function (u, v, weight) {
     "Connect",
     fromID,
     toID,
-    KruskalMST.EDGE_ACCEPT_COLOR,
+    KruskalMST.EDGE_COLOR,
     curve,
     0,
     String(weight)
