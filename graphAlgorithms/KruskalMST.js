@@ -18,8 +18,6 @@ KruskalMST.ROW3_HEIGHT =
 
 KruskalMST.TITLE_Y = 60;
 KruskalMST.INFO_PANEL_CENTER_Y = 130;
-KruskalMST.INFO_PANEL_WIDTH = 480;
-KruskalMST.INFO_PANEL_HEIGHT = 110;
 KruskalMST.MST_WEIGHT_Y = 180;
 
 KruskalMST.GRAPH_TOP = KruskalMST.ROW1_HEIGHT;
@@ -29,18 +27,16 @@ KruskalMST.GRAPH_NODE_COLOR = "#f5f5ff";
 KruskalMST.GRAPH_NODE_BORDER = "#1b3a4b";
 KruskalMST.GRAPH_NODE_TEXT = "#1b3a4b";
 
-KruskalMST.GRAPH_PANEL_CENTER_X = 210;
+KruskalMST.GRAPH_PANEL_CENTER_X = 230;
 KruskalMST.GRAPH_PANEL_CENTER_Y =
   KruskalMST.GRAPH_TOP + KruskalMST.ROW2_HEIGHT / 2;
 KruskalMST.GRAPH_PANEL_WIDTH = 400;
 KruskalMST.GRAPH_PANEL_HEIGHT = KruskalMST.ROW2_HEIGHT - 40;
 
-KruskalMST.MST_PANEL_CENTER_X = 540;
+KruskalMST.MST_PANEL_CENTER_X = 560;
 KruskalMST.MST_PANEL_CENTER_Y = KruskalMST.GRAPH_PANEL_CENTER_Y;
 KruskalMST.MST_PANEL_WIDTH = 340;
 KruskalMST.MST_PANEL_HEIGHT = KruskalMST.GRAPH_PANEL_HEIGHT;
-KruskalMST.PANEL_BG = "#fbfcff";
-KruskalMST.PANEL_BORDER = "#90a4ae";
 
 KruskalMST.EDGE_COLOR = "#4a4e69";
 KruskalMST.EDGE_CHECK_COLOR = "#ffb703";
@@ -50,8 +46,6 @@ KruskalMST.EDGE_THICKNESS = 3;
 KruskalMST.EDGE_SELECTED_THICKNESS = 5;
 KruskalMST.EDGE_MST_THICKNESS = 6;
 
-KruskalMST.INFO_PANEL_BG = "#eef1ff";
-KruskalMST.INFO_PANEL_BORDER = "#264653";
 KruskalMST.INFO_TEXT_COLOR = "#1d3557";
 KruskalMST.TITLE_COLOR = "#14213d";
 
@@ -62,15 +56,15 @@ KruskalMST.MST_NODE_TEXT = "#6c4f3d";
 KruskalMST.GRAPH_LAYOUT_CONFIG = {
   baseX: 80,
   stepX: 100,
-  baseY: KruskalMST.GRAPH_TOP + 120,
-  rowSpacing: 140,
+  baseY: KruskalMST.GRAPH_TOP + 130,
+  rowSpacing: 150,
 };
 
 KruskalMST.MST_LAYOUT_CONFIG = {
-  baseX: 420,
+  baseX: 430,
   stepX: 85,
-  baseY: KruskalMST.GRAPH_TOP + 120,
-  rowSpacing: 140,
+  baseY: KruskalMST.GRAPH_TOP + 130,
+  rowSpacing: 150,
 };
 
 KruskalMST.TEMPLATE_ALLOWED = [
@@ -84,6 +78,19 @@ KruskalMST.TEMPLATE_ALLOWED = [
   [true, false, false, false, true, false, false, false, true, false],
   [false, false, false, false, true, true, false, true, false, true],
   [false, false, false, false, false, true, true, false, true, false],
+];
+
+KruskalMST.EDGE_CURVES = [
+  [0, 0, -0.35, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0.35, 0, 0, 0, 0, -0.3, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0.3, 0],
+  [0, 0, 0.3, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.35],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
 KruskalMST.CODE_START_X = 80;
@@ -127,12 +134,9 @@ KruskalMST.prototype.init = function (am, w, h) {
   this.mstEdgePairs = {};
   this.edgeList = [];
   this.edgeMap = {};
-  this.infoPanelRectID = -1;
   this.infoLabelID = -1;
   this.mstWeightLabelID = -1;
-  this.graphPanelRectID = -1;
   this.graphPanelTitleID = -1;
-  this.mstPanelRectID = -1;
   this.mstPanelTitleID = -1;
   this.codeID = [];
   this.currentCodeLine = -1;
@@ -202,20 +206,6 @@ KruskalMST.prototype.createBaseLayout = function () {
   this.cmd("SetTextStyle", titleID, "bold 36");
   this.cmd("SetForegroundColor", titleID, KruskalMST.TITLE_COLOR);
 
-  this.infoPanelRectID = this.nextIndex++;
-  this.cmd(
-    "CreateRectangle",
-    this.infoPanelRectID,
-    "",
-    KruskalMST.INFO_PANEL_WIDTH,
-    KruskalMST.INFO_PANEL_HEIGHT,
-    KruskalMST.CANVAS_WIDTH / 2,
-    KruskalMST.INFO_PANEL_CENTER_Y
-  );
-  this.cmd("SetForegroundColor", this.infoPanelRectID, KruskalMST.INFO_PANEL_BORDER);
-  this.cmd("SetBackgroundColor", this.infoPanelRectID, KruskalMST.INFO_PANEL_BG);
-  this.cmd("SetRectangleLineThickness", this.infoPanelRectID, 2);
-
   this.infoLabelID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
@@ -240,53 +230,25 @@ KruskalMST.prototype.createBaseLayout = function () {
   this.cmd("SetTextStyle", this.mstWeightLabelID, "bold 20");
   this.cmd("SetForegroundColor", this.mstWeightLabelID, KruskalMST.INFO_TEXT_COLOR);
 
-  this.graphPanelRectID = this.nextIndex++;
-  this.cmd(
-    "CreateRectangle",
-    this.graphPanelRectID,
-    "",
-    KruskalMST.GRAPH_PANEL_WIDTH,
-    KruskalMST.GRAPH_PANEL_HEIGHT,
-    KruskalMST.GRAPH_PANEL_CENTER_X,
-    KruskalMST.GRAPH_PANEL_CENTER_Y
-  );
-  this.cmd("SetForegroundColor", this.graphPanelRectID, KruskalMST.PANEL_BORDER);
-  this.cmd("SetBackgroundColor", this.graphPanelRectID, KruskalMST.PANEL_BG);
-  this.cmd("SetRectangleLineThickness", this.graphPanelRectID, 1);
-
   this.graphPanelTitleID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.graphPanelTitleID,
-    "Random Graph",
+    "Graph",
     KruskalMST.GRAPH_PANEL_CENTER_X,
-    KruskalMST.GRAPH_TOP + 40,
+    KruskalMST.GRAPH_TOP + 36,
     1
   );
   this.cmd("SetTextStyle", this.graphPanelTitleID, "bold 22");
   this.cmd("SetForegroundColor", this.graphPanelTitleID, KruskalMST.INFO_TEXT_COLOR);
 
-  this.mstPanelRectID = this.nextIndex++;
-  this.cmd(
-    "CreateRectangle",
-    this.mstPanelRectID,
-    "",
-    KruskalMST.MST_PANEL_WIDTH,
-    KruskalMST.MST_PANEL_HEIGHT,
-    KruskalMST.MST_PANEL_CENTER_X,
-    KruskalMST.MST_PANEL_CENTER_Y
-  );
-  this.cmd("SetForegroundColor", this.mstPanelRectID, KruskalMST.PANEL_BORDER);
-  this.cmd("SetBackgroundColor", this.mstPanelRectID, KruskalMST.PANEL_BG);
-  this.cmd("SetRectangleLineThickness", this.mstPanelRectID, 1);
-
   this.mstPanelTitleID = this.nextIndex++;
   this.cmd(
     "CreateLabel",
     this.mstPanelTitleID,
-    "MST Construction",
+    "MST",
     KruskalMST.MST_PANEL_CENTER_X,
-    KruskalMST.GRAPH_TOP + 40,
+    KruskalMST.GRAPH_TOP + 36,
     1
   );
   this.cmd("SetTextStyle", this.mstPanelTitleID, "bold 22");
@@ -470,6 +432,20 @@ KruskalMST.prototype.computePanelLayout = function (vertexCount, config) {
   return layout;
 };
 
+KruskalMST.prototype.getEdgeCurve = function (u, v) {
+  var a = Math.min(u, v);
+  var b = Math.max(u, v);
+
+  if (
+    KruskalMST.EDGE_CURVES[a] &&
+    typeof KruskalMST.EDGE_CURVES[a][b] === "number"
+  ) {
+    return KruskalMST.EDGE_CURVES[a][b];
+  }
+
+  return 0;
+};
+
 KruskalMST.prototype.createGraphDisplay = function () {
   this.vertexIDs = new Array(this.vertexLabels.length);
   this.edgeMap = {};
@@ -497,6 +473,7 @@ KruskalMST.prototype.createGraphDisplay = function () {
     var key = this.edgeKey(edge.u, edge.v);
     var fromID = this.vertexIDs[edge.u];
     var toID = this.vertexIDs[edge.v];
+    var curve = this.getEdgeCurve(edge.u, edge.v);
     this.edgeMap[key] = { from: fromID, to: toID };
 
     this.cmd(
@@ -504,7 +481,7 @@ KruskalMST.prototype.createGraphDisplay = function () {
       fromID,
       toID,
       KruskalMST.EDGE_COLOR,
-      0,
+      curve,
       0,
       String(edge.weight)
     );
@@ -784,12 +761,13 @@ KruskalMST.prototype.addEdgeToMST = function (u, v, weight) {
 
   var fromID = this.mstVertexIDs[u];
   var toID = this.mstVertexIDs[v];
+  var curve = this.getEdgeCurve(u, v);
   this.cmd(
     "Connect",
     fromID,
     toID,
     KruskalMST.EDGE_ACCEPT_COLOR,
-    0,
+    curve,
     0,
     String(weight)
   );
