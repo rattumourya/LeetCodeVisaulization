@@ -10,12 +10,12 @@ KruskalMST.superclass = Algorithm.prototype;
 
 KruskalMST.CANVAS_WIDTH = 720;
 KruskalMST.CANVAS_HEIGHT = 1280;
-KruskalMST.CANVAS_LEFT_PADDING = 40;
+KruskalMST.CANVAS_LEFT_PADDING = 60;
 KruskalMST.CENTER_X =
   KruskalMST.CANVAS_WIDTH / 2 + KruskalMST.CANVAS_LEFT_PADDING / 2;
 
 KruskalMST.ROW1_HEIGHT = 200;
-KruskalMST.ROW2_HEIGHT = 540;
+KruskalMST.ROW2_HEIGHT = 660;
 KruskalMST.ROW3_HEIGHT =
   KruskalMST.CANVAS_HEIGHT - KruskalMST.ROW1_HEIGHT - KruskalMST.ROW2_HEIGHT;
 
@@ -25,29 +25,27 @@ KruskalMST.MST_WEIGHT_Y = 180;
 
 KruskalMST.GRAPH_TOP = KruskalMST.ROW1_HEIGHT;
 KruskalMST.GRAPH_BOTTOM = KruskalMST.ROW1_HEIGHT + KruskalMST.ROW2_HEIGHT;
-KruskalMST.GRAPH_NODE_RADIUS = 30;
+KruskalMST.GRAPH_NODE_RADIUS = 36;
 KruskalMST.GRAPH_NODE_COLOR = "#f5f5ff";
 KruskalMST.GRAPH_NODE_BORDER = "#1b3a4b";
 KruskalMST.GRAPH_NODE_TEXT = "#1b3a4b";
 
 KruskalMST.GRAPH_PANEL_CENTER_X =
-  KruskalMST.CANVAS_LEFT_PADDING + 210;
+  KruskalMST.CANVAS_LEFT_PADDING + 230;
 KruskalMST.GRAPH_PANEL_CENTER_Y =
   KruskalMST.GRAPH_TOP + KruskalMST.ROW2_HEIGHT / 2;
-KruskalMST.GRAPH_PANEL_WIDTH = 380;
-KruskalMST.GRAPH_PANEL_HEIGHT = KruskalMST.ROW2_HEIGHT - 40;
+KruskalMST.GRAPH_PANEL_WIDTH = 420;
+KruskalMST.GRAPH_PANEL_HEIGHT = KruskalMST.ROW2_HEIGHT - 60;
 
 KruskalMST.MST_PANEL_CENTER_X =
-  KruskalMST.CANVAS_LEFT_PADDING + 550;
+  KruskalMST.CANVAS_LEFT_PADDING + 575;
 KruskalMST.MST_PANEL_CENTER_Y = KruskalMST.GRAPH_PANEL_CENTER_Y;
-KruskalMST.MST_PANEL_WIDTH = 260;
+KruskalMST.MST_PANEL_WIDTH = 170;
 KruskalMST.MST_PANEL_HEIGHT = KruskalMST.GRAPH_PANEL_HEIGHT;
 
 KruskalMST.EDGE_COLOR = "#4a4e69";
 KruskalMST.MST_EDGE_COLOR = "#2a9d8f";
-KruskalMST.EDGE_CHECK_COLOR = "#ffb703";
 KruskalMST.EDGE_THICKNESS = 3;
-KruskalMST.EDGE_SELECTED_THICKNESS = 5;
 KruskalMST.EDGE_MST_THICKNESS = 6;
 
 KruskalMST.INFO_TEXT_COLOR = "#1d3557";
@@ -57,26 +55,20 @@ KruskalMST.MST_NODE_COLOR = "#fff8e1";
 KruskalMST.MST_NODE_BORDER = "#6c4f3d";
 KruskalMST.MST_NODE_TEXT = "#6c4f3d";
 
-KruskalMST.EDGE_LIST_TITLE_Y = KruskalMST.GRAPH_BOTTOM - 120;
-KruskalMST.EDGE_LIST_START_Y = KruskalMST.EDGE_LIST_TITLE_Y + 36;
-KruskalMST.EDGE_LIST_START_X = KruskalMST.CANVAS_LEFT_PADDING + 130;
-KruskalMST.EDGE_LIST_GAP_X = 95;
-KruskalMST.EDGE_LIST_GAP_Y = 40;
-KruskalMST.EDGE_LIST_PER_ROW = 6;
-KruskalMST.EDGE_LIST_FONT = "bold 20";
-
 KruskalMST.GRAPH_LAYOUT_CONFIG = {
-  baseX: KruskalMST.CANVAS_LEFT_PADDING + 110,
-  stepX: 95,
-  baseY: KruskalMST.GRAPH_TOP + 150,
-  rowSpacing: 170,
+  centerX: KruskalMST.CANVAS_LEFT_PADDING + 230,
+  stepX: 130,
+  baseY: KruskalMST.GRAPH_TOP + 120,
+  rowSpacing: 160,
+  rowPattern: [4, 3, 4, 3, 4],
 };
 
 KruskalMST.MST_LAYOUT_CONFIG = {
-  baseX: KruskalMST.CANVAS_LEFT_PADDING + 430,
-  stepX: 82,
-  baseY: KruskalMST.GRAPH_TOP + 150,
-  rowSpacing: 170,
+  centerX: KruskalMST.CANVAS_LEFT_PADDING + 575,
+  stepX: 78,
+  baseY: KruskalMST.GRAPH_TOP + 120,
+  rowSpacing: 160,
+  rowPattern: [3, 2, 2, 2, 2],
 };
 
 KruskalMST.TEMPLATE_ALLOWED = [
@@ -145,9 +137,6 @@ KruskalMST.prototype.init = function (am, w, h) {
   this.mstVertexIDs = [];
   this.mstEdgePairs = {};
   this.edgeList = [];
-  this.edgeLabelMap = {};
-  this.edgeOrderIDs = [];
-  this.edgeOrderTitleID = -1;
   this.edgeMap = {};
   this.infoLabelID = -1;
   this.mstWeightLabelID = -1;
@@ -194,15 +183,10 @@ KruskalMST.prototype.reset = function () {
 
 KruskalMST.prototype.setup = function () {
   this.commands = [];
-  this.edgeOrderIDs = [];
-  this.edgeLabelMap = {};
-  this.edgeOrderTitleID = -1;
-
   this.createBaseLayout();
   this.generateGraphData();
   this.createGraphDisplay();
   this.createMSTDisplay();
-  this.createEdgeOrderDisplay();
   this.createCodeDisplay();
   this.updateInfoPanel(
     "Click \"Run Kruskal\" to build the MST. The right panel reflects MST growth."
@@ -435,42 +419,35 @@ KruskalMST.prototype.generateRandomGraph = function (vertexCount) {
 
 KruskalMST.prototype.computePanelLayout = function (vertexCount, config) {
   var layout = [];
-  var rowPattern = [4, 3, 4, 3, 4];
+  var rowPattern =
+    (config && config.rowPattern && config.rowPattern.length
+      ? config.rowPattern
+      : [4, 3, 4, 3, 4]);
+  var useCenter = config && typeof config.centerX === "number";
+  var baseX = config && typeof config.baseX === "number" ? config.baseX : 0;
 
-  for (var row = 0, index = 0; row < rowPattern.length; row++) {
-    var count = rowPattern[row];
-    var startX = count === 4 ? config.baseX : config.baseX + config.stepX / 2;
+  if (!rowPattern.length) {
+    rowPattern = [vertexCount];
+  }
+
+  for (var row = 0, index = 0; index < vertexCount; row++) {
+    var patternIndex = row < rowPattern.length ? row : rowPattern.length - 1;
+    var count = rowPattern[patternIndex];
+    if (count <= 0) {
+      continue;
+    }
+    var startX = useCenter
+      ? config.centerX - ((count - 1) * config.stepX) / 2
+      : count === 4
+      ? baseX
+      : baseX + config.stepX / 2;
     var y = config.baseY + row * config.rowSpacing;
     for (var col = 0; col < count && index < vertexCount; col++, index++) {
       layout.push({ x: startX + col * config.stepX, y: y });
     }
-    if (layout.length >= vertexCount) {
-      break;
-    }
   }
 
   return layout;
-};
-
-KruskalMST.prototype.getEdgeOrderSlotPosition = function (index) {
-  var perRow = KruskalMST.EDGE_LIST_PER_ROW;
-  var col = index % perRow;
-  var row = Math.floor(index / perRow);
-  return {
-    x: KruskalMST.EDGE_LIST_START_X + col * KruskalMST.EDGE_LIST_GAP_X,
-    y: KruskalMST.EDGE_LIST_START_Y + row * KruskalMST.EDGE_LIST_GAP_Y,
-  };
-};
-
-KruskalMST.prototype.getEdgeLabelText = function (edge) {
-  return (
-    this.vertexLabels[edge.u] +
-    "-" +
-    this.vertexLabels[edge.v] +
-    " (" +
-    edge.weight +
-    ")"
-  );
 };
 
 KruskalMST.prototype.getEdgeCurve = function (u, v) {
@@ -554,118 +531,6 @@ KruskalMST.prototype.createMSTDisplay = function () {
   }
 };
 
-KruskalMST.prototype.createEdgeOrderDisplay = function () {
-  if (!this.edgeList.length) {
-    return;
-  }
-
-  this.edgeOrderTitleID = this.nextIndex++;
-  this.cmd(
-    "CreateLabel",
-    this.edgeOrderTitleID,
-    "Edge order (unsorted)",
-    KruskalMST.CENTER_X,
-    KruskalMST.EDGE_LIST_TITLE_Y,
-    1
-  );
-  this.cmd("SetTextStyle", this.edgeOrderTitleID, "bold 22");
-  this.cmd("SetForegroundColor", this.edgeOrderTitleID, KruskalMST.INFO_TEXT_COLOR);
-
-  this.edgeOrderIDs = new Array(this.edgeList.length);
-  this.edgeLabelMap = {};
-
-  for (var i = 0; i < this.edgeList.length; i++) {
-    var edge = this.edgeList[i];
-    var labelID = this.nextIndex++;
-    var pos = this.getEdgeOrderSlotPosition(i);
-    var text = this.getEdgeLabelText(edge);
-
-    this.cmd("CreateLabel", labelID, text, pos.x, pos.y, 1);
-    this.cmd("SetTextStyle", labelID, KruskalMST.EDGE_LIST_FONT);
-    this.cmd("SetForegroundColor", labelID, KruskalMST.EDGE_COLOR);
-    this.cmd("SetHighlight", labelID, 0);
-
-    this.edgeOrderIDs[i] = labelID;
-    this.edgeLabelMap[edge.id] = labelID;
-  }
-};
-
-KruskalMST.prototype.updateEdgeOrderTitle = function (text) {
-  if (this.edgeOrderTitleID !== -1) {
-    this.cmd("SetText", this.edgeOrderTitleID, text);
-  }
-};
-
-KruskalMST.prototype.resetEdgeOrderVisuals = function () {
-  if (!this.edgeList.length) {
-    return;
-  }
-
-  this.updateEdgeOrderTitle("Edge order (unsorted)");
-
-  for (var i = 0; i < this.edgeList.length; i++) {
-    var edge = this.edgeList[i];
-    var labelID = this.edgeLabelMap[edge.id];
-    if (typeof labelID === "undefined") {
-      continue;
-    }
-    var pos = this.getEdgeOrderSlotPosition(i);
-    this.cmd("SetPosition", labelID, pos.x, pos.y);
-    this.cmd("SetText", labelID, this.getEdgeLabelText(edge));
-    this.cmd("SetForegroundColor", labelID, KruskalMST.EDGE_COLOR);
-    this.cmd("SetHighlight", labelID, 0);
-  }
-
-};
-
-KruskalMST.prototype.animateEdgeSorting = function (sortedEdges) {
-  if (!sortedEdges.length) {
-    return;
-  }
-
-  this.updateEdgeOrderTitle("Sorting edges by weight...");
-
-  for (var i = 0; i < sortedEdges.length; i++) {
-    var edge = sortedEdges[i];
-    var labelID = this.edgeLabelMap[edge.id];
-    if (typeof labelID === "undefined") {
-      continue;
-    }
-    var target = this.getEdgeOrderSlotPosition(i);
-    this.cmd("SetHighlight", labelID, 1);
-    this.cmd("Step");
-    this.cmd("Move", labelID, target.x, target.y);
-    this.cmd("Step");
-    this.cmd("SetHighlight", labelID, 0);
-  }
-
-  this.updateEdgeOrderTitle("Edge order (sorted by weight)");
-};
-
-KruskalMST.prototype.highlightEdgeOrderEntry = function (edgeId, on) {
-  var labelID = this.edgeLabelMap[edgeId];
-  if (typeof labelID === "undefined") {
-    return;
-  }
-  this.cmd("SetHighlight", labelID, on ? 1 : 0);
-};
-
-KruskalMST.prototype.markEdgeOrderAsAccepted = function (edgeId) {
-  var labelID = this.edgeLabelMap[edgeId];
-  if (typeof labelID === "undefined") {
-    return;
-  }
-  this.cmd("SetForegroundColor", labelID, KruskalMST.MST_EDGE_COLOR);
-};
-
-KruskalMST.prototype.markEdgeOrderAsCycle = function (edgeId) {
-  var labelID = this.edgeLabelMap[edgeId];
-  if (typeof labelID === "undefined") {
-    return;
-  }
-  this.cmd("SetForegroundColor", labelID, KruskalMST.EDGE_COLOR);
-};
-
 KruskalMST.prototype.createCodeDisplay = function () {
   this.codeID = this.addCodeToCanvasBase(
     KruskalMST.CODE_LINES,
@@ -736,7 +601,6 @@ KruskalMST.prototype.kruskal = function () {
   this.highlightCodeLine(-1);
   this.clearNodeHighlights();
   this.resetEdgeStyles();
-  this.resetEdgeOrderVisuals();
   this.updateMSTWeightLabel(0);
 
   var sortedEdges = this.edgeList.slice(0);
@@ -764,8 +628,6 @@ KruskalMST.prototype.kruskal = function () {
   this.highlightCodeLine(3);
   this.updateInfoPanel("Sorting edges by ascending weight.");
   this.cmd("Step");
-  this.animateEdgeSorting(sortedEdges);
-
   var mstWeight = 0;
 
   for (var e = 0; e < sortedEdges.length; e++) {
@@ -781,14 +643,8 @@ KruskalMST.prototype.kruskal = function () {
       weight +
       ")";
 
-    this.highlightEdgeOrderEntry(edge.id, true);
     this.highlightCodeLine(4);
     this.updateInfoPanel("Considering edge " + label + ".");
-    this.setEdgeStyle(u, v, {
-      color: KruskalMST.EDGE_CHECK_COLOR,
-      thickness: KruskalMST.EDGE_SELECTED_THICKNESS,
-      highlight: true,
-    });
     this.cmd("SetHighlight", this.vertexIDs[u], 1);
     this.cmd("SetHighlight", this.vertexIDs[v], 1);
     this.cmd("Step");
@@ -834,12 +690,6 @@ KruskalMST.prototype.kruskal = function () {
       this.cmd("Step");
       this.cmd("SetHighlight", this.mstVertexIDs[u], 0);
       this.cmd("SetHighlight", this.mstVertexIDs[v], 0);
-      this.setEdgeStyle(u, v, {
-        color: KruskalMST.MST_EDGE_COLOR,
-        thickness: KruskalMST.EDGE_MST_THICKNESS,
-        highlight: false,
-      });
-      this.markEdgeOrderAsAccepted(edge.id);
     } else {
       this.highlightCodeLine(10);
       this.updateInfoPanel(
@@ -850,17 +700,10 @@ KruskalMST.prototype.kruskal = function () {
       this.highlightCodeLine(11);
       this.cmd("Step");
 
-      this.setEdgeStyle(u, v, {
-        color: KruskalMST.EDGE_COLOR,
-        thickness: KruskalMST.EDGE_THICKNESS,
-        highlight: false,
-      });
-      this.markEdgeOrderAsCycle(edge.id);
     }
 
     this.cmd("SetHighlight", this.vertexIDs[u], 0);
     this.cmd("SetHighlight", this.vertexIDs[v], 0);
-    this.highlightEdgeOrderEntry(edge.id, false);
     this.cmd("Step");
   }
 
