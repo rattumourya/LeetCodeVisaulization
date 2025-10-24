@@ -11,6 +11,8 @@ KruskalMST.superclass = Algorithm.prototype;
 KruskalMST.CANVAS_WIDTH = 720;
 KruskalMST.CANVAS_HEIGHT = 1280;
 KruskalMST.CANVAS_LEFT_PADDING = 60;
+KruskalMST.CANVAS_SIDE_MARGIN = 20;
+KruskalMST.PANEL_MIN_GAP = 50;
 KruskalMST.CENTER_X =
   KruskalMST.CANVAS_WIDTH / 2 + KruskalMST.CANVAS_LEFT_PADDING / 2;
 
@@ -47,7 +49,7 @@ KruskalMST.EDGE_COLOR = "#4a4e69";
 KruskalMST.ACTIVE_GRAPH_EDGE_COLOR = "#d90429";
 KruskalMST.MST_EDGE_COLOR = "#2a9d8f";
 KruskalMST.EDGE_THICKNESS = 3;
-KruskalMST.EDGE_MST_THICKNESS = 6;
+KruskalMST.EDGE_MST_THICKNESS = KruskalMST.EDGE_THICKNESS;
 
 KruskalMST.INFO_TEXT_COLOR = "#1d3557";
 KruskalMST.TITLE_COLOR = "#14213d";
@@ -57,19 +59,19 @@ KruskalMST.MST_NODE_BORDER = KruskalMST.GRAPH_NODE_BORDER;
 KruskalMST.MST_NODE_TEXT = KruskalMST.GRAPH_NODE_TEXT;
 
 KruskalMST.GRAPH_LAYOUT_CONFIG = {
-  centerX: KruskalMST.CANVAS_LEFT_PADDING + 250,
-  stepX: 150,
-  baseY: KruskalMST.GRAPH_TOP + 130,
-  rowSpacing: 180,
+  baseX: KruskalMST.CANVAS_LEFT_PADDING + 62,
+  stepX: 112,
+  baseY: KruskalMST.GRAPH_TOP + 140,
+  rowSpacing: 190,
   rowPattern: [4, 3, 4, 3, 4],
 };
 
 KruskalMST.MST_LAYOUT_CONFIG = {
-  centerX: KruskalMST.CANVAS_LEFT_PADDING + 560,
+  centerX: KruskalMST.CANVAS_LEFT_PADDING + 520,
   stepX: 110,
-  baseY: KruskalMST.GRAPH_TOP + 130,
-  rowSpacing: 180,
-  rowPattern: [3, 2, 2, 2, 2],
+  baseY: KruskalMST.GRAPH_TOP + 140,
+  rowSpacing: 190,
+  rowPattern: [1, 2, 2, 2],
 };
 
 KruskalMST.TEMPLATE_ALLOWED = [
@@ -184,6 +186,8 @@ KruskalMST.prototype.reset = function () {
 
 KruskalMST.prototype.setup = function () {
   this.commands = [];
+  this.graphPanelCenterX = KruskalMST.GRAPH_PANEL_CENTER_X;
+  this.mstPanelCenterX = KruskalMST.MST_PANEL_CENTER_X;
   this.createBaseLayout();
   this.generateGraphData();
   this.createGraphDisplay();
@@ -239,7 +243,7 @@ KruskalMST.prototype.createBaseLayout = function () {
     "CreateLabel",
     this.graphPanelTitleID,
     "Graph",
-    KruskalMST.GRAPH_PANEL_CENTER_X,
+    this.graphPanelCenterX,
     KruskalMST.GRAPH_TOP + 36,
     1
   );
@@ -251,7 +255,7 @@ KruskalMST.prototype.createBaseLayout = function () {
     "CreateLabel",
     this.mstPanelTitleID,
     "MST",
-    KruskalMST.MST_PANEL_CENTER_X,
+    this.mstPanelCenterX,
     KruskalMST.GRAPH_TOP + 36,
     1
   );
@@ -283,6 +287,8 @@ KruskalMST.prototype.generateRandomGraph = function (vertexCount) {
     vertexCount,
     KruskalMST.MST_LAYOUT_CONFIG
   );
+
+  this.enforcePanelSpacing();
 
   var allowed = KruskalMST.TEMPLATE_ALLOWED;
   var usedPairs = {};
@@ -426,6 +432,7 @@ KruskalMST.prototype.computePanelLayout = function (vertexCount, config) {
       : [4, 3, 4, 3, 4]);
   var useCenter = config && typeof config.centerX === "number";
   var baseX = config && typeof config.baseX === "number" ? config.baseX : 0;
+  var rowOffsets = config && config.rowOffsets ? config.rowOffsets : null;
 
   if (!rowPattern.length) {
     rowPattern = [vertexCount];
@@ -442,6 +449,10 @@ KruskalMST.prototype.computePanelLayout = function (vertexCount, config) {
       : count === 4
       ? baseX
       : baseX + config.stepX / 2;
+    if (rowOffsets && rowOffsets.length) {
+      var offsetIndex = row < rowOffsets.length ? row : rowOffsets.length - 1;
+      startX += rowOffsets[offsetIndex];
+    }
     var y = config.baseY + row * config.rowSpacing;
     for (var col = 0; col < count && index < vertexCount; col++, index++) {
       layout.push({ x: startX + col * config.stepX, y: y });
@@ -449,6 +460,150 @@ KruskalMST.prototype.computePanelLayout = function (vertexCount, config) {
   }
 
   return layout;
+};
+
+KruskalMST.prototype.measureHorizontalBounds = function (positions) {
+  var radius = KruskalMST.GRAPH_NODE_RADIUS;
+  var min = Infinity;
+  var max = -Infinity;
+
+  for (var i = 0; i < positions.length; i++) {
+    var pos = positions[i];
+    if (!pos) {
+      continue;
+    }
+    if (pos.x - radius < min) {
+      min = pos.x - radius;
+    }
+    if (pos.x + radius > max) {
+      max = pos.x + radius;
+    }
+  }
+
+  if (min === Infinity || max === -Infinity) {
+    return { min: 0, max: 0 };
+  }
+
+  return { min: min, max: max };
+};
+
+KruskalMST.prototype.shiftPositions = function (positions, deltaX) {
+  if (!deltaX) {
+    return;
+  }
+  for (var i = 0; i < positions.length; i++) {
+    if (positions[i]) {
+      positions[i].x += deltaX;
+    }
+  }
+};
+
+KruskalMST.prototype.enforcePanelSpacing = function () {
+  if (!this.vertexPositions.length || !this.mstVertexPositions.length) {
+    return;
+  }
+
+  var margin = KruskalMST.CANVAS_SIDE_MARGIN;
+  var rightMargin = KruskalMST.CANVAS_WIDTH - margin;
+  var gap = KruskalMST.PANEL_MIN_GAP;
+
+  var graphBounds = this.measureHorizontalBounds(this.vertexPositions);
+  var mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
+
+  if (graphBounds.min > margin) {
+    var shiftGraphLeft = graphBounds.min - margin;
+    this.shiftPositions(this.vertexPositions, -shiftGraphLeft);
+    graphBounds.min -= shiftGraphLeft;
+    graphBounds.max -= shiftGraphLeft;
+  }
+
+  if (mstBounds.max > rightMargin) {
+    var shiftMSTLeft = mstBounds.max - rightMargin;
+    this.shiftPositions(this.mstVertexPositions, -shiftMSTLeft);
+    mstBounds.min -= shiftMSTLeft;
+    mstBounds.max -= shiftMSTLeft;
+  }
+
+  var currentGap = mstBounds.min - graphBounds.max;
+  if (currentGap < gap) {
+    var needed = gap - currentGap;
+    var availableMST = Math.max(0, rightMargin - mstBounds.max);
+    var moveMST = Math.min(needed, availableMST);
+    if (moveMST > 0) {
+      this.shiftPositions(this.mstVertexPositions, moveMST);
+      mstBounds.min += moveMST;
+      mstBounds.max += moveMST;
+      needed -= moveMST;
+    }
+
+    if (needed > 0) {
+      var availableGraph = Math.max(0, graphBounds.min - margin);
+      var moveGraph = Math.min(needed, availableGraph);
+      if (moveGraph > 0) {
+        this.shiftPositions(this.vertexPositions, -moveGraph);
+        graphBounds.min -= moveGraph;
+        graphBounds.max -= moveGraph;
+        needed -= moveGraph;
+      }
+    }
+
+    if (needed > 0) {
+      var overlap = graphBounds.max - mstBounds.min;
+      if (overlap >= 0) {
+        var extraGraph = Math.min(
+          overlap / 2,
+          Math.max(0, graphBounds.min - margin)
+        );
+        if (extraGraph > 0) {
+          this.shiftPositions(this.vertexPositions, -extraGraph);
+          graphBounds.min -= extraGraph;
+          graphBounds.max -= extraGraph;
+        }
+        var extraMST = Math.min(
+          overlap / 2,
+          Math.max(0, rightMargin - mstBounds.max)
+        );
+        if (extraMST > 0) {
+          this.shiftPositions(this.mstVertexPositions, extraMST);
+          mstBounds.min += extraMST;
+          mstBounds.max += extraMST;
+        }
+      }
+    }
+  }
+
+  var remainingRight = Math.max(0, rightMargin - mstBounds.max);
+  if (remainingRight > 0) {
+    this.shiftPositions(this.mstVertexPositions, remainingRight);
+  }
+
+  graphBounds = this.measureHorizontalBounds(this.vertexPositions);
+  mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
+
+  this.graphPanelCenterX = (graphBounds.min + graphBounds.max) / 2;
+  this.mstPanelCenterX = (mstBounds.min + mstBounds.max) / 2;
+
+  this.updatePanelTitlePositions();
+};
+
+KruskalMST.prototype.updatePanelTitlePositions = function () {
+  if (this.graphPanelTitleID !== -1) {
+    this.cmd(
+      "SetPosition",
+      this.graphPanelTitleID,
+      this.graphPanelCenterX,
+      KruskalMST.GRAPH_TOP + 36
+    );
+  }
+
+  if (this.mstPanelTitleID !== -1) {
+    this.cmd(
+      "SetPosition",
+      this.mstPanelTitleID,
+      this.mstPanelCenterX,
+      KruskalMST.GRAPH_TOP + 36
+    );
+  }
 };
 
 KruskalMST.prototype.getEdgeCurve = function (u, v) {
