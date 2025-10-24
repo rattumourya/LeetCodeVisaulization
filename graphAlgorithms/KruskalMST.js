@@ -25,25 +25,26 @@ KruskalMST.MST_WEIGHT_Y = 180;
 
 KruskalMST.GRAPH_TOP = KruskalMST.ROW1_HEIGHT;
 KruskalMST.GRAPH_BOTTOM = KruskalMST.ROW1_HEIGHT + KruskalMST.ROW2_HEIGHT;
-KruskalMST.GRAPH_NODE_RADIUS = 36;
+KruskalMST.GRAPH_NODE_RADIUS = 46;
 KruskalMST.GRAPH_NODE_COLOR = "#f5f5ff";
 KruskalMST.GRAPH_NODE_BORDER = "#1b3a4b";
 KruskalMST.GRAPH_NODE_TEXT = "#1b3a4b";
 
 KruskalMST.GRAPH_PANEL_CENTER_X =
-  KruskalMST.CANVAS_LEFT_PADDING + 230;
+  KruskalMST.CANVAS_LEFT_PADDING + 250;
 KruskalMST.GRAPH_PANEL_CENTER_Y =
   KruskalMST.GRAPH_TOP + KruskalMST.ROW2_HEIGHT / 2;
-KruskalMST.GRAPH_PANEL_WIDTH = 420;
-KruskalMST.GRAPH_PANEL_HEIGHT = KruskalMST.ROW2_HEIGHT - 60;
+KruskalMST.GRAPH_PANEL_WIDTH = 480;
+KruskalMST.GRAPH_PANEL_HEIGHT = KruskalMST.ROW2_HEIGHT - 40;
 
 KruskalMST.MST_PANEL_CENTER_X =
-  KruskalMST.CANVAS_LEFT_PADDING + 575;
+  KruskalMST.CANVAS_LEFT_PADDING + 560;
 KruskalMST.MST_PANEL_CENTER_Y = KruskalMST.GRAPH_PANEL_CENTER_Y;
-KruskalMST.MST_PANEL_WIDTH = 170;
+KruskalMST.MST_PANEL_WIDTH = 220;
 KruskalMST.MST_PANEL_HEIGHT = KruskalMST.GRAPH_PANEL_HEIGHT;
 
 KruskalMST.EDGE_COLOR = "#4a4e69";
+KruskalMST.ACTIVE_GRAPH_EDGE_COLOR = "#d90429";
 KruskalMST.MST_EDGE_COLOR = "#2a9d8f";
 KruskalMST.EDGE_THICKNESS = 3;
 KruskalMST.EDGE_MST_THICKNESS = 6;
@@ -51,23 +52,23 @@ KruskalMST.EDGE_MST_THICKNESS = 6;
 KruskalMST.INFO_TEXT_COLOR = "#1d3557";
 KruskalMST.TITLE_COLOR = "#14213d";
 
-KruskalMST.MST_NODE_COLOR = "#fff8e1";
-KruskalMST.MST_NODE_BORDER = "#6c4f3d";
-KruskalMST.MST_NODE_TEXT = "#6c4f3d";
+KruskalMST.MST_NODE_COLOR = KruskalMST.GRAPH_NODE_COLOR;
+KruskalMST.MST_NODE_BORDER = KruskalMST.GRAPH_NODE_BORDER;
+KruskalMST.MST_NODE_TEXT = KruskalMST.GRAPH_NODE_TEXT;
 
 KruskalMST.GRAPH_LAYOUT_CONFIG = {
-  centerX: KruskalMST.CANVAS_LEFT_PADDING + 230,
-  stepX: 130,
-  baseY: KruskalMST.GRAPH_TOP + 120,
-  rowSpacing: 160,
+  centerX: KruskalMST.CANVAS_LEFT_PADDING + 250,
+  stepX: 150,
+  baseY: KruskalMST.GRAPH_TOP + 130,
+  rowSpacing: 180,
   rowPattern: [4, 3, 4, 3, 4],
 };
 
 KruskalMST.MST_LAYOUT_CONFIG = {
-  centerX: KruskalMST.CANVAS_LEFT_PADDING + 575,
-  stepX: 78,
-  baseY: KruskalMST.GRAPH_TOP + 120,
-  rowSpacing: 160,
+  centerX: KruskalMST.CANVAS_LEFT_PADDING + 560,
+  stepX: 110,
+  baseY: KruskalMST.GRAPH_TOP + 130,
+  rowSpacing: 180,
   rowPattern: [3, 2, 2, 2, 2],
 };
 
@@ -645,6 +646,7 @@ KruskalMST.prototype.kruskal = function () {
 
     this.highlightCodeLine(4);
     this.updateInfoPanel("Considering edge " + label + ".");
+    this.highlightGraphEdge(u, v);
     this.cmd("SetHighlight", this.vertexIDs[u], 1);
     this.cmd("SetHighlight", this.vertexIDs[v], 1);
     this.cmd("Step");
@@ -704,6 +706,7 @@ KruskalMST.prototype.kruskal = function () {
 
     this.cmd("SetHighlight", this.vertexIDs[u], 0);
     this.cmd("SetHighlight", this.vertexIDs[v], 0);
+    this.clearGraphEdgeHighlight(u, v);
     this.cmd("Step");
   }
 
@@ -750,6 +753,22 @@ KruskalMST.prototype.setEdgeStyle = function (u, v, style) {
   this.cmd("SetEdgeColor", entry.from, entry.to, color);
   this.cmd("SetEdgeThickness", entry.from, entry.to, thickness);
   this.cmd("SetEdgeHighlight", entry.from, entry.to, highlight);
+};
+
+KruskalMST.prototype.highlightGraphEdge = function (u, v) {
+  this.setEdgeStyle(u, v, {
+    color: KruskalMST.ACTIVE_GRAPH_EDGE_COLOR,
+    thickness: KruskalMST.EDGE_MST_THICKNESS,
+    highlight: true,
+  });
+};
+
+KruskalMST.prototype.clearGraphEdgeHighlight = function (u, v) {
+  this.setEdgeStyle(u, v, {
+    color: KruskalMST.EDGE_COLOR,
+    thickness: KruskalMST.EDGE_THICKNESS,
+    highlight: false,
+  });
 };
 
 KruskalMST.prototype.addEdgeToMST = function (u, v, weight) {
