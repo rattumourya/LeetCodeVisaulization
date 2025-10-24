@@ -66,14 +66,6 @@ KruskalMST.GRAPH_LAYOUT_CONFIG = {
   rowPattern: [4, 3, 4, 3, 4],
 };
 
-KruskalMST.MST_LAYOUT_CONFIG = {
-  centerX: KruskalMST.CANVAS_LEFT_PADDING + 520,
-  stepX: 110,
-  baseY: KruskalMST.GRAPH_TOP + 140,
-  rowSpacing: 190,
-  rowPattern: [1, 2, 2, 2],
-};
-
 KruskalMST.TEMPLATE_ALLOWED = [
   [false, true, true, false, true, false, false, true, false, false],
   [true, false, true, false, true, true, false, false, false, false],
@@ -139,6 +131,7 @@ KruskalMST.prototype.init = function (am, w, h) {
   this.mstVertexPositions = [];
   this.mstVertexIDs = [];
   this.mstEdgePairs = {};
+  this.mstOffsetX = 0;
   this.edgeList = [];
   this.edgeMap = {};
   this.infoLabelID = -1;
@@ -188,6 +181,8 @@ KruskalMST.prototype.setup = function () {
   this.commands = [];
   this.graphPanelCenterX = KruskalMST.GRAPH_PANEL_CENTER_X;
   this.mstPanelCenterX = KruskalMST.MST_PANEL_CENTER_X;
+  this.mstOffsetX =
+    KruskalMST.MST_PANEL_CENTER_X - KruskalMST.GRAPH_PANEL_CENTER_X;
   this.createBaseLayout();
   this.generateGraphData();
   this.createGraphDisplay();
@@ -283,10 +278,7 @@ KruskalMST.prototype.generateRandomGraph = function (vertexCount) {
     vertexCount,
     KruskalMST.GRAPH_LAYOUT_CONFIG
   );
-  this.mstVertexPositions = this.computePanelLayout(
-    vertexCount,
-    KruskalMST.MST_LAYOUT_CONFIG
-  );
+  this.applyMSTOffset();
 
   this.enforcePanelSpacing();
 
@@ -424,6 +416,18 @@ KruskalMST.prototype.generateRandomGraph = function (vertexCount) {
   }
 };
 
+KruskalMST.prototype.applyMSTOffset = function () {
+  this.mstVertexPositions = [];
+
+  for (var i = 0; i < this.vertexPositions.length; i++) {
+    var pos = this.vertexPositions[i];
+    this.mstVertexPositions.push({
+      x: pos.x + this.mstOffsetX,
+      y: pos.y,
+    });
+  }
+};
+
 KruskalMST.prototype.computePanelLayout = function (vertexCount, config) {
   var layout = [];
   var rowPattern =
@@ -499,7 +503,8 @@ KruskalMST.prototype.shiftPositions = function (positions, deltaX) {
 };
 
 KruskalMST.prototype.enforcePanelSpacing = function () {
-  if (!this.vertexPositions.length || !this.mstVertexPositions.length) {
+  if (!this.vertexPositions.length) {
+    this.applyMSTOffset();
     return;
   }
 
@@ -508,73 +513,53 @@ KruskalMST.prototype.enforcePanelSpacing = function () {
   var gap = KruskalMST.PANEL_MIN_GAP;
 
   var graphBounds = this.measureHorizontalBounds(this.vertexPositions);
-  var mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
 
-  if (graphBounds.min > margin) {
-    var shiftGraphLeft = graphBounds.min - margin;
-    this.shiftPositions(this.vertexPositions, -shiftGraphLeft);
-    graphBounds.min -= shiftGraphLeft;
-    graphBounds.max -= shiftGraphLeft;
+  if (graphBounds.min < margin) {
+    var shiftRight = margin - graphBounds.min;
+    this.shiftPositions(this.vertexPositions, shiftRight);
   }
 
+  this.applyMSTOffset();
+
+  var mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
+
   if (mstBounds.max > rightMargin) {
-    var shiftMSTLeft = mstBounds.max - rightMargin;
-    this.shiftPositions(this.mstVertexPositions, -shiftMSTLeft);
-    mstBounds.min -= shiftMSTLeft;
-    mstBounds.max -= shiftMSTLeft;
+    var shiftLeft = mstBounds.max - rightMargin;
+    this.shiftPositions(this.vertexPositions, -shiftLeft);
+    this.applyMSTOffset();
+    mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
+  }
+
+  graphBounds = this.measureHorizontalBounds(this.vertexPositions);
+
+  if (graphBounds.min < margin) {
+    var adjustRight = margin - graphBounds.min;
+    this.shiftPositions(this.vertexPositions, adjustRight);
+    this.applyMSTOffset();
+    graphBounds = this.measureHorizontalBounds(this.vertexPositions);
+    mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
   }
 
   var currentGap = mstBounds.min - graphBounds.max;
   if (currentGap < gap) {
-    var needed = gap - currentGap;
-    var availableMST = Math.max(0, rightMargin - mstBounds.max);
-    var moveMST = Math.min(needed, availableMST);
-    if (moveMST > 0) {
-      this.shiftPositions(this.mstVertexPositions, moveMST);
-      mstBounds.min += moveMST;
-      mstBounds.max += moveMST;
-      needed -= moveMST;
+    this.mstOffsetX += gap - currentGap;
+    this.applyMSTOffset();
+    mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
+
+    if (mstBounds.max > rightMargin) {
+      var extraShiftLeft = mstBounds.max - rightMargin;
+      this.shiftPositions(this.vertexPositions, -extraShiftLeft);
+      this.applyMSTOffset();
+      mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
     }
 
-    if (needed > 0) {
-      var availableGraph = Math.max(0, graphBounds.min - margin);
-      var moveGraph = Math.min(needed, availableGraph);
-      if (moveGraph > 0) {
-        this.shiftPositions(this.vertexPositions, -moveGraph);
-        graphBounds.min -= moveGraph;
-        graphBounds.max -= moveGraph;
-        needed -= moveGraph;
-      }
+    graphBounds = this.measureHorizontalBounds(this.vertexPositions);
+    if (graphBounds.min < margin) {
+      var extraShiftRight = margin - graphBounds.min;
+      this.shiftPositions(this.vertexPositions, extraShiftRight);
+      this.applyMSTOffset();
+      mstBounds = this.measureHorizontalBounds(this.mstVertexPositions);
     }
-
-    if (needed > 0) {
-      var overlap = graphBounds.max - mstBounds.min;
-      if (overlap >= 0) {
-        var extraGraph = Math.min(
-          overlap / 2,
-          Math.max(0, graphBounds.min - margin)
-        );
-        if (extraGraph > 0) {
-          this.shiftPositions(this.vertexPositions, -extraGraph);
-          graphBounds.min -= extraGraph;
-          graphBounds.max -= extraGraph;
-        }
-        var extraMST = Math.min(
-          overlap / 2,
-          Math.max(0, rightMargin - mstBounds.max)
-        );
-        if (extraMST > 0) {
-          this.shiftPositions(this.mstVertexPositions, extraMST);
-          mstBounds.min += extraMST;
-          mstBounds.max += extraMST;
-        }
-      }
-    }
-  }
-
-  var remainingRight = Math.max(0, rightMargin - mstBounds.max);
-  if (remainingRight > 0) {
-    this.shiftPositions(this.mstVertexPositions, remainingRight);
   }
 
   graphBounds = this.measureHorizontalBounds(this.vertexPositions);
